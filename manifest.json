@@ -1,7 +1,8 @@
 {
   "name": "مصاريفي - تطبيق إدارة المصاريف",
   "short_name": "مصاريفي",
-  "start_url": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0d1117",
   "theme_color": "#0d1117",
@@ -23,13 +24,5 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["finance", "productivity"],
-  "screenshots": [
-    {
-      "src": "screenshot1.png",
-      "sizes": "430x932",
-      "type": "image/png",
-      "form_factor": "narrow"
-    }
-  ]
+  "categories": ["finance", "productivity"]
 }
