@@ -2965,16 +2965,30 @@ function renderGoals() {
   document.getElementById('goalTargetLbl').textContent = `المبلغ المطلوب (${BASE_LABELS[baseCurrency].sym})`;
   if (!goals.length) { el.innerHTML = `<div class="empty"><div class="empty-icon">🎯</div>لا توجد أهداف</div>`; return; }
   el.innerHTML = goals.map(g => {
-    // Sum savings amount allocated to this goal (simple: % of total savings or manual)
     const current = g.current || 0;
     const pct = Math.min(Math.round(current/g.target*100), 100);
     const remaining = Math.max(g.target - current, 0);
     const sym = BASE_LABELS[baseCurrency].sym;
     let deadlineTxt = '';
+    let monthlyNeeded = '';
+    let monthlyNeededSAR = 0;
+
     if (g.date) {
       const days = Math.ceil((new Date(g.date) - new Date()) / 86400000);
       deadlineTxt = days > 0 ? `باقي ${days} يوم` : days === 0 ? 'النهاردة!' : `فات الميعاد بـ ${-days} يوم`;
+
+      // Calculate monthly payment needed
+      if (days > 0 && remaining > 0) {
+        const monthsLeft = Math.max(1, Math.ceil(days / 30));
+        monthlyNeededSAR = remaining / monthsLeft;
+        monthlyNeeded = `<div style="background:linear-gradient(135deg,rgba(240,180,41,.15),rgba(240,180,41,.05));border:1px solid var(--accent);border-radius:10px;padding:10px;margin:8px 0;text-align:center">
+          <div style="font-size:10px;color:var(--accent);font-weight:700;margin-bottom:4px">💡 عشان تحقق الهدف في معاده</div>
+          <div style="font-size:18px;font-weight:900;color:var(--accent);direction:ltr">${fmt(toBase(monthlyNeededSAR),0)} ${sym} <span style="font-size:12px">/ الشهر</span></div>
+          <div style="font-size:10px;color:var(--muted);margin-top:3px">لمدة ${monthsLeft} شهر · إجمالي ${fmt(toBase(remaining),0)} ${sym}</div>
+        </div>`;
+      }
     }
+
     return `<div class="feat-card">
       <div class="feat-card-top">
         <div class="feat-emoji">${g.emoji}</div>
@@ -2986,6 +3000,7 @@ function renderGoals() {
       </div>
       <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:${pct}%;background:var(--sav)"></div></div>
       <div class="budget-pct">${pct}% — باقي ${fmt(toBase(remaining),0)} ${sym}</div>
+      ${monthlyNeeded}
       <div class="feat-actions">
         <button class="feat-mini-btn success" onclick="addToGoal('${g.id}')">＋ إضافة</button>
         <button class="feat-mini-btn danger" onclick="delGoal('${g.id}')">🗑️ حذف</button>
