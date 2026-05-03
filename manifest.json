@@ -1,0 +1,35 @@
+{
+  "name": "مصاريفي - تطبيق إدارة المصاريف",
+  "short_name": "مصاريفي",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "orientation": "portrait",
+  "description": "تطبيق لإدارة الدخل والمصروفات بالريال السعودي والعملات الأخرى",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "productivity"],
+  "screenshots": [
+    {
+      "src": "screenshot1.png",
+      "sizes": "430x932",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ]
+}
