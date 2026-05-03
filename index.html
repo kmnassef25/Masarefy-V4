@@ -462,6 +462,127 @@ select.form-inp{padding-left:8px;}
 :root[data-theme="light"] .save-btn,
 :root[data-theme="light"] .set-save{color:#fff;}
 
+/* ── SEASONAL THEMES ── */
+:root[data-season="ramadan"]{
+  --bg:#0a0f1e; --card:#111827; --card2:#1a2235; --border:#2d3f5e;
+  --accent:#c9a227; --accent2:#f0d060;
+  --green:#2ecc71; --red:#e74c3c; --blue:#5dade2;
+  --text:#f0e6d3; --muted:#8fa8c8;
+}
+:root[data-season="ramadan"] .header{background:linear-gradient(160deg,#0f1c3a,#0a0f1e);}
+:root[data-season="ramadan"] .app-name::after{content:' 🌙'; font-size:14px;}
+
+:root[data-season="eid"]{
+  --bg:#0d1a0d; --card:#122112; --card2:#1a3019; --border:#2a5a2a;
+  --accent:#f0b429; --accent2:#fcd34d;
+  --green:#4caf50; --red:#ef5350; --blue:#64b5f6;
+  --text:#e8f5e9; --muted:#81c784;
+}
+:root[data-season="eid"] .header{background:linear-gradient(160deg,#1b3a1b,#0d1a0d);}
+:root[data-season="eid"] .app-name::after{content:' 🎊'; font-size:14px;}
+
+:root[data-season="winter"]{
+  --bg:#0a1628; --card:#0f2040; --card2:#162a52; --border:#1e3a6e;
+  --accent:#64b5f6; --accent2:#90caf9;
+  --green:#4db6ac; --red:#ef9a9a; --blue:#80deea;
+  --text:#e3f2fd; --muted:#78909c;
+}
+:root[data-season="winter"] .header{background:linear-gradient(160deg,#102040,#0a1628);}
+:root[data-season="winter"] .app-name::after{content:' ❄️'; font-size:14px;}
+
+/* seasonal snowflakes/stars */
+.season-particles{position:fixed;top:0;left:0;right:0;pointer-events:none;z-index:1;overflow:hidden;height:100%;max-width:430px;margin:0 auto;}
+.season-particle{position:absolute;top:-20px;animation:fall linear infinite;opacity:0.6;font-size:12px;}
+@keyframes fall{0%{transform:translateY(0) rotate(0deg);opacity:0.6;}100%{transform:translateY(100vh) rotate(360deg);opacity:0;}}
+
+/* ── UNDO TOAST ── */
+.toast.undo-toast{display:flex;align-items:center;gap:10px;min-width:220px;}
+.undo-btn{background:var(--accent);color:#0d1117;border:none;border-radius:8px;padding:5px 12px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:900;cursor:pointer;flex-shrink:0;}
+
+/* ── SALARY RUNWAY ── */
+.runway-card{background:linear-gradient(135deg,rgba(88,166,255,.12),rgba(88,166,255,.04));border:1px solid rgba(88,166,255,.25);border-radius:16px;padding:14px;margin-bottom:10px;}
+.runway-title{font-size:11px;color:var(--blue);font-weight:700;margin-bottom:8px;}
+.runway-days{font-size:32px;font-weight:900;color:#fff;direction:ltr;}
+.runway-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+.runway-bar-bg{width:100%;height:8px;background:var(--card2);border-radius:6px;overflow:hidden;margin-top:8px;}
+.runway-bar-fill{height:100%;border-radius:6px;transition:width .6s;}
+
+/* ── HABIT DETECTOR ── */
+.habit-card{background:linear-gradient(135deg,rgba(248,81,73,.1),rgba(248,81,73,.04));border:1px solid rgba(248,81,73,.2);border-radius:14px;padding:12px 14px;margin-bottom:8px;}
+.habit-title{font-size:11px;color:var(--red);font-weight:700;margin-bottom:6px;}
+.habit-row{display:flex;align-items:center;gap:8px;}
+.habit-em{font-size:20px;}
+.habit-info{flex:1;}
+.habit-name{font-size:13px;font-weight:700;}
+.habit-detail{font-size:11px;color:var(--muted);margin-top:2px;}
+.habit-cost{font-size:14px;font-weight:900;color:var(--red);direction:ltr;}
+
+/* ── BILLS TRACKER ── */
+.bill-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+.bill-icon{font-size:24px;flex-shrink:0;}
+.bill-info{flex:1;min-width:0;}
+.bill-name{font-size:14px;font-weight:700;}
+.bill-meta{font-size:11px;color:var(--muted);margin-top:3px;}
+.bill-amt{font-size:15px;font-weight:900;color:var(--text);direction:ltr;text-align:left;}
+.bill-trend{font-size:10px;font-weight:700;margin-top:2px;}
+.bill-trend.up{color:var(--red);}
+.bill-trend.down{color:var(--green);}
+.bill-trend.same{color:var(--muted);}
+.bill-del{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:4px;}
+
+/* ── RECEIPT SCANNER ── */
+.receipt-overlay{position:fixed;inset:0;background:#000;z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.receipt-video{width:100%;max-width:430px;height:100%;object-fit:cover;}
+.receipt-controls{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.9));padding:20px;display:flex;gap:12px;justify-content:center;align-items:center;}
+.receipt-snap-btn{width:70px;height:70px;border-radius:50%;background:#fff;border:4px solid var(--accent);cursor:pointer;font-size:28px;display:flex;align-items:center;justify-content:center;}
+.receipt-close-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:12px;color:#fff;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;padding:10px 18px;cursor:pointer;}
+.receipt-loading{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#fff;font-size:15px;font-weight:700;}
+.receipt-spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── WRAPPED REPORT ── */
+.wrapped-overlay{position:fixed;inset:0;background:#0d1117;z-index:700;display:flex;flex-direction:column;overflow-y:auto;}
+.wrapped-slide{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 24px;position:relative;text-align:center;}
+.wrapped-slide.s1{background:linear-gradient(160deg,#1a0a2e,#0d1117);}
+.wrapped-slide.s2{background:linear-gradient(160deg,#0a1e0a,#0d1117);}
+.wrapped-slide.s3{background:linear-gradient(160deg,#1e0a0a,#0d1117);}
+.wrapped-slide.s4{background:linear-gradient(160deg,#0a0f1e,#0d1117);}
+.wrapped-slide.s5{background:linear-gradient(160deg,#1a1a0a,#0d1117);}
+.wrapped-num{font-size:72px;font-weight:900;line-height:1;}
+.wrapped-label{font-size:18px;font-weight:700;color:var(--muted);margin-top:8px;}
+.wrapped-sub{font-size:14px;color:var(--muted);margin-top:16px;line-height:1.6;}
+.wrapped-emoji{font-size:64px;margin-bottom:16px;}
+.wrapped-close{position:fixed;top:16px;left:16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:12px;color:#fff;font-family:'Cairo',sans-serif;font-size:13px;padding:8px 16px;cursor:pointer;z-index:800;}
+.wrapped-share{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;border:none;border-radius:14px;padding:14px 28px;font-family:'Cairo',sans-serif;font-size:15px;font-weight:900;cursor:pointer;margin-top:24px;}
+.wrapped-progress{display:flex;gap:6px;position:fixed;top:16px;right:16px;z-index:800;}
+.wrapped-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);transition:background .3s;}
+.wrapped-dot.active{background:var(--accent);}
+
+/* ── SALARY PLANNER ── */
+.planner-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:650;display:flex;align-items:flex-end;}
+.planner-sheet{background:var(--card);border-radius:24px 24px 0 0;border-top:1px solid var(--border);padding:20px 16px 30px;width:100%;max-height:90vh;overflow-y:auto;}
+.planner-slice{display:flex;align-items:center;gap:10px;padding:10px;background:var(--card2);border-radius:12px;margin-bottom:8px;}
+.planner-color{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+.planner-info{flex:1;}
+.planner-name{font-size:13px;font-weight:700;}
+.planner-pct{font-size:11px;color:var(--muted);}
+.planner-amt{font-size:14px;font-weight:900;direction:ltr;}
+.planner-bar{width:100%;height:20px;border-radius:10px;overflow:hidden;display:flex;margin:10px 0;}
+.planner-seg{height:100%;transition:width .6s;}
+
+/* ── SHARE REPORT ── */
+.share-card{background:linear-gradient(135deg,#1a2332,#0d1117);border:1px solid var(--border);border-radius:20px;padding:20px;margin:10px 0;}
+.share-month{font-size:13px;color:var(--accent);font-weight:700;text-align:center;margin-bottom:16px;}
+.share-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.share-cell{background:var(--card2);border-radius:12px;padding:10px;text-align:center;}
+.share-cell-lbl{font-size:10px;color:var(--muted);font-weight:700;}
+.share-cell-val{font-size:18px;font-weight:900;direction:ltr;margin-top:4px;}
+.share-cell-val.green{color:var(--green);}
+.share-cell-val.red{color:var(--red);}
+.share-cell-val.blue{color:var(--blue);}
+.share-footer{font-size:10px;color:var(--muted);text-align:center;margin-top:8px;}
+
+
 /* ── MENU SHEET / FEATURE ROWS ── */
 .menu-row{display:flex;align-items:center;gap:12px;padding:14px;background:var(--card2);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:all .15s;}
 .menu-row:active{transform:scale(.98);}
@@ -921,10 +1042,13 @@ select.form-inp{padding-left:8px;}
 
     <!-- RECEIPT PHOTO -->
     <div class="form-row" id="receiptRow">
-      <div class="form-lbl">📸 صورة الإيصال (اختياري)</div>
-      <input type="file" id="fReceiptInput" accept="image/*"  style="display:none" onchange="onReceiptSelect(event)"/>
+      <div class="form-lbl">📸 صورة الإيصال — Claude يقرأها تلقائياً</div>
+      <input type="file" id="fReceiptInput" accept="image/*" style="display:none" onchange="onReceiptSelect(event)"/>
       <div id="receiptArea">
-        <button type="button" class="export-btn" style="width:100%" onclick="document.getElementById('fReceiptInput').click()">📷 إضافة صورة</button>
+        <div style="display:flex;gap:8px">
+          <button type="button" class="export-btn" style="flex:1" onclick="openReceiptCamera()">📷 كاميرا + AI</button>
+          <button type="button" class="export-btn" style="flex:1" onclick="document.getElementById('fReceiptInput').click()">🖼️ رفع صورة</button>
+        </div>
       </div>
     </div>
 
@@ -1125,7 +1249,118 @@ select.form-inp{padding-left:8px;}
       <div class="mt"><div class="mt-l">الراتب بعملتين</div><div class="mt-s" id="menuDualSal">معطل</div></div>
       <div class="mc">‹</div>
     </div>
+    <div class="menu-row" onclick="closeAndOpen('menuModal','billsModal',renderBills)">
+      <div class="mi">🏠</div>
+      <div class="mt"><div class="mt-l">الفواتير المنزلية</div><div class="mt-s" id="menuBillCount">تتبع الكهرباء والماء وغيرها</div></div>
+      <div class="mc">‹</div>
+    </div>
+    <div class="menu-row" onclick="document.getElementById('menuModal').classList.remove('open'); showWrappedReport()">
+      <div class="mi">🎵</div>
+      <div class="mt"><div class="mt-l">تقرير السنة Wrapped</div><div class="mt-s">ملخص مالي سنوي احتفالي</div></div>
+      <div class="mc">‹</div>
+    </div>
+    <div class="menu-row" onclick="document.getElementById('menuModal').classList.remove('open'); openSeasonTheme()">
+      <div class="mi">🌙</div>
+      <div class="mt"><div class="mt-l">الثيمات الموسمية</div><div class="mt-s" id="menuSeasonLbl">اختر ثيم الموسم</div></div>
+      <div class="mc">‹</div>
+    </div>
   </div>
+</div>
+
+<!-- ═══════ BILLS MODAL ═══════ -->
+<div class="overlay" id="billsModal" onclick="closeIfOut(event,'billsModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title">🏠 الفواتير المنزلية</div>
+    <p style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px">سجّل فواتيرك وتابع التغيير من شهر لشهر</p>
+    <div id="billsList"></div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">إضافة فاتورة جديدة</div>
+      <div class="pay-cur-row" id="billTypeRow" style="flex-wrap:wrap;gap:6px;">
+        <button class="pay-cur-btn" style="min-width:70px" onclick="selBillType(this,'electricity')" data-type="electricity"><span class="fl">⚡</span>كهرباء</button>
+        <button class="pay-cur-btn" style="min-width:70px" onclick="selBillType(this,'water')" data-type="water"><span class="fl">💧</span>مياه</button>
+        <button class="pay-cur-btn" style="min-width:70px" onclick="selBillType(this,'internet')" data-type="internet"><span class="fl">🌐</span>إنترنت</button>
+        <button class="pay-cur-btn" style="min-width:70px" onclick="selBillType(this,'gas')" data-type="gas"><span class="fl">🔥</span>غاز</button>
+        <button class="pay-cur-btn" style="min-width:70px" onclick="selBillType(this,'phone')" data-type="phone"><span class="fl">📱</span>هاتف</button>
+        <button class="pay-cur-btn" style="min-width:70px" onclick="selBillType(this,'other')" data-type="other"><span class="fl">📋</span>أخرى</button>
+      </div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">اسم الفاتورة</div><input class="form-inp" id="bName" placeholder="مثال: كهرباء شهر يناير"></div>
+        <div class="form-row"><div class="form-lbl">المبلغ (ر.س)</div><input class="form-inp" id="bAmount" type="number" placeholder="0.00" dir="ltr"></div>
+      </div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">الشهر</div><input class="form-inp" id="bMonth" type="month"></div>
+        <div class="form-row"><div class="form-lbl">ملاحظة</div><input class="form-inp" id="bNote" placeholder="اختياري"></div>
+      </div>
+      <button class="save-btn" onclick="saveBill()">💾 حفظ الفاتورة</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ SEASON THEME SHEET ═══════ -->
+<div class="overlay" id="seasonModal" onclick="closeIfOut(event,'seasonModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title">🎨 الثيمات الموسمية</div>
+    <div class="base-cur-grid" style="grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px">
+      <div class="base-cur-opt" onclick="setSeason('',this)" data-season="" style="padding:14px">
+        <span class="bf">🌑</span>الافتراضي
+      </div>
+      <div class="base-cur-opt" onclick="setSeason('ramadan',this)" data-season="ramadan" style="padding:14px">
+        <span class="bf">🌙</span>رمضان
+      </div>
+      <div class="base-cur-opt" onclick="setSeason('eid',this)" data-season="eid" style="padding:14px">
+        <span class="bf">🎊</span>العيد
+      </div>
+      <div class="base-cur-opt" onclick="setSeason('winter',this)" data-season="winter" style="padding:14px">
+        <span class="bf">❄️</span>الشتاء
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--muted);text-align:center">الثيم يتغير ألوان التطبيق وبيضيف تأثيرات موسمية</p>
+  </div>
+</div>
+
+<!-- ═══════ SALARY PLANNER SHEET ═══════ -->
+<div class="planner-overlay" id="plannerOverlay" style="display:none" onclick="if(event.target===this)closePlanner()">
+  <div class="planner-sheet">
+    <div class="handle" onclick="closePlanner()"></div>
+    <div class="modal-title">💰 توزيع الراتب</div>
+    <div id="plannerContent"></div>
+    <button class="save-btn" onclick="closePlanner()">✅ تمام</button>
+  </div>
+</div>
+
+<!-- ═══════ SHARE REPORT SHEET ═══════ -->
+<div class="overlay" id="shareReportModal" onclick="closeIfOut(event,'shareReportModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title">📊 مشاركة التقرير</div>
+    <div id="shareReportContent"></div>
+    <button class="save-btn" onclick="shareReport()" style="margin-top:10px">📤 مشاركة الصورة</button>
+  </div>
+</div>
+
+<!-- ═══════ RECEIPT CAMERA ═══════ -->
+<div class="receipt-overlay" id="receiptCamera" style="display:none">
+  <video id="receiptVideo" class="receipt-video" autoplay playsinline></video>
+  <canvas id="receiptCanvas" style="display:none"></canvas>
+  <div class="receipt-loading" id="receiptLoading" style="display:none">
+    <div class="receipt-spinner"></div>
+    <div>Claude بيقرأ الفاتورة...</div>
+  </div>
+  <div class="receipt-controls">
+    <button class="receipt-close-btn" onclick="closeReceiptCamera()">✕ إلغاء</button>
+    <button class="receipt-snap-btn" onclick="snapReceipt()">📸</button>
+    <button class="receipt-close-btn" onclick="uploadReceiptPhoto()" style="font-size:11px">📁 رفع صورة</button>
+  </div>
+  <input type="file" id="receiptUploadInput" accept="image/*" style="display:none" onchange="handleReceiptUpload(event)">
+</div>
+
+<!-- ═══════ WRAPPED REPORT ═══════ -->
+<div class="wrapped-overlay" id="wrappedOverlay" style="display:none">
+  <button class="wrapped-close" onclick="closeWrapped()">✕ إغلاق</button>
+  <div class="wrapped-progress" id="wrappedProgress"></div>
+  <div id="wrappedSlides"></div>
 </div>
 
 <!-- ═══════ INSTALLMENTS MODAL ═══════ -->
@@ -5215,6 +5450,574 @@ function editInstallment(id) {
   updateMenuCounts();
   if (typeof showToast === 'function') showToast('✅ تم تعديل القسط', 'success');
 }
+
+// ══════════════════════════════════════════════
+// ── NEW FEATURES BLOCK ──
+// ══════════════════════════════════════════════
+
+// ── UNDO DELETE ──
+let _undoStack = [];
+function delTxWithUndo(id) {
+  const t = txs.find(x=>x.id===id);
+  if (!t) return;
+  const backup = { txs: JSON.parse(JSON.stringify(txs)), savings: JSON.parse(JSON.stringify(savings)) };
+  if (t.isTransfer && t.transferId) {
+    txs = txs.filter(x => !x.isTransfer || x.transferId !== t.transferId);
+    savings = savings.filter(x => !x.isTransfer || x.transferId !== t.transferId);
+  } else {
+    txs = txs.filter(x => x.id !== id);
+  }
+  saveData(); saveSavings();
+  renderAll(); if(curTab==='chart') renderChart();
+  showUndoToast('🗑️ تم الحذف', backup);
+}
+function delSavWithUndo(id) {
+  const t = savings.find(x=>x.id===id);
+  if (!t) return;
+  const backup = { txs: JSON.parse(JSON.stringify(txs)), savings: JSON.parse(JSON.stringify(savings)) };
+  if (t.isTransfer && t.transferId) {
+    txs = txs.filter(x => !x.isTransfer || x.transferId !== t.transferId);
+    savings = savings.filter(x => !x.isTransfer || x.transferId !== t.transferId);
+  } else {
+    savings = savings.filter(x => x.id !== id);
+  }
+  saveData(); saveSavings();
+  renderAll(); if(curTab==='chart') renderChart();
+  showUndoToast('🗑️ تم الحذف', backup);
+}
+function showUndoToast(msg, backup) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = 'toast warning undo-toast';
+  toast.innerHTML = `<span class="toast-msg">${msg}</span><button class="undo-btn" onclick="undoDelete(this)">↩️ تراجع</button><button class="toast-close" onclick="this.parentElement.remove()">✕</button>`;
+  toast._backup = backup;
+  container.appendChild(toast);
+  const timer = setTimeout(() => toast.remove(), 5000);
+  toast._timer = timer;
+}
+function undoDelete(btn) {
+  const toast = btn.closest('.toast');
+  if (!toast || !toast._backup) return;
+  clearTimeout(toast._timer);
+  txs = toast._backup.txs;
+  savings = toast._backup.savings;
+  saveData(); saveSavings();
+  renderAll(); if(curTab==='chart') renderChart();
+  toast.remove();
+  showToast('✅ تم الاسترجاع', 'success');
+}
+
+// Patch delTx and delSav to use undo versions
+const _origDelTx = window.delTx;
+window.delTx = delTxWithUndo;
+const _origDelSav = window.delSav;
+window.delSav = delSavWithUndo;
+
+// ── SALARY RUNWAY INDICATOR ──
+function calcSalaryRunway() {
+  const today = new Date();
+  const mKey = monthKey(today.getFullYear(), today.getMonth());
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
+  const dayOfMonth = today.getDate();
+  const daysLeft = daysInMonth - dayOfMonth;
+
+  const monthInc = txs.filter(t => t.type==='income' && !t.isTransfer && (t.date||'').startsWith(mKey)).reduce((s,t)=>s+t.amountSAR,0);
+  const monthExp = txs.filter(t => t.type==='expense' && !t.isTransfer && (t.date||'').startsWith(mKey)).reduce((s,t)=>s+t.amountSAR,0);
+  const remaining = monthInc - monthExp;
+  const dailyAvg = dayOfMonth > 0 ? monthExp / dayOfMonth : 0;
+  const runwayDays = dailyAvg > 0 ? Math.floor(remaining / dailyAvg) : daysLeft;
+  const pct = Math.min(100, Math.max(0, (remaining / (monthInc||1)) * 100));
+
+  const sym = BASE_LABELS[baseCurrency].sym;
+  const color = runwayDays >= daysLeft ? 'var(--green)' : runwayDays >= 7 ? 'var(--accent)' : 'var(--red)';
+  const barColor = runwayDays >= daysLeft ? 'var(--green)' : runwayDays >= 7 ? 'var(--accent)' : 'var(--red)';
+
+  let msg = '';
+  if (monthInc === 0) return '';
+  if (runwayDays >= daysLeft) msg = '🎉 راتبك هيكمل الشهر!';
+  else if (runwayDays >= 14) msg = '😊 وضعك كويس';
+  else if (runwayDays >= 7) msg = '⚠️ خلّي بالك من الإنفاق';
+  else if (remaining <= 0) msg = '🚨 تجاوزت الدخل!';
+  else msg = '🔴 الراتب قرب يخلص';
+
+  return `<div class="runway-card">
+    <div class="runway-title">⏳ متى ينتهي راتبك؟</div>
+    <div style="display:flex;align-items:baseline;gap:8px">
+      <div class="runway-days" style="color:${color}">${remaining<=0?'0':Math.min(runwayDays,daysLeft)}</div>
+      <div style="font-size:13px;color:var(--muted)">يوم متبقي</div>
+    </div>
+    <div class="runway-sub">${msg} · متبقي ${fmt(toBase(Math.max(0,remaining)),0)} ${sym}</div>
+    <div class="runway-bar-bg"><div class="runway-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+    <div style="font-size:10px;color:var(--muted);margin-top:6px;direction:ltr;text-align:left">
+      متوسط يومي: ${fmt(toBase(dailyAvg),0)} ${sym} · ${daysLeft} يوم للشهر الجاي
+    </div>
+  </div>`;
+}
+
+// ── HABIT DETECTOR ──
+function detectBadHabits() {
+  const today = new Date();
+  const last3Months = [];
+  for (let i=0; i<3; i++) {
+    let m = today.getMonth() - i;
+    let y = today.getFullYear();
+    if (m < 0) { m += 12; y--; }
+    last3Months.push(monthKey(y, m));
+  }
+  const catCounts = {}, catTotals = {};
+  txs.filter(t => t.type==='expense' && !t.isTransfer && last3Months.some(k => (t.date||'').startsWith(k)))
+    .forEach(t => {
+      catCounts[t.cat] = (catCounts[t.cat]||0)+1;
+      catTotals[t.cat] = (catTotals[t.cat]||0)+t.amountSAR;
+    });
+  const habits = Object.entries(catCounts)
+    .filter(([cat, cnt]) => cnt >= 5)
+    .map(([cat, cnt]) => ({cat, cnt, total: catTotals[cat]||0, avg: (catTotals[cat]||0)/3}))
+    .sort((a,b)=>b.total-a.total)
+    .slice(0,3);
+  return habits;
+}
+
+// ── BILLS TRACKER ──
+let bills = JSON.parse(localStorage.getItem('msarifyi_bills') || '[]');
+let selBillTypeVal = 'electricity';
+const BILL_EMOJI = {electricity:'⚡',water:'💧',internet:'🌐',gas:'🔥',phone:'📱',other:'📋'};
+const BILL_NAMES = {electricity:'كهرباء',water:'مياه',internet:'إنترنت',gas:'غاز',phone:'هاتف',other:'أخرى'};
+
+function saveBills() { localStorage.setItem('msarifyi_bills', JSON.stringify(bills)); }
+function selBillType(btn, type) {
+  document.querySelectorAll('#billTypeRow .pay-cur-btn').forEach(b=>b.classList.remove('sar-s'));
+  btn.classList.add('sar-s');
+  selBillTypeVal = type;
+  const nameInp = document.getElementById('bName');
+  if (nameInp && !nameInp.value) nameInp.value = BILL_NAMES[type] || '';
+}
+function saveBill() {
+  const name = document.getElementById('bName').value.trim();
+  const amount = parseFloat(document.getElementById('bAmount').value);
+  const month = document.getElementById('bMonth').value;
+  const note = document.getElementById('bNote').value.trim();
+  if (!name || !amount || !month) { showToast('⚠️ اكمل البيانات', 'warning'); return; }
+  bills.push({ id: Date.now().toString(), type: selBillTypeVal, name, amount, month, note, date: new Date().toISOString().split('T')[0] });
+  saveBills();
+  renderBills();
+  document.getElementById('bName').value='';
+  document.getElementById('bAmount').value='';
+  document.getElementById('bNote').value='';
+  showToast('✅ تم حفظ الفاتورة', 'success');
+}
+function delBill(id) {
+  bills = bills.filter(b=>b.id!==id);
+  saveBills(); renderBills();
+}
+function renderBills() {
+  const el = document.getElementById('billsList');
+  if (!el) return;
+  if (!bills.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">🏠</div>لا يوجد فواتير مسجلة</div>'; return; }
+
+  // Group by type and calculate trends
+  const byType = {};
+  bills.forEach(b => {
+    if (!byType[b.type]) byType[b.type] = [];
+    byType[b.type].push(b);
+  });
+
+  let html = '';
+  Object.entries(byType).forEach(([type, list]) => {
+    list.sort((a,b)=>b.month.localeCompare(a.month));
+    const latest = list[0];
+    const prev = list[1];
+    let trendHtml = '';
+    if (prev) {
+      const diff = latest.amount - prev.amount;
+      const pct = Math.round(Math.abs(diff)/prev.amount*100);
+      if (diff > 0) trendHtml = `<div class="bill-trend up">▲ ${pct}% عن الشهر السابق</div>`;
+      else if (diff < 0) trendHtml = `<div class="bill-trend down">▼ ${pct}% عن الشهر السابق</div>`;
+      else trendHtml = `<div class="bill-trend same">= نفس الشهر السابق</div>`;
+    }
+    html += `<div class="bill-card">
+      <div class="bill-icon">${BILL_EMOJI[type]||'📋'}</div>
+      <div class="bill-info">
+        <div class="bill-name">${latest.name}</div>
+        <div class="bill-meta">${latest.month}${latest.note?' · '+latest.note:''} · ${list.length} سجل</div>
+        ${trendHtml}
+      </div>
+      <div>
+        <div class="bill-amt">${fmt(latest.amount,0)} ر.س</div>
+        <button class="bill-del" onclick="delBill('${latest.id}')">✕</button>
+      </div>
+    </div>`;
+  });
+
+  // History
+  if (bills.length > 0) {
+    html += `<div style="font-size:12px;font-weight:700;color:var(--muted);margin:12px 0 8px">📋 السجل الكامل</div>`;
+    [...bills].sort((a,b)=>b.month.localeCompare(a.month)).forEach(b => {
+      html += `<div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--card2);border-radius:10px;margin-bottom:6px">
+        <div style="font-size:18px">${BILL_EMOJI[b.type]||'📋'}</div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:700">${b.name}</div><div style="font-size:10px;color:var(--muted)">${b.month}</div></div>
+        <div style="font-size:14px;font-weight:900;direction:ltr">${fmt(b.amount,0)} ر.س</div>
+        <button class="bill-del" onclick="delBill('${b.id}')">✕</button>
+      </div>`;
+    });
+  }
+  el.innerHTML = html;
+}
+
+// ── SEASONAL THEMES ──
+function setSeason(season, btn) {
+  document.querySelectorAll('#seasonModal .base-cur-opt').forEach(b=>b.classList.remove('sel'));
+  if (btn) btn.classList.add('sel');
+  document.documentElement.setAttribute('data-season', season);
+  localStorage.setItem('msarifyi_season', season);
+  updateSeasonLabel();
+  updateSeasonParticles(season);
+  document.getElementById('seasonModal').classList.remove('open');
+  showToast(season ? `✨ تم تطبيق ثيم ${season==='ramadan'?'رمضان':season==='eid'?'العيد':'الشتاء'}` : '🌑 تم تطبيق الثيم الافتراضي', 'success');
+}
+function updateSeasonLabel() {
+  const season = localStorage.getItem('msarifyi_season') || '';
+  const el = document.getElementById('menuSeasonLbl');
+  if (el) el.textContent = season ? (season==='ramadan'?'🌙 رمضان':season==='eid'?'🎊 العيد':'❄️ الشتاء') : 'اختر ثيم الموسم';
+}
+function openSeasonTheme() {
+  const season = localStorage.getItem('msarifyi_season') || '';
+  document.querySelectorAll('#seasonModal .base-cur-opt').forEach(btn => {
+    btn.classList.toggle('sel', btn.dataset.season === season);
+  });
+  document.getElementById('seasonModal').classList.add('open');
+}
+function updateSeasonParticles(season) {
+  let container = document.getElementById('seasonParticles');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'seasonParticles';
+    container.className = 'season-particles';
+    document.body.appendChild(container);
+  }
+  container.innerHTML = '';
+  if (!season) return;
+  const chars = season==='ramadan' ? ['⭐','🌙','✨'] : season==='eid' ? ['🎊','✨','🌟'] : ['❄️','⛄','❅'];
+  for (let i=0; i<12; i++) {
+    const p = document.createElement('div');
+    p.className = 'season-particle';
+    p.textContent = chars[Math.floor(Math.random()*chars.length)];
+    p.style.left = Math.random()*100+'%';
+    p.style.animationDuration = (4+Math.random()*6)+'s';
+    p.style.animationDelay = (Math.random()*5)+'s';
+    p.style.fontSize = (10+Math.random()*8)+'px';
+    container.appendChild(p);
+  }
+}
+function initSeason() {
+  const season = localStorage.getItem('msarifyi_season') || '';
+  if (season) { document.documentElement.setAttribute('data-season', season); updateSeasonParticles(season); }
+  updateSeasonLabel();
+}
+
+// ── RECEIPT CAMERA WITH CLAUDE AI ──
+let receiptStream = null;
+let _receiptModalOpener = null; // track which modal triggered camera
+
+async function openReceiptCamera() {
+  _receiptModalOpener = 'txModal';
+  const overlay = document.getElementById('receiptCamera');
+  overlay.style.display = 'flex';
+  try {
+    receiptStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    document.getElementById('receiptVideo').srcObject = receiptStream;
+  } catch(e) {
+    showToast('❌ لا يمكن الوصول للكاميرا', 'error');
+    overlay.style.display = 'none';
+  }
+}
+function closeReceiptCamera() {
+  if (receiptStream) { receiptStream.getTracks().forEach(t=>t.stop()); receiptStream = null; }
+  document.getElementById('receiptCamera').style.display = 'none';
+}
+function snapReceipt() {
+  const video = document.getElementById('receiptVideo');
+  const canvas = document.getElementById('receiptCanvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const imageData = canvas.toDataURL('image/jpeg', 0.85);
+  closeReceiptCamera();
+  processReceiptWithAI(imageData);
+}
+function uploadReceiptPhoto() {
+  document.getElementById('receiptUploadInput').click();
+}
+function handleReceiptUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    closeReceiptCamera();
+    processReceiptWithAI(e.target.result);
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+async function processReceiptWithAI(imageData) {
+  // Show loading
+  const overlay = document.getElementById('receiptCamera');
+  const loading = document.getElementById('receiptLoading');
+  overlay.style.display = 'flex';
+  loading.style.display = 'flex';
+  video && (video.style.display = 'none');
+
+  try {
+    const base64 = imageData.split(',')[1];
+    const mediaType = imageData.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: 'اقرأ هذه الفاتورة أو الإيصال واستخرج منها: الاسم أو وصف المنتج/الخدمة، والمبلغ الإجمالي المدفوع بالأرقام فقط. أجب بـJSON فقط بهذا الشكل: {"name":"...","amount":0,"currency":"SAR","category":"..."} حيث category هي إحدى: مطعم، سوبرماركت، مواصلات، فاتورة، تسوق، ترفيه، صحة، تعليم، أخرى. لا تكتب أي شيء آخر غير JSON.' }
+          ]
+        }]
+      })
+    });
+    const data = await response.json();
+    const text = data.content?.map(c=>c.text||'').join('') || '';
+    const clean = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+
+    overlay.style.display = 'none';
+    loading.style.display = 'none';
+
+    // Fill the form
+    if (parsed.name) document.getElementById('fName').value = parsed.name;
+    if (parsed.amount) document.getElementById('fAmount').value = parsed.amount;
+    // Try to set category
+    if (parsed.category) {
+      const catBtns = document.querySelectorAll('#expCatGrid .cat-btn');
+      catBtns.forEach(btn => {
+        if (btn.dataset.cat === parsed.category || btn.textContent.includes(parsed.category)) {
+          selEC(btn);
+        }
+      });
+    }
+    // Set receipt preview
+    pendingReceipt = imageData;
+    renderReceiptPreview();
+    showToast('✅ تم قراءة الفاتورة بنجاح!', 'success');
+
+  } catch(e) {
+    overlay.style.display = 'none';
+    loading.style.display = 'none';
+    // Still set image even if AI failed
+    pendingReceipt = imageData;
+    if (typeof renderReceiptPreview === 'function') renderReceiptPreview();
+    showToast('⚠️ تم حفظ الصورة — لم يتمكن AI من القراءة', 'warning');
+    console.error('Receipt AI error:', e);
+  }
+}
+
+// ── SALARY PLANNER ──
+function openSalaryPlanner(income) {
+  const sym = BASE_LABELS[baseCurrency].sym;
+  const slices = [
+    { name: 'مصاريف أساسية', pct: 50, color: '#f85149' },
+    { name: 'ترفيه وتسوق', pct: 30, color: '#f0b429' },
+    { name: 'ادخار', pct: 20, color: '#3fb950' },
+  ];
+  const barHtml = slices.map(s => `<div class="planner-seg" style="width:${s.pct}%;background:${s.color}"></div>`).join('');
+  const slicesHtml = slices.map(s => `
+    <div class="planner-slice">
+      <div class="planner-color" style="background:${s.color}"></div>
+      <div class="planner-info"><div class="planner-name">${s.name}</div><div class="planner-pct">${s.pct}% من الراتب</div></div>
+      <div class="planner-amt">${fmt(toBase(income * s.pct/100), 0)} ${sym}</div>
+    </div>`).join('');
+
+  document.getElementById('plannerContent').innerHTML = `
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:11px;color:var(--muted)">دخل الشهر ده</div>
+      <div style="font-size:28px;font-weight:900;color:var(--green);direction:ltr">${fmt(toBase(income),0)} ${sym}</div>
+    </div>
+    <div class="planner-bar">${barHtml}</div>
+    <div style="margin-top:12px">${slicesHtml}</div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:12px">قاعدة 50/30/20 الذهبية للتوزيع المالي</div>`;
+  document.getElementById('plannerOverlay').style.display = 'flex';
+}
+function closePlanner() {
+  document.getElementById('plannerOverlay').style.display = 'none';
+}
+
+// ── SHARE REPORT ──
+function openShareReport() {
+  const today = new Date();
+  const mKey = monthKey(today.getFullYear(), today.getMonth());
+  const sym = BASE_LABELS[baseCurrency].sym;
+  const monthInc = txs.filter(t=>t.type==='income'&&!t.isTransfer&&(t.date||'').startsWith(mKey)).reduce((s,t)=>s+t.amountSAR,0);
+  const monthExp = txs.filter(t=>t.type==='expense'&&!t.isTransfer&&(t.date||'').startsWith(mKey)).reduce((s,t)=>s+t.amountSAR,0);
+  const monthSav = savings.filter(t=>(t.date||'').startsWith(mKey)).reduce((s,t)=>s+t.amountSAR,0);
+  const net = monthInc - monthExp;
+  const topCat = (() => {
+    const cats = {};
+    txs.filter(t=>t.type==='expense'&&!t.isTransfer&&(t.date||'').startsWith(mKey)).forEach(t=>cats[t.cat]=(cats[t.cat]||0)+t.amountSAR);
+    return Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
+  })();
+
+  document.getElementById('shareReportContent').innerHTML = `
+    <div class="share-card" id="shareCardEl">
+      <div class="share-month">📊 تقرير ${arabicMonth(today.getFullYear(), today.getMonth())}</div>
+      <div class="share-grid">
+        <div class="share-cell"><div class="share-cell-lbl">💰 الدخل</div><div class="share-cell-val green">${fmt(toBase(monthInc),0)} ${sym}</div></div>
+        <div class="share-cell"><div class="share-cell-lbl">💸 المصاريف</div><div class="share-cell-val red">${fmt(toBase(monthExp),0)} ${sym}</div></div>
+        <div class="share-cell"><div class="share-cell-lbl">🏦 الادخار</div><div class="share-cell-val blue">${fmt(toBase(monthSav),0)} ${sym}</div></div>
+        <div class="share-cell"><div class="share-cell-lbl">${net>=0?'✅ فائض':'❌ عجز'}</div><div class="share-cell-val ${net>=0?'green':'red'}">${net>=0?'+':''}${fmt(toBase(net),0)} ${sym}</div></div>
+      </div>
+      ${topCat?`<div style="background:var(--card2);border-radius:10px;padding:8px;text-align:center;font-size:12px;color:var(--muted)">أكثر فئة إنفاق: <strong style="color:var(--text)">${EMOJI[topCat[0]]||'💸'} ${topCat[0]}</strong> · ${fmt(toBase(topCat[1]),0)} ${sym}</div>`:''}
+      <div class="share-footer">مصاريفي — تطبيق إدارة المالية الشخصية</div>
+    </div>`;
+  document.getElementById('shareReportModal').classList.add('open');
+}
+async function shareReport() {
+  showToast('📋 تم نسخ ملخص التقرير', 'success');
+  const today = new Date();
+  const mKey = monthKey(today.getFullYear(), today.getMonth());
+  const sym = BASE_LABELS[baseCurrency].sym;
+  const monthInc = txs.filter(t=>t.type==='income'&&!t.isTransfer&&(t.date||'').startsWith(mKey)).reduce((s,t)=>s+t.amountSAR,0);
+  const monthExp = txs.filter(t=>t.type==='expense'&&!t.isTransfer&&(t.date||'').startsWith(mKey)).reduce((s,t)=>s+t.amountSAR,0);
+  const net = monthInc - monthExp;
+  const text = `📊 تقرير ${arabicMonth(today.getFullYear(), today.getMonth())}\n💰 الدخل: ${fmt(toBase(monthInc),0)} ${sym}\n💸 المصاريف: ${fmt(toBase(monthExp),0)} ${sym}\n${net>=0?'✅ فائض':'❌ عجز'}: ${net>=0?'+':''}${fmt(toBase(net),0)} ${sym}\n\n— مصاريفي`;
+  try {
+    if (navigator.share) await navigator.share({ text });
+    else await navigator.clipboard.writeText(text);
+  } catch(e) { console.log(e); }
+}
+
+// ── WRAPPED ANNUAL REPORT ──
+function showWrappedReport() {
+  const year = new Date().getFullYear();
+  const yearTxs = txs.filter(t => (t.date||'').startsWith(year+''));
+  const yearSav = savings.filter(t => (t.date||'').startsWith(year+''));
+  const sym = BASE_LABELS[baseCurrency].sym;
+
+  const totalInc = yearTxs.filter(t=>t.type==='income'&&!t.isTransfer).reduce((s,t)=>s+t.amountSAR,0);
+  const totalExp = yearTxs.filter(t=>t.type==='expense'&&!t.isTransfer).reduce((s,t)=>s+t.amountSAR,0);
+  const totalSav = yearSav.reduce((s,t)=>s+t.amountSAR,0);
+  const txCount = yearTxs.filter(t=>!t.isTransfer).length;
+
+  const catTotals = {};
+  yearTxs.filter(t=>t.type==='expense'&&!t.isTransfer).forEach(t=>catTotals[t.cat]=(catTotals[t.cat]||0)+t.amountSAR);
+  const topCat = Object.entries(catTotals).sort((a,b)=>b[1]-a[1])[0];
+
+  const monthTotals = {};
+  yearTxs.filter(t=>t.type==='expense'&&!t.isTransfer).forEach(t=>{
+    const m = (t.date||'').substring(0,7);
+    monthTotals[m] = (monthTotals[m]||0)+t.amountSAR;
+  });
+  const topMonth = Object.entries(monthTotals).sort((a,b)=>b[1]-a[1])[0];
+  const topMonthName = topMonth ? arabicMonth(parseInt(topMonth[0].split('-')[0]), parseInt(topMonth[0].split('-')[1])-1) : '';
+
+  const savPct = totalInc > 0 ? Math.round((totalInc-totalExp)/totalInc*100) : 0;
+
+  const slides = [
+    {cls:'s1', emoji:'🎊', main: year+'', lbl:'سنة مالية جديدة', sub:'خلاصة سنتك المالية كاملة'},
+    {cls:'s2', emoji:'💰', main: fmt(toBase(totalInc),0)+' '+sym, lbl:'إجمالي دخلك هذا العام', sub: `${txCount} حركة مالية مسجلة`},
+    {cls:'s3', emoji:'💸', main: fmt(toBase(totalExp),0)+' '+sym, lbl:'إجمالي مصاريفك هذا العام', sub: topCat ? `أكثر فئة: ${EMOJI[topCat[0]]||'💸'} ${topCat[0]}` : ''},
+    {cls:'s4', emoji:'🏦', main: fmt(toBase(totalSav),0)+' '+sym, lbl:'إجمالي ما ادّخرته', sub: savPct > 0 ? `وفّرت ${savPct}% من دخلك 🎉` : 'ابدأ الادخار العام القادم 💪'},
+    {cls:'s5', emoji: savPct >= 20 ? '🏆' : savPct >= 10 ? '😊' : '💪', main: topMonthName || 'لم يوجد', lbl:'أكثر شهر إنفاقاً', sub: topMonth ? fmt(toBase(topMonth[1]),0)+' '+sym+' مصاريف' : ''},
+  ];
+
+  const progressDots = slides.map((_,i) => `<div class="wrapped-dot ${i===0?'active':''}"></div>`).join('');
+  const slidesHtml = slides.map((s,i) => `
+    <div class="wrapped-slide ${s.cls}" id="wslide${i}" style="${i>0?'display:none':''}">
+      <div class="wrapped-emoji">${s.emoji}</div>
+      <div class="wrapped-num" style="color:var(--accent)">${s.main}</div>
+      <div class="wrapped-label">${s.lbl}</div>
+      <div class="wrapped-sub">${s.sub}</div>
+      ${i < slides.length-1 ? `<button onclick="nextWrappedSlide(${i})" style="margin-top:24px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);border-radius:14px;color:#fff;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;padding:12px 24px;cursor:pointer">التالي →</button>` : `<button class="wrapped-share" onclick="shareReport()">📤 شارك تقريرك</button>`}
+    </div>`).join('');
+
+  document.getElementById('wrappedProgress').innerHTML = progressDots;
+  document.getElementById('wrappedSlides').innerHTML = slidesHtml;
+  document.getElementById('wrappedOverlay').style.display = 'flex';
+}
+function nextWrappedSlide(current) {
+  document.getElementById('wslide'+current).style.display = 'none';
+  const next = current + 1;
+  const nextEl = document.getElementById('wslide'+next);
+  if (nextEl) nextEl.style.display = 'flex';
+  document.querySelectorAll('.wrapped-dot').forEach((d,i)=>d.classList.toggle('active',i===next));
+}
+function closeWrapped() {
+  document.getElementById('wrappedOverlay').style.display = 'none';
+}
+
+// ── PATCH renderHome to include new widgets ──
+const _origRenderHome = window.renderHome;
+window.renderHome = function() {
+  _origRenderHome();
+  const el = document.getElementById('homeContent');
+  if (!el) return;
+
+  // Salary Runway
+  const runwayHtml = calcSalaryRunway();
+  if (runwayHtml) {
+    const existing = el.querySelector('.runway-card');
+    if (!existing) el.insertAdjacentHTML('afterbegin', runwayHtml);
+  }
+
+  // Check for income to show salary planner
+  const today = new Date();
+  const mKey = monthKey(today.getFullYear(), today.getMonth());
+  const todayInc = txs.filter(t=>t.type==='income'&&!t.isTransfer&&t.date===today.toISOString().split('T')[0]);
+  if (todayInc.length > 0) {
+    const totalInc = todayInc.reduce((s,t)=>s+t.amountSAR,0);
+    const sym = BASE_LABELS[baseCurrency].sym;
+    const plannerKey = 'planner_shown_'+today.toISOString().split('T')[0];
+    if (!sessionStorage.getItem(plannerKey)) {
+      sessionStorage.setItem(plannerKey, '1');
+      setTimeout(() => openSalaryPlanner(totalInc), 800);
+    }
+  }
+
+  // Habits detector
+  const habits = detectBadHabits();
+  if (habits.length > 0) {
+    const sym = BASE_LABELS[baseCurrency].sym;
+    let habitHtml = `<div class="home-section"><div class="home-section-title">🔍 كاشف العادات</div>`;
+    habits.forEach(h => {
+      habitHtml += `<div class="habit-card">
+        <div class="habit-title">لاحظنا عادة متكررة!</div>
+        <div class="habit-row">
+          <div class="habit-em">${EMOJI[h.cat]||'💸'}</div>
+          <div class="habit-info">
+            <div class="habit-name">${h.cat}</div>
+            <div class="habit-detail">${h.cnt} مرة في آخر 3 شهور</div>
+          </div>
+          <div class="habit-cost">~${fmt(toBase(h.avg),0)} ${sym}/شهر</div>
+        </div>
+      </div>`;
+    });
+    habitHtml += '</div>';
+    el.insertAdjacentHTML('beforeend', habitHtml);
+  }
+
+  // Share report button
+  el.insertAdjacentHTML('beforeend', `
+    <div style="padding:10px 0">
+      <button onclick="openShareReport()" style="width:100%;background:var(--card2);border:1.5px solid var(--border);border-radius:14px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;padding:12px;cursor:pointer">
+        📊 مشاركة تقرير الشهر
+      </button>
+    </div>`);
+};
+
+// ── INIT NEW FEATURES ──
+initSeason();
+renderBills && renderBills();
 </script>
 
 </body>
