@@ -37,8 +37,6 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   }
 </script>
-<!-- Tesseract.js for OCR receipt scanning -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
 
 <title>مصاريفي</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -633,7 +631,6 @@ select.form-inp{padding-left:8px;}
     <div class="app-name">🇸🇦 مصاريفي</div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="base-cur-chip" id="baseCurChip" onclick="openSettings()">🇸🇦 ر.س</button>
-      <button onclick="toggleHideBalance()" id="headerHideBtn" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:5px 10px;font-size:13px;cursor:pointer;" title="إخفاء/إظهار المبالغ">🙈</button>
       <button onclick="openMenu()" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:5px 10px;font-size:13px;cursor:pointer;">☰</button>
       <button onclick="openSettings()" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:5px 10px;font-size:13px;cursor:pointer;">⚙️</button>
       <div class="live-time">
@@ -1867,21 +1864,6 @@ function renderHome() {
   el.innerHTML = html;
 }
 
-let hideBalance = localStorage.getItem('msarifyi_hide_balance') === '1';
-function toggleHideBalance() {
-  hideBalance = !hideBalance;
-  localStorage.setItem('msarifyi_hide_balance', hideBalance ? '1' : '');
-  updateSummary();
-  // Update header button icon
-  const headerBtn = document.getElementById('headerHideBtn');
-  if (headerBtn) headerBtn.innerHTML = hideBalance ? '👁️' : '🙈';
-  showToast(hideBalance ? '🔒 الرصيد مخفي' : '👁️ الرصيد ظاهر', 'info');
-}
-function getHiddenOrReal(val, isAmount = true) {
-  if (!hideBalance) return val;
-  return isAmount ? '***' : '•••';
-}
-
 function updateSummary() {
   const incSAR = txs.filter(t=>t.type==='income' && !t.isTransfer).reduce((s,t)=>s+t.amountSAR,0);
   const expSAR = txs.filter(t=>t.type==='expense' && !t.isTransfer).reduce((s,t)=>s+t.amountSAR,0);
@@ -1896,26 +1878,23 @@ function updateSummary() {
   });
   let html = `
     <div class="sum-main">
-      <div class="lbl" style="display:flex;justify-content:space-between;align-items:center">
-        <span>💰 إجمالي الفلوس</span>
-        <button onclick="toggleHideBalance()" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;color:var(--muted)">${hideBalance?'👁️':'🙈'}</button>
-      </div>
-      <div class="val" style="color:${totalMoney>=0?'#7ee787':'#ff7b72'};${hideBalance?'filter:blur(8px);user-select:none;':''}">${fmtBase(totalMoney)}</div>
+      <div class="lbl">💰 إجمالي الفلوس</div>
+      <div class="val" style="color:${totalMoney>=0?'#7ee787':'#ff7b72'}">${fmtBase(totalMoney)}</div>
       <div class="sub">صافي + مدخرات</div>
     </div>
     <div class="sum-inc">
       <div class="lbl">📥 إجمالي الدخل</div>
-      <div class="val" style="${hideBalance?'filter:blur(8px);user-select:none;':''}">${fmtBase(incSAR)}</div>
+      <div class="val">${fmtBase(incSAR)}</div>
       <div class="sub">${txs.filter(t=>t.type==='income' && !t.isTransfer).length} حركة</div>
     </div>
     <div class="sum-exp">
       <div class="lbl">📤 إجمالي المصروف</div>
-      <div class="val" style="${hideBalance?'filter:blur(8px);user-select:none;':''}">${fmtBase(expSAR)}</div>
+      <div class="val">${fmtBase(expSAR)}</div>
       <div class="sub">${txs.filter(t=>t.type==='expense' && !t.isTransfer).length} حركة</div>
     </div>
     <div class="sum-sav">
       <div class="lbl">🏦 المدخرات</div>
-      <div class="val" style="${hideBalance?'filter:blur(8px);user-select:none;':''}">${fmtBase(savSAR)}</div>
+      <div class="val">${fmtBase(savSAR)}</div>
       <div class="sub">${savings.length} حركة</div>
     </div>`;
   [
@@ -2408,7 +2387,7 @@ function onReceiptSelect(event) {
   const file = event.target.files[0];
   if (!file) return;
   if (!file.type.startsWith('image/')) { alert('اختار صورة'); return; }
-
+  // Compress to keep localStorage size reasonable (max 800px wide, JPEG q=0.7)
   const reader = new FileReader();
   reader.onload = (e) => {
     const img = new Image();
@@ -2422,192 +2401,10 @@ function onReceiptSelect(event) {
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
       pendingReceipt = canvas.toDataURL('image/jpeg', 0.75);
       renderReceiptPreview();
-
-      // ── AUTO OCR SCAN ──
-      scanReceiptWithOCR(pendingReceipt);
     };
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
-}
-
-// ── OCR RECEIPT SCANNING ──
-async function scanReceiptWithOCR(imageDataUrl) {
-  if (!window.Tesseract) {
-    showToast('📷 جاري تحميل مكتبة OCR...', 'info');
-    return;
-  }
-
-  showToast('🔍 جاري قراءة الإيصال...', 'info', 3000);
-
-  try {
-    const result = await Tesseract.recognize(
-      imageDataUrl,
-      'ara+eng', // Arabic + English
-      { logger: m => { if(m.status === 'recognizing text') showToast(`🔍 قراءة... ${Math.round(m.progress*100)}%`, 'info', 1000); } }
-    );
-
-    const text = result.data.text;
-    console.log('OCR Result:', text);
-
-    // Parse the extracted text
-    const parsed = parseReceiptText(text);
-    if (parsed) {
-      showToast(`✅ تم استخراج: ${parsed.name} — ${fmt(parsed.amount)} ${SYM[parsed.currency] || parsed.currency}`, 'success', 5000);
-
-      // Auto-fill the form if we're in the add modal
-      if (document.getElementById('modal').classList.contains('open')) {
-        if (parsed.name && !document.getElementById('fName').value) {
-          document.getElementById('fName').value = parsed.name;
-        }
-        if (parsed.amount && !document.getElementById('fAmt').value) {
-          document.getElementById('fAmt').value = parsed.amount;
-          evalAmt(true);
-        }
-        if (parsed.date) {
-          document.getElementById('fDate').value = parsed.date;
-        }
-        if (parsed.cat) {
-          // Auto-select category
-          selECat = parsed.cat;
-          document.querySelectorAll('#expCatGrid .cat-btn').forEach(b => {
-            b.classList.toggle('sel', b.dataset.cat === parsed.cat);
-          });
-        }
-      }
-    } else {
-      showToast('⚠️ مقدرتش أقرا البيانات كويس — املأها يدوي', 'warning');
-    }
-  } catch (e) {
-    console.error('OCR failed:', e);
-    showToast('❌ فشل قراءة الإيصال', 'error');
-  }
-}
-
-// ── PARSE RECEIPT TEXT ──
-function parseReceiptText(text) {
-  const lines = text.split('
-').map(l => l.trim()).filter(Boolean);
-  let result = { name: '', amount: 0, currency: 'SAR', date: '', cat: '', type: 'expense' };
-
-  // Detect receipt type
-  const lowerText = text.toLowerCase();
-  const isBankTransfer = /تحويل|transfer|فودافون كاش|instapay|بنك|bank/i.test(text);
-  const isDeposit = /ايداع|deposit|إيداع/i.test(text);
-  const isATM = /atm|ماكينة|صرف/i.test(text);
-
-  if (isDeposit) result.type = 'income';
-  if (isBankTransfer) result.cat = 'أخرى';
-
-  // Extract amount - look for numbers with currency symbols
-  const amountPatterns = [
-    /(?:المبلغ|القيمة|Amount|Total|الإجمالي|اجمالي)[\s:]*([\d,\.]+)/i,
-    /([\d,\.]+)\s*(?:ر\.س|ريال|SAR|ج\.م|جنيه|EGP|\$|USD|€|EUR)/i,
-    /(?:ر\.س|ريال|SAR|ج\.م|جنيه|EGP|\$|USD|€|EUR)\s*([\d,\.]+)/i,
-    /([\d,\.]+)\s*(?:SR|LE|E£)/i,
-  ];
-
-  for (const pattern of amountPatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      const amt = parseFloat(match[1].replace(/,/g, ''));
-      if (amt > 0) { result.amount = amt; break; }
-    }
-  }
-
-  // Detect currency
-  if (/جنيه|ج\.م|EGP|E£|LE/i.test(text)) result.currency = 'EGP';
-  else if (/دولار|\$|USD/i.test(text)) result.currency = 'USD';
-  else if (/يورو|€|EUR/i.test(text)) result.currency = 'EUR';
-  else result.currency = 'SAR';
-
-  // Extract date
-  const datePatterns = [
-    /(\d{2})[\/\-](\d{2})[\/\-](\d{4})/,
-    /(\d{4})[\/\-](\d{2})[\/\-](\d{2})/,
-  ];
-  for (const pattern of datePatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      if (match[0].length === 10 && match[0][2] === '/') {
-        result.date = `${match[3]}-${match[2]}-${match[1]}`;
-      } else {
-        result.date = match[0].replace(/\//g, '-');
-      }
-      break;
-    }
-  }
-  if (!result.date) {
-    result.date = new Date().toISOString().split('T')[0];
-  }
-
-  // Extract merchant/name
-  const namePatterns = [
-    /(?:من|From|Merchant|التاجر|الجهة)[\s:]*(.+)/i,
-    /(?:إلى|To|المستفيد|Beneficiary)[\s:]*(.+)/i,
-    /(?:في|At|Location)[\s:]*(.+)/i,
-  ];
-
-  for (const pattern of namePatterns) {
-    const match = text.match(pattern);
-    if (match && match[1].trim().length > 2) {
-      result.name = match[1].trim().substring(0, 50);
-      break;
-    }
-  }
-
-  // If no name found, use first meaningful line
-  if (!result.name) {
-    for (const line of lines) {
-      if (line.length > 3 && line.length < 50 && !line.match(/^\d/)) {
-        result.name = line.substring(0, 50);
-        break;
-      }
-    }
-  }
-
-  // Default name
-  if (!result.name) {
-    result.name = isDeposit ? 'إيداع' : isBankTransfer ? 'تحويل بنكي' : 'عملية شراء';
-  }
-
-  // Detect category from name
-  const catKeywords = {
-    'مطعم': /مطعم|restaurant|food|أكل|وجبة|برجر|بيتزا|kfc|mac|shawarma/i,
-    'قهوة': /قهوة|كوفي|coffee|starbucks|costa|nespresso/i,
-    'سوبرماركت': /سوبر|هايبر|ماركت|supermarket|carrefour|lulu|tamimi|panda/i,
-    'توصيل': /توصيل|delivery|طلبات|hungerstation|jahez|uber|careem/i,
-    'بنزين': /بنزين|محطة|petrol|gas|station|oil/i,
-    'مواصلات': /مواصلات|نقل|transport| taxi |مواصلات/i,
-    'صحة': /صحة|مستشفى|hospital|clinic|عيادة|صيدلية|pharmacy/i,
-    'ترفيه': /ترفيه|سينما|cinema|theater|لعبة|game/i,
-    'ملابس': /ملابس|fashion|h&m|zara|bershka|defacto/i,
-    'إنترنت': /نت|انترنت|internet|wifi|fiber|STC|mobily|zain/i,
-    'اتصالات': /اتصالات|موبايل|mobile|phone|recharge|شحن/i,
-    'اشتراكات': /اشتراك|subscription|netflix|spotify|youtube|prime/i,
-    'فواتير': /فاتورة|bill|كهرباء|مياه|water|electric/i,
-    'إيجار': /إيجار|rent|عقد|lease/i,
-    'تعليم': /تعليم|مدرسة|school|university|جامعة|course/i,
-    'سفر': /سفر|طيران|flight|hotel|فندق|booking|trip/i,
-    'رياضة': /رياضة|جيم|gym|fitness|sport/i,
-    'صالون': /صالون|salon|حلاق|barber|beauty/i,
-    'أطفال': /أطفال|baby|toys|لعب|school/i,
-  };
-
-  for (const [cat, regex] of Object.entries(catKeywords)) {
-    if (regex.test(text)) {
-      result.cat = cat;
-      break;
-    }
-  }
-
-  if (!result.cat) result.cat = 'أخرى';
-
-  // Only return if we found an amount
-  if (result.amount > 0) {
-    return result;
-  }
-  return null;
 }
 function renderReceiptPreview() {
   const area = document.getElementById('receiptArea');
@@ -4044,9 +3841,6 @@ updatePinStatus();
 fillAccountSelect();
 updateOnlineStatus();
 updateMenuStreak();
-// Sync hide balance button state
-const headerHideBtn = document.getElementById('headerHideBtn');
-if (headerHideBtn && hideBalance) headerHideBtn.innerHTML = '👁️';
 renderAll();
 
 // Check for live rates on startup (once per day)
@@ -4506,59 +4300,7 @@ function checkInstallmentsDue() {
   });
   if (added > 0) {
     saveData(); saveInstallments();
-    if (typeof showToast === 'function') showToast(`💳 تم خصم ${added} قسط تلقائياً`, 'warning');
   }
-}
-
-// ── NOTIFICATIONS FOR UPCOMING PAYMENTS ──
-function checkUpcomingPayments() {
-  const today = new Date();
-  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-  const in3Days = new Date(today); in3Days.setDate(today.getDate() + 3);
-
-  // Check installments
-  installments.forEach(inst => {
-    if (inst.paidMonths >= inst.totalMonths) return;
-    const dueDay = inst.day;
-    const daysUntil = dueDay - today.getDate();
-
-    if (daysUntil === 1 || daysUntil === 3) {
-      const notifKey = `notif_inst_${inst.id}_${today.getMonth()}_${today.getFullYear()}`;
-      if (!sessionStorage.getItem(notifKey)) {
-        showToast(`⏰ ${inst.name}: قسط ${fmt(inst.monthlyPayment)} ${SYM[inst.currency]} يوم ${dueDay}`, 'warning', 5000);
-        sessionStorage.setItem(notifKey, '1');
-      }
-    }
-  });
-
-  // Check jameya
-  jameya.forEach(j => {
-    const start = new Date(j.startDate);
-    const elapsed = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth()) + 1;
-    if (elapsed > j.totalMembers || j.paidMonths >= j.totalMembers) return;
-
-    const payDay = start.getDate();
-    const daysUntil = payDay - today.getDate();
-
-    if (daysUntil === 1 || daysUntil === 3) {
-      const notifKey = `notif_jam_${j.id}_${today.getMonth()}_${today.getFullYear()}`;
-      if (!sessionStorage.getItem(notifKey)) {
-        showToast(`⏰ ${j.name}: مساهمة ${fmt(j.monthlyAmount)} ${SYM[j.currency]} يوم ${payDay}`, 'warning', 5000);
-        sessionStorage.setItem(notifKey, '1');
-      }
-    }
-
-    // Notify when it's your turn to receive
-    const monthsToTurn = j.myTurn - elapsed;
-    if (monthsToTurn === 0 && !j.received) {
-      const notifKey = `notif_jam_turn_${j.id}_${today.getMonth()}_${today.getFullYear()}`;
-      if (!sessionStorage.getItem(notifKey)) {
-        const total = j.monthlyAmount * j.totalMembers;
-        showToast(`🎉 مبروك! دورك في ${j.name} — هتقبض ${fmt(total)} ${SYM[j.currency]}`, 'success', 8000);
-        sessionStorage.setItem(notifKey, '1');
-      }
-    }
-  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -5354,15 +5096,9 @@ function confirmPdfImport() {
   // Auto-process due payments on load
   try { checkInstallmentsDue(); } catch(e) { console.warn('inst check:', e); }
   try { checkJameyaDue(); } catch(e) { console.warn('jam check:', e); }
-  try { checkUpcomingPayments(); } catch(e) { console.warn('upcoming check:', e); }
   updateMenuCounts();
   // Re-render summary if any auto-payments were added
   if (typeof renderAll === 'function') renderAll();
-
-  // Check upcoming payments every hour while app is open
-  setInterval(() => {
-    try { checkUpcomingPayments(); } catch(e) {}
-  }, 3600000);
 })();
 </script>
 
