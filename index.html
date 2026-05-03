@@ -633,6 +633,7 @@ select.form-inp{padding-left:8px;}
     <div class="app-name">🇸🇦 مصاريفي</div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="base-cur-chip" id="baseCurChip" onclick="openSettings()">🇸🇦 ر.س</button>
+      <button onclick="toggleHideBalance()" id="headerHideBtn" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:5px 10px;font-size:13px;cursor:pointer;" title="إخفاء/إظهار المبالغ">🙈</button>
       <button onclick="openMenu()" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:5px 10px;font-size:13px;cursor:pointer;">☰</button>
       <button onclick="openSettings()" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:5px 10px;font-size:13px;cursor:pointer;">⚙️</button>
       <div class="live-time">
@@ -1871,6 +1872,9 @@ function toggleHideBalance() {
   hideBalance = !hideBalance;
   localStorage.setItem('msarifyi_hide_balance', hideBalance ? '1' : '');
   updateSummary();
+  // Update header button icon
+  const headerBtn = document.getElementById('headerHideBtn');
+  if (headerBtn) headerBtn.innerHTML = hideBalance ? '👁️' : '🙈';
   showToast(hideBalance ? '🔒 الرصيد مخفي' : '👁️ الرصيد ظاهر', 'info');
 }
 function getHiddenOrReal(val, isAmount = true) {
@@ -4040,6 +4044,9 @@ updatePinStatus();
 fillAccountSelect();
 updateOnlineStatus();
 updateMenuStreak();
+// Sync hide balance button state
+const headerHideBtn = document.getElementById('headerHideBtn');
+if (headerHideBtn && hideBalance) headerHideBtn.innerHTML = '👁️';
 renderAll();
 
 // Check for live rates on startup (once per day)
