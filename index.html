@@ -1963,47 +1963,47 @@ const PIE_COLORS_SAV = ['#06b6d4','#22d3ee','#67e8f9','#0891b2','#155e75','#0e74
 const CUR_CLS = {SAR:'sar-s', EGP:'egp-s', USD:'usd-s', EUR:'eur-s'};
 
 // ── STATE ──
-let txType = 'expense';
-let selECat = 'مطعم';
-let selICat = 'راتب';
-let selSCat = 'بنك';
-let selBudgetCatVal = 'مطعم';
-let selPayCurVal = 'SAR';
-let curTab = 'all';
-let editingId = null;
-let editingIsSavings = false;
-let searchQuery = '';
-let filterCat = 'الكل';
+var txType = 'expense';
+var selECat = 'مطعم';
+var selICat = 'راتب';
+var selSCat = 'بنك';
+var selBudgetCatVal = 'مطعم';
+var selPayCurVal = 'SAR';
+var curTab = 'all';
+var editingId = null;
+var editingIsSavings = false;
+var searchQuery = '';
+var filterCat = 'الكل';
 
 // Month navigation state
 const now = new Date();
-let listMonth = now.getMonth();
-let listYear = now.getFullYear();
-let chartMonth = now.getMonth();
-let chartYear = now.getFullYear();
+var listMonth = now.getMonth();
+var listYear = now.getFullYear();
+var chartMonth = now.getMonth();
+var chartYear = now.getFullYear();
 
 // ── LOAD DATA ──
-let txs = JSON.parse(localStorage.getItem('msarifyi_v2') || '[]');
-let savings = JSON.parse(localStorage.getItem('msarifyi_savings') || '[]');
-let rates = JSON.parse(localStorage.getItem('msarifyi_rates') || JSON.stringify({EGP:13.50,USD:3.75,EUR:4.10}));
+var txs = JSON.parse(localStorage.getItem('msarifyi_v2') || '[]');
+var savings = JSON.parse(localStorage.getItem('msarifyi_savings') || '[]');
+var rates = JSON.parse(localStorage.getItem('msarifyi_rates') || JSON.stringify({EGP:13.50,USD:3.75,EUR:4.10}));
 // Clean up over-precise rates from old API responses
 // Keep 6 decimals internally, round only on display (#14)
 rates.EGP = Math.round(rates.EGP * 1e6) / 1e6;
 rates.USD = Math.round(rates.USD * 1e6) / 1e6;
 rates.EUR = Math.round(rates.EUR * 1e6) / 1e6;
-let budgets = JSON.parse(localStorage.getItem('msarifyi_budgets') || '{}');
-let recurringTxs = JSON.parse(localStorage.getItem('msarifyi_recurring') || '[]');
-let baseCurrency = localStorage.getItem('msarifyi_base') || 'SAR';
-let accounts = JSON.parse(localStorage.getItem('msarifyi_accounts') || 'null') || [
+var budgets = JSON.parse(localStorage.getItem('msarifyi_budgets') || '{}');
+var recurringTxs = JSON.parse(localStorage.getItem('msarifyi_recurring') || '[]');
+var baseCurrency = localStorage.getItem('msarifyi_base') || 'SAR';
+var accounts = JSON.parse(localStorage.getItem('msarifyi_accounts') || 'null') || [
   {id:'acc_cash',emoji:'💵',name:'كاش'},
   {id:'acc_bank',emoji:'🏦',name:'البنك'},
   {id:'acc_stc',emoji:'📱',name:'STC Pay'},
   {id:'acc_visa',emoji:'💳',name:'فيزا'}
 ];
-let goals = JSON.parse(localStorage.getItem('msarifyi_goals') || '[]');
-let debts = JSON.parse(localStorage.getItem('msarifyi_debts') || '[]');
-let selDebtTypeVal = 'lent';
-let pendingReceipt = null; // base64 image data for the current modal session
+var goals = JSON.parse(localStorage.getItem('msarifyi_goals') || '[]');
+var debts = JSON.parse(localStorage.getItem('msarifyi_debts') || '[]');
+var selDebtTypeVal = 'lent';
+var pendingReceipt = null; // base64 image data for the current modal session
 
 function saveAccounts() { localStorage.setItem('msarifyi_accounts', JSON.stringify(accounts)); }
 function saveGoals()    { localStorage.setItem('msarifyi_goals', JSON.stringify(goals)); }
@@ -2453,7 +2453,7 @@ function rateDisplayText(t) {
 }
 
 // ── SEARCH & FILTER ──
-let _searchDebounce = null;
+var _searchDebounce = null;
 function applySearch() {
   if (_searchDebounce) clearTimeout(_searchDebounce);
   _searchDebounce = setTimeout(() => {
@@ -3240,7 +3240,7 @@ function exportJSON() {
 }
 
 // ── BANK CSV IMPORT ──
-let csvParsed = null;
+var csvParsed = null;
 
 function importBankCSV(event) {
   const file = event.target.files[0];
@@ -3882,8 +3882,8 @@ function initTheme() {
 })();
 
 
-let pinInput = '';
-let pinSetupStep = 0;
+var pinInput = '';
+var pinSetupStep = 0;
 function togglePin() {
   if (localStorage.getItem('msarifyi_pin_v2') || localStorage.getItem('msarifyi_pin')) {
     if (confirm('تعطيل القفل؟')) {
@@ -4123,7 +4123,7 @@ function showToast(msg, type='info', duration=3000) {
 }
 
 // ── HIDE AMOUNTS ──
-let hideAmounts = false;
+var hideAmounts = false;
 function toggleHideAmounts() {
   hideAmounts = !hideAmounts;
   const btn = document.getElementById('hideBtn');
@@ -4185,8 +4185,8 @@ async function fetchLiveRates() {
 }
 
 // ── AUTO LOCK ──
-let autoLockTimer = null;
-let autoLockEnabled = localStorage.getItem('msarifyi_autolock') === '1';
+var autoLockTimer = null;
+var autoLockEnabled = localStorage.getItem('msarifyi_autolock') === '1';
 function toggleAutoLock() {
   autoLockEnabled = document.getElementById('autoLockToggle').checked;
   localStorage.setItem('msarifyi_autolock', autoLockEnabled ? '1' : '');
@@ -4257,8 +4257,8 @@ function initSwipe(card) {
 }
 
 // ── PULL TO REFRESH ──
-let ptrStartY = 0;
-let ptrPulling = false;
+var ptrStartY = 0;
+var ptrPulling = false;
 function initPullToRefresh() {
   const body = document.getElementById('bodyScroll');
   const indicator = document.getElementById('ptrIndicator');
@@ -4432,7 +4432,7 @@ function showHeatmap() {
 }
 
 // ── BULK ACTIONS ──
-let bulkSelection = new Set();
+var bulkSelection = new Set();
 function toggleBulkSelection(id) {
   if (bulkSelection.has(id)) {
     bulkSelection.delete(id);
@@ -4679,11 +4679,11 @@ if (lastRateUpdate !== today && navigator.onLine) {
 <script>
 
 // ── STORAGE ──
-let installments = JSON.parse(localStorage.getItem('msarifyi_installments') || '[]');
-let jameya = JSON.parse(localStorage.getItem('msarifyi_jameya') || '[]');
-let occasions = JSON.parse(localStorage.getItem('msarifyi_occasions') || '[]');
-let dualSalary = JSON.parse(localStorage.getItem('msarifyi_dual_salary') || 'null');
-let rateMeta = JSON.parse(localStorage.getItem('msarifyi_rate_meta') || '{}'); // {source, ts}
+var installments = JSON.parse(localStorage.getItem('msarifyi_installments') || '[]');
+var jameya = JSON.parse(localStorage.getItem('msarifyi_jameya') || '[]');
+var occasions = JSON.parse(localStorage.getItem('msarifyi_occasions') || '[]');
+var dualSalary = JSON.parse(localStorage.getItem('msarifyi_dual_salary') || 'null');
+var rateMeta = JSON.parse(localStorage.getItem('msarifyi_rate_meta') || '{}'); // {source, ts}
 
 function saveInstallments() { localStorage.setItem('msarifyi_installments', JSON.stringify(installments)); }
 function saveJameyaData() { localStorage.setItem('msarifyi_jameya', JSON.stringify(jameya)); }
@@ -5613,8 +5613,8 @@ const ARABIC_MONTHS = {
   'نوفمبر':11, 'ديسمبر':12
 };
 
-let pdfParsedRows = []; // {date, name, amount, type, selected}
-let pdfRawText = '';
+var pdfParsedRows = []; // {date, name, amount, type, selected}
+var pdfRawText = '';
 
 async function importBankPDF(event) {
   const file = event.target.files[0];
@@ -5867,7 +5867,11 @@ function confirmPdfImport() {
 // ═══════════════════════════════════════════════════════════════
 
 // ── BALANCE VISIBILITY TOGGLE ──
-let balanceHidden = localStorage.getItem('msarifyi_balance_hidden') === '1';
+// Use `var` (not let) so the declaration hoists — applyBalanceVisibility might
+// be called from renderAll which runs early (before this line is reached) (#fix)
+var balanceHidden = localStorage.getItem('msarifyi_balance_hidden') === '1';
+// Apply hidden state immediately on init so values are blurred from the start
+setTimeout(() => { try { applyBalanceVisibility(); } catch(e) {} }, 0);
 
 // Apply hide/show state to all .val elements (call after every renderAll)
 function applyBalanceVisibility() {
@@ -5984,7 +5988,7 @@ function editInstallment(id) {
 // ══════════════════════════════════════════════
 
 // ── UNDO DELETE ──
-let _undoStack = [];
+var _undoStack = [];
 function delTxWithUndo(id) {
   const t = txs.find(x=>x.id===id);
   if (!t) return;
@@ -6108,8 +6112,8 @@ function detectBadHabits() {
 }
 
 // ── BILLS TRACKER ──
-let bills = JSON.parse(localStorage.getItem('msarifyi_bills') || '[]');
-let selBillTypeVal = 'electricity';
+var bills = JSON.parse(localStorage.getItem('msarifyi_bills') || '[]');
+var selBillTypeVal = 'electricity';
 const BILL_EMOJI = {electricity:'⚡',water:'💧',internet:'🌐',gas:'🔥',phone:'📱',other:'📋'};
 const BILL_NAMES = {electricity:'كهرباء',water:'مياه',internet:'إنترنت',gas:'غاز',phone:'هاتف',other:'أخرى'};
 
@@ -6245,8 +6249,8 @@ function initSeason() {
 }
 
 // ── RECEIPT CAMERA WITH CLAUDE AI ──
-let receiptStream = null;
-let _receiptModalOpener = null; // track which modal triggered camera
+var receiptStream = null;
+var _receiptModalOpener = null; // track which modal triggered camera
 
 async function openReceiptCamera() {
   _receiptModalOpener = 'txModal';
@@ -6661,12 +6665,15 @@ function forecastEndOfMonth() {
 
   // Add upcoming bills
   let pendingBills = 0;
-  if (typeof bills !== 'undefined' && bills.length) {
-    bills.forEach(b => {
-      if (b.lastPaidMonth === mKey) return;
-      pendingBills += b.estimatedAmount || 0;
-    });
-  }
+  // Safe access — `let` variables in TDZ throw on `typeof`, so use try/catch (#fix)
+  try {
+    if (typeof bills !== 'undefined' && bills.length) {
+      bills.forEach(b => {
+        if (b.lastPaidMonth === mKey) return;
+        pendingBills += b.estimatedAmount || 0;
+      });
+    }
+  } catch(e) { /* bills not yet initialized */ }
 
   // Project remaining expenses based on daily average
   const dailyAvg = dayOfMonth > 0 ? expSoFar / dayOfMonth : 0;
@@ -6750,7 +6757,7 @@ function renderAnomaliesCard() {
 // ═══════════════════════════════════════════════════════════════
 // FEATURE #24 — NET WORTH OVER TIME
 // ═══════════════════════════════════════════════════════════════
-let netWorthHistory = JSON.parse(localStorage.getItem('msarifyi_nw_history') || '[]');
+var netWorthHistory = JSON.parse(localStorage.getItem('msarifyi_nw_history') || '[]');
 function saveNetWorthHistory() { localStorage.setItem('msarifyi_nw_history', JSON.stringify(netWorthHistory)); }
 
 function snapshotNetWorth() {
@@ -7104,7 +7111,7 @@ function checkRecurringV2() {
 // ═══════════════════════════════════════════════════════════════
 // FEATURE #29 — INVESTMENT TRACKING (gold, stocks, crypto)
 // ═══════════════════════════════════════════════════════════════
-let investments = JSON.parse(localStorage.getItem('msarifyi_investments') || '[]');
+var investments = JSON.parse(localStorage.getItem('msarifyi_investments') || '[]');
 function saveInvestments() { localStorage.setItem('msarifyi_investments', JSON.stringify(investments)); }
 
 function addInvestment() {
@@ -7479,7 +7486,7 @@ renderIslamicOccasionCard = function() {
 // Uses gold-api.com (free, no key, CORS-enabled) for spot XAU in USD/oz,
 // then converts to EGP per gram per karat using current rates.
 const GRAMS_PER_OZ = 31.1034768;
-let goldData = JSON.parse(localStorage.getItem('msarifyi_gold') || 'null');
+var goldData = JSON.parse(localStorage.getItem('msarifyi_gold') || 'null');
 
 async function fetchGoldPrice() {
   try {
@@ -7535,44 +7542,37 @@ function renderGoldCard() {
 }
 
 function buildGoldCardHTML() {
-  if (!goldData) {
-    return `<div class="gold-card">
-      <div class="gold-title">
-        <span>🥇 سعر الذهب في مصر</span>
-        <button class="gold-refresh" onclick="fetchGoldPrice()">🔄 تحديث</button>
-      </div>
-      <div style="text-align:center;color:var(--muted);font-size:12px;padding:10px">
-        لسه ما اتحدّتش — اضغط 🔄
-      </div>
-    </div>`;
-  }
-  const k24 = egpPerGramKarat(24);
-  const k21 = egpPerGramKarat(21);
-  const k18 = egpPerGramKarat(18);
-  const ts = new Date(goldData.ts);
-  const ageMin = Math.floor((Date.now() - goldData.ts) / 60000);
-  const ageStr = ageMin < 1 ? 'الآن' : ageMin < 60 ? `من ${toArabicDigits(ageMin)} دقيقة` : `من ${toArabicDigits(Math.floor(ageMin/60))} ساعة`;
+  const hasData = !!goldData;
+  const k24 = hasData ? egpPerGramKarat(24) : null;
+  const k21 = hasData ? egpPerGramKarat(21) : null;
+  const k18 = hasData ? egpPerGramKarat(18) : null;
+  const ageMin = hasData ? Math.floor((Date.now() - goldData.ts) / 60000) : null;
+  const ageStr = !hasData ? 'لسه ما اتحدّتش — اضغط 🔄' :
+    ageMin < 1 ? 'الآن' :
+    ageMin < 60 ? `من ${toArabicDigits(ageMin)} دقيقة` :
+    `من ${toArabicDigits(Math.floor(ageMin/60))} ساعة`;
+  const fmtPrice = (v) => v == null ? '—' : fmt(v, 0);
   const savedGrams = parseFloat(localStorage.getItem('msarifyi_gold_grams') || '0') || '';
   const savedKarat = localStorage.getItem('msarifyi_gold_karat') || '21';
   return `<div class="gold-card">
     <div class="gold-title">
       <span>🥇 سعر الذهب في مصر</span>
-      <button class="gold-refresh" onclick="fetchGoldPrice()">🔄</button>
+      <button class="gold-refresh" onclick="fetchGoldPrice()">🔄 تحديث</button>
     </div>
     <div class="gold-grid">
       <div class="gold-cell">
         <div class="karat">عيار 24</div>
-        <div class="price">${fmt(k24, 0)}</div>
+        <div class="price">${fmtPrice(k24)}</div>
         <div class="unit">ج.م/جرام</div>
       </div>
       <div class="gold-cell">
         <div class="karat">عيار 21</div>
-        <div class="price">${fmt(k21, 0)}</div>
+        <div class="price">${fmtPrice(k21)}</div>
         <div class="unit">ج.م/جرام</div>
       </div>
       <div class="gold-cell">
         <div class="karat">عيار 18</div>
-        <div class="price">${fmt(k18, 0)}</div>
+        <div class="price">${fmtPrice(k18)}</div>
         <div class="unit">ج.م/جرام</div>
       </div>
     </div>
@@ -7589,7 +7589,7 @@ function buildGoldCardHTML() {
       <div class="gold-calc-result" id="goldCalcResult"></div>
     </div>
     <div class="gold-meta">
-      السعر الفوري — السوق المحلي يضيف مصنعية + ضريبة (آخر تحديث: ${ageStr})
+      ${hasData ? 'السعر الفوري — السوق المحلي يضيف مصنعية + ضريبة (آخر تحديث: ' + ageStr + ')' : ageStr}
     </div>
   </div>`;
 }
@@ -7672,7 +7672,59 @@ RATE_SOURCES.unshift({
   setTimeout(() => {
     if (typeof renderHome === 'function') renderHome();
   }, 100);
+
+  // Add dedicated "Gold" menu row
+  setTimeout(() => {
+    const menu = document.querySelector('#menuModal .sheet');
+    if (menu && !document.getElementById('menuRowGold')) {
+      const row = document.createElement('div');
+      row.className = 'menu-row';
+      row.id = 'menuRowGold';
+      row.onclick = () => {
+        document.getElementById('menuModal').classList.remove('open');
+        openGoldPage();
+      };
+      row.innerHTML = `
+        <div class="mi">🥇</div>
+        <div class="mt"><div class="mt-l">الذهب</div><div class="mt-s">أسعار + حاسبة الجرامات</div></div>
+        <div class="mc">‹</div>`;
+      menu.appendChild(row);
+    }
+  }, 200);
 })();
+
+// Dedicated gold modal — full-page experience
+function openGoldPage() {
+  let m = document.getElementById('goldPageModal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'goldPageModal';
+    m.className = 'overlay';
+    m.onclick = (e) => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = `<div class="sheet" style="max-height:94vh">
+      <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:4px 8px 0">
+        <div style="font-size:15px;font-weight:900;color:var(--accent)">🥇 الذهب</div>
+        <button type="button" aria-label="إغلاق" onclick="document.getElementById('goldPageModal').classList.remove('open')" style="background:var(--card2);border:1.5px solid var(--border);border-radius:50%;width:44px;height:44px;color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif;touch-action:manipulation">✕</button>
+      </div>
+      <div id="goldPageBody"></div>
+    </div>`;
+    document.body.appendChild(m);
+  }
+  // Render fresh content
+  const body = document.getElementById('goldPageBody');
+  body.innerHTML = buildGoldCardHTML() + `
+    <div style="background:var(--card2);border-radius:12px;padding:12px;margin-top:12px;font-size:11px;color:var(--muted);line-height:1.7">
+      <div style="color:var(--accent);font-weight:900;margin-bottom:6px">📌 ملاحظات مهمة</div>
+      • السعر المعروض هو السعر الفوري للأوقية (السبيكة) في السوق العالمي<br>
+      • السوق المحلي بيضيف <b>مصنعية</b> (٥٠-١٥٠ ج.م/جرام حسب الشغل)<br>
+      • و<b>ضريبة قيمة مضافة</b> ١٤٪ على المصنعية<br>
+      • السعر بيتحدّث تلقائياً كل ٤ ساعات لما تفتح التطبيق<br>
+      • للأسعار الرسمية الحقيقية، راجع شعبة الذهب
+    </div>`;
+  setTimeout(() => { try { updateGoldCalc(); } catch(e){} }, 0);
+  m.classList.add('open');
+}
 </script>
 
 </body>
