@@ -839,6 +839,57 @@ select.form-inp{padding-left:8px;}
 .islamic-emoji{font-size:24px;line-height:1}
 .islamic-text{font-size:13px;color:var(--text);font-weight:700;flex:1}
 
+/* Quick math operator buttons next to amount input (V9) */
+.amt-ops{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:8px}
+.amt-op-btn{
+  background:linear-gradient(135deg,rgba(240,180,41,0.15),rgba(240,180,41,0.05));
+  border:1.5px solid rgba(240,180,41,0.4);
+  border-radius:10px;padding:12px 0;color:var(--accent);
+  font-family:'Cairo',sans-serif;font-size:18px;font-weight:900;
+  cursor:pointer;-webkit-tap-highlight-color:rgba(240,180,41,0.4);
+  touch-action:manipulation;transition:all .15s;
+}
+.amt-op-btn:active{background:var(--accent);color:#0d1117;transform:scale(0.96)}
+.amt-op-btn.amt-op-clr{font-size:13px;color:var(--red);border-color:rgba(248,81,73,0.4);background:linear-gradient(135deg,rgba(248,81,73,0.1),rgba(248,81,73,0.02))}
+
+/* Gold prices card (V9) */
+.gold-card{
+  background:linear-gradient(135deg,rgba(240,180,41,0.12),rgba(252,211,77,0.04));
+  border:1px solid rgba(240,180,41,0.3);
+  border-radius:14px;padding:12px 14px;margin:8px 0;
+}
+.gold-title{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:13px;color:var(--accent);font-weight:900;margin-bottom:8px;
+}
+.gold-refresh{
+  background:transparent;border:none;color:var(--accent);
+  cursor:pointer;font-size:14px;padding:4px 8px;
+}
+.gold-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.gold-cell{
+  background:var(--card2);border-radius:10px;
+  padding:8px 6px;text-align:center;
+}
+.gold-cell .karat{font-size:10px;color:var(--muted);font-weight:700;margin-bottom:2px}
+.gold-cell .price{font-size:14px;color:var(--text);font-weight:900;direction:ltr}
+.gold-cell .unit{font-size:9px;color:var(--muted);margin-top:1px}
+.gold-meta{font-size:10px;color:var(--muted);text-align:center;margin-top:6px}
+
+.gold-calc{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+.gold-calc-title{font-size:11px;color:var(--accent);font-weight:700;margin-bottom:6px;text-align:center}
+.gold-calc-row{display:flex;gap:6px}
+.gold-calc-row input{flex:2;padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;direction:ltr;text-align:center}
+.gold-calc-row select{flex:1;padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;font-size:12px}
+.gold-calc-result{margin-top:6px;padding:6px;text-align:center;color:var(--accent);font-size:13px;min-height:20px;font-weight:700}
+
+/* Days-left-in-month indicator (V9) */
+.month-days-left{
+  display:inline-block;background:rgba(88,166,255,0.12);
+  color:var(--blue);padding:2px 8px;border-radius:10px;
+  font-size:10px;font-weight:700;margin-right:6px;
+}
+
 </style>
 
 </head>
@@ -1011,6 +1062,14 @@ select.form-inp{padding-left:8px;}
     <div class="form-row">
       <div class="form-lbl">💵 المبلغ</div>
       <input class="form-inp" id="fAmt" type="text" inputmode="decimal" placeholder="0.00 — جرب: 50+30+15.5" style="direction:ltr" oninput="evalAmt()" onblur="evalAmt(true)"/>
+      <div class="amt-ops" id="amtOps">
+        <button type="button" class="amt-op-btn" onclick="insertAmtOp('+')">+</button>
+        <button type="button" class="amt-op-btn" onclick="insertAmtOp('-')">−</button>
+        <button type="button" class="amt-op-btn" onclick="insertAmtOp('×')">×</button>
+        <button type="button" class="amt-op-btn" onclick="insertAmtOp('÷')">÷</button>
+        <button type="button" class="amt-op-btn" onclick="insertAmtOp('.')">.</button>
+        <button type="button" class="amt-op-btn amt-op-clr" onclick="clearAmt()">مسح</button>
+      </div>
       <div id="fAmtPreview" style="font-size:11px;color:var(--accent);text-align:left;direction:ltr;margin-top:4px;min-height:14px"></div>
     </div>
 
@@ -2518,6 +2577,8 @@ function renderAll() {
   updateSummary();
   buildFilterChips([...txs,...savings]);
   renderHome();
+  // Re-apply hide state (#fix) — summary cards just got rebuilt
+  if (typeof applyBalanceVisibility === 'function') applyBalanceVisibility();
 }
 
 // ── BUDGET ──
@@ -2952,8 +3013,12 @@ function viewReceipt(dataUrl) {
 // ── CALCULATOR ──
 // Safely evaluate math expressions like "50+30+15.5" or "100-20*3/2"
 function safeEval(expr) {
-  // Allow only digits, dot, +, -, *, /, parentheses, spaces
-  const clean = String(expr).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).trim();
+  // Convert unicode operators (×, ÷) and Arabic digits to ASCII
+  let clean = String(expr)
+    .replace(/×/g, '*')
+    .replace(/÷/g, '/')
+    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .trim();
   if (!/^[0-9+\-*/.() \s]+$/.test(clean)) return null;
   try {
     // eslint-disable-next-line no-new-func
@@ -5802,33 +5867,48 @@ function confirmPdfImport() {
 // ═══════════════════════════════════════════════════════════════
 
 // ── BALANCE VISIBILITY TOGGLE ──
-let balanceHidden = false;
-function toggleBalanceVisibility() {
-  balanceHidden = !balanceHidden;
+let balanceHidden = localStorage.getItem('msarifyi_balance_hidden') === '1';
+
+// Apply hide/show state to all .val elements (call after every renderAll)
+function applyBalanceVisibility() {
   const btn = document.getElementById('hideBalanceBtn');
   const vals = document.querySelectorAll('.sum-main .val, .sum-inc .val, .sum-exp .val, .sum-sav .val, .sum-cur .val');
-
   if (balanceHidden) {
-    btn.innerHTML = '👁️ إظهار';
-    btn.style.background = 'var(--card2)';
-    btn.style.color = 'var(--muted)';
+    if (btn) {
+      btn.innerHTML = '👁️ إظهار';
+      btn.style.background = 'var(--card2)';
+      btn.style.color = 'var(--muted)';
+    }
     vals.forEach(el => {
-      el.dataset.orig = el.textContent;
+      if (!el.dataset.orig) el.dataset.orig = el.textContent;
       el.textContent = '****';
       el.style.filter = 'blur(4px)';
       el.style.userSelect = 'none';
     });
-    if (typeof showToast === 'function') showToast('🔒 المبالغ مخفية', 'info');
   } else {
-    btn.innerHTML = '👁️ إخفاء';
-    btn.style.background = 'linear-gradient(135deg,var(--accent),var(--accent2))';
-    btn.style.color = '#0d1117';
+    if (btn) {
+      btn.innerHTML = '👁️ إخفاء';
+      btn.style.background = 'linear-gradient(135deg,var(--accent),var(--accent2))';
+      btn.style.color = '#0d1117';
+    }
     vals.forEach(el => {
-      if (el.dataset.orig) el.textContent = el.dataset.orig;
+      // Restore original text if it was hidden (#fix)
+      if (el.dataset.orig) {
+        el.textContent = el.dataset.orig;
+        delete el.dataset.orig;
+      }
       el.style.filter = '';
       el.style.userSelect = '';
     });
-    if (typeof showToast === 'function') showToast('👁️ المبالغ ظاهرة', 'info');
+  }
+}
+
+function toggleBalanceVisibility() {
+  balanceHidden = !balanceHidden;
+  localStorage.setItem('msarifyi_balance_hidden', balanceHidden ? '1' : '0');
+  applyBalanceVisibility();
+  if (typeof showToast === 'function') {
+    showToast(balanceHidden ? '🔒 المبالغ مخفية' : '👁️ المبالغ ظاهرة', 'info');
   }
 }
 
@@ -7340,6 +7420,259 @@ document.addEventListener('click', (e) => {
   const closer = e.target.closest('[data-close-menu]');
   if (closer) closeMenuModal(e);
 });
+
+// ═══════════════════════════════════════════════════════════════
+// V9 — AMT OPERATORS, DAYS LEFT, GOLD PRICES, OCCASION THRESHOLD, BETTER RATES
+// ═══════════════════════════════════════════════════════════════
+
+// ── (V9) Quick math operator buttons for amount input ──
+function insertAmtOp(op) {
+  const inp = document.getElementById('fAmt');
+  if (!inp) return;
+  // If input is focused, insert at cursor; otherwise append
+  const start = inp.selectionStart != null ? inp.selectionStart : inp.value.length;
+  const end   = inp.selectionEnd   != null ? inp.selectionEnd   : inp.value.length;
+  const before = inp.value.slice(0, start);
+  const after  = inp.value.slice(end);
+  inp.value = before + op + after;
+  // Move cursor after the inserted op
+  const newPos = start + op.length;
+  // Re-focus to keep keyboard up
+  inp.focus();
+  try { inp.setSelectionRange(newPos, newPos); } catch(e) {}
+  if (typeof evalAmt === 'function') evalAmt();
+}
+
+function clearAmt() {
+  const inp = document.getElementById('fAmt');
+  if (!inp) return;
+  inp.value = '';
+  inp.focus();
+  if (typeof evalAmt === 'function') evalAmt();
+}
+
+// ── (V9) Days remaining in current month ──
+function daysLeftInMonth() {
+  const today = new Date();
+  const lastDay = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
+  return lastDay - today.getDate();
+}
+
+// ── (V9) Apply 30-day threshold to Islamic occasion + add to home view ──
+const _origRenderIslamic = renderIslamicOccasionCard;
+renderIslamicOccasionCard = function() {
+  const occ = getNextIslamicOccasion();
+  if (!occ) return '';
+  // Only show if within 30 days (#5)
+  if (occ.days > 30) return '';
+  let label;
+  if (occ.days === 0) label = `<b>اليوم:</b> ${occ.name}`;
+  else if (occ.days === 1) label = `<b>بكرة:</b> ${occ.name}`;
+  else label = `<b>${occ.name}</b> · باقي ${toArabicDigits(occ.days)} يوم`;
+  return `<div class="islamic-card">
+    <div class="islamic-emoji">${occ.emoji}</div>
+    <div class="islamic-text">${label}</div>
+  </div>`;
+};
+
+// ── (V9) GOLD PRICES IN EGYPT ──
+// Uses gold-api.com (free, no key, CORS-enabled) for spot XAU in USD/oz,
+// then converts to EGP per gram per karat using current rates.
+const GRAMS_PER_OZ = 31.1034768;
+let goldData = JSON.parse(localStorage.getItem('msarifyi_gold') || 'null');
+
+async function fetchGoldPrice() {
+  try {
+    const ctl = new AbortController();
+    const tm = setTimeout(() => ctl.abort(), 8000);
+    const resp = await fetch('https://api.gold-api.com/price/XAU', {signal: ctl.signal});
+    clearTimeout(tm);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    const usdPerOz = data.price;
+    if (!usdPerOz || usdPerOz < 100) throw new Error('سعر مش منطقي');
+    goldData = {
+      usdPerOz,
+      ts: Date.now(),
+      symbol: data.symbol || 'XAU/USD'
+    };
+    localStorage.setItem('msarifyi_gold', JSON.stringify(goldData));
+    renderGoldCard(); // re-render with fresh data
+    if (typeof showToast === 'function') showToast('✅ تم تحديث سعر الذهب', 'success');
+    return goldData;
+  } catch (e) {
+    console.warn('Gold fetch failed:', e.message);
+    if (typeof showToast === 'function') showToast('⚠️ فشل تحديث سعر الذهب', 'warning');
+    return null;
+  }
+}
+
+// Compute EGP per gram for a given karat (24/21/18)
+function egpPerGramKarat(karat) {
+  if (!goldData) return null;
+  // 1 USD = rates.USD SAR (since rates.USD = SAR per USD in this codebase)
+  // 1 SAR = rates.EGP EGP (since rates.EGP = EGP per SAR)
+  // So 1 USD = rates.USD * rates.EGP EGP
+  const usdToEgp = (rates.USD || 3.75) * (rates.EGP || 50);
+  const usdPerGram = goldData.usdPerOz / GRAMS_PER_OZ;
+  const egpPerGram24 = usdPerGram * usdToEgp;
+  return egpPerGram24 * (karat / 24);
+}
+
+function renderGoldCard() {
+  // Find the home content & inject/refresh gold card
+  const home = document.getElementById('homeContent');
+  if (!home) return;
+  let card = home.querySelector('.gold-card');
+  const html = buildGoldCardHTML();
+  if (!card) {
+    home.insertAdjacentHTML('afterbegin', html);
+  } else {
+    card.outerHTML = html;
+  }
+  // Run calc on existing saved grams (if any)
+  setTimeout(() => { try { updateGoldCalc(); } catch(e){} }, 0);
+}
+
+function buildGoldCardHTML() {
+  if (!goldData) {
+    return `<div class="gold-card">
+      <div class="gold-title">
+        <span>🥇 سعر الذهب في مصر</span>
+        <button class="gold-refresh" onclick="fetchGoldPrice()">🔄 تحديث</button>
+      </div>
+      <div style="text-align:center;color:var(--muted);font-size:12px;padding:10px">
+        لسه ما اتحدّتش — اضغط 🔄
+      </div>
+    </div>`;
+  }
+  const k24 = egpPerGramKarat(24);
+  const k21 = egpPerGramKarat(21);
+  const k18 = egpPerGramKarat(18);
+  const ts = new Date(goldData.ts);
+  const ageMin = Math.floor((Date.now() - goldData.ts) / 60000);
+  const ageStr = ageMin < 1 ? 'الآن' : ageMin < 60 ? `من ${toArabicDigits(ageMin)} دقيقة` : `من ${toArabicDigits(Math.floor(ageMin/60))} ساعة`;
+  const savedGrams = parseFloat(localStorage.getItem('msarifyi_gold_grams') || '0') || '';
+  const savedKarat = localStorage.getItem('msarifyi_gold_karat') || '21';
+  return `<div class="gold-card">
+    <div class="gold-title">
+      <span>🥇 سعر الذهب في مصر</span>
+      <button class="gold-refresh" onclick="fetchGoldPrice()">🔄</button>
+    </div>
+    <div class="gold-grid">
+      <div class="gold-cell">
+        <div class="karat">عيار 24</div>
+        <div class="price">${fmt(k24, 0)}</div>
+        <div class="unit">ج.م/جرام</div>
+      </div>
+      <div class="gold-cell">
+        <div class="karat">عيار 21</div>
+        <div class="price">${fmt(k21, 0)}</div>
+        <div class="unit">ج.م/جرام</div>
+      </div>
+      <div class="gold-cell">
+        <div class="karat">عيار 18</div>
+        <div class="price">${fmt(k18, 0)}</div>
+        <div class="unit">ج.م/جرام</div>
+      </div>
+    </div>
+    <div class="gold-calc">
+      <div class="gold-calc-title">🧮 احسب قيمة ذهبك</div>
+      <div class="gold-calc-row">
+        <input type="number" step="0.01" inputmode="decimal" id="goldGramsInp" placeholder="عدد الجرامات" value="${savedGrams}" oninput="updateGoldCalc()">
+        <select id="goldKaratSel" onchange="updateGoldCalc()">
+          <option value="24"${savedKarat==='24'?' selected':''}>عيار 24</option>
+          <option value="21"${savedKarat==='21'?' selected':''}>عيار 21</option>
+          <option value="18"${savedKarat==='18'?' selected':''}>عيار 18</option>
+        </select>
+      </div>
+      <div class="gold-calc-result" id="goldCalcResult"></div>
+    </div>
+    <div class="gold-meta">
+      السعر الفوري — السوق المحلي يضيف مصنعية + ضريبة (آخر تحديث: ${ageStr})
+    </div>
+  </div>`;
+}
+
+function updateGoldCalc() {
+  const inp = document.getElementById('goldGramsInp');
+  const sel = document.getElementById('goldKaratSel');
+  const result = document.getElementById('goldCalcResult');
+  if (!inp || !sel || !result) return;
+  const grams = parseFloat(inp.value) || 0;
+  const karat = parseInt(sel.value);
+  localStorage.setItem('msarifyi_gold_grams', String(grams));
+  localStorage.setItem('msarifyi_gold_karat', String(karat));
+  if (!grams || !goldData) { result.textContent = ''; return; }
+  const pricePerGram = egpPerGramKarat(karat);
+  const total = grams * pricePerGram;
+  result.innerHTML = `${toArabicDigits(grams)} جرام عيار ${toArabicDigits(karat)} ≈ <b>${fmt(total, 0)} ج.م</b>`;
+}
+
+// ── (V9) Inject days-left + gold card into home view ──
+const _origRenderHome3 = window.renderHome;
+window.renderHome = function() {
+  if (_origRenderHome3) _origRenderHome3();
+  const el = document.getElementById('homeContent');
+  if (!el) return;
+
+  // Days-left chip in the runway card title (if present)
+  const runway = el.querySelector('.runway-card .runway-title');
+  if (runway && !runway.querySelector('.month-days-left')) {
+    const left = daysLeftInMonth();
+    if (left >= 0) {
+      const chip = document.createElement('span');
+      chip.className = 'month-days-left';
+      chip.textContent = `📆 باقي ${toArabicDigits(left)} يوم في الشهر`;
+      runway.appendChild(chip);
+    }
+  } else if (!runway) {
+    // No runway card — add a standalone days-left badge above content
+    if (!el.querySelector('.standalone-days-left')) {
+      const left = daysLeftInMonth();
+      const div = document.createElement('div');
+      div.className = 'islamic-card standalone-days-left';
+      div.style.background = 'linear-gradient(135deg,rgba(88,166,255,0.1),rgba(88,166,255,0.02))';
+      div.style.borderColor = 'rgba(88,166,255,0.25)';
+      div.innerHTML = `<div class="islamic-emoji">📆</div><div class="islamic-text">باقي <b>${toArabicDigits(left)}</b> يوم على نهاية الشهر</div>`;
+      el.insertBefore(div, el.firstChild);
+    }
+  }
+
+  // Gold card
+  if (!el.querySelector('.gold-card')) {
+    el.insertAdjacentHTML('afterbegin', buildGoldCardHTML());
+  }
+  // Repopulate gold calculator from saved values
+  setTimeout(() => { try { updateGoldCalc(); } catch(e){} }, 0);
+};
+
+// ── (V9) Better exchange rate source: Fawaz Ahmed currency-api ──
+// CORS-enabled, no API key, daily updates. Add as primary source.
+RATE_SOURCES.unshift({
+  name: 'Fawaz Currency-API',
+  url: 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/sar.json',
+  parse: (d) => {
+    const r = d.sar || {};
+    return {
+      EGP: r.egp,
+      USD_per_SAR: r.usd,
+      EUR_per_SAR: r.eur
+    };
+  }
+});
+
+// ── (V9) Init: fetch gold once on app open if stale (>4 hours) ──
+(function v9Init() {
+  const stale = !goldData || (Date.now() - (goldData.ts||0) > 4 * 60 * 60 * 1000);
+  if (stale && navigator.onLine) {
+    setTimeout(() => fetchGoldPrice(), 1500); // delay so it doesn't block initial render
+  }
+  // Re-render home on init to show gold card and days-left
+  setTimeout(() => {
+    if (typeof renderHome === 'function') renderHome();
+  }, 100);
+})();
 </script>
 
 </body>
