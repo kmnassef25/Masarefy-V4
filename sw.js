@@ -1,5 +1,7 @@
 // Masarefy Service Worker
-const CACHE_NAME = 'masarefy-v1';
+// Bumped version on every release so users get the new build.
+const APP_VERSION = 'v7.0.0';
+const CACHE_NAME = 'masarefy-' + APP_VERSION;
 const URLS_TO_CACHE = [
   './',
   './index.html',
@@ -31,54 +33,64 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Fetch: cache-first for app shell, network-first for everything else
+// Listen for skipWaiting message from page (when user accepts an update)
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// Fetch: network-first for HTML (so users get updates), cache-first for static assets
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  
-  // Skip cross-origin requests (CDN, exchange APIs)
-  if (url.origin !== self.location.origin) {
+
+  // Skip cross-origin and non-GET requests
+  if (url.origin !== self.location.origin) return;
+  if (event.request.method !== 'GET') return;
+
+  const isHTML = event.request.mode === 'navigate' ||
+                 (event.request.headers.get('accept') || '').includes('text/html');
+
+  if (isHTML) {
+    // Network-first for HTML
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() =>
+          caches.match(event.request, {ignoreSearch: true})
+            .then(c => c || caches.match('./index.html'))
+        )
+    );
     return;
   }
-  
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') {
-    return;
-  }
-  
+
+  // Cache-first for everything else (icons, manifest)
   event.respondWith(
-    caches.match(event.request).then((cached) => {
+    caches.match(event.request, {ignoreSearch: true}).then((cached) => {
       if (cached) {
-        // Background update
+        // Background refresh
         fetch(event.request).then((response) => {
           if (response && response.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, response);
-            });
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response));
           }
         }).catch(() => {});
         return cached;
       }
-      
-      // Not in cache - fetch from network
       return fetch(event.request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
+        if (!response || response.status !== 200 || response.type !== 'basic') return response;
         const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
         return response;
-      }).catch(() => {
-        // Offline fallback to index for navigation requests
-        if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
       });
     })
   );
