@@ -1,6 +1,6 @@
 // Masarefy Service Worker
 // Bumped version on every release so users get the new build.
-const APP_VERSION = 'v12.0.0';
+const APP_VERSION = 'v13.0.0';
 const CACHE_NAME = 'masarefy-' + APP_VERSION;
 const URLS_TO_CACHE = [
   './',
