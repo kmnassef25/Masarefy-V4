@@ -876,6 +876,118 @@ select.form-inp{padding-left:8px;}
 .gold-cell .unit{font-size:9px;color:var(--muted);margin-top:1px}
 .gold-meta{font-size:10px;color:var(--muted);text-align:center;margin-top:6px}
 
+/* ── V10: Travel Mode ── */
+.travel-card{background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(99,102,241,0.05));border:1.5px solid rgba(99,102,241,0.4);border-radius:14px;padding:14px;margin:10px 0}
+.travel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.travel-title{font-size:14px;font-weight:900;color:#a5b4fc}
+.travel-end{background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer}
+.travel-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.travel-stat{text-align:center;background:var(--card2);border-radius:10px;padding:8px}
+.ts-lbl{font-size:10px;color:var(--muted);font-weight:700;margin-bottom:2px}
+.ts-val{font-size:12px;font-weight:900;color:var(--text);direction:ltr}
+.travel-bar{height:8px;background:var(--card2);border-radius:4px;overflow:hidden}
+.travel-fill{height:100%;transition:width .3s}
+
+/* ── V10: Ramadan ── */
+.ramadan-card{background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(168,85,247,0.05));border:1.5px solid rgba(168,85,247,0.4);border-radius:14px;padding:14px;margin:10px 0}
+.ramadan-header{margin-bottom:10px}
+.ramadan-title{font-size:15px;font-weight:900;color:#c4b5fd;text-align:center}
+.ramadan-stat{font-size:13px;color:var(--text);text-align:center;background:var(--card2);border-radius:10px;padding:8px;margin-bottom:10px}
+.ramadan-quick{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.rm-btn{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:10px 8px;border-radius:10px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:rgba(168,85,247,0.3)}
+.rm-btn:active{background:rgba(168,85,247,0.2)}
+
+/* ── V10: Hajj ── */
+.hajj-card{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(34,197,94,0.12),rgba(34,197,94,0.03));border:1.5px solid rgba(34,197,94,0.3);border-radius:14px;padding:12px;margin:10px 0;cursor:pointer;-webkit-tap-highlight-color:rgba(34,197,94,0.2)}
+.hajj-card:active{transform:scale(0.98)}
+.hajj-card-emoji{font-size:32px;line-height:1}
+.hajj-card-info{flex:1;min-width:0}
+.hajj-card-title{font-size:12px;font-weight:900;color:var(--text);margin-bottom:4px}
+.hajj-card-progress{height:6px;background:var(--card2);border-radius:3px;overflow:hidden;margin-bottom:4px}
+.hajj-card-fill{height:100%;background:linear-gradient(90deg,#22c55e,#16a34a);transition:width .3s}
+.hajj-card-amounts{font-size:11px;color:var(--muted);direction:ltr}
+
+.hajj-summary{text-align:center;padding:14px 0;border-bottom:1px solid var(--border);margin-bottom:14px}
+.hajj-emoji{font-size:48px;line-height:1;margin-bottom:8px}
+.hajj-type{font-size:18px;font-weight:900;color:var(--accent);margin-bottom:4px}
+.hajj-date{font-size:12px;color:var(--muted)}
+.hajj-numbers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.hajj-numbers > div{text-align:center;background:var(--card2);border-radius:10px;padding:8px}
+.hajj-lbl{font-size:10px;color:var(--muted);font-weight:700;margin-bottom:2px}
+.hajj-val{font-size:13px;font-weight:900;direction:ltr}
+.hajj-bar{height:10px;background:var(--card2);border-radius:5px;overflow:hidden}
+.hajj-fill{height:100%;background:linear-gradient(90deg,#22c55e,var(--accent));transition:width .3s}
+.hajj-section-title{font-size:13px;font-weight:900;color:var(--accent);margin:16px 0 10px}
+.hajj-cat-row{display:flex;justify-content:space-between;align-items:center;background:var(--card2);border-radius:10px;padding:10px 12px;margin-bottom:6px;gap:10px}
+.hajj-cat-name{flex:1;font-size:13px;color:var(--text);font-weight:700}
+.hajj-cat-input{width:100px;padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;text-align:center;direction:ltr}
+
+/* ── V10: Price Alerts ── */
+.alert-card{background:var(--card2);border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid var(--border)}
+.alert-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.alert-name{font-weight:900;color:var(--text);font-size:14px}
+.alert-del{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:4px 10px}
+.alert-target{font-size:13px;color:var(--muted);margin-bottom:4px}
+
+/* ── V10: Recurring Hub ── */
+.hub-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+.hub-stat{background:var(--card2);border-radius:10px;padding:10px;text-align:center}
+.hub-lbl{font-size:10px;color:var(--muted);font-weight:700;margin-bottom:2px}
+.hub-val{font-size:14px;font-weight:900;direction:ltr}
+.hub-net{text-align:center;padding:10px;background:var(--card2);border-radius:10px;margin-bottom:14px;font-size:13px;color:var(--text)}
+.hub-section{margin-bottom:14px}
+.hub-section-header{font-size:12px;font-weight:900;color:var(--accent);margin-bottom:6px;padding:0 4px}
+.hub-row{display:flex;justify-content:space-between;align-items:center;background:var(--card2);border-radius:8px;padding:8px 12px;margin-bottom:4px;font-size:12px;color:var(--text);font-weight:700;cursor:pointer}
+.hub-empty{font-size:11px;color:var(--muted);text-align:center;padding:8px;background:var(--card2);border-radius:8px}
+.hub-add{width:100%;background:var(--card2);border:1px dashed var(--border);color:var(--accent);padding:8px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;margin-top:6px}
+.hub-add:active{background:rgba(240,180,41,0.1)}
+
+/* ── V11: Provider buttons for Tabby/Tamara ── */
+.provider-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:6px}
+.provider-btn{background:var(--card2);border:1.5px solid var(--border);color:var(--text);padding:10px 8px;border-radius:10px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:rgba(240,180,41,0.3);text-align:center;transition:all .15s}
+.provider-btn:active{transform:scale(0.97)}
+.provider-btn.sel{border-color:var(--accent);background:rgba(240,180,41,0.12);color:var(--accent)}
+.provider-btn.provider-tabby{border-color:#3bffc1;color:#3bffc1}
+.provider-btn.provider-tabby.sel{background:rgba(59,255,193,0.15)}
+.provider-btn.provider-tamara{border-color:#ec4899;color:#ec4899}
+.provider-btn.provider-tamara.sel{background:rgba(236,72,153,0.15)}
+
+.prov-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:900;font-family:'Cairo',sans-serif;margin-right:4px;vertical-align:middle}
+.prov-tabby{background:#3bffc1;color:#000}
+.prov-tamara{background:#ec4899;color:#fff}
+.prov-bank{background:rgba(99,102,241,0.2);color:#a5b4fc}
+.prov-dealer{background:rgba(168,85,247,0.2);color:#c4b5fd}
+
+/* ── V11: Flight cards ── */
+.flight-card{background:linear-gradient(135deg,rgba(56,189,248,0.08),rgba(56,189,248,0.02));border:1px solid rgba(56,189,248,0.3);border-radius:14px;padding:14px;margin-bottom:10px}
+.flight-card.past-flight{opacity:0.65;background:var(--card2);border-color:var(--border)}
+.flight-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px}
+.flight-route{font-size:16px;font-weight:900;color:var(--text);display:flex;align-items:center;gap:8px}
+.flight-route .arrow{color:var(--accent);font-size:18px}
+.flight-route .from,.flight-route .to{display:inline-block}
+.flight-badge{font-size:10px;font-weight:900;padding:3px 8px;border-radius:8px;display:inline-block}
+.flight-badge.urgent{background:#dc2626;color:#fff}
+.flight-badge.today{background:var(--accent);color:#0d1117}
+.flight-badge.soon{background:rgba(240,180,41,0.2);color:var(--accent)}
+.flight-badge.future{background:rgba(99,102,241,0.2);color:#a5b4fc}
+.flight-badge.past{background:rgba(120,120,120,0.2);color:var(--muted)}
+.flight-info{font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:8px}
+.flight-info > div{display:inline-block;margin-left:10px}
+.flight-price{display:flex;justify-content:space-between;align-items:baseline;padding-top:8px;border-top:1px dashed var(--border);margin-bottom:8px}
+.flight-amount{font-size:18px;font-weight:900;color:var(--accent);direction:ltr}
+.flight-price-each{font-size:10px;color:var(--muted)}
+.flight-actions{display:flex;gap:4px}
+.flight-actions .feat-mini-btn{flex:1;font-size:11px;padding:6px}
+
+/* Flight home card */
+.flight-home-card{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,rgba(56,189,248,0.12),rgba(56,189,248,0.03));border:1.5px solid rgba(56,189,248,0.3);border-radius:14px;padding:12px;margin:8px 0;cursor:pointer;-webkit-tap-highlight-color:rgba(56,189,248,0.2)}
+.flight-home-card:active{transform:scale(0.99)}
+.fhc-emoji{font-size:28px;line-height:1}
+.fhc-info{flex:1;min-width:0}
+.fhc-route{font-size:14px;font-weight:900;color:var(--text);margin-bottom:3px}
+.fhc-meta{font-size:11px;color:var(--muted)}
+.fhc-arrow{color:var(--muted);font-size:24px}
+
 .gold-calc{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
 .gold-calc-title{font-size:11px;color:var(--accent);font-weight:700;margin-bottom:6px;text-align:center}
 .gold-calc-row{display:flex;gap:6px}
@@ -1581,7 +1693,21 @@ select.form-inp{padding-left:8px;}
     <div id="installmentsList"></div>
     <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
       <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">إضافة قسط جديد</div>
-      <div class="form-row"><input class="form-inp" id="instName" placeholder="مثال: قسط الموبايل، قسط العربية..."/></div>
+      <div class="form-row">
+        <div class="form-lbl">💳 موفّر التقسيط</div>
+        <div class="provider-grid">
+          <button type="button" class="provider-btn sel" data-provider="" data-months="0" onclick="selProvider(this)">💳 يدوي</button>
+          <button type="button" class="provider-btn provider-tabby" data-provider="tabby" data-months="0" onclick="selProvider(this)">tabby</button>
+          <button type="button" class="provider-btn provider-tamara" data-provider="tamara" data-months="0" onclick="selProvider(this)">tamara</button>
+          <button type="button" class="provider-btn" data-provider="bank" data-months="0" onclick="selProvider(this)">🏦 بنك</button>
+          <button type="button" class="provider-btn" data-provider="dealer" data-months="0" onclick="selProvider(this)">🏪 محل</button>
+        </div>
+      </div>
+      <div class="form-row"><input class="form-inp" id="instName" placeholder="مثال: قسط الموبايل، شي إن، أمازون..."/></div>
+      <div class="form-row">
+        <div class="form-lbl">🛍️ اشتريت من (اختياري)</div>
+        <input class="form-inp" id="instStore" placeholder="مثلاً: نون، أمازون، شي إن، IKEA..."/>
+      </div>
       <div class="two-col">
         <div class="form-row"><div class="form-lbl">إجمالي المبلغ</div><input class="form-inp" id="instTotal" type="number" placeholder="12000" inputmode="decimal"/></div>
         <div class="form-row"><div class="form-lbl">عدد الشهور</div><input class="form-inp" id="instMonths" type="number" placeholder="12" inputmode="numeric"/></div>
@@ -1600,9 +1726,11 @@ select.form-inp{padding-left:8px;}
       </div>
       <div class="form-row"><div class="form-lbl">📂 فئة المصروف</div>
         <select class="form-inp" id="instCat">
+          <option value="تسوق">🛍️ تسوق / مشتريات</option>
           <option value="بيت">🏠 بيت</option>
           <option value="مواصلات">🚗 مواصلات</option>
           <option value="اتصالات">📱 اتصالات / موبايل</option>
+          <option value="سفر">✈️ سفر</option>
           <option value="ترفيه">🎬 ترفيه</option>
           <option value="أخرى">💸 أخرى</option>
         </select>
@@ -2502,23 +2630,25 @@ function renderSavList() {
   filtered.forEach(t => { const k=t.date||''; if(!grp[k])grp[k]=[]; grp[k].push(t); });
   let h = '';
   Object.keys(grp).sort((a,b)=>b.localeCompare(a)).forEach(d => {
-    h += `<div class="date-group-lbl">📅 ${dtLabel(d)}</div>`;
+    h += `<div class="date-group-lbl">📅 ${esc(dtLabel(d))}</div>`;
     grp[d].sort((a,b)=>(b.time||'').localeCompare(a.time||'')).forEach(t => {
       const em = SAV_EMOJI[t.cat]||'💰';
-      const sarLine = t.currency!==baseCurrency ? `<div class="tx-sar">≈ ${fmtBase(t.amountSAR)}</div><div class="tx-rate">${rateDisplayText(t)}</div>` : '';
-      h += `<div class="tx-card sav">
+      const sarLine = t.currency!==baseCurrency ? `<div class="tx-sar">≈ ${fmtBase(t.amountSAR)}</div><div class="tx-rate">${esc(rateDisplayText(t))}</div>` : '';
+      const tagsLine = (t.tags && t.tags.length) ? `<div class="tx-tags">${t.tags.map(tg=>`<span class="tag-chip">#${esc(tg)}</span>`).join('')}</div>` : '';
+      h += `<div class="tx-card sav" data-tx-id="${escAttr(t.id)}" data-tx-kind="sav">
         <div class="tx-emoji">${em}</div>
         <div class="tx-info">
-          <div class="tx-name">${t.name}${t.recurring?'<span style="font-size:10px;color:var(--sav);margin-right:5px">🔁</span>':''}</div>
-          <div class="tx-meta"><span class="badge">${t.cat}</span><span class="badge" style="background:rgba(6,182,212,.1);color:var(--sav)">${SYM[t.currency]||t.currency}</span>${t.time?`<span class="badge time-b">⏰ ${t.time}</span>`:''}</div>
-          ${t.note?`<div class="tx-note">📝 ${t.note}</div>`:''}${t.receipt?`<div style="margin-top:3px"><span class="receipt-icon-tx" onclick="viewReceipt(${JSON.stringify(t.id)} && (txs.find(x=>x.id===${JSON.stringify(t.id)})||savings.find(x=>x.id===${JSON.stringify(t.id)}))?.receipt)">📎 إيصال</span></div>`:''}
+          <div class="tx-name">${esc(t.name)}${t.recurring?'<span style="font-size:10px;color:var(--sav);margin-right:5px">🔁</span>':''}</div>
+          <div class="tx-meta"><span class="badge">${esc(t.cat)}</span><span class="badge" style="background:rgba(6,182,212,.1);color:var(--sav)">${SYM[t.currency]||esc(t.currency)}</span>${t.time?`<span class="badge time-b">⏰ ${esc(t.time)}</span>`:''}</div>
+          ${tagsLine}
+          ${t.note?`<div class="tx-note">📝 ${esc(t.note)}</div>`:''}${t.receipt?`<div style="margin-top:3px"><span class="receipt-icon-tx" data-action="view-receipt" data-tx-id="${escAttr(t.id)}">📎 إيصال</span></div>`:''}
         </div>
         <div class="tx-right">
           <div class="tx-orig s">+${fmt(t.amount)} ${SYM[t.currency]||''}</div>${sarLine}
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-self:center;margin-left:4px;">
-          <button class="tx-del" onclick="editSav('${t.id}')" style="color:var(--accent);font-size:15px;">✎</button>
-          <button class="tx-del" onclick="delSav('${t.id}')">✕</button>
+          <button class="tx-del" data-action="edit" style="color:var(--accent);font-size:15px;">✎</button>
+          <button class="tx-del" data-action="del">✕</button>
         </div>
       </div>`;
     });
@@ -2784,7 +2914,10 @@ function renderChart() {
 // ── DELETE ──
 function delTx(id) {
   const t = txs.find(x=>x.id===id);
-  if (t && t.isTransfer && t.transferId) {
+  if (!t) return;
+  // Always ask before deleting (#fix)
+  if (!confirm(`حذف "${t.name}"؟`)) return;
+  if (t.isTransfer && t.transferId) {
     // Delete both legs of the transfer
     txs = txs.filter(x => !x.isTransfer || x.transferId !== t.transferId);
     savings = savings.filter(x => !x.isTransfer || x.transferId !== t.transferId);
@@ -2796,7 +2929,9 @@ function delTx(id) {
 }
 function delSav(id) {
   const t = savings.find(x=>x.id===id);
-  if (t && t.isTransfer && t.transferId) {
+  if (!t) return;
+  if (!confirm(`حذف "${t.name}"؟`)) return;
+  if (t.isTransfer && t.transferId) {
     txs = txs.filter(x => !x.isTransfer || x.transferId !== t.transferId);
     savings = savings.filter(x => !x.isTransfer || x.transferId !== t.transferId);
     saveData(); saveSavings();
@@ -4940,12 +5075,19 @@ function renderInstallments() {
     const monthlySAR = curToSAR(inst.monthlyPayment, inst.currency);
     const remainingSAR = monthlySAR * remaining;
     const isDone = paid >= inst.totalMonths;
+    // Provider badge (V11)
+    let providerBadge = '';
+    if (inst.provider === 'tabby') providerBadge = '<span class="prov-badge prov-tabby">tabby</span>';
+    else if (inst.provider === 'tamara') providerBadge = '<span class="prov-badge prov-tamara">tamara</span>';
+    else if (inst.provider === 'bank') providerBadge = '<span class="prov-badge prov-bank">🏦 بنك</span>';
+    else if (inst.provider === 'dealer') providerBadge = '<span class="prov-badge prov-dealer">🏪 محل</span>';
+    const emoji = inst.provider === 'tabby' ? '💚' : inst.provider === 'tamara' ? '🩷' : '💳';
     return `<div class="feat-card" style="${isDone?'opacity:.6':''}">
       <div class="feat-card-top">
-        <div class="feat-emoji">💳</div>
+        <div class="feat-emoji">${emoji}</div>
         <div class="feat-info">
-          <div class="feat-name">${inst.name} ${isDone?'<span style="font-size:10px;color:var(--green)">✓ خلصت</span>':''}</div>
-          <div class="feat-sub">${paid} / ${inst.totalMonths} شهر · يوم ${inst.day} من كل شهر</div>
+          <div class="feat-name">${esc(inst.name)} ${providerBadge} ${isDone?'<span style="font-size:10px;color:var(--green)">✓ خلصت</span>':''}</div>
+          <div class="feat-sub">${inst.store ? '🛍️ ' + esc(inst.store) + ' · ' : ''}${paid} / ${inst.totalMonths} شهر · يوم ${inst.day} من كل شهر</div>
         </div>
         <div class="feat-amt" style="color:var(--red)">${fmt(toBase(monthlySAR), 0)} ${sym}/شهر</div>
       </div>
@@ -4969,6 +5111,9 @@ function saveInstallment() {
   const currency = document.getElementById('instCurrency').value;
   const day = parseInt(document.getElementById('instDay').value) || 1;
   const cat = document.getElementById('instCat').value;
+  const store = document.getElementById('instStore')?.value.trim() || '';
+  const providerBtn = document.querySelector('.provider-btn.sel');
+  const provider = providerBtn?.dataset.provider || '';
   if (!name || !total || !months) { showAlert('املأ الاسم وإجمالي المبلغ وعدد الشهور','error'); return; }
   if (!monthly) monthly = total / months;
   const _today = new Date(); // fresh date, not stale module-load `now` (#2)
@@ -4977,11 +5122,15 @@ function saveInstallment() {
     id: 'inst_' + Date.now(),
     name, totalAmount: total, monthlyPayment: monthly, totalMonths: months,
     currency, day, cat, paidMonths: 0,
-    startMonth, lastPaidMonth: null
+    startMonth, lastPaidMonth: null,
+    provider, store
   });
   saveInstallments();
-  ['instName','instTotal','instMonths','instMonthly'].forEach(id => document.getElementById(id).value='');
+  ['instName','instTotal','instMonths','instMonthly','instStore'].forEach(id => { const e = document.getElementById(id); if (e) e.value=''; });
   document.getElementById('instMonthlyHint').textContent = '';
+  // Reset provider selection to manual
+  document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('sel'));
+  document.querySelector('.provider-btn[data-provider=""]')?.classList.add('sel');
   renderInstallments();
   updateMenuCounts();
   if (typeof showToast === 'function') showToast('✅ تم حفظ القسط', 'success');
@@ -5531,16 +5680,33 @@ window.exportJSON = function() {
     txs, savings, rates, budgets,
     accounts, goals, debts, recurringTxs,
     installments, jameya, occasions, dualSalary, rateMeta,
+    // V7-V10 additions that were missing from the legacy export (#fix)
+    bills: typeof bills !== 'undefined' ? bills : [],
+    investments: typeof investments !== 'undefined' ? investments : [],
+    netWorthHistory: typeof netWorthHistory !== 'undefined' ? netWorthHistory : [],
+    priceAlerts: typeof priceAlerts !== 'undefined' ? priceAlerts : [],
+    travelMode: localStorage.getItem('msarifyi_travel_mode') || null,
+    ramadanMode: localStorage.getItem('msarifyi_ramadan_mode') || null,
+    hajjBudget: typeof hajjBudget !== 'undefined' ? hajjBudget : null,
+    goldHistory: typeof goldHistory !== 'undefined' ? goldHistory : [],
     baseCurrency,
     theme: localStorage.getItem('msarifyi_theme') || 'dark',
-    version: 3,
+    schemaVersion: 10,
+    version: 10,
     exported: new Date().toISOString()
   };
-  const a = document.createElement('a');
-  a.href = 'data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(data,null,2));
-  a.download = `مصاريفي_backup_${new Date().toISOString().split('T')[0]}.json`;
-  a.click();
-  if (typeof showToast === 'function') showToast('✅ تم تصدير النسخة الاحتياطية (v3)', 'success');
+  // Use Blob to avoid the iOS Safari ~2MB cap on data: URLs (#fix)
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json;charset=utf-8'});
+  if (typeof downloadBlob === 'function') {
+    downloadBlob(blob, `masarefy_backup_${new Date().toISOString().split('T')[0]}.json`);
+  } else {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `masarefy_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+  if (typeof showToast === 'function') showToast('✅ تم تصدير النسخة الاحتياطية الكاملة', 'success');
 };
 
 // Patch restore to handle v3 fields
@@ -5572,6 +5738,15 @@ window.restoreBackup = function(event) {
       if (data.occasions) { occasions = data.occasions; saveOccasions(); }
       if (data.dualSalary !== undefined) { dualSalary = data.dualSalary; saveDualSalary(); }
       if (data.rateMeta) { rateMeta = data.rateMeta; saveRateMeta(); }
+      // V10: Restore newer features (#fix)
+      if (data.bills && typeof bills !== 'undefined') { bills = data.bills; if (typeof saveBills === 'function') saveBills(); }
+      if (data.investments && typeof investments !== 'undefined') { investments = data.investments; if (typeof saveInvestments === 'function') saveInvestments(); }
+      if (data.netWorthHistory && typeof netWorthHistory !== 'undefined') { netWorthHistory = data.netWorthHistory; if (typeof saveNetWorthHistory === 'function') saveNetWorthHistory(); }
+      if (data.priceAlerts && typeof priceAlerts !== 'undefined') { priceAlerts = data.priceAlerts; if (typeof savePriceAlerts === 'function') savePriceAlerts(); }
+      if (data.goldHistory) { localStorage.setItem('msarifyi_gold_history', JSON.stringify(data.goldHistory)); if (typeof goldHistory !== 'undefined') goldHistory = data.goldHistory; }
+      if (data.travelMode != null) localStorage.setItem('msarifyi_travel_mode', data.travelMode);
+      if (data.ramadanMode != null) localStorage.setItem('msarifyi_ramadan_mode', data.ramadanMode);
+      if (data.hajjBudget != null) { localStorage.setItem('msarifyi_hajj_budget', JSON.stringify(data.hajjBudget)); if (typeof hajjBudget !== 'undefined') hajjBudget = data.hajjBudget; }
       if (data.baseCurrency) { baseCurrency = data.baseCurrency; localStorage.setItem('msarifyi_base', data.baseCurrency); }
       if (data.theme) { localStorage.setItem('msarifyi_theme', data.theme); document.documentElement.setAttribute('data-theme', data.theme); }
       event.target.value = '';
@@ -7241,7 +7416,16 @@ function exportPrintReport() {
   const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
   <title>تقرير ${monthLabel}</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
-  <style>${styleSheet}</style></head><body>
+  <style>${styleSheet}
+    .print-controls{position:fixed;top:10px;left:10px;display:flex;gap:8px;z-index:9999}
+    .print-controls button{background:#f0b429;color:#000;border:none;border-radius:8px;padding:8px 14px;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+    .print-controls .close-btn{background:#dc2626;color:#fff}
+    @media print { .print-controls{display:none!important} }
+  </style></head><body>
+  <div class="print-controls">
+    <button onclick="window.print()">🖨️ طباعة</button>
+    <button class="close-btn" onclick="window.close();window.parent.postMessage('close-print','*')">✕ إغلاق</button>
+  </div>
   <h1>📊 تقرير ${esc(monthLabel)}</h1>
   <div class="sub">تم إنشاء التقرير في ${new Date().toLocaleString('ar-EG')}</div>
   <div class="summary">
@@ -7253,13 +7437,39 @@ function exportPrintReport() {
   <table><thead><tr><th>التاريخ</th><th>الاسم</th><th>الفئة</th><th>المبلغ</th></tr></thead><tbody>${incRows || '<tr><td colspan=4 style="text-align:center;color:#999">لا يوجد</td></tr>'}</tbody></table>
   <h2>📤 المصروف (${expTxs.length})</h2>
   <table><thead><tr><th>التاريخ</th><th>الاسم</th><th>الفئة</th><th>المبلغ</th></tr></thead><tbody>${expRows || '<tr><td colspan=4 style="text-align:center;color:#999">لا يوجد</td></tr>'}</tbody></table>
-  <script>setTimeout(()=>window.print(), 500);<\/script>
   </body></html>`;
 
-  const w = window.open('', '_blank');
-  if (!w) { showAlert('❌ المتصفح منع فتح نافذة الطباعة', 'error'); return; }
-  w.document.write(html);
-  w.document.close();
+  // Open in an in-app modal with iframe to avoid PWA standalone issues (#fix)
+  let modal = document.getElementById('printReportModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'printReportModal';
+    modal.className = 'overlay';
+    modal.style.zIndex = '99999';
+    modal.innerHTML = `<div style="position:fixed;inset:0;background:#fff;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#0d1117;color:#fff;flex-shrink:0">
+        <div style="font-size:14px;font-weight:900;color:#f0b429">📊 تقرير الشهر</div>
+        <div style="display:flex;gap:8px">
+          <button id="printReportBtn" style="background:#f0b429;color:#000;border:none;border-radius:8px;padding:6px 14px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:900;cursor:pointer">🖨️ طباعة</button>
+          <button id="closePrintReport" style="background:#dc2626;color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-family:'Cairo',sans-serif;font-size:18px;font-weight:900;cursor:pointer">✕</button>
+        </div>
+      </div>
+      <iframe id="printReportFrame" style="flex:1;width:100%;border:none;background:#fff"></iframe>
+    </div>`;
+    document.body.appendChild(modal);
+    document.getElementById('closePrintReport').onclick = () => {
+      modal.classList.remove('open');
+      modal.style.display = 'none';
+    };
+    document.getElementById('printReportBtn').onclick = () => {
+      const iframe = document.getElementById('printReportFrame');
+      try { iframe.contentWindow.print(); } catch(e) { showAlert('فشلت الطباعة','error'); }
+    };
+  }
+  modal.style.display = 'flex';
+  modal.classList.add('open');
+  const iframe = document.getElementById('printReportFrame');
+  iframe.srcdoc = html;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -7721,10 +7931,1561 @@ function openGoldPage() {
       • و<b>ضريبة قيمة مضافة</b> ١٤٪ على المصنعية<br>
       • السعر بيتحدّث تلقائياً كل ٤ ساعات لما تفتح التطبيق<br>
       • للأسعار الرسمية الحقيقية، راجع شعبة الذهب
-    </div>`;
+    </div>` + buildGoldChartHTML();
   setTimeout(() => { try { updateGoldCalc(); } catch(e){} }, 0);
   m.classList.add('open');
 }
+
+// ═══════════════════════════════════════════════════════════════
+// V10 — TRAVEL MODE, GOLD CHART, PRICE ALERTS, RAMADAN, HAJJ
+// + MERGE: العيدية + المدفوعات الدورية
+// ═══════════════════════════════════════════════════════════════
+
+// ═══════════════ FEATURE: GOLD HISTORICAL CHART ═══════════════
+var goldHistory = JSON.parse(localStorage.getItem('msarifyi_gold_history') || '[]');
+function saveGoldHistory() { localStorage.setItem('msarifyi_gold_history', JSON.stringify(goldHistory)); }
+
+// Hook into existing fetchGoldPrice to save snapshots
+const _origFetchGoldPrice = fetchGoldPrice;
+fetchGoldPrice = async function() {
+  const result = await _origFetchGoldPrice.apply(this, arguments);
+  // After successful fetch, snapshot the price
+  if (goldData && goldData.usdPerOz) {
+    const today = new Date().toISOString().split('T')[0];
+    const idx = goldHistory.findIndex(h => h.date === today);
+    const k21 = egpPerGramKarat(21);
+    const k24 = egpPerGramKarat(24);
+    const entry = {date: today, k21, k24, usdPerOz: goldData.usdPerOz, ts: Date.now()};
+    if (idx >= 0) goldHistory[idx] = entry; else goldHistory.push(entry);
+    // Keep only last 90 days
+    goldHistory = goldHistory.slice(-90);
+    saveGoldHistory();
+  }
+  return result;
+};
+
+function buildGoldChartHTML() {
+  if (!goldHistory.length || goldHistory.length < 2) {
+    return `<div style="background:var(--card2);border-radius:12px;padding:14px;margin-top:12px;text-align:center;color:var(--muted);font-size:12px">
+      📈 الرسم البياني للذهب<br>
+      <small>هيظهر بعد ما يجمع التطبيق ٢ أيام على الأقل من الأسعار</small>
+    </div>`;
+  }
+  const data = goldHistory.slice(-30); // last 30 days
+  const k21Vals = data.map(d => d.k21);
+  const max = Math.max(...k21Vals);
+  const min = Math.min(...k21Vals);
+  const range = max - min || 1;
+  const w = 320, h = 150, pad = 28;
+  const points = data.map((d, i) => {
+    const x = pad + (i / Math.max(data.length-1, 1)) * (w - 2*pad);
+    const y = h - pad - ((d.k21 - min) / range) * (h - 2*pad);
+    return [x, y, d];
+  });
+  const path = points.map((p, i) => (i===0?'M':'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  const fillPath = path + ` L${points[points.length-1][0].toFixed(1)},${(h-pad).toFixed(1)} L${points[0][0].toFixed(1)},${(h-pad).toFixed(1)} Z`;
+  const dots = points.filter((_, i) => i % Math.max(1, Math.floor(points.length/8)) === 0).map(p =>
+    `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="var(--accent)"/>`
+  ).join('');
+  const first = data[0].k21, last = data[data.length-1].k21;
+  const change = last - first;
+  const changePct = first > 0 ? (change / first * 100) : 0;
+  const trend = change > 0 ? '📈' : change < 0 ? '📉' : '➡️';
+  const color = change > 0 ? 'var(--green)' : change < 0 ? 'var(--red)' : 'var(--muted)';
+
+  return `<div style="background:var(--card2);border-radius:12px;padding:14px;margin-top:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:900;color:var(--accent)">📈 سعر عيار 21 آخر ${toArabicDigits(data.length)} يوم</div>
+      <div style="font-size:11px;color:${color};font-weight:700">${trend} ${change>=0?'+':''}${fmt(change,0)} (${changePct>=0?'+':''}${fmt(changePct,1)}%)</div>
+    </div>
+    <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;direction:ltr">
+      <path d="${fillPath}" fill="rgba(240,180,41,0.1)" stroke="none"/>
+      <path d="${path}" stroke="var(--accent)" stroke-width="2" fill="none"/>
+      ${dots}
+      <text x="${pad}" y="${pad-8}" font-size="9" fill="var(--muted)" font-family="Cairo">${fmt(max,0)} ج</text>
+      <text x="${pad}" y="${h-pad+15}" font-size="9" fill="var(--muted)" font-family="Cairo">${fmt(min,0)} ج</text>
+    </svg>
+    <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:4px;direction:rtl">
+      من ${esc(data[0].date)} إلى ${esc(data[data.length-1].date)}
+    </div>
+  </div>`;
+}
+
+// ═══════════════ FEATURE: PRICE ALERTS ═══════════════
+var priceAlerts = JSON.parse(localStorage.getItem('msarifyi_price_alerts') || '[]');
+function savePriceAlerts() { localStorage.setItem('msarifyi_price_alerts', JSON.stringify(priceAlerts)); }
+
+function addPriceAlert() {
+  const type = prompt('نوع التنبيه:\n1 = ذهب عيار 21\n2 = ذهب عيار 24\n3 = الدولار (USD/EGP)\n4 = اليورو (EUR/EGP)\n5 = الريال (SAR/EGP)\n\nاكتب الرقم:');
+  if (!type || !['1','2','3','4','5'].includes(type)) return;
+  const direction = prompt('متى نبهنّك؟\n1 = لما السعر يبقى أعلى من الهدف\n2 = لما السعر يبقى أقل من الهدف\n\nاكتب الرقم:');
+  if (!direction || !['1','2'].includes(direction)) return;
+  const target = parseFloat(prompt('السعر المستهدف بالجنيه:'));
+  if (!target) return;
+
+  const typeNames = {'1':'ذهب 21', '2':'ذهب 24', '3':'دولار', '4':'يورو', '5':'ريال'};
+  priceAlerts.push({
+    id: 'pa_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
+    type: type,
+    typeName: typeNames[type],
+    direction: direction === '1' ? 'above' : 'below',
+    target,
+    triggered: false,
+    createdAt: new Date().toISOString()
+  });
+  savePriceAlerts();
+  renderPriceAlerts();
+  showAlert('✅ تم إنشاء التنبيه', 'success');
+}
+
+function delPriceAlert(id) {
+  if (!confirm('حذف التنبيه؟')) return;
+  priceAlerts = priceAlerts.filter(a => a.id !== id);
+  savePriceAlerts();
+  renderPriceAlerts();
+}
+
+function checkPriceAlerts() {
+  if (!priceAlerts.length) return;
+  let triggered = [];
+  priceAlerts.forEach(a => {
+    if (a.triggered) return;
+    let currentPrice = null;
+    if (a.type === '1' && goldData) currentPrice = egpPerGramKarat(21);
+    else if (a.type === '2' && goldData) currentPrice = egpPerGramKarat(24);
+    else if (a.type === '3') currentPrice = rates.USD * (1 / rates.EGP); // approx USD->EGP
+    else if (a.type === '4') currentPrice = rates.EUR * (1 / rates.EGP);
+    else if (a.type === '5') currentPrice = 1 / rates.EGP; // SAR->EGP
+    if (currentPrice == null) return;
+
+    const hit = a.direction === 'above' ? currentPrice >= a.target : currentPrice <= a.target;
+    if (hit) {
+      a.triggered = true;
+      a.triggeredAt = new Date().toISOString();
+      a.triggeredPrice = currentPrice;
+      triggered.push(a);
+    }
+  });
+  if (triggered.length > 0) {
+    savePriceAlerts();
+    triggered.forEach(a => {
+      const arrow = a.direction === 'above' ? '⬆️' : '⬇️';
+      showAlert(`${arrow} تنبيه! ${a.typeName} وصل ${fmt(a.triggeredPrice,0)} ج (الهدف ${fmt(a.target,0)})`, 'success');
+    });
+    // Try Notification API too
+    if ('Notification' in window && Notification.permission === 'granted') {
+      triggered.forEach(a => {
+        new Notification('💰 مصاريفي - تنبيه سعر', {
+          body: `${a.typeName} وصل ${fmt(a.triggeredPrice,0)} ج`,
+          icon: 'icon-192.png'
+        });
+      });
+    }
+  }
+}
+
+function renderPriceAlerts() {
+  const el = document.getElementById('priceAlertsList');
+  if (!el) return;
+  if (!priceAlerts.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🔔</div>لا توجد تنبيهات</div>`;
+    return;
+  }
+  el.innerHTML = priceAlerts.map(a => {
+    const dirEmoji = a.direction === 'above' ? '⬆️' : '⬇️';
+    const dirText = a.direction === 'above' ? 'أعلى من' : 'أقل من';
+    const status = a.triggered ?
+      `<span style="color:var(--green);font-size:10px;font-weight:700">✓ تحقق · ${esc(a.triggeredAt?.split('T')[0]||'')}</span>` :
+      `<span style="color:var(--accent);font-size:10px;font-weight:700">⏳ قيد المتابعة</span>`;
+    return `<div class="alert-card">
+      <div class="alert-header">
+        <div class="alert-name">${dirEmoji} ${esc(a.typeName)}</div>
+        <button class="alert-del" onclick="delPriceAlert('${escAttr(a.id)}')">✕</button>
+      </div>
+      <div class="alert-target">${dirText} <b>${fmt(a.target,0)} ج</b></div>
+      ${status}
+    </div>`;
+  }).join('');
+}
+
+function openPriceAlerts() {
+  let m = document.getElementById('priceAlertsModal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'priceAlertsModal';
+    m.className = 'overlay';
+    m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = `<div class="sheet">
+      <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:4px 8px 0">
+        <div style="font-size:15px;font-weight:900;color:var(--accent)">🔔 تنبيهات الأسعار</div>
+        <button onclick="document.getElementById('priceAlertsModal').classList.remove('open')" style="background:var(--card2);border:1.5px solid var(--border);border-radius:50%;width:44px;height:44px;color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif">✕</button>
+      </div>
+      <p style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px">نبهنّي لما سعر الذهب أو الدولار يوصل لرقم معيّن</p>
+      <button class="save-btn" onclick="addPriceAlert()" style="margin-bottom:12px">➕ تنبيه جديد</button>
+      <button class="export-btn" onclick="requestNotificationPermission()" style="margin-bottom:12px;width:100%">🔔 تفعيل التنبيهات</button>
+      <div id="priceAlertsList"></div>
+    </div>`;
+    document.body.appendChild(m);
+  }
+  renderPriceAlerts();
+  m.classList.add('open');
+}
+
+function requestNotificationPermission() {
+  if (!('Notification' in window)) {
+    showAlert('متصفحك مايدعمش التنبيهات', 'warning');
+    return;
+  }
+  Notification.requestPermission().then(p => {
+    if (p === 'granted') showAlert('✅ تم تفعيل التنبيهات', 'success');
+    else showAlert('التنبيهات معطّلة', 'warning');
+  });
+}
+
+// ═══════════════ FEATURE: TRAVEL MODE ═══════════════
+function getTravelMode() {
+  const raw = localStorage.getItem('msarifyi_travel_mode');
+  return raw ? JSON.parse(raw) : null;
+}
+function saveTravelMode(t) {
+  if (t) localStorage.setItem('msarifyi_travel_mode', JSON.stringify(t));
+  else localStorage.removeItem('msarifyi_travel_mode');
+}
+
+function startTravelMode() {
+  const country = prompt('وجهة السفر (مثال: تركيا، الإمارات):');
+  if (!country) return;
+  const currency = prompt('عملة الوجهة:\nUSD = دولار\nEUR = يورو\nEGP = جنيه مصري\nSAR = ريال سعودي\nTRY = ليرة تركية\nAED = درهم إماراتي\n\n(لو غير مدعومة استخدم USD)') || 'USD';
+  const dailyBudget = parseFloat(prompt(`ميزانيتك اليومية بـ${currency}:`)) || 0;
+  const days = parseInt(prompt('عدد أيام الرحلة:')) || 7;
+
+  const travel = {
+    active: true,
+    country,
+    currency: currency.toUpperCase(),
+    dailyBudget,
+    totalBudget: dailyBudget * days,
+    days,
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date(Date.now() + days*86400000).toISOString().split('T')[0],
+    transactions: []
+  };
+  saveTravelMode(travel);
+  showAlert(`✈️ بدأت رحلة ${country}! بالتوفيق`, 'success');
+  renderHome();
+  renderTravelCard();
+}
+
+function endTravelMode() {
+  const t = getTravelMode();
+  if (!t) return;
+  if (!confirm('إنهاء وضع السفر؟ هتتخسر الإحصائيات لو ما عملتش حفظ')) return;
+  t.active = false;
+  t.endedAt = new Date().toISOString();
+  saveTravelMode(t);
+  // Also archive
+  const archive = JSON.parse(localStorage.getItem('msarifyi_travel_archive') || '[]');
+  archive.unshift(t);
+  localStorage.setItem('msarifyi_travel_archive', JSON.stringify(archive.slice(0, 20)));
+  saveTravelMode(null);
+  showAlert(`✅ انتهت الرحلة. إجمالي ${t.transactions.length} حركة`, 'success');
+  renderHome();
+}
+
+function renderTravelCard() {
+  const home = document.getElementById('homeContent');
+  if (!home) return;
+  const t = getTravelMode();
+  let card = home.querySelector('.travel-card');
+  if (!t || !t.active) {
+    if (card) card.remove();
+    return;
+  }
+  // Compute spent
+  const today = new Date().toISOString().split('T')[0];
+  const startMs = new Date(t.startDate).getTime();
+  const daysElapsed = Math.max(1, Math.ceil((Date.now() - startMs) / 86400000));
+  const tripTxs = txs.filter(x => x.type === 'expense' && !x.isTransfer && x.tripId === 'current');
+  const spent = tripTxs.reduce((s, x) => s + (x.tripAmount || x.amount || 0), 0);
+  const dailyAvg = daysElapsed > 0 ? spent / daysElapsed : 0;
+  const remaining = t.totalBudget - spent;
+  const pct = t.totalBudget > 0 ? Math.min(100, Math.round(spent / t.totalBudget * 100)) : 0;
+
+  const html = `<div class="travel-card">
+    <div class="travel-header">
+      <div class="travel-title">✈️ رحلة ${esc(t.country)}</div>
+      <button class="travel-end" onclick="endTravelMode()">إنهاء</button>
+    </div>
+    <div class="travel-stats">
+      <div class="travel-stat"><div class="ts-lbl">صرفت</div><div class="ts-val">${fmt(spent,0)} ${esc(t.currency)}</div></div>
+      <div class="travel-stat"><div class="ts-lbl">متبقي</div><div class="ts-val" style="color:${remaining>=0?'var(--green)':'var(--red)'}">${fmt(remaining,0)} ${esc(t.currency)}</div></div>
+      <div class="travel-stat"><div class="ts-lbl">يومي</div><div class="ts-val">${fmt(dailyAvg,0)} / ${fmt(t.dailyBudget,0)}</div></div>
+    </div>
+    <div class="travel-progress">
+      <div class="travel-bar"><div class="travel-fill" style="width:${pct}%;background:${pct>=100?'var(--red)':pct>=80?'var(--accent)':'var(--green)'}"></div></div>
+      <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:4px">يوم ${toArabicDigits(daysElapsed)} من ${toArabicDigits(t.days)}</div>
+    </div>
+  </div>`;
+  if (card) card.outerHTML = html;
+  else home.insertAdjacentHTML('afterbegin', html);
+}
+
+// ═══════════════ FEATURE: RAMADAN MODE ═══════════════
+function isRamadanNow() {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', {month:'numeric'}).formatToParts(new Date());
+    const month = parseInt(parts.find(p => p.type === 'month').value);
+    return month === 9;
+  } catch(e) { return false; }
+}
+
+function ramadanDayNumber() {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', {day:'numeric'}).formatToParts(new Date());
+    return parseInt(parts.find(p => p.type === 'day').value);
+  } catch(e) { return 0; }
+}
+
+function renderRamadanCard() {
+  const home = document.getElementById('homeContent');
+  if (!home) return;
+  // Show 7 days before Ramadan + during Ramadan + 3 days after Eid
+  const isRam = isRamadanNow();
+  let dayInfo = null;
+  if (isRam) {
+    dayInfo = `يوم ${toArabicDigits(ramadanDayNumber())} من رمضان`;
+  } else {
+    // Check if Ramadan starts within 30 days
+    const days = daysUntilHijri(9, 1);
+    if (days != null && days <= 30 && days > 0) {
+      dayInfo = `باقي ${toArabicDigits(days)} يوم على رمضان 🌙`;
+    }
+  }
+  if (!dayInfo) {
+    const card = home.querySelector('.ramadan-card');
+    if (card) card.remove();
+    return;
+  }
+  // Compute Ramadan-specific spending
+  const today = new Date();
+  const mKey = monthKey(today.getFullYear(), today.getMonth());
+  const ramadanCats = ['عيدية', 'صدقة', 'زكاة', 'هدايا', 'مطعم', 'سوبرماركت'];
+  const ramadanSpend = txs
+    .filter(t => t.type === 'expense' && !t.isTransfer && (t.date||'').startsWith(mKey) && ramadanCats.includes(t.cat))
+    .reduce((s,t) => s + t.amountSAR, 0);
+  const sym = BASE_LABELS[baseCurrency].sym;
+
+  const html = `<div class="ramadan-card">
+    <div class="ramadan-header">
+      <div class="ramadan-title">🌙 ${esc(dayInfo)}</div>
+    </div>
+    ${isRam ? `<div class="ramadan-stat">إنفاق رمضان: <b>${fmt(toBase(ramadanSpend),0)} ${sym}</b></div>` : ''}
+    <div class="ramadan-quick">
+      <button class="rm-btn" onclick="quickAddRamadan('عيدية')">🌙 عيدية</button>
+      <button class="rm-btn" onclick="quickAddRamadan('صدقة')">🤝 صدقة</button>
+      <button class="rm-btn" onclick="quickAddRamadan('زكاة')">🕌 زكاة</button>
+      <button class="rm-btn" onclick="quickAddRamadan('سوبرماركت')">🛒 رمضانيات</button>
+    </div>
+  </div>`;
+  let card = home.querySelector('.ramadan-card');
+  if (card) card.outerHTML = html;
+  else home.insertAdjacentHTML('afterbegin', html);
+}
+
+function quickAddRamadan(category) {
+  // Open the add modal pre-filled
+  if (typeof openModal === 'function') {
+    openModal();
+    setTimeout(() => {
+      const expBtn = document.querySelector(`.cat-btn[data-cat="${category}"]`);
+      if (expBtn) expBtn.click();
+      document.getElementById('fName').focus();
+    }, 100);
+  }
+}
+
+// ═══════════════ FEATURE: HAJJ/UMRAH BUDGET ═══════════════
+var hajjBudget = JSON.parse(localStorage.getItem('msarifyi_hajj_budget') || 'null');
+function saveHajjBudget() {
+  if (hajjBudget) localStorage.setItem('msarifyi_hajj_budget', JSON.stringify(hajjBudget));
+  else localStorage.removeItem('msarifyi_hajj_budget');
+}
+
+const HAJJ_CATEGORIES = [
+  {key: 'flight', name: '✈️ تذاكر الطيران', emoji: '✈️'},
+  {key: 'hotel', name: '🏨 السكن', emoji: '🏨'},
+  {key: 'visa', name: '📄 الفيزا والتأشيرة', emoji: '📄'},
+  {key: 'food', name: '🍽️ الإعاشة', emoji: '🍽️'},
+  {key: 'transport', name: '🚌 المواصلات', emoji: '🚌'},
+  {key: 'gifts', name: '🎁 الهدايا والتذكارات', emoji: '🎁'},
+  {key: 'sacrifice', name: '🐑 الهدي/الأضحية', emoji: '🐑'},
+  {key: 'other', name: '💵 مصاريف أخرى', emoji: '💵'}
+];
+
+function setupHajjBudget() {
+  const type = prompt('نوع الرحلة:\n1 = حج\n2 = عمرة\n\nاكتب الرقم:');
+  if (!type || !['1','2'].includes(type)) return;
+  const targetDate = prompt('تاريخ الرحلة (مثال: 2026-06-15):');
+  if (!targetDate || !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
+    showAlert('تاريخ غير صحيح', 'error');
+    return;
+  }
+  const total = parseFloat(prompt('الميزانية الإجمالية المتوقعة بالـ' + BASE_LABELS[baseCurrency].name + ':'));
+  if (!total) return;
+
+  hajjBudget = {
+    id: 'hajj_' + Date.now(),
+    type: type === '1' ? 'حج' : 'عمرة',
+    targetDate,
+    totalBudget: total,
+    breakdown: HAJJ_CATEGORIES.reduce((acc, c) => { acc[c.key] = 0; return acc; }, {}),
+    saved: 0,
+    createdAt: new Date().toISOString()
+  };
+  saveHajjBudget();
+  renderHajjBudget();
+  openHajjBudget();
+}
+
+function delHajjBudget() {
+  if (!confirm('حذف ميزانية الحج/العمرة؟')) return;
+  hajjBudget = null;
+  saveHajjBudget();
+  document.getElementById('hajjModal')?.classList.remove('open');
+  renderHome();
+}
+
+function updateHajjAllocation(key, amount) {
+  if (!hajjBudget) return;
+  hajjBudget.breakdown[key] = parseFloat(amount) || 0;
+  saveHajjBudget();
+  renderHajjBudget();
+}
+
+function addToHajjSavings() {
+  if (!hajjBudget) return;
+  const amt = parseFloat(prompt(`أضف للمدخرات (${BASE_LABELS[baseCurrency].name}):`));
+  if (!amt) return;
+  hajjBudget.saved = (hajjBudget.saved || 0) + amt;
+  saveHajjBudget();
+  // Also create a savings transaction
+  savings.unshift({
+    id: 'hajj_sav_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
+    type: 'savings',
+    name: hajjBudget.type === 'حج' ? '🕋 ادخار الحج' : '🕌 ادخار العمرة',
+    amount: amt,
+    currency: baseCurrency,
+    rate: 1,
+    amountSAR: baseCurrency === 'SAR' ? amt : amt * (rates.EGP || 1),
+    cat: hajjBudget.type === 'حج' ? 'حج' : 'عمرة',
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toTimeString().slice(0,5),
+    note: 'ادخار رحلة ' + hajjBudget.type
+  });
+  saveSavings();
+  renderHajjBudget();
+  showAlert('✅ تم إضافة المبلغ', 'success');
+}
+
+function renderHajjBudget() {
+  const el = document.getElementById('hajjBody');
+  if (!el || !hajjBudget) return;
+  const sym = BASE_LABELS[baseCurrency].sym;
+  const allocated = Object.values(hajjBudget.breakdown).reduce((s,v) => s+v, 0);
+  const saved = hajjBudget.saved || 0;
+  const remaining = hajjBudget.totalBudget - saved;
+  const savedPct = hajjBudget.totalBudget > 0 ? Math.min(100, Math.round(saved / hajjBudget.totalBudget * 100)) : 0;
+  // Days until trip
+  const daysUntil = Math.ceil((new Date(hajjBudget.targetDate) - new Date()) / 86400000);
+  const monthlyNeeded = daysUntil > 0 ? remaining / Math.max(1, Math.ceil(daysUntil/30)) : 0;
+
+  let breakdownHTML = HAJJ_CATEGORIES.map(c => {
+    const v = hajjBudget.breakdown[c.key] || 0;
+    return `<div class="hajj-cat-row">
+      <div class="hajj-cat-name">${c.emoji} ${esc(c.name.replace(c.emoji + ' ', ''))}</div>
+      <input type="number" class="hajj-cat-input" value="${v}" oninput="updateHajjAllocation('${c.key}', this.value)" placeholder="0">
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="hajj-summary">
+      <div class="hajj-emoji">${hajjBudget.type === 'حج' ? '🕋' : '🕌'}</div>
+      <div class="hajj-type">رحلة ${esc(hajjBudget.type)}</div>
+      <div class="hajj-date">${esc(hajjBudget.targetDate)} · باقي ${toArabicDigits(daysUntil)} يوم</div>
+    </div>
+    <div class="hajj-progress-section">
+      <div class="hajj-numbers">
+        <div><div class="hajj-lbl">المدخر</div><div class="hajj-val" style="color:var(--green)">${fmt(saved,0)} ${sym}</div></div>
+        <div><div class="hajj-lbl">المتبقي</div><div class="hajj-val" style="color:var(--accent)">${fmt(remaining,0)} ${sym}</div></div>
+        <div><div class="hajj-lbl">الإجمالي</div><div class="hajj-val">${fmt(hajjBudget.totalBudget,0)} ${sym}</div></div>
+      </div>
+      <div class="hajj-bar"><div class="hajj-fill" style="width:${savedPct}%"></div></div>
+      <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px">${toArabicDigits(savedPct)}% من الميزانية</div>
+      ${monthlyNeeded > 0 ? `<div style="text-align:center;font-size:12px;color:var(--accent);margin-top:8px;font-weight:700">📅 محتاج توفر ${fmt(monthlyNeeded,0)} ${sym} شهرياً</div>` : ''}
+      <button class="save-btn" onclick="addToHajjSavings()" style="margin-top:10px">➕ أضف للمدخرات</button>
+    </div>
+    <div class="hajj-breakdown">
+      <div class="hajj-section-title">💸 توزيع الميزانية المتوقع</div>
+      ${breakdownHTML}
+      <div class="hajj-cat-row" style="border-top:1px solid var(--border);margin-top:8px;padding-top:10px">
+        <div class="hajj-cat-name" style="color:var(--accent);font-weight:900">المجموع</div>
+        <div style="color:var(--accent);font-weight:900;font-size:14px;direction:ltr">${fmt(allocated,0)} ${sym}</div>
+      </div>
+    </div>
+    <button class="export-btn" onclick="delHajjBudget()" style="color:var(--red);width:100%;margin-top:14px">🗑️ حذف الميزانية</button>
+  `;
+}
+
+function openHajjBudget() {
+  let m = document.getElementById('hajjModal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'hajjModal';
+    m.className = 'overlay';
+    m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = `<div class="sheet" style="max-height:94vh">
+      <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:4px 8px 0">
+        <div style="font-size:15px;font-weight:900;color:var(--accent)">🕋 ميزانية الحج/العمرة</div>
+        <button onclick="document.getElementById('hajjModal').classList.remove('open')" style="background:var(--card2);border:1.5px solid var(--border);border-radius:50%;width:44px;height:44px;color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif">✕</button>
+      </div>
+      <div id="hajjBody"></div>
+    </div>`;
+    document.body.appendChild(m);
+  }
+  if (!hajjBudget) {
+    setupHajjBudget();
+    return;
+  }
+  renderHajjBudget();
+  m.classList.add('open');
+}
+
+function renderHajjCard() {
+  const home = document.getElementById('homeContent');
+  if (!home || !hajjBudget) return;
+  const sym = BASE_LABELS[baseCurrency].sym;
+  const saved = hajjBudget.saved || 0;
+  const pct = hajjBudget.totalBudget > 0 ? Math.min(100, Math.round(saved / hajjBudget.totalBudget * 100)) : 0;
+  const daysUntil = Math.ceil((new Date(hajjBudget.targetDate) - new Date()) / 86400000);
+  const html = `<div class="hajj-card" onclick="openHajjBudget()">
+    <div class="hajj-card-emoji">${hajjBudget.type === 'حج' ? '🕋' : '🕌'}</div>
+    <div class="hajj-card-info">
+      <div class="hajj-card-title">رحلة ${esc(hajjBudget.type)} · باقي ${toArabicDigits(daysUntil)} يوم</div>
+      <div class="hajj-card-progress"><div class="hajj-card-fill" style="width:${pct}%"></div></div>
+      <div class="hajj-card-amounts">${fmt(saved,0)} / ${fmt(hajjBudget.totalBudget,0)} ${sym} (${toArabicDigits(pct)}%)</div>
+    </div>
+  </div>`;
+  let card = home.querySelector('.hajj-card');
+  if (card) card.outerHTML = html;
+  else home.insertAdjacentHTML('afterbegin', html);
+}
+
+// ═══════════════ MERGE: العيدية (unify under occasions modal) ═══════════════
+// Auto-link any tx with category="عيدية" to the occasions tracking
+const _origSaveTx = window.saveTx;
+// We don't override saveTx itself, but we add a post-save hook via a flag.
+// The cleaner approach: when user picks "عيدية" category in expense/income,
+// suggest using the occasions modal once.
+let _eidiyaHintShown = localStorage.getItem('msarifyi_eidiya_hint_shown') === '1';
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-cat="عيدية"]');
+  if (!btn || _eidiyaHintShown) return;
+  _eidiyaHintShown = true;
+  localStorage.setItem('msarifyi_eidiya_hint_shown', '1');
+  setTimeout(() => {
+    if (typeof showToast === 'function') {
+      showToast('💡 تقدر تتبع العيدية بتفاصيل أكتر من قائمة "العيدية والمناسبات"', 'info', 6000);
+    }
+  }, 500);
+});
+
+// ═══════════════ MERGE: المدفوعات الدورية ═══════════════
+// Combined view of recurring + bills + installments
+function openRecurringPaymentsHub() {
+  let m = document.getElementById('recurringHubModal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'recurringHubModal';
+    m.className = 'overlay';
+    m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = `<div class="sheet" style="max-height:94vh">
+      <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:4px 8px 0">
+        <div style="font-size:15px;font-weight:900;color:var(--accent)">📅 المدفوعات الدورية</div>
+        <button onclick="document.getElementById('recurringHubModal').classList.remove('open')" style="background:var(--card2);border:1.5px solid var(--border);border-radius:50%;width:44px;height:44px;color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif">✕</button>
+      </div>
+      <div id="recurringHubBody"></div>
+    </div>`;
+    document.body.appendChild(m);
+  }
+  renderRecurringHub();
+  m.classList.add('open');
+}
+
+function renderRecurringHub() {
+  const el = document.getElementById('recurringHubBody');
+  if (!el) return;
+  const sym = BASE_LABELS[baseCurrency].sym;
+
+  const subs = recurringTxs.filter(r => r.type === 'expense');
+  const incomes = recurringTxs.filter(r => r.type === 'income');
+  const billsList = typeof bills !== 'undefined' ? bills : [];
+  const installs = typeof installments !== 'undefined' ? installments.filter(i => (i.paidMonths||0) < i.totalMonths) : [];
+
+  const subsTotal = subs.reduce((s,r) => s + curToSAR(r.amount, r.currency), 0);
+  const incomeTotal = incomes.reduce((s,r) => s + curToSAR(r.amount, r.currency), 0);
+  const billsTotal = billsList.reduce((s,b) => s + (b.estimatedAmount || 0), 0);
+  const instTotal = installs.reduce((s,i) => s + curToSAR(i.monthlyPayment, i.currency), 0);
+
+  el.innerHTML = `
+    <div class="hub-summary">
+      <div class="hub-stat"><div class="hub-lbl">دخل دوري</div><div class="hub-val" style="color:var(--green)">+${fmt(toBase(incomeTotal),0)}</div></div>
+      <div class="hub-stat"><div class="hub-lbl">اشتراكات</div><div class="hub-val" style="color:var(--red)">-${fmt(toBase(subsTotal),0)}</div></div>
+      <div class="hub-stat"><div class="hub-lbl">فواتير</div><div class="hub-val" style="color:var(--red)">-${fmt(toBase(billsTotal),0)}</div></div>
+      <div class="hub-stat"><div class="hub-lbl">أقساط</div><div class="hub-val" style="color:var(--red)">-${fmt(toBase(instTotal),0)}</div></div>
+    </div>
+    <div class="hub-net">
+      الصافي الشهري: <b style="color:${incomeTotal-subsTotal-billsTotal-instTotal>=0?'var(--green)':'var(--red)'}">${(incomeTotal-subsTotal-billsTotal-instTotal>=0?'+':'')}${fmt(toBase(incomeTotal-subsTotal-billsTotal-instTotal),0)} ${sym}</b>
+    </div>
+    <div class="hub-section">
+      <div class="hub-section-header">📥 دخل دوري (${incomes.length})</div>
+      ${incomes.length ? incomes.map(r => `<div class="hub-row" onclick="document.getElementById('recurringHubModal').classList.remove('open');closeAndOpen(null,'subsModal',renderSubs)"><div>${esc(r.name)}</div><div style="color:var(--green);direction:ltr">+${fmt(r.amount,0)} ${SYM[r.currency]||''}</div></div>`).join('') : '<div class="hub-empty">لا يوجد</div>'}
+    </div>
+    <div class="hub-section">
+      <div class="hub-section-header">📺 الاشتراكات (${subs.length})</div>
+      ${subs.length ? subs.slice(0,5).map(r => `<div class="hub-row"><div>${esc(r.name)}</div><div style="color:var(--red);direction:ltr">-${fmt(r.amount,0)} ${SYM[r.currency]||''}</div></div>`).join('') + (subs.length>5?`<div class="hub-row" onclick="document.getElementById('recurringHubModal').classList.remove('open');closeAndOpen(null,'subsModal',renderSubs)" style="color:var(--accent);justify-content:center;cursor:pointer">شاهد الكل (${subs.length})</div>`:'') : '<div class="hub-empty">لا يوجد</div>'}
+      <button class="hub-add" onclick="document.getElementById('recurringHubModal').classList.remove('open');openModal()">➕ إضافة اشتراك</button>
+    </div>
+    <div class="hub-section">
+      <div class="hub-section-header">⚡ الفواتير المنزلية (${billsList.length})</div>
+      ${billsList.length ? billsList.slice(0,5).map(b => `<div class="hub-row"><div>${esc(b.name)}</div><div style="color:var(--red);direction:ltr">~${fmt(b.estimatedAmount,0)}</div></div>`).join('') : '<div class="hub-empty">لا يوجد</div>'}
+      <button class="hub-add" onclick="document.getElementById('recurringHubModal').classList.remove('open');closeAndOpen(null,'billsModal',renderBills)">➕ إدارة الفواتير</button>
+    </div>
+    <div class="hub-section">
+      <div class="hub-section-header">💳 الأقساط النشطة (${installs.length})</div>
+      ${installs.length ? installs.slice(0,5).map(i => `<div class="hub-row"><div>${esc(i.name)} (${toArabicDigits(i.paidMonths||0)}/${toArabicDigits(i.totalMonths)})</div><div style="color:var(--red);direction:ltr">-${fmt(i.monthlyPayment,0)} ${SYM[i.currency]||''}</div></div>`).join('') : '<div class="hub-empty">لا يوجد</div>'}
+      <button class="hub-add" onclick="document.getElementById('recurringHubModal').classList.remove('open');closeAndOpen(null,'installmentsModal',renderInstallments)">➕ إدارة الأقساط</button>
+    </div>
+  `;
+}
+
+// ═══════════════ V10 INIT — wire everything up ═══════════════
+(function v10Init() {
+  // Travel + Ramadan + Hajj cards on home
+  const _origRenderHome10 = window.renderHome;
+  window.renderHome = function() {
+    if (_origRenderHome10) _origRenderHome10.apply(this, arguments);
+    try { renderTravelCard(); } catch(e) { console.warn('travel card:', e); }
+    try { renderRamadanCard(); } catch(e) { console.warn('ramadan card:', e); }
+    try { renderHajjCard(); } catch(e) { console.warn('hajj card:', e); }
+  };
+
+  // Add menu rows
+  setTimeout(() => {
+    const menu = document.querySelector('#menuModal .sheet');
+    if (!menu) return;
+
+    const addRow = (id, emoji, title, sub, onClick) => {
+      if (document.getElementById(id)) return;
+      const row = document.createElement('div');
+      row.className = 'menu-row';
+      row.id = id;
+      row.onclick = () => {
+        document.getElementById('menuModal').classList.remove('open');
+        onClick();
+      };
+      row.innerHTML = `
+        <div class="mi">${emoji}</div>
+        <div class="mt"><div class="mt-l">${title}</div><div class="mt-s">${sub}</div></div>
+        <div class="mc">‹</div>`;
+      menu.appendChild(row);
+    };
+
+    addRow('menuRowRecurringHub', '📅', 'المدفوعات الدورية', 'اشتراكات + فواتير + أقساط', openRecurringPaymentsHub);
+    addRow('menuRowTravel', '✈️', 'وضع السفر', 'تتبّع رحلتك بميزانية يومية', () => {
+      const t = getTravelMode();
+      if (t && t.active) {
+        if (confirm(`الرحلة لـ${t.country} شغالة. تنهيها؟`)) endTravelMode();
+      } else {
+        startTravelMode();
+      }
+    });
+    addRow('menuRowAlerts', '🔔', 'تنبيهات الأسعار', 'لما الذهب أو الدولار يوصل سعر معيّن', openPriceAlerts);
+    addRow('menuRowHajj', '🕋', 'ميزانية الحج/العمرة', 'خطّط لرحلتك بالتفصيل', openHajjBudget);
+  }, 300);
+
+  // Run price alerts check on init
+  setTimeout(() => { try { checkPriceAlerts(); } catch(e){} }, 2000);
+
+  // Re-check price alerts every time gold updates
+  const _origFGP = fetchGoldPrice;
+  // (already wrapped above for history)
+  // Add another wrap for alerts check after price update
+  setTimeout(() => {
+    // rerender home to bring in V10 cards
+    if (typeof renderHome === 'function') renderHome();
+  }, 250);
+
+  // PWA Quick Action handler
+  const params = new URLSearchParams(window.location.search);
+  const action = params.get('action');
+  if (action === 'add-expense') {
+    setTimeout(() => {
+      if (typeof openModal === 'function') openModal();
+      setTimeout(() => {
+        const expBtn = document.querySelector('[onclick="selType(\'expense\')"]');
+        if (expBtn) expBtn.click();
+      }, 100);
+    }, 500);
+  } else if (action === 'add-income') {
+    setTimeout(() => {
+      if (typeof openModal === 'function') openModal();
+      setTimeout(() => {
+        const incBtn = document.querySelector('[onclick="selType(\'income\')"]');
+        if (incBtn) incBtn.click();
+      }, 100);
+    }, 500);
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// V11 — TABBY/TAMARA PRESETS + FLIGHTS + PRINT FIX + ICON
+// ═══════════════════════════════════════════════════════════════
+
+// ── Provider preset selector (Tabby/Tamara/Bank/Dealer) ──
+function selProvider(btn) {
+  document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  // User chooses the months themselves — no auto-fill (#fix)
+  // Just suggest "تسوق" category for buy-now-pay-later providers
+  const provider = btn.dataset.provider;
+  if (provider === 'tabby' || provider === 'tamara') {
+    const catSel = document.getElementById('instCat');
+    if (catSel) catSel.value = 'تسوق';
+  }
+}
+
+// ── Edit installment now needs to populate provider/store fields ──
+const _origEditInstallment = window.editInstallment;
+window.editInstallment = function(id) {
+  const inst = installments.find(i => i.id === id);
+  if (!inst) return;
+  // Use the existing edit logic (calls fillForm by removing+re-adding)
+  if (_origEditInstallment) _origEditInstallment(id);
+  // After form is populated, fill new fields
+  setTimeout(() => {
+    const storeInp = document.getElementById('instStore');
+    if (storeInp) storeInp.value = inst.store || '';
+    // Highlight provider
+    document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('sel'));
+    if (inst.provider) {
+      const target = document.querySelector(`.provider-btn[data-provider="${inst.provider}"]`);
+      if (target) target.classList.add('sel');
+    } else {
+      document.querySelector('.provider-btn[data-provider=""]')?.classList.add('sel');
+    }
+  }, 50);
+};
+
+// ═══════════════ FEATURE: FLIGHT TICKETS ═══════════════
+var flights = JSON.parse(localStorage.getItem('msarifyi_flights') || '[]');
+function saveFlights() { localStorage.setItem('msarifyi_flights', JSON.stringify(flights)); }
+
+function openFlightsHub() {
+  let m = document.getElementById('flightsModal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'flightsModal';
+    m.className = 'overlay';
+    m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = `<div class="sheet" style="max-height:94vh">
+      <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:4px 8px 0">
+        <div style="font-size:15px;font-weight:900;color:var(--accent)">✈️ تذاكر الطيران</div>
+        <button onclick="document.getElementById('flightsModal').classList.remove('open')" style="background:var(--card2);border:1.5px solid var(--border);border-radius:50%;width:44px;height:44px;color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif">✕</button>
+      </div>
+      <div id="flightsBody"></div>
+    </div>`;
+    document.body.appendChild(m);
+  }
+  renderFlights();
+  m.classList.add('open');
+}
+
+function renderFlights() {
+  const el = document.getElementById('flightsBody');
+  if (!el) return;
+  const sym = BASE_LABELS[baseCurrency].sym;
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // Sort: upcoming first by date, then past
+  const upcoming = flights.filter(f => new Date(f.flightDate) >= today).sort((a,b) => a.flightDate.localeCompare(b.flightDate));
+  const past = flights.filter(f => new Date(f.flightDate) < today).sort((a,b) => b.flightDate.localeCompare(a.flightDate));
+
+  let cards = '';
+  if (upcoming.length) {
+    cards += `<div style="font-size:12px;font-weight:900;color:var(--accent);margin:10px 0 8px">🛫 رحلات قادمة (${upcoming.length})</div>`;
+    cards += upcoming.map(f => buildFlightCard(f, true)).join('');
+  }
+  if (past.length) {
+    cards += `<div style="font-size:12px;font-weight:900;color:var(--muted);margin:14px 0 8px">📜 رحلات سابقة (${past.length})</div>`;
+    cards += past.map(f => buildFlightCard(f, false)).join('');
+  }
+  if (!cards) cards = `<div class="empty"><div class="empty-icon">✈️</div>لسه ما اضفتش تذاكر</div>`;
+
+  el.innerHTML = `
+    <p style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px">سجّل تذكرتك مع الفلوس وميعاد الرحلة وعدّاد الأيام</p>
+    <button class="save-btn" onclick="addFlight()" style="margin-bottom:12px">➕ إضافة تذكرة جديدة</button>
+    <div style="background:var(--card2);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:11px;color:var(--muted);line-height:1.6">
+      <div style="color:var(--accent);font-weight:900;margin-bottom:4px">🔍 مقارنة الأسعار</div>
+      اضغط على زرار "ابحث" في تذكرة عشان يفتحلك Skyscanner للمقارنة. التطبيق ما بيتصلش بشركات الطيران مباشرة.
+    </div>
+    ${cards}
+  `;
+}
+
+function buildFlightCard(f, isUpcoming) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const flightD = new Date(f.flightDate);
+  const days = Math.ceil((flightD - today) / 86400000);
+  let badge;
+  if (days < 0) badge = `<span class="flight-badge past">📜 منذ ${toArabicDigits(Math.abs(days))} يوم</span>`;
+  else if (days === 0) badge = `<span class="flight-badge today">🛫 اليوم!</span>`;
+  else if (days === 1) badge = `<span class="flight-badge urgent">بكرة</span>`;
+  else if (days <= 7) badge = `<span class="flight-badge urgent">⏰ باقي ${toArabicDigits(days)} أيام</span>`;
+  else if (days <= 30) badge = `<span class="flight-badge soon">📅 باقي ${toArabicDigits(days)} يوم</span>`;
+  else badge = `<span class="flight-badge future">📅 باقي ${toArabicDigits(days)} يوم</span>`;
+
+  return `<div class="flight-card ${isUpcoming?'':'past-flight'}">
+    <div class="flight-header">
+      <div class="flight-route">
+        <span class="from">${esc(f.from)}</span>
+        <span class="arrow">←</span>
+        <span class="to">${esc(f.to)}</span>
+      </div>
+      ${badge}
+    </div>
+    <div class="flight-info">
+      <div class="flight-date">📅 ${esc(f.flightDate)}${f.flightTime?' · '+esc(f.flightTime):''}</div>
+      ${f.airline?`<div class="flight-airline">✈️ ${esc(f.airline)}</div>`:''}
+      ${f.bookedFrom?`<div class="flight-source">🛒 من: ${esc(f.bookedFrom)}</div>`:''}
+      ${f.passengers>1?`<div class="flight-pax">👥 ${toArabicDigits(f.passengers)} مسافرين</div>`:''}
+    </div>
+    <div class="flight-price">
+      <div class="flight-amount">${fmt(f.amount, 0)} ${SYM[f.currency]||esc(f.currency)}</div>
+      <div class="flight-price-each">${f.passengers>1 ? `(${fmt(f.amount/f.passengers,0)} للراكب)` : ''}</div>
+    </div>
+    <div class="flight-actions">
+      <button class="feat-mini-btn" onclick="searchFlightPrices('${escAttr(f.from)}','${escAttr(f.to)}','${escAttr(f.flightDate)}')">🔍 ابحث</button>
+      <button class="feat-mini-btn" onclick="editFlight('${escAttr(f.id)}')" style="color:var(--accent);border-color:var(--accent)">✏️ تعديل</button>
+      <button class="feat-mini-btn danger" onclick="delFlight('${escAttr(f.id)}')">🗑️ حذف</button>
+    </div>
+  </div>`;
+}
+
+function addFlight() {
+  showFlightForm(null);
+}
+
+function editFlight(id) {
+  const f = flights.find(x => x.id === id);
+  if (!f) return;
+  showFlightForm(f);
+}
+
+function showFlightForm(existing) {
+  let m = document.getElementById('flightFormModal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'flightFormModal';
+    m.className = 'overlay';
+    m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = `<div class="sheet">
+      <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:4px 8px 0">
+        <div style="font-size:15px;font-weight:900;color:var(--accent)" id="flightFormTitle">✈️ إضافة تذكرة</div>
+        <button onclick="document.getElementById('flightFormModal').classList.remove('open')" style="background:var(--card2);border:1.5px solid var(--border);border-radius:50%;width:44px;height:44px;color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif">✕</button>
+      </div>
+      <div id="flightFormBody"></div>
+    </div>`;
+    document.body.appendChild(m);
+  }
+
+  document.getElementById('flightFormTitle').textContent = existing ? '✏️ تعديل التذكرة' : '✈️ إضافة تذكرة';
+  const body = document.getElementById('flightFormBody');
+  const v = existing || {};
+  body.innerHTML = `
+    <div class="two-col">
+      <div class="form-row"><div class="form-lbl">من</div><input class="form-inp" id="flFrom" placeholder="القاهرة" value="${esc(v.from||'')}"/></div>
+      <div class="form-row"><div class="form-lbl">إلى</div><input class="form-inp" id="flTo" placeholder="جدة" value="${esc(v.to||'')}"/></div>
+    </div>
+    <div class="two-col">
+      <div class="form-row"><div class="form-lbl">📅 تاريخ الرحلة</div><input class="form-inp" id="flDate" type="date" value="${esc(v.flightDate||'')}" style="direction:ltr"/></div>
+      <div class="form-row"><div class="form-lbl">⏰ وقت الإقلاع</div><input class="form-inp" id="flTime" type="time" value="${esc(v.flightTime||'')}" style="direction:ltr"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-lbl">✈️ شركة الطيران</div>
+      <input class="form-inp" id="flAirline" placeholder="مصر للطيران، الخطوط السعودية، Wizz Air..." value="${esc(v.airline||'')}"/>
+    </div>
+    <div class="form-row">
+      <div class="form-lbl">🛒 اشتريت من</div>
+      <select class="form-inp" id="flSource">
+        <option value="">اختر / يدوي</option>
+        <option value="Almatar / المطار" ${v.bookedFrom==='Almatar / المطار'?'selected':''}>Almatar / المطار</option>
+        <option value="Wego / ويجو" ${v.bookedFrom==='Wego / ويجو'?'selected':''}>Wego / ويجو</option>
+        <option value="Flynas / طيران ناس" ${v.bookedFrom==='Flynas / طيران ناس'?'selected':''}>Flynas / طيران ناس</option>
+        <option value="Saudia / السعودية" ${v.bookedFrom==='Saudia / السعودية'?'selected':''}>Saudia / السعودية</option>
+        <option value="EgyptAir / مصر للطيران" ${v.bookedFrom==='EgyptAir / مصر للطيران'?'selected':''}>EgyptAir / مصر للطيران</option>
+        <option value="Skyscanner" ${v.bookedFrom==='Skyscanner'?'selected':''}>Skyscanner</option>
+        <option value="Booking.com" ${v.bookedFrom==='Booking.com'?'selected':''}>Booking.com</option>
+        <option value="Kiwi" ${v.bookedFrom==='Kiwi'?'selected':''}>Kiwi</option>
+        <option value="Trivago" ${v.bookedFrom==='Trivago'?'selected':''}>Trivago</option>
+        <option value="Expedia" ${v.bookedFrom==='Expedia'?'selected':''}>Expedia</option>
+        <option value="مكتب سفر" ${v.bookedFrom==='مكتب سفر'?'selected':''}>مكتب سفر</option>
+        <option value="موقع الشركة مباشرة" ${v.bookedFrom==='موقع الشركة مباشرة'?'selected':''}>موقع الشركة مباشرة</option>
+      </select>
+    </div>
+    <div class="two-col">
+      <div class="form-row"><div class="form-lbl">💵 السعر</div><input class="form-inp" id="flAmount" type="number" inputmode="decimal" placeholder="2500" value="${v.amount||''}"/></div>
+      <div class="form-row"><div class="form-lbl">العملة</div>
+        <select class="form-inp" id="flCurrency">
+          <option value="SAR" ${v.currency==='SAR'?'selected':''}>🇸🇦 ريال</option>
+          <option value="EGP" ${v.currency==='EGP'?'selected':''}>🇪🇬 جنيه</option>
+          <option value="USD" ${v.currency==='USD'?'selected':''}>🇺🇸 دولار</option>
+          <option value="EUR" ${v.currency==='EUR'?'selected':''}>🇪🇺 يورو</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-lbl">👥 عدد المسافرين</div>
+      <input class="form-inp" id="flPassengers" type="number" inputmode="numeric" min="1" value="${v.passengers||1}"/>
+    </div>
+    <div class="form-row">
+      <div class="form-lbl">📝 ملاحظات</div>
+      <input class="form-inp" id="flNote" placeholder="رقم الحجز، تأشيرة، إضافات..." value="${esc(v.note||'')}"/>
+    </div>
+    <div class="form-row" style="background:var(--card2);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center">
+      <label for="flAddTx" style="font-size:13px;color:var(--text);font-weight:700;cursor:pointer">💸 سجّلها كمصروف في التطبيق</label>
+      <input type="checkbox" id="flAddTx" ${existing?'':'checked'}/>
+    </div>
+    <button class="save-btn" onclick="saveFlight('${existing?escAttr(existing.id):''}')">💾 حفظ التذكرة</button>
+  `;
+  m.classList.add('open');
+}
+
+function saveFlight(existingId) {
+  const from = document.getElementById('flFrom').value.trim();
+  const to = document.getElementById('flTo').value.trim();
+  const flightDate = document.getElementById('flDate').value;
+  const flightTime = document.getElementById('flTime').value;
+  const airline = document.getElementById('flAirline').value.trim();
+  const bookedFrom = document.getElementById('flSource').value;
+  const amount = parseFloat(document.getElementById('flAmount').value);
+  const currency = document.getElementById('flCurrency').value;
+  const passengers = parseInt(document.getElementById('flPassengers').value) || 1;
+  const note = document.getElementById('flNote').value.trim();
+  const alsoAddTx = document.getElementById('flAddTx').checked;
+
+  if (!from || !to || !flightDate || !amount) {
+    showAlert('املأ الوجهة والتاريخ والسعر', 'error');
+    return;
+  }
+
+  const flight = {
+    id: existingId || ('flight_' + Date.now() + '_' + Math.random().toString(36).slice(2,9)),
+    from, to, flightDate, flightTime, airline, bookedFrom,
+    amount, currency, passengers, note,
+    createdAt: new Date().toISOString()
+  };
+
+  if (existingId) {
+    flights = flights.map(f => f.id === existingId ? flight : f);
+  } else {
+    flights.unshift(flight);
+    // Optionally create a transaction
+    if (alsoAddTx) {
+      const rate = currency === 'SAR' ? 1 : (currency === 'EGP' ? rates.EGP : rates[currency]);
+      const amountSAR = curToSAR(amount, currency);
+      txs.unshift({
+        id: 'tx_flight_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
+        type: 'expense',
+        name: `✈️ تذكرة ${from} ← ${to}`,
+        amount, currency, rate, amountSAR,
+        cat: 'سفر',
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().slice(0,5),
+        note: `حجز: ${bookedFrom||'غير محدد'} · رحلة ${flightDate}`,
+        flightId: flight.id,
+        recurring: false
+      });
+      saveData();
+    }
+  }
+  saveFlights();
+  document.getElementById('flightFormModal').classList.remove('open');
+  renderFlights();
+  if (typeof renderHome === 'function') renderHome();
+  showAlert('✅ تم حفظ التذكرة', 'success');
+}
+
+function delFlight(id) {
+  const f = flights.find(x => x.id === id);
+  if (!f) return;
+  if (!confirm(`حذف تذكرة ${f.from} ← ${f.to}؟ (المعاملة المالية المرتبطة هتفضل)`)) return;
+  flights = flights.filter(x => x.id !== id);
+  saveFlights();
+  renderFlights();
+  if (typeof renderHome === 'function') renderHome();
+}
+
+function searchFlightPrices(from, to, date) {
+  // Open Skyscanner for price comparison
+  // Format: yyyy-mm-dd → yymmdd for skyscanner URL
+  const d = date ? new Date(date) : new Date();
+  const yymmdd = d.toISOString().slice(2,10).replace(/-/g,'');
+  const url = `https://www.skyscanner.com/transport/flights/${encodeURIComponent(from)}/${encodeURIComponent(to)}/${yymmdd}/`;
+  if (window.open) {
+    window.open(url, '_blank');
+  } else {
+    showAlert(url, 'info');
+  }
+}
+
+// Render upcoming flight card on home if any are within 30 days
+function renderUpcomingFlightCard() {
+  const home = document.getElementById('homeContent');
+  if (!home) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const upcoming = flights
+    .filter(f => {
+      const days = Math.ceil((new Date(f.flightDate) - today) / 86400000);
+      return days >= 0 && days <= 30;
+    })
+    .sort((a,b) => a.flightDate.localeCompare(b.flightDate));
+
+  let card = home.querySelector('.flight-home-card');
+  if (!upcoming.length) {
+    if (card) card.remove();
+    return;
+  }
+  const f = upcoming[0];
+  const days = Math.ceil((new Date(f.flightDate) - today) / 86400000);
+  const dayLabel = days === 0 ? '🛫 اليوم!' :
+                   days === 1 ? 'بكرة' :
+                   `باقي ${toArabicDigits(days)} يوم`;
+  const html = `<div class="flight-home-card" onclick="openFlightsHub()">
+    <div class="fhc-emoji">✈️</div>
+    <div class="fhc-info">
+      <div class="fhc-route">${esc(f.from)} ← ${esc(f.to)}</div>
+      <div class="fhc-meta">📅 ${esc(f.flightDate)}${f.flightTime?' · '+esc(f.flightTime):''} · ${esc(dayLabel)}</div>
+    </div>
+    <div class="fhc-arrow">›</div>
+  </div>`;
+  if (card) card.outerHTML = html;
+  else home.insertAdjacentHTML('afterbegin', html);
+}
+
+// Hook flight card into renderHome
+const _origRenderHome11 = window.renderHome;
+window.renderHome = function() {
+  if (_origRenderHome11) _origRenderHome11.apply(this, arguments);
+  try { renderUpcomingFlightCard(); } catch(e) { console.warn('flight home:', e); }
+};
+
+// Add menu row for Flights
+setTimeout(() => {
+  const menu = document.querySelector('#menuModal .sheet');
+  if (menu && !document.getElementById('menuRowFlights')) {
+    const row = document.createElement('div');
+    row.className = 'menu-row';
+    row.id = 'menuRowFlights';
+    row.onclick = () => {
+      document.getElementById('menuModal').classList.remove('open');
+      openFlightsHub();
+    };
+    row.innerHTML = `
+      <div class="mi">✈️</div>
+      <div class="mt"><div class="mt-l">تذاكر الطيران</div><div class="mt-s" id="menuFlightCount">سجّل وعدّاد قبل الرحلة</div></div>
+      <div class="mc">‹</div>`;
+    menu.appendChild(row);
+  }
+  const fc = document.getElementById('menuFlightCount');
+  if (fc) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const upcoming = flights.filter(f => new Date(f.flightDate) >= today).length;
+    fc.textContent = upcoming ? `${toArabicDigits(upcoming)} رحلة قادمة` : 'سجّل وعدّاد قبل الرحلة';
+  }
+}, 350);
+
+// Re-render home to show flight card on init
+setTimeout(() => { try { renderHome(); } catch(e){} }, 400);
+
+// ═══════════════════════════════════════════════════════════════
+// V12 — UNIFIED PROMPT/CONFIRM MODAL (replaces native ugly dialogs)
+// ═══════════════════════════════════════════════════════════════
+
+// Promise-based replacements for native prompt/confirm
+function uiPrompt(opts) {
+  // opts: {title, message, placeholder, defaultValue, type, options, multiline}
+  // Returns Promise<string|null>
+  return new Promise((resolve) => {
+    const o = typeof opts === 'string' ? {message: opts} : opts;
+    const id = 'uiPromptModal';
+    let m = document.getElementById(id);
+    if (m) m.remove();
+    m = document.createElement('div');
+    m.id = id;
+    m.className = 'overlay';
+    m.style.zIndex = '99998';
+    const isOptions = Array.isArray(o.options) && o.options.length > 0;
+    let inputHTML;
+    if (isOptions) {
+      inputHTML = `<div class="ui-prompt-options">
+        ${o.options.map((opt, i) => `
+          <button type="button" class="ui-prompt-opt" data-value="${escAttr(opt.value)}">
+            ${opt.icon||''} ${esc(opt.label)}
+          </button>
+        `).join('')}
+      </div>`;
+    } else if (o.multiline) {
+      inputHTML = `<textarea class="ui-prompt-input" id="uiPromptInput" placeholder="${esc(o.placeholder||'')}" rows="3">${esc(o.defaultValue||'')}</textarea>`;
+    } else {
+      const inputType = o.type === 'number' ? 'number' : o.type === 'date' ? 'date' : 'text';
+      const inputmode = o.type === 'number' ? 'inputmode="decimal"' : '';
+      const dir = o.type === 'number' || o.type === 'date' ? 'style="direction:ltr;text-align:center"' : '';
+      inputHTML = `<input type="${inputType}" ${inputmode} ${dir} class="ui-prompt-input" id="uiPromptInput" placeholder="${esc(o.placeholder||'')}" value="${esc(o.defaultValue||'')}"/>`;
+    }
+    m.innerHTML = `<div class="ui-prompt-box">
+      ${o.title ? `<div class="ui-prompt-title">${esc(o.title)}</div>` : ''}
+      ${o.message ? `<div class="ui-prompt-msg">${esc(o.message).replace(/\n/g,'<br>')}</div>` : ''}
+      ${inputHTML}
+      <div class="ui-prompt-actions">
+        <button class="ui-prompt-cancel" id="uiPromptCancel">إلغاء</button>
+        ${!isOptions ? `<button class="ui-prompt-ok" id="uiPromptOk">موافق</button>` : ''}
+      </div>
+    </div>`;
+    document.body.appendChild(m);
+    requestAnimationFrame(() => m.classList.add('open'));
+
+    const close = (val) => {
+      m.classList.remove('open');
+      setTimeout(() => m.remove(), 200);
+      resolve(val);
+    };
+    document.getElementById('uiPromptCancel').onclick = () => close(null);
+    if (isOptions) {
+      m.querySelectorAll('.ui-prompt-opt').forEach(b => {
+        b.onclick = () => close(b.dataset.value);
+      });
+    } else {
+      const inp = document.getElementById('uiPromptInput');
+      const ok = document.getElementById('uiPromptOk');
+      ok.onclick = () => close(inp.value);
+      inp.onkeydown = (e) => {
+        if (e.key === 'Enter' && !o.multiline) { e.preventDefault(); close(inp.value); }
+        if (e.key === 'Escape') { e.preventDefault(); close(null); }
+      };
+      setTimeout(() => inp.focus(), 100);
+    }
+    // Click outside cancels
+    m.onclick = (e) => { if (e.target === m) close(null); };
+  });
+}
+
+function uiConfirm(message, opts = {}) {
+  return new Promise((resolve) => {
+    const id = 'uiConfirmModal';
+    let m = document.getElementById(id);
+    if (m) m.remove();
+    m = document.createElement('div');
+    m.id = id;
+    m.className = 'overlay';
+    m.style.zIndex = '99999';
+    const okText = opts.okText || 'تأكيد';
+    const cancelText = opts.cancelText || 'إلغاء';
+    const danger = opts.danger ? 'ui-prompt-danger' : '';
+    m.innerHTML = `<div class="ui-prompt-box">
+      ${opts.title ? `<div class="ui-prompt-title">${esc(opts.title)}</div>` : ''}
+      <div class="ui-prompt-msg">${esc(message).replace(/\n/g,'<br>')}</div>
+      <div class="ui-prompt-actions">
+        <button class="ui-prompt-cancel" id="uiConfirmCancel">${esc(cancelText)}</button>
+        <button class="ui-prompt-ok ${danger}" id="uiConfirmOk">${esc(okText)}</button>
+      </div>
+    </div>`;
+    document.body.appendChild(m);
+    requestAnimationFrame(() => m.classList.add('open'));
+
+    const close = (val) => {
+      m.classList.remove('open');
+      setTimeout(() => m.remove(), 200);
+      resolve(val);
+    };
+    document.getElementById('uiConfirmCancel').onclick = () => close(false);
+    document.getElementById('uiConfirmOk').onclick = () => close(true);
+    m.onclick = (e) => { if (e.target === m) close(false); };
+  });
+}
+
+// ═══════════════ V12: New flows replacing prompt() ═══════════════
+
+// Travel mode — multi-step flow
+async function startTravelMode() {
+  const country = await uiPrompt({
+    title: '✈️ بدء وضع السفر',
+    message: 'وجهة السفر',
+    placeholder: 'مثال: تركيا، الإمارات...'
+  });
+  if (!country) return;
+
+  const currency = await uiPrompt({
+    title: '✈️ ' + country,
+    message: 'عملة الوجهة',
+    options: [
+      {value:'USD', icon:'🇺🇸', label:'دولار (USD)'},
+      {value:'EUR', icon:'🇪🇺', label:'يورو (EUR)'},
+      {value:'EGP', icon:'🇪🇬', label:'جنيه مصري'},
+      {value:'SAR', icon:'🇸🇦', label:'ريال سعودي'},
+      {value:'TRY', icon:'🇹🇷', label:'ليرة تركية'},
+      {value:'AED', icon:'🇦🇪', label:'درهم إماراتي'}
+    ]
+  });
+  if (!currency) return;
+
+  const dailyBudgetStr = await uiPrompt({
+    title: '✈️ ' + country,
+    message: `ميزانيتك اليومية بـ${currency}`,
+    placeholder: '500',
+    type: 'number'
+  });
+  if (!dailyBudgetStr) return;
+  const dailyBudget = parseFloat(dailyBudgetStr) || 0;
+
+  const daysStr = await uiPrompt({
+    title: '✈️ ' + country,
+    message: 'عدد أيام الرحلة',
+    placeholder: '7',
+    type: 'number'
+  });
+  const days = parseInt(daysStr) || 7;
+
+  const travel = {
+    active: true, country, currency: currency.toUpperCase(),
+    dailyBudget, totalBudget: dailyBudget * days, days,
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date(Date.now() + days*86400000).toISOString().split('T')[0],
+    transactions: []
+  };
+  saveTravelMode(travel);
+  showAlert(`✈️ بدأت رحلة ${country}! بالتوفيق`, 'success');
+  if (typeof renderHome === 'function') renderHome();
+}
+
+async function endTravelMode() {
+  const t = getTravelMode();
+  if (!t) return;
+  const ok = await uiConfirm('إنهاء وضع السفر؟ هتتخسر الإحصائيات لو ما عملتش حفظ', {danger: true, okText: 'إنهاء'});
+  if (!ok) return;
+  t.active = false;
+  t.endedAt = new Date().toISOString();
+  saveTravelMode(t);
+  const archive = JSON.parse(localStorage.getItem('msarifyi_travel_archive') || '[]');
+  archive.unshift(t);
+  localStorage.setItem('msarifyi_travel_archive', JSON.stringify(archive.slice(0, 20)));
+  saveTravelMode(null);
+  showAlert(`✅ انتهت الرحلة. إجمالي ${t.transactions.length} حركة`, 'success');
+  if (typeof renderHome === 'function') renderHome();
+}
+
+// Hajj/Umrah setup
+async function setupHajjBudget() {
+  const type = await uiPrompt({
+    title: '🕋 إعداد الميزانية',
+    message: 'نوع الرحلة',
+    options: [
+      {value:'حج', icon:'🕋', label:'حج'},
+      {value:'عمرة', icon:'🕌', label:'عمرة'}
+    ]
+  });
+  if (!type) return;
+
+  const targetDate = await uiPrompt({
+    title: '🕋 ' + type,
+    message: 'تاريخ الرحلة',
+    type: 'date'
+  });
+  if (!targetDate || !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
+    showAlert('تاريخ غير صحيح', 'error');
+    return;
+  }
+
+  const totalStr = await uiPrompt({
+    title: '🕋 ' + type,
+    message: `الميزانية الإجمالية المتوقعة بالـ${BASE_LABELS[baseCurrency].name}`,
+    placeholder: '50000',
+    type: 'number'
+  });
+  const total = parseFloat(totalStr);
+  if (!total) return;
+
+  hajjBudget = {
+    id: 'hajj_' + Date.now(),
+    type, targetDate, totalBudget: total,
+    breakdown: HAJJ_CATEGORIES.reduce((acc, c) => { acc[c.key] = 0; return acc; }, {}),
+    saved: 0,
+    createdAt: new Date().toISOString()
+  };
+  saveHajjBudget();
+  renderHajjBudget();
+  openHajjBudget();
+}
+
+async function delHajjBudget() {
+  const ok = await uiConfirm('حذف ميزانية الحج/العمرة؟', {danger: true, okText: 'حذف'});
+  if (!ok) return;
+  hajjBudget = null;
+  saveHajjBudget();
+  document.getElementById('hajjModal')?.classList.remove('open');
+  if (typeof renderHome === 'function') renderHome();
+}
+
+async function addToHajjSavings() {
+  if (!hajjBudget) return;
+  const amtStr = await uiPrompt({
+    title: '🕋 ادخار للرحلة',
+    message: `أضف للمدخرات (${BASE_LABELS[baseCurrency].name})`,
+    placeholder: '500',
+    type: 'number'
+  });
+  const amt = parseFloat(amtStr);
+  if (!amt) return;
+  hajjBudget.saved = (hajjBudget.saved || 0) + amt;
+  saveHajjBudget();
+  savings.unshift({
+    id: 'hajj_sav_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
+    type: 'savings',
+    name: hajjBudget.type === 'حج' ? '🕋 ادخار الحج' : '🕌 ادخار العمرة',
+    amount: amt, currency: baseCurrency, rate: 1,
+    amountSAR: baseCurrency === 'SAR' ? amt : amt * (rates.EGP || 1),
+    cat: hajjBudget.type === 'حج' ? 'حج' : 'عمرة',
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toTimeString().slice(0,5),
+    note: 'ادخار رحلة ' + hajjBudget.type
+  });
+  saveSavings();
+  renderHajjBudget();
+  showAlert('✅ تم إضافة المبلغ', 'success');
+}
+
+// Price alerts
+async function addPriceAlert() {
+  const type = await uiPrompt({
+    title: '🔔 تنبيه جديد',
+    message: 'إيه اللي تحب نراقبله؟',
+    options: [
+      {value:'1', icon:'🥇', label:'ذهب عيار 21'},
+      {value:'2', icon:'🥇', label:'ذهب عيار 24'},
+      {value:'3', icon:'🇺🇸', label:'الدولار (USD/EGP)'},
+      {value:'4', icon:'🇪🇺', label:'اليورو (EUR/EGP)'},
+      {value:'5', icon:'🇸🇦', label:'الريال (SAR/EGP)'}
+    ]
+  });
+  if (!type) return;
+
+  const direction = await uiPrompt({
+    title: '🔔 متى نبهنّك؟',
+    options: [
+      {value:'1', icon:'⬆️', label:'لما يبقى أعلى من الهدف'},
+      {value:'2', icon:'⬇️', label:'لما يبقى أقل من الهدف'}
+    ]
+  });
+  if (!direction) return;
+
+  const targetStr = await uiPrompt({
+    title: '🔔 السعر المستهدف',
+    message: 'السعر المستهدف بالجنيه',
+    placeholder: '5000',
+    type: 'number'
+  });
+  const target = parseFloat(targetStr);
+  if (!target) return;
+
+  const typeNames = {'1':'ذهب 21', '2':'ذهب 24', '3':'دولار', '4':'يورو', '5':'ريال'};
+  priceAlerts.push({
+    id: 'pa_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
+    type, typeName: typeNames[type],
+    direction: direction === '1' ? 'above' : 'below',
+    target, triggered: false,
+    createdAt: new Date().toISOString()
+  });
+  savePriceAlerts();
+  renderPriceAlerts();
+  showAlert('✅ تم إنشاء التنبيه', 'success');
+}
+
+async function delPriceAlert(id) {
+  const ok = await uiConfirm('حذف التنبيه؟', {danger: true, okText: 'حذف'});
+  if (!ok) return;
+  priceAlerts = priceAlerts.filter(a => a.id !== id);
+  savePriceAlerts();
+  renderPriceAlerts();
+}
+
+// Investments (gold/stocks/crypto)
+async function addInvestment() {
+  const type = await uiPrompt({
+    title: '💎 إضافة استثمار',
+    message: 'نوع الاستثمار',
+    options: [
+      {value:'ذهب', icon:'🪙', label:'ذهب'},
+      {value:'أسهم', icon:'📈', label:'أسهم'},
+      {value:'عملة رقمية', icon:'₿', label:'عملة رقمية (Crypto)'},
+      {value:'صناديق', icon:'📊', label:'صناديق استثمار'},
+      {value:'عقار', icon:'🏠', label:'عقار'},
+      {value:'أخرى', icon:'💎', label:'أخرى'}
+    ]
+  });
+  if (!type) return;
+
+  const name = await uiPrompt({
+    title: '💎 ' + type,
+    message: 'الاسم',
+    placeholder: type === 'ذهب' ? 'ذهب 21، سبيكة...' : type === 'أسهم' ? 'سهم أرامكو...' : type === 'عملة رقمية' ? 'بيتكوين، إيثريوم...' : 'الاسم'
+  });
+  if (!name) return;
+
+  const qtyStr = await uiPrompt({
+    title: '💎 ' + name,
+    message: type === 'ذهب' ? 'الكمية بالجرامات' : type === 'أسهم' ? 'عدد الأسهم' : 'الكمية',
+    placeholder: '10',
+    type: 'number'
+  });
+  const qty = parseFloat(qtyStr);
+  if (!qty) return;
+
+  const costStr = await uiPrompt({
+    title: '💎 ' + name,
+    message: 'سعر الوحدة وقت الشراء بالريال',
+    placeholder: '300',
+    type: 'number'
+  });
+  const cost = parseFloat(costStr);
+  if (!cost) return;
+
+  investments.push({
+    id: 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
+    type, name, qty, avgCost: cost, currentPrice: cost,
+    addedAt: new Date().toISOString()
+  });
+  saveInvestments();
+  renderInvestments();
+  showAlert('✅ تم إضافة الاستثمار', 'success');
+}
+
+async function delInvestment(id) {
+  const inv = investments.find(i => i.id === id);
+  const ok = await uiConfirm(`حذف ${inv?.name||'الاستثمار'}؟`, {danger: true, okText: 'حذف'});
+  if (!ok) return;
+  investments = investments.filter(i => i.id !== id);
+  saveInvestments();
+  renderInvestments();
+}
+
+async function updateInvestmentPrice(id) {
+  const inv = investments.find(i => i.id === id);
+  if (!inv) return;
+  const npStr = await uiPrompt({
+    title: '💎 ' + inv.name,
+    message: 'السعر الحالي للوحدة بالريال',
+    defaultValue: String(inv.currentPrice),
+    type: 'number'
+  });
+  const np = parseFloat(npStr);
+  if (!np) return;
+  inv.currentPrice = np;
+  inv.priceUpdatedAt = new Date().toISOString();
+  saveInvestments();
+  renderInvestments();
+  showAlert('✅ تم تحديث السعر', 'success');
+}
+
+// ═══════════════ Add CSS for the unified modals ═══════════════
+(function addUiPromptStyles() {
+  const css = `
+    #uiPromptModal, #uiConfirmModal { padding: 20px; }
+    .ui-prompt-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      max-width: 400px;
+      width: 100%;
+      margin: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      transform: scale(0.95);
+      transition: transform 0.2s;
+    }
+    #uiPromptModal.open .ui-prompt-box, #uiConfirmModal.open .ui-prompt-box { transform: scale(1); }
+    .ui-prompt-title {
+      font-size: 16px; font-weight: 900; color: var(--accent);
+      margin-bottom: 8px; text-align: center;
+    }
+    .ui-prompt-msg {
+      font-size: 13px; color: var(--text); line-height: 1.6;
+      margin-bottom: 14px; text-align: center;
+    }
+    .ui-prompt-input {
+      width: 100%; box-sizing: border-box;
+      background: var(--card2); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 12px 14px;
+      color: var(--text); font-family: 'Cairo', sans-serif;
+      font-size: 14px; outline: none;
+      transition: border-color 0.15s;
+    }
+    .ui-prompt-input:focus { border-color: var(--accent); }
+    textarea.ui-prompt-input { resize: vertical; min-height: 60px; }
+    .ui-prompt-options {
+      display: flex; flex-direction: column; gap: 6px;
+      margin-bottom: 8px;
+    }
+    .ui-prompt-opt {
+      background: var(--card2); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 12px 14px;
+      color: var(--text); font-family: 'Cairo', sans-serif;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      text-align: right; transition: all 0.15s;
+      -webkit-tap-highlight-color: rgba(240,180,41,0.3);
+    }
+    .ui-prompt-opt:active { transform: scale(0.98); background: rgba(240,180,41,0.1); border-color: var(--accent); }
+    .ui-prompt-actions {
+      display: flex; gap: 8px; margin-top: 14px;
+    }
+    .ui-prompt-actions button {
+      flex: 1; padding: 12px;
+      border-radius: 10px; border: none;
+      font-family: 'Cairo', sans-serif; font-size: 14px; font-weight: 900;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      transition: transform 0.1s, opacity 0.15s;
+    }
+    .ui-prompt-actions button:active { transform: scale(0.97); }
+    .ui-prompt-cancel {
+      background: var(--card2); color: var(--muted); border: 1.5px solid var(--border) !important;
+    }
+    .ui-prompt-ok {
+      background: linear-gradient(135deg, var(--accent), var(--accent2, var(--accent)));
+      color: #0d1117;
+    }
+    .ui-prompt-ok.ui-prompt-danger {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      color: #fff;
+    }
+  `;
+  const style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
+})();
 </script>
 
 </body>

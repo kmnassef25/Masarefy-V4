@@ -11,17 +11,23 @@
   "lang": "ar",
   "dir": "rtl",
   "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
     {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "name": "إضافة مصروف",
+      "short_name": "مصروف",
+      "url": "./?action=add-expense",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "name": "إضافة دخل",
+      "short_name": "دخل",
+      "url": "./?action=add-income",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
   ],
   "categories": ["finance", "productivity"]
