@@ -652,9 +652,9 @@ select.form-inp{padding-left:8px;}
 .feat-mini-btn.success{color:var(--green);}
 
 /* ── HOME TAB ── */
-.home-greet{background:linear-gradient(135deg,var(--accent),#e0a020);color:#0d1117;padding:16px;border-radius:14px;margin-bottom:14px;}
-.home-greet .hg-name{font-size:14px;font-weight:700;opacity:.85;}
-.home-greet .hg-line{font-size:18px;font-weight:900;margin-top:4px;}
+.home-greet{background:linear-gradient(135deg,rgba(240,180,41,0.18),rgba(240,180,41,0.05));border:1px solid rgba(240,180,41,0.25);color:var(--text);padding:14px 16px;border-radius:14px;margin-bottom:12px;}
+.home-greet .hg-name{font-size:12px;font-weight:700;color:var(--muted);}
+.home-greet .hg-line{font-size:16px;font-weight:900;margin-top:3px;color:var(--accent);letter-spacing:-0.3px;}
 
 .home-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
 .home-quick-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;}
@@ -942,7 +942,120 @@ select.form-inp{padding-left:8px;}
 .hub-add{width:100%;background:var(--card2);border:1px dashed var(--border);color:var(--accent);padding:8px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;margin-top:6px}
 .hub-add:active{background:rgba(240,180,41,0.1)}
 
-/* ── V11: Provider buttons for Tabby/Tamara ── */
+/* ── V13: Design improvements ── */
+
+/* 1. Smaller, cleaner hide button (icon-only pill) */
+.hide-balance-btn{
+  background:rgba(240,180,41,0.12);
+  border:1px solid rgba(240,180,41,0.35);
+  border-radius:10px;
+  width:38px;height:32px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  -webkit-tap-highlight-color:rgba(240,180,41,0.3);
+  touch-action:manipulation;
+  transition:all .15s;
+  padding:0;
+}
+.hide-balance-btn:active{transform:scale(0.92);background:rgba(240,180,41,0.25)}
+.hide-balance-btn.hidden-state{
+  background:var(--card2);
+  border-color:var(--border);
+}
+.hb-icon{font-size:16px;line-height:1}
+
+/* 2. Auto-shrink large amounts in summary cards */
+.sum-main .val,.sum-inc .val,.sum-exp .val,.sum-sav .val,.sum-cur .val{
+  font-size:clamp(16px, 5.5vw, 22px);
+  letter-spacing:-0.5px;
+  line-height:1.15;
+}
+.sum-main{padding:14px 16px}
+.sum-inc,.sum-exp,.sum-sav{padding:12px 14px}
+
+/* 3. Compact tab bar — smaller text, bigger emoji on small screens */
+@media (max-width: 400px) {
+  .tab-btn{font-size:9px;padding:9px 2px;min-width:50px}
+}
+
+/* 4. Tighter transaction cards — better density */
+.tx-card{
+  padding:11px 12px;
+  margin-bottom:6px;
+  transition:transform .1s,background .15s;
+}
+.tx-card:active{transform:scale(0.985);background:var(--card2)}
+.tx-name{font-size:13.5px;line-height:1.3}
+.tx-meta{margin-top:3px;gap:4px}
+.tx-meta .badge{font-size:10px;padding:2px 6px}
+.tx-orig{font-size:13px;letter-spacing:-0.3px}
+.tx-sar{font-size:10px;margin-top:1px}
+.tx-rate{font-size:9px;margin-top:0}
+.tx-emoji{font-size:22px;width:32px;height:32px;flex-shrink:0}
+.tx-note{font-size:10.5px;margin-top:2px;color:var(--muted);line-height:1.4}
+
+/* 5. Compact header — tighter spacing */
+.header{padding:8px 14px 10px}
+.live-time .clk{font-size:14px;font-weight:800}
+.live-time .dte{font-size:9.5px;line-height:1.3}
+.live-time .dte-hijri{font-size:9.5px;line-height:1.3;margin-top:0}
+.app-name{font-size:15px;font-weight:900;letter-spacing:-0.3px}
+
+/* 6. Press states on ALL interactive cards (haptic feel) */
+.menu-row,.feat-card,.runway-card,.gold-card,.travel-card,
+.ramadan-card,.hajj-card,.flight-card,.flight-home-card,
+.islamic-card,.forecast-card,.anomaly-card,.nw-chart,
+.tx-card,.alert-card,.inv-card{
+  transition:transform .12s ease, background .15s ease, border-color .15s ease;
+}
+.menu-row:active,.feat-card:active,.runway-card:active,.gold-card:active,
+.travel-card:active,.ramadan-card:active,.hajj-card:active,
+.flight-card:active,.flight-home-card:active,.islamic-card:active,
+.forecast-card:active,.anomaly-card:active,.tx-card:active,
+.alert-card:active,.inv-card:active{
+  transform:scale(0.98);
+}
+/* Reduce ripple aggressiveness on non-clickable cards */
+.runway-card:active,.gold-card:active,.forecast-card:active,
+.anomaly-card:active,.nw-chart:active,.ramadan-card:active{
+  transform:scale(0.995);
+}
+
+/* 7. Better hover feedback for buttons */
+.tx-del,.feat-mini-btn,.export-btn,.save-btn,.cat-btn,.inc-btn,.sav-btn{
+  transition:transform .1s, background .15s, opacity .15s;
+}
+.tx-del:active,.feat-mini-btn:active,.export-btn:active{transform:scale(0.93)}
+.save-btn:active{transform:scale(0.985)}
+
+/* 8. Filter chips — smoother active state */
+.filter-chip{
+  transition:all .15s;
+  -webkit-tap-highlight-color:rgba(240,180,41,0.2);
+}
+.filter-chip:active{transform:scale(0.93)}
+
+/* 9. Tab buttons — better tap feedback */
+.tab-btn{
+  -webkit-tap-highlight-color:rgba(240,180,41,0.15);
+  transition:all .15s;
+  position:relative;
+}
+.tab-btn:active{background:rgba(240,180,41,0.08)}
+
+/* 10. Cleaner spacing in summary wrap */
+.summary-wrap{padding:0 12px;gap:8px}
+
+/* 11. Trend indicators on quick cards */
+.qc-trend{font-size:9.5px;color:var(--muted);margin-top:3px;font-weight:700}
+.qc-trend.up{color:var(--red)}
+.qc-trend.down{color:var(--green)}
+.qc-trend.flat{color:var(--muted)}
+.home-quick-card{padding:10px 8px}
+.home-quick-card .lbl{font-size:10px;font-weight:700;margin-bottom:3px}
+.home-quick-card .val{font-size:14px;letter-spacing:-0.3px}
+
+
 .provider-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:6px}
 .provider-btn{background:var(--card2);border:1.5px solid var(--border);color:var(--text);padding:10px 8px;border-radius:10px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:rgba(240,180,41,0.3);text-align:center;transition:all .15s}
 .provider-btn:active{transform:scale(0.97)}
@@ -1022,7 +1135,6 @@ select.form-inp{padding-left:8px;}
       <button onclick="openMenu()" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:5px 10px;font-size:13px;cursor:pointer;">☰</button>
       <button onclick="openSettings()" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:5px 10px;font-size:13px;cursor:pointer;">⚙️</button>
       <div class="live-time">
-        <span class="clk" id="clk">--:--</span>
         <span class="dte" id="dte">--</span>
         <span class="dte-hijri" id="dteHijri">--</span>
       </div>
@@ -1030,9 +1142,9 @@ select.form-inp{padding-left:8px;}
   </div>
 
   <!-- SUMMARY -->
-  <div style="display:flex;justify-content:flex-end;align-items:center;padding:0 16px 10px">
-  <button id="hideBalanceBtn" onclick="toggleBalanceVisibility()" style="background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;border:none;border-radius:10px;padding:6px 14px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(240,180,41,.3);transition:all .2s">
-    👁️ إخفاء
+  <div style="display:flex;justify-content:flex-end;align-items:center;padding:0 16px 8px">
+  <button id="hideBalanceBtn" class="hide-balance-btn" onclick="toggleBalanceVisibility()" aria-label="إخفاء/إظهار المبالغ">
+    <span class="hb-icon">👁️</span>
   </button>
 </div>
 <div class="summary-wrap">
@@ -2233,21 +2345,23 @@ function dismissInstall() {
 // ── CLOCK ──
 function tick() {
   const n = new Date();
-  document.getElementById('clk').textContent = n.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  document.getElementById('dte').textContent = n.toLocaleDateString('ar-EG',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  // Clock removed in V13 — only dates now
+  const clk = document.getElementById('clk');
+  if (clk) clk.style.display = 'none';
+  const dte = document.getElementById('dte');
+  if (dte) dte.textContent = n.toLocaleDateString('ar-EG',{weekday:'short',day:'numeric',month:'short'});
   // Hijri date (Umm al-Qura) — Saudi/Egyptian users will recognize it
   try {
     const hijri = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura',
-      {day:'numeric', month:'long', year:'numeric'}).format(n);
+      {day:'numeric', month:'long'}).format(n);
     const el = document.getElementById('dteHijri');
     if (el) el.textContent = hijri;
   } catch(e) {
-    // Fallback for old browsers
     const el = document.getElementById('dteHijri');
     if (el) el.style.display = 'none';
   }
 }
-tick(); setInterval(tick, 1000);
+tick(); setInterval(tick, 60000); // every 1 min instead of 1 sec (no clock anymore)
 
 // ── UTILS ──
 function toSAR(amount, currency, rate) {
@@ -2341,20 +2455,31 @@ function renderHome() {
   let html = `<div class="home-greet">
     <div class="hg-name">👋 ${greet}</div>
     <div class="hg-line">${monthInc - monthExp >= 0 ? `وفّرت ${fmt(toBase(monthInc - monthExp), 0)} ${sym} الشهر ده 🎉` : `صرفت ${fmt(toBase(monthExp - monthInc), 0)} ${sym} زيادة الشهر ده`}</div>
-  </div>
+  </div>`;
 
+  // Compute trend indicators (V13 — show comparison instead of just numbers)
+  const dailyAvg = monthExp / Math.max(1, today.getDate()); // avg per day this month
+  const weekAvg = weekExp / 7;
+  const todayVsAvg = dailyAvg > 0 ? Math.round((todayExp - dailyAvg) / dailyAvg * 100) : 0;
+  const weekTrendArrow = weekAvg > dailyAvg * 1.1 ? '↑' : weekAvg < dailyAvg * 0.9 ? '↓' : '→';
+  const todayArrow = todayVsAvg > 10 ? '↑' : todayVsAvg < -10 ? '↓' : '→';
+
+  html += `
   <div class="home-quick">
     <div class="home-quick-card">
       <div class="lbl">📅 النهارده</div>
       <div class="val" style="color:var(--red)">${fmt(toBase(todayExp), 0)} ${sym}</div>
+      ${todayExp > 0 ? `<div class="qc-trend ${todayArrow==='↑'?'up':todayArrow==='↓'?'down':'flat'}">${todayArrow} مقارنة بالمعدل</div>` : ''}
     </div>
     <div class="home-quick-card">
       <div class="lbl">📊 الأسبوع</div>
       <div class="val" style="color:var(--red)">${fmt(toBase(weekExp), 0)} ${sym}</div>
+      <div class="qc-trend">~${fmt(toBase(weekAvg), 0)}/يوم</div>
     </div>
     <div class="home-quick-card">
       <div class="lbl">🗓️ الشهر</div>
       <div class="val" style="color:var(--red)">${fmt(toBase(monthExp), 0)} ${sym}</div>
+      <div class="qc-trend">~${fmt(toBase(dailyAvg), 0)}/يوم</div>
     </div>
   </div>`;
 
@@ -6054,21 +6179,19 @@ function applyBalanceVisibility() {
   const vals = document.querySelectorAll('.sum-main .val, .sum-inc .val, .sum-exp .val, .sum-sav .val, .sum-cur .val');
   if (balanceHidden) {
     if (btn) {
-      btn.innerHTML = '👁️ إظهار';
-      btn.style.background = 'var(--card2)';
-      btn.style.color = 'var(--muted)';
+      btn.innerHTML = '<span class="hb-icon">🙈</span>';
+      btn.classList.add('hidden-state');
     }
     vals.forEach(el => {
       if (!el.dataset.orig) el.dataset.orig = el.textContent;
-      el.textContent = '****';
+      el.textContent = '••••';
       el.style.filter = 'blur(4px)';
       el.style.userSelect = 'none';
     });
   } else {
     if (btn) {
-      btn.innerHTML = '👁️ إخفاء';
-      btn.style.background = 'linear-gradient(135deg,var(--accent),var(--accent2))';
-      btn.style.color = '#0d1117';
+      btn.innerHTML = '<span class="hb-icon">👁️</span>';
+      btn.classList.remove('hidden-state');
     }
     vals.forEach(el => {
       // Restore original text if it was hidden (#fix)
