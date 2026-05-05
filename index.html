@@ -89,7 +89,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);displ
 .header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
 .app-name{font-size:21px;font-weight:900;color:var(--accent);}
 .live-time{text-align:left;direction:ltr;}
-.live-time .clk{font-size:16px;font-weight:900;color:var(--text);display:block;}
+.live-time .clk{display:none}
 .live-time .dte{font-size:10px;color:var(--muted);display:block;}
 .live-time .dte-hijri{font-size:10px;color:var(--accent);display:block;direction:rtl;font-weight:700;margin-top:1px;}
 
@@ -996,7 +996,6 @@ select.form-inp{padding-left:8px;}
 
 /* 5. Compact header — tighter spacing */
 .header{padding:8px 14px 10px}
-.live-time .clk{font-size:14px;font-weight:800}
 .live-time .dte{font-size:9.5px;line-height:1.3}
 .live-time .dte-hijri{font-size:9.5px;line-height:1.3;margin-top:0}
 .app-name{font-size:15px;font-weight:900;letter-spacing:-0.3px}
@@ -1055,6 +1054,128 @@ select.form-inp{padding-left:8px;}
 .home-quick-card .lbl{font-size:10px;font-weight:700;margin-bottom:3px}
 .home-quick-card .val{font-size:14px;letter-spacing:-0.3px}
 
+/* 12. V14: Creative Hero Card */
+.hero-card{
+  position:relative;
+  background:linear-gradient(135deg, rgba(240,180,41,0.12) 0%, rgba(99,102,241,0.08) 100%);
+  border:1px solid rgba(240,180,41,0.25);
+  border-radius:20px;
+  padding:18px 16px 14px;
+  margin-bottom:14px;
+  overflow:hidden;
+}
+.hero-bg-orb{
+  position:absolute;top:-40px;left:-40px;
+  width:140px;height:140px;
+  background:radial-gradient(circle, rgba(240,180,41,0.25) 0%, rgba(240,180,41,0) 70%);
+  border-radius:50%;
+  pointer-events:none;
+}
+.hero-greet-line{
+  display:flex;align-items:center;gap:8px;
+  margin-bottom:10px;
+}
+.hero-emoji{font-size:24px;line-height:1}
+.hero-greet-text{font-size:13px;font-weight:700;color:var(--muted)}
+.hero-saved-block{
+  text-align:center;
+  margin-bottom:14px;
+}
+.hero-saved-label{font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px}
+.hero-saved-amount{
+  font-size:32px;font-weight:900;
+  letter-spacing:-1px;
+  direction:ltr;
+  line-height:1.1;
+}
+.hero-saved-cur{font-size:16px;opacity:0.7;margin-right:4px}
+.hero-rate{font-size:11px;color:var(--muted);margin-top:6px;font-weight:700}
+.hero-progress-wrap{
+  position:relative;
+}
+.hero-progress-track{
+  position:relative;
+  height:6px;
+  background:var(--card2);
+  border-radius:3px;
+  overflow:hidden;
+}
+.hero-progress-fill{
+  height:100%;
+  background:linear-gradient(90deg, var(--accent), #e0a020);
+  border-radius:3px;
+  transition:width 0.5s ease;
+}
+.hero-progress-marker{
+  position:absolute;top:-3px;
+  width:12px;height:12px;
+  background:#fff;
+  border:2px solid var(--accent);
+  border-radius:50%;
+  transform:translateX(50%);
+  box-shadow:0 0 0 3px rgba(240,180,41,0.2);
+}
+.hero-progress-labels{
+  display:flex;justify-content:space-between;
+  margin-top:8px;
+  font-size:10px;color:var(--muted);
+  font-weight:700;
+}
+.hero-progress-labels span:nth-child(2){color:var(--accent)}
+
+/* 13. V14: Stats grid (income/expense tiles) */
+.stats-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  margin-bottom:10px;
+}
+.stat-tile{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:12px;
+  display:flex;align-items:center;gap:10px;
+  transition:transform .12s, border-color .15s;
+}
+.stat-tile:active{transform:scale(0.98)}
+.stat-tile.stat-income{border-color:rgba(34,197,94,0.25);background:linear-gradient(135deg,rgba(34,197,94,0.08),transparent)}
+.stat-tile.stat-expense{border-color:rgba(248,81,73,0.25);background:linear-gradient(135deg,rgba(248,81,73,0.08),transparent)}
+.stat-icon{
+  width:36px;height:36px;
+  border-radius:10px;
+  background:var(--card2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;
+}
+.stat-content{flex:1;min-width:0}
+.stat-label{font-size:10px;color:var(--muted);font-weight:700;margin-bottom:2px}
+.stat-value{
+  font-size:15px;font-weight:900;color:var(--text);
+  direction:ltr;letter-spacing:-0.3px;
+  line-height:1.2;
+}
+.stat-cur{font-size:10px;font-weight:700;color:var(--muted);margin-right:2px}
+
+/* 14. V14: Mini stats bar (today/week/avg) */
+.mini-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+  margin-bottom:14px;
+}
+.mini-stat{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px 6px;
+  text-align:center;
+  transition:transform .12s;
+}
+.mini-stat:active{transform:scale(0.97)}
+.ms-label{font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px;line-height:1.2}
+.ms-value{font-size:14px;font-weight:900;color:var(--text);letter-spacing:-0.3px;line-height:1.2;direction:ltr}
+.ms-trend{font-size:9px;color:var(--muted);font-weight:700;margin-top:3px;line-height:1.2}
+.ms-trend.up{color:var(--red)}
+.ms-trend.down{color:var(--green)}
+.ms-trend.flat{color:var(--muted)}
+
 
 .provider-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:6px}
 .provider-btn{background:var(--card2);border:1.5px solid var(--border);color:var(--text);padding:10px 8px;border-radius:10px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:rgba(240,180,41,0.3);text-align:center;transition:all .15s}
@@ -1107,6 +1228,18 @@ select.form-inp{padding-left:8px;}
 .gold-calc-row input{flex:2;padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;direction:ltr;text-align:center}
 .gold-calc-row select{flex:1;padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;font-size:12px}
 .gold-calc-result{margin-top:6px;padding:6px;text-align:center;color:var(--accent);font-size:13px;min-height:20px;font-weight:700}
+.gold-calc-extra{display:flex;flex-direction:column;gap:6px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
+.gca-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.gca-row label{font-size:11px;color:var(--muted);font-weight:700;flex:1}
+.gca-row input,.gca-row select{width:120px;padding:6px 8px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;font-size:12px;direction:ltr;text-align:center}
+.gca-toggle{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text);font-weight:700;cursor:pointer;padding:4px 0}
+.gca-toggle input{width:16px;height:16px;cursor:pointer}
+.gcr-line{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:3px 0}
+.gcr-line b{color:var(--text);direction:ltr}
+.gcr-total{display:flex;justify-content:space-between;padding-top:6px;margin-top:4px;border-top:1px solid var(--border);font-size:13px;font-weight:900;color:var(--accent)}
+.gcr-total b{font-size:15px;direction:ltr}
+.gcr-simple{font-size:13px;font-weight:700;color:var(--accent)}
+.gcr-simple b{font-size:15px;direction:ltr}
 
 /* Days-left-in-month indicator (V9) */
 .month-days-left{
@@ -1430,11 +1563,13 @@ select.form-inp{padding-left:8px;}
     <!-- RECEIPT PHOTO -->
     <div class="form-row" id="receiptRow">
       <div class="form-lbl">📸 صورة الإيصال — Claude يقرأها تلقائياً</div>
+      <input type="file" id="fReceiptInputCam" accept="image/*" capture="environment" style="display:none" onchange="onReceiptSelect(event)"/>
       <input type="file" id="fReceiptInput" accept="image/*" style="display:none" onchange="onReceiptSelect(event)"/>
       <div id="receiptArea">
-        <div style="display:flex;gap:8px">
-          <button type="button" class="export-btn" style="flex:1" onclick="openReceiptCamera()">📷 كاميرا + AI</button>
-          <button type="button" class="export-btn" style="flex:1" onclick="document.getElementById('fReceiptInput').click()">🖼️ رفع صورة</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+          <button type="button" class="export-btn" onclick="openReceiptCamera()">📹 كاميرا حية</button>
+          <button type="button" class="export-btn" onclick="document.getElementById('fReceiptInputCam').click()">📷 صورة فورية</button>
+          <button type="button" class="export-btn" onclick="document.getElementById('fReceiptInput').click()">🖼️ من المعرض</button>
         </div>
       </div>
     </div>
@@ -2345,12 +2480,9 @@ function dismissInstall() {
 // ── CLOCK ──
 function tick() {
   const n = new Date();
-  // Clock removed in V13 — only dates now
-  const clk = document.getElementById('clk');
-  if (clk) clk.style.display = 'none';
+  // Clock fully removed in V14
   const dte = document.getElementById('dte');
   if (dte) dte.textContent = n.toLocaleDateString('ar-EG',{weekday:'short',day:'numeric',month:'short'});
-  // Hijri date (Umm al-Qura) — Saudi/Egyptian users will recognize it
   try {
     const hijri = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura',
       {day:'numeric', month:'long'}).format(n);
@@ -2361,7 +2493,8 @@ function tick() {
     if (el) el.style.display = 'none';
   }
 }
-tick(); setInterval(tick, 60000); // every 1 min instead of 1 sec (no clock anymore)
+// Run once on load + once per hour for date rollover (no clock means no per-second update)
+tick(); setInterval(tick, 3600000);
 
 // ── UTILS ──
 function toSAR(amount, currency, rate) {
@@ -2371,6 +2504,10 @@ function toSAR(amount, currency, rate) {
 }
 function fmt(n, dec=2) {
   return Number(n).toLocaleString('ar-EG',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+}
+// Convert number to Arabic-Indic digits (10 → ١٠) — defined early so all renders can use it
+function toArabicDigits(n) {
+  return String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[parseInt(d)]);
 }
 
 // HTML-escape user input before injecting into innerHTML to prevent XSS (#5)
@@ -2452,9 +2589,45 @@ function renderHome() {
   const activeGoals = goals.filter(g => (g.current||0) < g.target);
   const closestGoal = activeGoals.sort((a,b) => ((b.current||0)/b.target) - ((a.current||0)/a.target))[0];
 
-  let html = `<div class="home-greet">
-    <div class="hg-name">👋 ${greet}</div>
-    <div class="hg-line">${monthInc - monthExp >= 0 ? `وفّرت ${fmt(toBase(monthInc - monthExp), 0)} ${sym} الشهر ده 🎉` : `صرفت ${fmt(toBase(monthExp - monthInc), 0)} ${sym} زيادة الشهر ده`}</div>
+  // Hero card — budget health visual (V14 redesign)
+  const savedThisMonth = monthInc - monthExp;
+  const savingsRate = monthInc > 0 ? Math.round(savedThisMonth / monthInc * 100) : 0;
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
+  const dayOfMonth = today.getDate();
+  const monthProgress = Math.round(dayOfMonth / daysInMonth * 100);
+  const expectedSpend = monthInc * (dayOfMonth / daysInMonth); // proportional
+  const overspending = monthExp > expectedSpend * 1.1;
+  const onTrack = !overspending && savedThisMonth >= 0;
+
+  // Mood emoji
+  const mood = savingsRate >= 30 ? '🤩' : savingsRate >= 15 ? '😊' : savingsRate >= 0 ? '🙂' : savingsRate >= -10 ? '😐' : '😟';
+  const moodColor = savingsRate >= 15 ? 'var(--green)' : savingsRate >= 0 ? 'var(--accent)' : 'var(--red)';
+
+  let html = `<div class="hero-card">
+    <div class="hero-bg-orb"></div>
+    <div class="hero-greet-line">
+      <span class="hero-emoji">${mood}</span>
+      <span class="hero-greet-text">${greet}</span>
+    </div>
+    <div class="hero-saved-block">
+      <div class="hero-saved-label">${savedThisMonth >= 0 ? 'وفّرت الشهر ده' : 'صرفت زيادة'}</div>
+      <div class="hero-saved-amount" style="color:${moodColor}">
+        ${savedThisMonth >= 0 ? '+' : '-'}${fmt(toBase(Math.abs(savedThisMonth)), 0)}
+        <span class="hero-saved-cur">${sym}</span>
+      </div>
+      ${monthInc > 0 ? `<div class="hero-rate">معدل الادخار <b style="color:${moodColor}">${savingsRate}%</b></div>` : ''}
+    </div>
+    <div class="hero-progress-wrap">
+      <div class="hero-progress-track">
+        <div class="hero-progress-fill" style="width:${monthProgress}%"></div>
+        <div class="hero-progress-marker" style="right:${monthProgress}%"></div>
+      </div>
+      <div class="hero-progress-labels">
+        <span>📅 يوم ${toArabicDigits(dayOfMonth)}</span>
+        <span>${onTrack?'✓ ماشي صح':overspending?'⚠️ بتنفق بسرعة':'─'}</span>
+        <span>${toArabicDigits(daysInMonth)} يوم</span>
+      </div>
+    </div>
   </div>`;
 
   // Compute trend indicators (V13 — show comparison instead of just numbers)
@@ -2465,21 +2638,38 @@ function renderHome() {
   const todayArrow = todayVsAvg > 10 ? '↑' : todayVsAvg < -10 ? '↓' : '→';
 
   html += `
-  <div class="home-quick">
-    <div class="home-quick-card">
-      <div class="lbl">📅 النهارده</div>
-      <div class="val" style="color:var(--red)">${fmt(toBase(todayExp), 0)} ${sym}</div>
-      ${todayExp > 0 ? `<div class="qc-trend ${todayArrow==='↑'?'up':todayArrow==='↓'?'down':'flat'}">${todayArrow} مقارنة بالمعدل</div>` : ''}
+  <div class="stats-grid">
+    <div class="stat-tile stat-income">
+      <div class="stat-icon">📥</div>
+      <div class="stat-content">
+        <div class="stat-label">دخل الشهر</div>
+        <div class="stat-value">${fmt(toBase(monthInc), 0)} <span class="stat-cur">${sym}</span></div>
+      </div>
     </div>
-    <div class="home-quick-card">
-      <div class="lbl">📊 الأسبوع</div>
-      <div class="val" style="color:var(--red)">${fmt(toBase(weekExp), 0)} ${sym}</div>
-      <div class="qc-trend">~${fmt(toBase(weekAvg), 0)}/يوم</div>
+    <div class="stat-tile stat-expense">
+      <div class="stat-icon">📤</div>
+      <div class="stat-content">
+        <div class="stat-label">مصروف الشهر</div>
+        <div class="stat-value">${fmt(toBase(monthExp), 0)} <span class="stat-cur">${sym}</span></div>
+      </div>
     </div>
-    <div class="home-quick-card">
-      <div class="lbl">🗓️ الشهر</div>
-      <div class="val" style="color:var(--red)">${fmt(toBase(monthExp), 0)} ${sym}</div>
-      <div class="qc-trend">~${fmt(toBase(dailyAvg), 0)}/يوم</div>
+  </div>
+
+  <div class="mini-stats">
+    <div class="mini-stat">
+      <div class="ms-label">📅 النهارده</div>
+      <div class="ms-value">${fmt(toBase(todayExp), 0)}</div>
+      ${todayExp > 0 ? `<div class="ms-trend ${todayArrow==='↑'?'up':todayArrow==='↓'?'down':'flat'}">${todayArrow} ${Math.abs(todayVsAvg)}%</div>` : '<div class="ms-trend flat">─</div>'}
+    </div>
+    <div class="mini-stat">
+      <div class="ms-label">📊 الأسبوع</div>
+      <div class="ms-value">${fmt(toBase(weekExp), 0)}</div>
+      <div class="ms-trend">~${fmt(toBase(weekAvg), 0)}/يوم</div>
+    </div>
+    <div class="mini-stat">
+      <div class="ms-label">📈 معدل يومي</div>
+      <div class="ms-value">${fmt(toBase(dailyAvg), 0)}</div>
+      <div class="ms-trend">آخر ${toArabicDigits(dayOfMonth)} يوم</div>
     </div>
   </div>`;
 
@@ -6260,22 +6450,139 @@ function editJameya(id) {
 function editInstallment(id) {
   const inst = installments.find(x => x.id === id);
   if (!inst) return;
-  const newName = prompt('✏️ اسم القسط الجديد:', inst.name);
-  if (newName === null) return;
-  const newTotal = parseFloat(prompt('💵 إجمالي المبلغ:', inst.totalAmount));
+
+  let m = document.getElementById('editInstModal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'editInstModal';
+    m.className = 'overlay';
+    m.style.zIndex = '99997';
+    m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+    document.body.appendChild(m);
+  }
+
+  m.innerHTML = `<div class="sheet" style="max-height:94vh">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:4px 8px 0">
+      <div style="font-size:15px;font-weight:900;color:var(--accent)">✏️ تعديل القسط</div>
+      <button onclick="document.getElementById('editInstModal').classList.remove('open')" style="background:var(--card2);border:1.5px solid var(--border);border-radius:50%;width:44px;height:44px;color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif">✕</button>
+    </div>
+
+    <div class="form-row">
+      <div class="form-lbl">💳 موفّر التقسيط</div>
+      <div class="provider-grid">
+        <button type="button" class="provider-btn ${!inst.provider?'sel':''}" data-provider="" onclick="selEditProvider(this)">💳 يدوي</button>
+        <button type="button" class="provider-btn provider-tabby ${inst.provider==='tabby'?'sel':''}" data-provider="tabby" onclick="selEditProvider(this)">tabby</button>
+        <button type="button" class="provider-btn provider-tamara ${inst.provider==='tamara'?'sel':''}" data-provider="tamara" onclick="selEditProvider(this)">tamara</button>
+        <button type="button" class="provider-btn ${inst.provider==='bank'?'sel':''}" data-provider="bank" onclick="selEditProvider(this)">🏦 بنك</button>
+        <button type="button" class="provider-btn ${inst.provider==='dealer'?'sel':''}" data-provider="dealer" onclick="selEditProvider(this)">🏪 محل</button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-lbl">📝 اسم القسط</div>
+      <input class="form-inp" id="eInstName" value="${esc(inst.name||'')}" placeholder="مثال: قسط الموبايل، شي إن، أمازون..."/>
+    </div>
+
+    <div class="form-row">
+      <div class="form-lbl">🛍️ اشتريت من (اختياري)</div>
+      <input class="form-inp" id="eInstStore" value="${esc(inst.store||'')}" placeholder="مثلاً: نون، أمازون، شي إن..."/>
+    </div>
+
+    <div class="two-col">
+      <div class="form-row">
+        <div class="form-lbl">إجمالي المبلغ</div>
+        <input class="form-inp" id="eInstTotal" type="number" inputmode="decimal" value="${inst.totalAmount}"/>
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">عدد الشهور</div>
+        <input class="form-inp" id="eInstMonths" type="number" inputmode="numeric" value="${inst.totalMonths}"/>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-lbl">القسط الشهري</div>
+      <input class="form-inp" id="eInstMonthly" type="number" inputmode="decimal" value="${inst.monthlyPayment}"/>
+    </div>
+
+    <div class="two-col">
+      <div class="form-row">
+        <div class="form-lbl">العملة</div>
+        <select class="form-inp" id="eInstCurrency">
+          <option value="SAR" ${inst.currency==='SAR'?'selected':''}>🇸🇦 ريال</option>
+          <option value="EGP" ${inst.currency==='EGP'?'selected':''}>🇪🇬 جنيه</option>
+          <option value="USD" ${inst.currency==='USD'?'selected':''}>🇺🇸 دولار</option>
+          <option value="EUR" ${inst.currency==='EUR'?'selected':''}>🇪🇺 يورو</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">يوم الخصم</div>
+        <input class="form-inp" id="eInstDay" type="number" inputmode="numeric" min="1" max="28" value="${inst.day||1}"/>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-lbl">📂 فئة المصروف</div>
+      <select class="form-inp" id="eInstCat">
+        <option value="تسوق" ${inst.cat==='تسوق'?'selected':''}>🛍️ تسوق / مشتريات</option>
+        <option value="بيت" ${inst.cat==='بيت'?'selected':''}>🏠 بيت</option>
+        <option value="مواصلات" ${inst.cat==='مواصلات'?'selected':''}>🚗 مواصلات</option>
+        <option value="اتصالات" ${inst.cat==='اتصالات'?'selected':''}>📱 اتصالات / موبايل</option>
+        <option value="سفر" ${inst.cat==='سفر'?'selected':''}>✈️ سفر</option>
+        <option value="ترفيه" ${inst.cat==='ترفيه'?'selected':''}>🎬 ترفيه</option>
+        <option value="أخرى" ${inst.cat==='أخرى'?'selected':''}>💸 أخرى</option>
+      </select>
+    </div>
+
+    <div style="background:var(--card2);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:var(--muted);line-height:1.6">
+      <div style="font-weight:700;margin-bottom:4px">📊 الحالة الحالية</div>
+      دفعت <b style="color:var(--green)">${inst.paidMonths||0}</b> من <b>${inst.totalMonths}</b> قسط
+      ${inst.lastPaidMonth?`<br>آخر دفعة: ${esc(inst.lastPaidMonth)}`:''}
+    </div>
+
+    <button class="save-btn" onclick="saveInstallmentEdit('${escAttr(id)}')">💾 حفظ التعديلات</button>
+    <button class="export-btn" onclick="delInstallment('${escAttr(id)}')" style="color:var(--red);width:100%;margin-top:10px">🗑️ حذف القسط</button>
+  </div>`;
+
+  m.classList.add('open');
+}
+
+function selEditProvider(btn) {
+  document.querySelectorAll('#editInstModal .provider-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+function saveInstallmentEdit(id) {
+  const inst = installments.find(x => x.id === id);
+  if (!inst) return;
+  const newName = document.getElementById('eInstName').value.trim();
+  const newStore = document.getElementById('eInstStore').value.trim();
+  const newTotal = parseFloat(document.getElementById('eInstTotal').value);
+  const newMonths = parseInt(document.getElementById('eInstMonths').value);
+  const newMonthly = parseFloat(document.getElementById('eInstMonthly').value);
+  const newCurrency = document.getElementById('eInstCurrency').value;
+  const newDay = parseInt(document.getElementById('eInstDay').value);
+  const newCat = document.getElementById('eInstCat').value;
+  const providerBtn = document.querySelector('#editInstModal .provider-btn.sel');
+  const newProvider = providerBtn?.dataset.provider || '';
+
+  if (!newName) { showAlert('اكتب اسم القسط', 'error'); return; }
   if (!newTotal || newTotal <= 0) { showAlert('مبلغ غير صحيح', 'error'); return; }
-  const newMonths = parseInt(prompt('📅 عدد الشهور:', inst.totalMonths));
-  if (!newMonths || newMonths < 1) { showAlert('عدد غير صحيح', 'error'); return; }
-  const newMonthly = parseFloat(prompt('💳 القسط الشهري:', inst.monthlyPayment));
-  if (!newMonthly || newMonthly <= 0) { showAlert('مبلغ غير صحيح', 'error'); return; }
-  const newDay = parseInt(prompt('📆 يوم الخصم (1-28):', inst.day));
-  if (!newDay || newDay < 1 || newDay > 28) { showAlert('يوم غير صحيح', 'error'); return; }
-  inst.name = newName.trim() || inst.name;
+  if (!newMonths || newMonths < 1) { showAlert('عدد الشهور غير صحيح', 'error'); return; }
+  if (!newMonthly || newMonthly <= 0) { showAlert('القسط الشهري غير صحيح', 'error'); return; }
+  if (!newDay || newDay < 1 || newDay > 28) { showAlert('يوم الخصم لازم يكون من 1 لـ 28', 'error'); return; }
+
+  inst.name = newName;
+  inst.store = newStore;
   inst.totalAmount = newTotal;
   inst.totalMonths = newMonths;
   inst.monthlyPayment = newMonthly;
+  inst.currency = newCurrency;
   inst.day = newDay;
+  inst.cat = newCat;
+  inst.provider = newProvider;
   saveInstallments();
+  document.getElementById('editInstModal').classList.remove('open');
   renderInstallments();
   updateMenuCounts();
   if (typeof showToast === 'function') showToast('✅ تم تعديل القسط', 'success');
@@ -7701,10 +8008,7 @@ function getNextIslamicOccasion() {
   return closest;
 }
 
-// Convert number to Arabic-Indic digits (e.g., 10 → ١٠)
-function toArabicDigits(n) {
-  return String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[parseInt(d)]);
-}
+// toArabicDigits now defined at top of script (next to fmt)
 
 function renderIslamicOccasionCard() {
   const occ = getNextIslamicOccasion();
@@ -7919,6 +8223,25 @@ function buildGoldCardHTML() {
           <option value="18"${savedKarat==='18'?' selected':''}>عيار 18</option>
         </select>
       </div>
+      <div class="gold-calc-extra">
+        <div class="gca-row">
+          <label>🔧 المصنعية (ج.م/جرام)</label>
+          <input type="number" step="1" inputmode="decimal" id="goldMakingInp" placeholder="0" value="${parseFloat(localStorage.getItem('msarifyi_gold_making') || '0') || ''}" oninput="updateGoldCalc()">
+        </div>
+        <div class="gca-row">
+          <label>🧾 ضريبة على المصنعية</label>
+          <select id="goldVatSel" onchange="updateGoldCalc()">
+            <option value="0" ${(localStorage.getItem('msarifyi_gold_vat')||'14')==='0'?'selected':''}>بدون</option>
+            <option value="14" ${(localStorage.getItem('msarifyi_gold_vat')||'14')==='14'?'selected':''}>١٤٪ (مصر)</option>
+            <option value="15" ${(localStorage.getItem('msarifyi_gold_vat')||'14')==='15'?'selected':''}>١٥٪ (السعودية)</option>
+            <option value="5"  ${(localStorage.getItem('msarifyi_gold_vat')||'14')==='5'?'selected':''}>٥٪ (الإمارات)</option>
+          </select>
+        </div>
+        <label class="gca-toggle">
+          <input type="checkbox" id="goldIsBuying" ${localStorage.getItem('msarifyi_gold_buying') === '1' ? 'checked' : ''} onchange="updateGoldCalc()"/>
+          <span>أنا بشتري (ضيف مصنعية وضريبة)</span>
+        </label>
+      </div>
       <div class="gold-calc-result" id="goldCalcResult"></div>
     </div>
     <div class="gold-meta">
@@ -7934,12 +8257,37 @@ function updateGoldCalc() {
   if (!inp || !sel || !result) return;
   const grams = parseFloat(inp.value) || 0;
   const karat = parseInt(sel.value);
+  // Persist
   localStorage.setItem('msarifyi_gold_grams', String(grams));
   localStorage.setItem('msarifyi_gold_karat', String(karat));
-  if (!grams || !goldData) { result.textContent = ''; return; }
+
+  const makingInp = document.getElementById('goldMakingInp');
+  const vatSel = document.getElementById('goldVatSel');
+  const isBuyingInp = document.getElementById('goldIsBuying');
+  const making = makingInp ? (parseFloat(makingInp.value) || 0) : 0;
+  const vat = vatSel ? (parseFloat(vatSel.value) || 0) : 0;
+  const isBuying = isBuyingInp ? isBuyingInp.checked : false;
+  if (makingInp) localStorage.setItem('msarifyi_gold_making', String(making));
+  if (vatSel) localStorage.setItem('msarifyi_gold_vat', String(vat));
+  if (isBuyingInp) localStorage.setItem('msarifyi_gold_buying', isBuying ? '1' : '0');
+
+  if (!grams || !goldData) { result.innerHTML = ''; return; }
   const pricePerGram = egpPerGramKarat(karat);
-  const total = grams * pricePerGram;
-  result.innerHTML = `${toArabicDigits(grams)} جرام عيار ${toArabicDigits(karat)} ≈ <b>${fmt(total, 0)} ج.م</b>`;
+  const goldOnly = grams * pricePerGram;
+  const makingFee = isBuying ? grams * making : 0;
+  const vatAmount = isBuying ? makingFee * (vat / 100) : 0;
+  const total = goldOnly + makingFee + vatAmount;
+
+  if (isBuying && (making > 0 || vat > 0)) {
+    result.innerHTML = `
+      <div class="gcr-line"><span>قيمة الذهب</span><b>${fmt(goldOnly,0)} ج.م</b></div>
+      ${making > 0 ? `<div class="gcr-line"><span>المصنعية (${toArabicDigits(grams)}×${toArabicDigits(making)})</span><b>${fmt(makingFee,0)} ج.م</b></div>` : ''}
+      ${vat > 0 && making > 0 ? `<div class="gcr-line"><span>ضريبة ${toArabicDigits(vat)}٪ على المصنعية</span><b>${fmt(vatAmount,0)} ج.م</b></div>` : ''}
+      <div class="gcr-total"><span>الإجمالي للشراء</span><b>${fmt(total,0)} ج.م</b></div>
+    `;
+  } else {
+    result.innerHTML = `<div class="gcr-simple">${toArabicDigits(grams)} جرام عيار ${toArabicDigits(karat)} ≈ <b>${fmt(goldOnly, 0)} ج.م</b></div>`;
+  }
 }
 
 // ── (V9) Inject days-left + gold card into home view ──
@@ -8791,27 +9139,8 @@ function selProvider(btn) {
   }
 }
 
-// ── Edit installment now needs to populate provider/store fields ──
-const _origEditInstallment = window.editInstallment;
-window.editInstallment = function(id) {
-  const inst = installments.find(i => i.id === id);
-  if (!inst) return;
-  // Use the existing edit logic (calls fillForm by removing+re-adding)
-  if (_origEditInstallment) _origEditInstallment(id);
-  // After form is populated, fill new fields
-  setTimeout(() => {
-    const storeInp = document.getElementById('instStore');
-    if (storeInp) storeInp.value = inst.store || '';
-    // Highlight provider
-    document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('sel'));
-    if (inst.provider) {
-      const target = document.querySelector(`.provider-btn[data-provider="${inst.provider}"]`);
-      if (target) target.classList.add('sel');
-    } else {
-      document.querySelector('.provider-btn[data-provider=""]')?.classList.add('sel');
-    }
-  }, 50);
-};
+// ── editInstallment now opens a full modal with all fields including provider/store
+//    (defined earlier as a regular function, no override needed) ──
 
 // ═══════════════ FEATURE: FLIGHT TICKETS ═══════════════
 var flights = JSON.parse(localStorage.getItem('msarifyi_flights') || '[]');
