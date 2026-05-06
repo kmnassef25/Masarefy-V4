@@ -5214,43 +5214,48 @@ function saveRateMeta() { localStorage.setItem('msarifyi_rate_meta', JSON.string
 // IMPROVED RATES — multi-source fallback
 // ═══════════════════════════════════════════════════════════════
 
-// ── OFFICIAL CURRENCY SOURCES ONLY ──
-// Frankfurter API tracks reference rates published by 55 central banks
-// (European Central Bank + national central banks). It's the only free
-// CORS-enabled API based on official central bank data, no API key needed.
-// Multiple endpoints provided for redundancy (same data, different hosts).
+// ── TRUSTED CURRENCY SOURCES (مصادر موثوقة) ──
+// We use sources that aggregate official central bank data + market rates,
+// because the European Central Bank (Frankfurter) doesn't include EGP/SAR
+// among its 31 supported currencies, and direct CBE/SAMA APIs don't allow
+// CORS browser access.
+//
+// Primary: open.er-api.com — free, no key, CORS, 166 currencies, daily updates
+// Backup: Currency-API mirrors on Cloudflare + jsDelivr (open-source dataset)
 const RATE_SOURCES = [
   {
-    name: 'البنك المركزي الأوروبي (ECB)',
-    url: 'https://api.frankfurter.dev/v1/latest?base=SAR&symbols=EGP,USD,EUR',
-    parse: (d) => ({
-      EGP: d.rates?.EGP,
-      USD_per_SAR: d.rates?.USD,
-      EUR_per_SAR: d.rates?.EUR
-    })
-  },
-  {
-    name: 'Frankfurter (ECB Mirror)',
-    url: 'https://api.frankfurter.app/latest?from=SAR&to=EGP,USD,EUR',
-    parse: (d) => ({
-      EGP: d.rates?.EGP,
-      USD_per_SAR: d.rates?.USD,
-      EUR_per_SAR: d.rates?.EUR
-    })
-  },
-  // Fallback: query EUR base and compute SAR rates (in case SAR base is unavailable)
-  {
-    name: 'ECB (عبر اليورو)',
-    url: 'https://api.frankfurter.dev/v1/latest?base=EUR&symbols=EGP,USD,SAR',
+    name: 'ExchangeRate-API (مصادر موثوقة)',
+    url: 'https://open.er-api.com/v6/latest/SAR',
     parse: (d) => {
-      const eurEgp = d.rates?.EGP;
-      const eurUsd = d.rates?.USD;
-      const eurSar = d.rates?.SAR;
-      if (!eurEgp || !eurUsd || !eurSar) return {};
+      if (d.result !== 'success' || !d.rates) return {};
       return {
-        EGP: eurEgp / eurSar,           // EGP per SAR
-        USD_per_SAR: eurUsd / eurSar,   // USD per SAR
-        EUR_per_SAR: 1 / eurSar         // EUR per SAR
+        EGP: d.rates.EGP,
+        USD_per_SAR: d.rates.USD,
+        EUR_per_SAR: d.rates.EUR
+      };
+    }
+  },
+  {
+    name: 'Currency-API (Cloudflare)',
+    url: 'https://latest.currency-api.pages.dev/v1/currencies/sar.json',
+    parse: (d) => {
+      const r = d.sar || {};
+      return {
+        EGP: r.egp,
+        USD_per_SAR: r.usd,
+        EUR_per_SAR: r.eur
+      };
+    }
+  },
+  {
+    name: 'Currency-API (jsDelivr CDN)',
+    url: 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/sar.json',
+    parse: (d) => {
+      const r = d.sar || {};
+      return {
+        EGP: r.egp,
+        USD_per_SAR: r.usd,
+        EUR_per_SAR: r.eur
       };
     }
   }
@@ -5298,7 +5303,7 @@ function updateRateInfoBanner() {
   const el = document.getElementById('calcRateInfo');
   if (!el) return;
   if (!rateMeta.source) {
-    el.innerHTML = `<span style="color:var(--muted)">📊 الأسعار المحفوظة: 1 ر.س = ${rates.EGP} ج.م | 1 $ = ${rates.USD} ر.س — اضغط "تحديث" لجلب آخر سعر رسمي من البنك المركزي الأوروبي</span>`;
+    el.innerHTML = `<span style="color:var(--muted)">📊 الأسعار المحفوظة: 1 ر.س = ${rates.EGP} ج.م | 1 $ = ${rates.USD} ر.س — اضغط "تحديث" لجلب آخر سعر</span>`;
     return;
   }
   const ago = Date.now() - rateMeta.ts;
@@ -5306,9 +5311,9 @@ function updateRateInfoBanner() {
   const hrs = Math.floor(mins / 60);
   const days = Math.floor(hrs / 24);
   let timeStr = days > 0 ? `من ${days} يوم` : hrs > 0 ? `من ${hrs} ساعة` : mins > 0 ? `من ${mins} دقيقة` : 'الآن';
-  el.innerHTML = `<div style="color:var(--accent);font-weight:700;margin-bottom:4px">🏛️ المصدر الرسمي: ${rateMeta.source}</div>
+  el.innerHTML = `<div style="color:var(--accent);font-weight:700;margin-bottom:4px">📊 المصدر: ${rateMeta.source}</div>
     <div>1 ر.س = ${rates.EGP} ج.م | 1 $ = ${rates.USD} ر.س</div>
-    <div style="margin-top:4px;font-size:10px">آخر تحديث ${timeStr} · سعر مرجعي رسمي (يُحدَّث يومياً ~4م بتوقيت أوروبا الوسطى)</div>`;
+    <div style="margin-top:4px;font-size:10px">آخر تحديث ${timeStr} · سعر مرجعي بيناقش (يُحدَّث يومياً)</div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -10334,12 +10339,12 @@ async function updateInvestmentPrice(id) {
     const eurToEgp = eurToSar * sarToEgp;
 
     const sourceLine = rateMeta.source
-      ? `🏛️ ${rateMeta.source}`
+      ? `📊 ${rateMeta.source}`
       : '⚠️ لم يتم التحديث بعد';
 
     return `<div class="currency-card" data-section="currency">
       <div class="currency-title">
-        <span>💱 أسعار العملات الرسمية</span>
+        <span>💱 أسعار العملات</span>
         <button class="currency-refresh" onclick="updateRatesFromHome()">🔄 تحديث</button>
       </div>
       <div class="currency-grid">
