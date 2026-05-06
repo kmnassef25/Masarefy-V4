@@ -1,6 +1,5 @@
 // Masarefy Service Worker
-// Bumped version on every release so users get the new build.
-const APP_VERSION = 'v15.0.0';
+const APP_VERSION = 'v16.0.0';
 const CACHE_NAME = 'masarefy-' + APP_VERSION;
 const URLS_TO_CACHE = [
   './',
@@ -12,7 +11,6 @@ const URLS_TO_CACHE = [
   './icon-512-maskable.png'
 ];
 
-// Install: cache the app shell
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -24,7 +22,6 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate: clean old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -39,18 +36,14 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Listen for skipWaiting message from page (when user accepts an update)
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
 
-// Fetch: network-first for HTML (so users get updates), cache-first for static assets
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-
-  // Skip cross-origin and non-GET requests
   if (url.origin !== self.location.origin) return;
   if (event.request.method !== 'GET') return;
 
@@ -58,7 +51,6 @@ self.addEventListener('fetch', (event) => {
                  (event.request.headers.get('accept') || '').includes('text/html');
 
   if (isHTML) {
-    // Network-first for HTML
     event.respondWith(
       fetch(event.request)
         .then((response) => {
@@ -76,11 +68,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first for everything else (icons, manifest)
   event.respondWith(
     caches.match(event.request, {ignoreSearch: true}).then((cached) => {
       if (cached) {
-        // Background refresh
         fetch(event.request).then((response) => {
           if (response && response.status === 200) {
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response));

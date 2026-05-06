@@ -10712,6 +10712,502 @@ setTimeout(() => {
     if (typeof updateOrdersMenuCount === 'function') updateOrdersMenuCount();
   } catch(e) { console.warn('V15 final init:', e); }
 }, 800);
+// ═══════════════════════════════════════════════════════════════
+// V16 — REAL-TIME RATES (with API timestamp + optional API key) +
+//        TRANSACTION CONVERSION (to installment / occasion / order / jameya)
+// ═══════════════════════════════════════════════════════════════
+(function v16Init() {
+
+  // ─────────────────────────────────────────────────────────────
+  // PART A — REAL-TIME RATES + ACCURATE TIMESTAMP DISPLAY
+  // ─────────────────────────────────────────────────────────────
+
+  // Storage for optional API key
+  function getApiKeyConfig() {
+    try {
+      return JSON.parse(localStorage.getItem('msarifyi_rates_apikey') || 'null');
+    } catch(e) { return null; }
+  }
+  function setApiKeyConfig(cfg) {
+    if (cfg) localStorage.setItem('msarifyi_rates_apikey', JSON.stringify(cfg));
+    else localStorage.removeItem('msarifyi_rates_apikey');
+  }
+  window.getApiKeyConfig = getApiKeyConfig;
+  window.setApiKeyConfig = setApiKeyConfig;
+
+  // ── Build real-time source if API key is configured ──
+  // Twelve Data: 800 requests/day free, real-time updates (60s)
+  // Returns rates relative to SAR
+  function buildRealtimeSources() {
+    const cfg = getApiKeyConfig();
+    if (!cfg || !cfg.key || !cfg.provider) return [];
+
+    if (cfg.provider === 'twelvedata') {
+      // Twelve Data: fetch each pair separately. We need SAR/USD, SAR/EUR, SAR/EGP
+      // Use single request for multiple symbols.
+      return [{
+        name: 'Twelve Data (لحظي)',
+        isRealtime: true,
+        url: `https://api.twelvedata.com/exchange_rate?symbol=USD/SAR,EUR/SAR,EGP/SAR&apikey=${encodeURIComponent(cfg.key)}`,
+        parse: (d) => {
+          // Response is an object keyed by symbol like { "USD/SAR": {rate: 3.75, timestamp: 1234567890}, ... }
+          // OR if single symbol, just {rate, timestamp, ...}
+          if (d.code && d.code !== 200) return {};
+          const out = {};
+          let tsLatest = 0;
+          const usd = d['USD/SAR'];
+          const eur = d['EUR/SAR'];
+          const egp = d['EGP/SAR'];
+          if (usd && usd.rate) {
+            // 1 USD = X SAR -> we want USD_per_SAR = 1/X
+            out.USD_per_SAR = 1 / parseFloat(usd.rate);
+            if (usd.timestamp) tsLatest = Math.max(tsLatest, parseInt(usd.timestamp));
+          }
+          if (eur && eur.rate) {
+            out.EUR_per_SAR = 1 / parseFloat(eur.rate);
+            if (eur.timestamp) tsLatest = Math.max(tsLatest, parseInt(eur.timestamp));
+          }
+          if (egp && egp.rate) {
+            // 1 EGP = X SAR -> EGP per SAR = 1/X
+            out.EGP = 1 / parseFloat(egp.rate);
+            if (egp.timestamp) tsLatest = Math.max(tsLatest, parseInt(egp.timestamp));
+          }
+          if (tsLatest) out.__apiTimestamp = tsLatest * 1000;
+          return out;
+        }
+      }];
+    }
+
+    if (cfg.provider === 'currencyfreaks') {
+      return [{
+        name: 'CurrencyFreaks (لحظي)',
+        isRealtime: true,
+        url: `https://api.currencyfreaks.com/latest?apikey=${encodeURIComponent(cfg.key)}&base=SAR&symbols=USD,EUR,EGP`,
+        parse: (d) => {
+          if (!d.rates) return {};
+          const out = {
+            EGP: parseFloat(d.rates.EGP),
+            USD_per_SAR: parseFloat(d.rates.USD),
+            EUR_per_SAR: parseFloat(d.rates.EUR)
+          };
+          if (d.date) out.__apiTimestamp = new Date(d.date).getTime();
+          return out;
+        }
+      }];
+    }
+    return [];
+  }
+  window.buildRealtimeSources = buildRealtimeSources;
+
+  // ── Override fetchLiveRates to use realtime source first if configured,
+  //    AND to capture the API's actual timestamp for the data ──
+  const _origFetchLiveRates = window.fetchLiveRates;
+  window.fetchLiveRates = async function() {
+    if (typeof showToast === 'function') showToast('🔄 جاري جلب الأسعار...', 'info');
+
+    // Build full source list: realtime first (if configured), then daily fallbacks
+    const realtime = buildRealtimeSources();
+    const sources = [...realtime, ...RATE_SOURCES];
+
+    for (const src of sources) {
+      try {
+        const ctl = new AbortController();
+        const tm = setTimeout(() => ctl.abort(), 7000);
+        const resp = await fetch(src.url, {signal: ctl.signal});
+        clearTimeout(tm);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
+        const r = src.parse(data);
+        if (!r.EGP || !r.USD_per_SAR) throw new Error('بيانات ناقصة');
+
+        // Capture API timestamp (when data was last published, not when we fetched)
+        let apiTs = r.__apiTimestamp || null;
+        if (!apiTs) {
+          // open.er-api returns time_last_update_unix in seconds
+          if (data.time_last_update_unix) apiTs = data.time_last_update_unix * 1000;
+          // currency-api returns date as YYYY-MM-DD
+          else if (data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date)) {
+            apiTs = new Date(data.date + 'T00:00:00Z').getTime();
+          }
+        }
+
+        rates.EGP = Math.round(r.EGP * 1e6) / 1e6;
+        rates.USD = Math.round((1 / r.USD_per_SAR) * 1e6) / 1e6;
+        rates.EUR = r.EUR_per_SAR ? Math.round((1 / r.EUR_per_SAR) * 1e6) / 1e6 : rates.EUR;
+        saveRates();
+        rateMeta = {
+          source: src.name,
+          ts: Date.now(),                // when we fetched
+          apiTs: apiTs,                  // when source last updated
+          isRealtime: !!src.isRealtime
+        };
+        saveRateMeta();
+        // Update UI inputs
+        const eg = document.getElementById('rEGP'); if (eg) eg.value = rates.EGP.toFixed(4);
+        const us = document.getElementById('rUSD'); if (us) us.value = rates.USD.toFixed(4);
+        const er = document.getElementById('rEUR'); if (er) er.value = rates.EUR.toFixed(4);
+        if (typeof updateRateInfoBanner === 'function') updateRateInfoBanner();
+        if (typeof renderAll === 'function') renderAll();
+        if (typeof showToast === 'function') {
+          const ageStr = apiTs ? formatRateAge(apiTs) : 'الآن';
+          showToast(`✅ ${src.name} · سعر ${ageStr}`, 'success');
+        }
+        return true;
+      } catch (e) {
+        console.warn('Source failed:', src.name, e.message);
+      }
+    }
+    if (typeof showToast === 'function') showToast('❌ كل المصادر فشلت — استخدم الأسعار المحفوظة', 'error');
+    return false;
+  };
+
+  // ── Format a timestamp as "ago" string ──
+  function formatRateAge(ts) {
+    const diff = Date.now() - ts;
+    const mins = Math.floor(diff / 60000);
+    const hrs = Math.floor(mins / 60);
+    const days = Math.floor(hrs / 24);
+    if (days >= 1) return `من ${toArabicDigits(days)} يوم`;
+    if (hrs >= 1) return `من ${toArabicDigits(hrs)} ساعة`;
+    if (mins >= 1) return `من ${toArabicDigits(mins)} دقيقة`;
+    return 'الآن';
+  }
+  window.formatRateAge = formatRateAge;
+
+  // ── Override updateRateInfoBanner to show API timestamp ──
+  window.updateRateInfoBanner = function() {
+    const el = document.getElementById('calcRateInfo');
+    if (!el) return;
+    if (!rateMeta.source) {
+      el.innerHTML = `<span style="color:var(--muted)">📊 الأسعار المحفوظة: 1 ر.س = ${rates.EGP} ج.م | 1 $ = ${rates.USD} ر.س — اضغط "تحديث" لجلب آخر سعر</span>`;
+      return;
+    }
+    const apiAge = rateMeta.apiTs ? formatRateAge(rateMeta.apiTs) : null;
+    const fetchAge = formatRateAge(rateMeta.ts);
+    const realtimeBadge = rateMeta.isRealtime
+      ? '<span style="background:var(--green-dim);color:var(--green);padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;margin-right:4px">⚡ لحظي</span>'
+      : '<span style="background:var(--card2);color:var(--muted);padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;margin-right:4px">📅 يومي</span>';
+
+    el.innerHTML = `<div style="margin-bottom:4px">${realtimeBadge}<span style="color:var(--accent);font-weight:700">${rateMeta.source}</span></div>
+      <div>1 ر.س = ${rates.EGP} ج.م | 1 $ = ${rates.USD} ر.س</div>
+      <div style="margin-top:4px;font-size:10px">${apiAge ? `الأسعار من المصدر: <b>${apiAge}</b>` : `جلبت الأسعار: ${fetchAge}`}${apiAge && apiAge !== fetchAge ? ` · جلب: ${fetchAge}` : ''}</div>`;
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // PART B — TRANSACTION CONVERSION
+  // (turn a regular tx into installment / occasion / order / jameya)
+  // ─────────────────────────────────────────────────────────────
+
+  // Pending conversion state
+  window.__pendingConversion = null;
+
+  // ── Inject conversion section into tx edit modal ──
+  function ensureConversionUI() {
+    const modal = document.getElementById('modal');
+    if (!modal) return;
+    if (modal.querySelector('#txConvertSection')) return; // already injected
+
+    const saveBtn = modal.querySelector('button.save-btn[onclick*="saveTx"]');
+    if (!saveBtn) return;
+
+    const section = document.createElement('div');
+    section.id = 'txConvertSection';
+    section.style.cssText = 'display:none;background:rgba(88,166,255,.06);border:1px dashed var(--accent);border-radius:12px;padding:12px;margin-bottom:14px';
+    section.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:700;color:var(--accent)">🔄 تحويل لنوع تاني</div>
+        <button type="button" id="txConvertToggle" onclick="toggleConvertOptions()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;font-family:'Cairo',sans-serif">عرض الخيارات ▼</button>
+      </div>
+      <div id="txConvertOptions" style="display:none">
+        <p style="font-size:10px;color:var(--muted);margin-bottom:8px">حول هذه الحركة لنوع متخصص. هتقفل النموذج ده وتفتح نموذج النوع الجديد بنفس البيانات.</p>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">
+          <button type="button" onclick="convertTxTo('installment')" style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--text);font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent">💳 قسط</button>
+          <button type="button" onclick="convertTxTo('order')" style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--text);font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent">📦 طلب أونلاين</button>
+          <button type="button" onclick="convertTxTo('occasion')" style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--text);font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent">🎁 مناسبة/عيدية</button>
+          <button type="button" onclick="convertTxTo('jameya')" style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--text);font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent">🤝 جمعية</button>
+        </div>
+      </div>
+    `;
+    saveBtn.parentNode.insertBefore(section, saveBtn);
+  }
+
+  window.toggleConvertOptions = function() {
+    const opts = document.getElementById('txConvertOptions');
+    const tog = document.getElementById('txConvertToggle');
+    if (!opts || !tog) return;
+    const open = opts.style.display !== 'none';
+    opts.style.display = open ? 'none' : 'block';
+    tog.textContent = open ? 'عرض الخيارات ▼' : 'إخفاء ▲';
+  };
+
+  // ── Show conversion section only when editing existing tx ──
+  const _origEditTx = window.editTx;
+  window.editTx = function(id) {
+    if (_origEditTx) _origEditTx(id);
+    setTimeout(() => {
+      ensureConversionUI();
+      const sec = document.getElementById('txConvertSection');
+      const t = txs.find(x => x.id === id);
+      // Hide if it's already a converted tx (linked to installment/occasion/order)
+      const isAlreadyLinked = t && (t.installmentId || t.occId || t.orderId || t.jameyaId);
+      if (sec) {
+        sec.style.display = isAlreadyLinked ? 'none' : 'block';
+        // Reset toggle state
+        const opts = document.getElementById('txConvertOptions');
+        const tog = document.getElementById('txConvertToggle');
+        if (opts) opts.style.display = 'none';
+        if (tog) tog.textContent = 'عرض الخيارات ▼';
+      }
+    }, 50);
+  };
+
+  // Hide section in non-edit mode
+  const _origOpenModal = window.openModal;
+  window.openModal = function() {
+    if (_origOpenModal) _origOpenModal();
+    setTimeout(() => {
+      ensureConversionUI();
+      const sec = document.getElementById('txConvertSection');
+      if (sec) sec.style.display = 'none';
+    }, 50);
+  };
+
+  // ── The conversion engine ──
+  window.convertTxTo = function(targetType) {
+    if (!editingId) { showAlert('لازم تكون بتعدل حركة موجودة', 'error'); return; }
+    const t = txs.find(x => x.id === editingId);
+    if (!t) { showAlert('الحركة مش موجودة', 'error'); return; }
+
+    // Save pending conversion state
+    window.__pendingConversion = {
+      origTxId: editingId,
+      origType: t.type,
+      origAmount: t.amount,
+      origCurrency: t.currency,
+      origDate: t.date,
+      origName: t.name,
+      origNote: t.note || '',
+      targetType
+    };
+
+    // Close current edit modal
+    if (typeof closeModal === 'function') closeModal();
+    document.getElementById('modal').classList.remove('open');
+
+    // Open the appropriate modal with prefilled data
+    setTimeout(() => {
+      if (targetType === 'installment') {
+        document.getElementById('installmentsModal').classList.add('open');
+        if (typeof renderInstallments === 'function') renderInstallments();
+        // Prefill installment form
+        setTimeout(() => {
+          const setVal = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+          setVal('instName', t.name);
+          setVal('instTotal', t.amount);
+          setVal('instCurrency', t.currency);
+          // Suggest 12 months as a sensible default
+          const months = 12;
+          setVal('instMonths', months);
+          setVal('instMonthly', (t.amount / months).toFixed(2));
+          showAlert('💳 املأ تفاصيل القسط ثم احفظ — الحركة الأصلية هتتحذف تلقائياً', 'info');
+          // Focus first input
+          const focus = document.getElementById('instName');
+          if (focus) focus.focus();
+        }, 250);
+      } else if (targetType === 'order') {
+        document.getElementById('ordersModal').classList.add('open');
+        if (typeof renderOrders === 'function') renderOrders();
+        setTimeout(() => {
+          const setVal = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+          setVal('ordItemName', t.name);
+          setVal('ordAmount', t.amount);
+          setVal('ordCurrency', t.currency);
+          setVal('ordOrderDate', t.date);
+          // Default expected to +5 days
+          const future = new Date(t.date || new Date());
+          future.setDate(future.getDate() + 7);
+          setVal('ordExpectedDate', future.toISOString().split('T')[0]);
+          setVal('ordNote', t.note || '');
+          showAlert('📦 اختار المتجر وطريقة الدفع ثم احفظ — الحركة الأصلية هتتحذف', 'info');
+        }, 250);
+      } else if (targetType === 'occasion') {
+        document.getElementById('occasionsModal').classList.add('open');
+        if (typeof renderOccasions === 'function') renderOccasions();
+        setTimeout(() => {
+          const setVal = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+          setVal('occName', t.name);
+          setVal('occAmount', t.amount);
+          setVal('occCurrency', t.currency);
+          setVal('occDate', t.date);
+          setVal('occNote', t.note || '');
+          // Direction: if original was income -> received; if expense -> paid
+          setVal('occDirection', t.type === 'income' ? 'in' : 'out');
+          showAlert('🎁 اختار نوع المناسبة ثم احفظ — الحركة الأصلية هتتحذف', 'info');
+        }, 250);
+      } else if (targetType === 'jameya') {
+        document.getElementById('jameyaModal').classList.add('open');
+        if (typeof renderJameya === 'function') renderJameya();
+        setTimeout(() => {
+          const setVal = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+          setVal('jamName', t.name);
+          setVal('jamMonthly', t.amount);
+          setVal('jamCurrency', t.currency);
+          setVal('jamStart', t.date);
+          showAlert('🤝 املأ تفاصيل الجمعية ثم احفظ — الحركة الأصلية هتتحذف', 'info');
+        }, 250);
+      }
+    }, 280);
+  };
+
+  // ── Hook into save functions to remove the original tx after conversion ──
+  function consumeConversion() {
+    const pc = window.__pendingConversion;
+    if (!pc || !pc.origTxId) return false;
+    // Remove the original tx
+    txs = txs.filter(x => x.id !== pc.origTxId);
+    saveData();
+    // Clear pending state
+    window.__pendingConversion = null;
+    if (typeof showToast === 'function') showToast('✅ تم التحويل وحذف الحركة الأصلية', 'success');
+    if (typeof renderAll === 'function') renderAll();
+    return true;
+  }
+
+  // Wrap saveInstallment
+  if (typeof window.saveInstallment === 'function') {
+    const _origSaveInst = window.saveInstallment;
+    window.saveInstallment = function() {
+      const hadConversion = !!(window.__pendingConversion && window.__pendingConversion.targetType === 'installment');
+      const r = _origSaveInst.apply(this, arguments);
+      if (hadConversion) consumeConversion();
+      return r;
+    };
+  }
+
+  // Wrap saveOccasion
+  if (typeof window.saveOccasion === 'function') {
+    const _origSaveOcc = window.saveOccasion;
+    window.saveOccasion = function() {
+      const hadConversion = !!(window.__pendingConversion && window.__pendingConversion.targetType === 'occasion');
+      const r = _origSaveOcc.apply(this, arguments);
+      if (hadConversion) consumeConversion();
+      return r;
+    };
+  }
+
+  // Wrap saveOrder
+  if (typeof window.saveOrder === 'function') {
+    const _origSaveOrder = window.saveOrder;
+    window.saveOrder = function() {
+      const hadConversion = !!(window.__pendingConversion && window.__pendingConversion.targetType === 'order');
+      const r = _origSaveOrder.apply(this, arguments);
+      if (hadConversion) consumeConversion();
+      return r;
+    };
+  }
+
+  // Wrap saveJameyaItem (or saveJameya — check naming)
+  ['saveJameyaItem', 'saveJameya'].forEach(fnName => {
+    if (typeof window[fnName] === 'function') {
+      const _orig = window[fnName];
+      window[fnName] = function() {
+        const hadConversion = !!(window.__pendingConversion && window.__pendingConversion.targetType === 'jameya');
+        const r = _orig.apply(this, arguments);
+        if (hadConversion) consumeConversion();
+        return r;
+      };
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // PART C — SETTINGS UI: API KEY FIELD FOR REAL-TIME RATES
+  // ─────────────────────────────────────────────────────────────
+
+  function injectApiKeySettings() {
+    const settingsSheet = document.querySelector('#settingsModal .settings-sheet');
+    if (!settingsSheet) return;
+    if (settingsSheet.querySelector('#realtimeApiSection')) return; // already injected
+
+    // Find the rate inputs section to inject after
+    const saveBtn = settingsSheet.querySelector('button.set-save[onclick*="saveSettings"]');
+    if (!saveBtn) return;
+
+    const section = document.createElement('div');
+    section.id = 'realtimeApiSection';
+    section.style.cssText = 'border-top:1px solid var(--border);padding-top:14px;margin-top:18px';
+
+    const cfg = getApiKeyConfig() || {};
+    section.innerHTML = `
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">⚡ تحديث الأسعار اللحظي (اختياري)</div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px;font-size:11px;color:var(--muted);line-height:1.6">
+        المصادر المجانية بدون مفتاح بتحدّث <b style="color:var(--text)">يومياً مرة واحدة</b>.<br>
+        لو عاوز أسعار <b style="color:var(--accent)">لحظية تتجدد كل دقيقة</b>، اعمل حساب مجاني واحط مفتاح API هنا.
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">المزود</div>
+        <select class="form-inp" id="rtProvider" onchange="onRtProviderChange()">
+          <option value="">— مفيش (تحديث يومي مجاني) —</option>
+          <option value="twelvedata" ${cfg.provider==='twelvedata'?'selected':''}>Twelve Data (٨٠٠ طلب/يوم مجاني)</option>
+          <option value="currencyfreaks" ${cfg.provider==='currencyfreaks'?'selected':''}>CurrencyFreaks (١٠٠٠ شهرياً مجاني)</option>
+        </select>
+      </div>
+      <div class="form-row" id="rtApiKeyRow" style="display:${cfg.provider?'block':'none'}">
+        <div class="form-lbl">🔑 مفتاح API</div>
+        <input class="form-inp" id="rtApiKey" type="text" placeholder="الصق المفتاح هنا" value="${(cfg.key||'').replace(/"/g,'&quot;')}" style="direction:ltr;font-family:monospace"/>
+        <div id="rtSignupHint" style="font-size:10px;color:var(--accent);margin-top:4px"></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button type="button" class="export-btn" style="flex:1" onclick="saveRealtimeApi()">💾 حفظ</button>
+        <button type="button" class="export-btn" style="flex:1;border-color:var(--red);color:var(--red)" onclick="clearRealtimeApi()">✕ إلغاء</button>
+      </div>
+    `;
+    saveBtn.parentNode.insertBefore(section, saveBtn.nextSibling);
+    onRtProviderChange();
+  }
+
+  window.onRtProviderChange = function() {
+    const sel = document.getElementById('rtProvider');
+    const row = document.getElementById('rtApiKeyRow');
+    const hint = document.getElementById('rtSignupHint');
+    if (!sel) return;
+    const p = sel.value;
+    if (row) row.style.display = p ? 'block' : 'none';
+    if (hint) {
+      if (p === 'twelvedata') hint.innerHTML = '🔗 سجل مجاناً على <a href="https://twelvedata.com/register" target="_blank" style="color:var(--accent)">twelvedata.com/register</a>';
+      else if (p === 'currencyfreaks') hint.innerHTML = '🔗 سجل مجاناً على <a href="https://currencyfreaks.com/signup.html" target="_blank" style="color:var(--accent)">currencyfreaks.com/signup</a>';
+      else hint.innerHTML = '';
+    }
+  };
+
+  window.saveRealtimeApi = function() {
+    const provider = document.getElementById('rtProvider').value;
+    const key = (document.getElementById('rtApiKey')?.value || '').trim();
+    if (!provider) { setApiKeyConfig(null); showAlert('✅ تم تعطيل الأسعار اللحظية', 'success'); return; }
+    if (!key) { showAlert('الصق المفتاح', 'error'); return; }
+    setApiKeyConfig({provider, key});
+    showAlert('✅ تم تفعيل الأسعار اللحظية — اضغط "تحديث" لجلب آخر سعر', 'success');
+    if (typeof fetchLiveRates === 'function') fetchLiveRates();
+  };
+
+  window.clearRealtimeApi = function() {
+    setApiKeyConfig(null);
+    document.getElementById('rtProvider').value = '';
+    document.getElementById('rtApiKey').value = '';
+    onRtProviderChange();
+    showAlert('✅ تم تعطيل الأسعار اللحظية', 'success');
+  };
+
+  // Inject when settings opens
+  const _origOpenSettings = window.openSettings;
+  window.openSettings = function() {
+    if (_origOpenSettings) _origOpenSettings();
+    setTimeout(injectApiKeySettings, 50);
+  };
+
+  // Also inject on first DOMContentLoaded for safety
+  setTimeout(injectApiKeySettings, 1200);
+
+})();
 </script>
 
 </body>
