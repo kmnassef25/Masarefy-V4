@@ -1807,6 +1807,11 @@ select.form-inp{padding-left:8px;}
       <div class="mt"><div class="mt-l">العيدية والمناسبات</div><div class="mt-s" id="menuOccCount">--</div></div>
       <div class="mc">‹</div>
     </div>
+    <div class="menu-row" onclick="closeAndOpen('menuModal','ordersModal',renderOrders)">
+      <div class="mi">📦</div>
+      <div class="mt"><div class="mt-l">الطلبات أونلاين</div><div class="mt-s" id="menuOrdersCount">--</div></div>
+      <div class="mc">‹</div>
+    </div>
     <div class="menu-row" onclick="closeAndOpen('menuModal','calcModal',openCalc)">
       <div class="mi">🔄</div>
       <div class="mt"><div class="mt-l">حاسبة التحويلات</div><div class="mt-s">حوّل بين العملات بسرعة</div></div>
@@ -2059,6 +2064,84 @@ select.form-inp{padding-left:8px;}
       </div>
       <div class="form-row"><input class="form-inp" id="occNote" placeholder="ملاحظات (اختياري)"/></div>
       <button class="save-btn" onclick="saveOccasion()">💾 حفظ + إضافة كحركة</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ ORDERS MODAL (V15) ═══════ -->
+<div class="overlay" id="ordersModal" onclick="closeIfOut(event,'ordersModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title">📦 الطلبات أونلاين</div>
+    <p style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px">تتبع طلباتك من أمازون، شي إن، ترينديول، نون وغيرها — اعرف هتوصل امتى وكام دفعت</p>
+    <div id="ordersList"></div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">إضافة طلب جديد</div>
+      <div class="form-row"><div class="form-lbl">🏪 المتجر</div>
+        <select class="form-inp" id="ordStore" onchange="onOrdStoreChange()">
+          <option value="amazon">📦 أمازون</option>
+          <option value="shein">👗 شي إن (SHEIN)</option>
+          <option value="trendyol">🛍️ ترينديول</option>
+          <option value="noon">🌙 نون</option>
+          <option value="aliexpress">🇨🇳 علي إكسبرس</option>
+          <option value="jumia">🟧 جوميا</option>
+          <option value="namshi">👟 نمشي</option>
+          <option value="ounass">💎 أوناس</option>
+          <option value="centerpoint">🛒 سنتربوينت</option>
+          <option value="hm">🧥 H&amp;M</option>
+          <option value="zara">🧣 Zara</option>
+          <option value="apple">🍎 Apple</option>
+          <option value="other">🛍️ متجر آخر</option>
+        </select>
+      </div>
+      <div class="form-row" id="ordStoreCustomRow" style="display:none"><input class="form-inp" id="ordStoreCustom" placeholder="اكتب اسم المتجر"/></div>
+      <div class="form-row"><input class="form-inp" id="ordItemName" placeholder="اسم المنتج / وصف الطلب"/></div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">المبلغ</div><input class="form-inp" id="ordAmount" type="number" step="0.01" placeholder="500" inputmode="decimal"/></div>
+        <div class="form-row"><div class="form-lbl">العملة</div>
+          <select class="form-inp" id="ordCurrency">
+            <option value="SAR">🇸🇦 ريال</option>
+            <option value="EGP">🇪🇬 جنيه</option>
+            <option value="USD">🇺🇸 دولار</option>
+            <option value="EUR">🇪🇺 يورو</option>
+          </select>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">📅 تاريخ الطلب</div><input class="form-inp" id="ordOrderDate" type="date"/></div>
+        <div class="form-row"><div class="form-lbl">🚚 الوصول المتوقع</div><input class="form-inp" id="ordExpectedDate" type="date"/></div>
+      </div>
+      <div class="form-row"><div class="form-lbl">💳 طريقة الدفع</div>
+        <select class="form-inp" id="ordPayMethod" onchange="onOrdPayChange()">
+          <option value="cash">💵 كاش / نقداً</option>
+          <option value="visa">💳 فيزا</option>
+          <option value="visa_signature">⭐ فيزا سيجنتشر / إنفينيت</option>
+          <option value="mastercard">🟠 ماستركارد</option>
+          <option value="mada">🟢 مدى (سعودي)</option>
+          <option value="meeza">🟡 ميزة (مصري)</option>
+          <option value="apple_pay">🍎 Apple Pay</option>
+          <option value="stc_pay">💚 STC Pay</option>
+          <option value="instapay">⚡ InstaPay</option>
+          <option value="tabby">🟢 تابي (تقسيط)</option>
+          <option value="tamara">🟣 تمارا (تقسيط)</option>
+          <option value="valu">🔶 فاليو (تقسيط)</option>
+          <option value="postpay">🟦 Postpay (تقسيط)</option>
+          <option value="cod">📬 الدفع عند الاستلام</option>
+          <option value="other">💰 أخرى</option>
+        </select>
+      </div>
+      <div class="form-row" id="ordInstallmentsRow" style="display:none">
+        <div class="form-lbl">عدد الأقساط</div>
+        <select class="form-inp" id="ordInstallments">
+          <option value="3">٣ أقساط</option>
+          <option value="4" selected>٤ أقساط</option>
+          <option value="6">٦ أقساط</option>
+          <option value="12">١٢ قسط</option>
+        </select>
+      </div>
+      <div class="form-row"><input class="form-inp" id="ordTracking" placeholder="رقم التتبع أو لينك المتجر (اختياري)"/></div>
+      <div class="form-row"><input class="form-inp" id="ordNote" placeholder="ملاحظات (اختياري)"/></div>
+      <button class="save-btn" onclick="saveOrder()">💾 حفظ + إضافة كحركة</button>
     </div>
   </div>
 </div>
@@ -4037,11 +4120,12 @@ function openMenu() {
   document.getElementById('menuModal').classList.add('open');
 }
 function closeAndOpen(closeId, openId, cb) {
-  document.getElementById(closeId).classList.remove('open');
+  const closeEl = closeId ? document.getElementById(closeId) : null;
+  if (closeEl) closeEl.classList.remove('open');
   setTimeout(() => {
     document.getElementById(openId).classList.add('open');
     if (cb) cb();
-  }, 220);
+  }, closeEl ? 220 : 0);
 }
 
 // ── ACCOUNTS ──
@@ -4611,27 +4695,12 @@ window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 
 // ── LIVE EXCHANGE RATES ──
-async function fetchLiveRates() {
-  showToast('🔄 جاري تحديث الأسعار...', 'info');
-  try {
-    const response = await fetch('https://api.exchangerate-api.com/v4/latest/SAR');
-    const data = await response.json();
-    if (data.rates) {
-      // Round to 2 decimals when storing
-      rates.EGP = Math.round((data.rates.EGP || rates.EGP) * 100) / 100;
-      rates.USD = Math.round((1 / (data.rates.USD || 1/rates.USD)) * 100) / 100;
-      rates.EUR = Math.round((1 / (data.rates.EUR || 1/rates.EUR)) * 100) / 100;
-      const eg = document.getElementById('rEGP'); if (eg) eg.value = rates.EGP.toFixed(4);
-      const us = document.getElementById('rUSD'); if (us) us.value = rates.USD.toFixed(4);
-      const er = document.getElementById('rEUR'); if (er) er.value = rates.EUR.toFixed(4);
-      saveRates();
-      showToast('✅ تم تحديث الأسعار بنجاح!', 'success');
-      renderAll();
-    }
-  } catch (e) {
-    showToast('❌ فشل التحديث — استخدم الأسعار المحفوظة', 'error');
-    console.error('Rate fetch failed:', e);
-  }
+// NOTE: This legacy function is superseded by the multi-source version below
+// (search for "OFFICIAL CURRENCY SOURCES ONLY"). Kept here as a no-op to avoid
+// breaking any old reference. The active implementation uses Frankfurter (ECB).
+async function fetchLiveRates_legacy_unused() {
+  // Intentionally empty - see RATE_SOURCES below
+  return false;
 }
 
 // ── AUTO LOCK ──
@@ -5145,10 +5214,15 @@ function saveRateMeta() { localStorage.setItem('msarifyi_rate_meta', JSON.string
 // IMPROVED RATES — multi-source fallback
 // ═══════════════════════════════════════════════════════════════
 
+// ── OFFICIAL CURRENCY SOURCES ONLY ──
+// Frankfurter API tracks reference rates published by 55 central banks
+// (European Central Bank + national central banks). It's the only free
+// CORS-enabled API based on official central bank data, no API key needed.
+// Multiple endpoints provided for redundancy (same data, different hosts).
 const RATE_SOURCES = [
   {
-    name: 'ExchangeRate-API',
-    url: 'https://api.exchangerate-api.com/v4/latest/SAR',
+    name: 'البنك المركزي الأوروبي (ECB)',
+    url: 'https://api.frankfurter.dev/v1/latest?base=SAR&symbols=EGP,USD,EUR',
     parse: (d) => ({
       EGP: d.rates?.EGP,
       USD_per_SAR: d.rates?.USD,
@@ -5156,22 +5230,29 @@ const RATE_SOURCES = [
     })
   },
   {
-    name: 'Open ER-API',
-    url: 'https://open.er-api.com/v6/latest/SAR',
-    parse: (d) => ({
-      EGP: d.rates?.EGP,
-      USD_per_SAR: d.rates?.USD,
-      EUR_per_SAR: d.rates?.EUR
-    })
-  },
-  {
-    name: 'Frankfurter (ECB)',
+    name: 'Frankfurter (ECB Mirror)',
     url: 'https://api.frankfurter.app/latest?from=SAR&to=EGP,USD,EUR',
     parse: (d) => ({
       EGP: d.rates?.EGP,
       USD_per_SAR: d.rates?.USD,
       EUR_per_SAR: d.rates?.EUR
     })
+  },
+  // Fallback: query EUR base and compute SAR rates (in case SAR base is unavailable)
+  {
+    name: 'ECB (عبر اليورو)',
+    url: 'https://api.frankfurter.dev/v1/latest?base=EUR&symbols=EGP,USD,SAR',
+    parse: (d) => {
+      const eurEgp = d.rates?.EGP;
+      const eurUsd = d.rates?.USD;
+      const eurSar = d.rates?.SAR;
+      if (!eurEgp || !eurUsd || !eurSar) return {};
+      return {
+        EGP: eurEgp / eurSar,           // EGP per SAR
+        USD_per_SAR: eurUsd / eurSar,   // USD per SAR
+        EUR_per_SAR: 1 / eurSar         // EUR per SAR
+      };
+    }
   }
 ];
 
@@ -5217,7 +5298,7 @@ function updateRateInfoBanner() {
   const el = document.getElementById('calcRateInfo');
   if (!el) return;
   if (!rateMeta.source) {
-    el.innerHTML = `<span style="color:var(--muted)">📊 الأسعار: 1 ر.س = ${rates.EGP} ج.م | 1 $ = ${rates.USD} ر.س — اضغط "تحديث" لجلب أحدث سعر</span>`;
+    el.innerHTML = `<span style="color:var(--muted)">📊 الأسعار المحفوظة: 1 ر.س = ${rates.EGP} ج.م | 1 $ = ${rates.USD} ر.س — اضغط "تحديث" لجلب آخر سعر رسمي من البنك المركزي الأوروبي</span>`;
     return;
   }
   const ago = Date.now() - rateMeta.ts;
@@ -5225,9 +5306,9 @@ function updateRateInfoBanner() {
   const hrs = Math.floor(mins / 60);
   const days = Math.floor(hrs / 24);
   let timeStr = days > 0 ? `من ${days} يوم` : hrs > 0 ? `من ${hrs} ساعة` : mins > 0 ? `من ${mins} دقيقة` : 'الآن';
-  el.innerHTML = `<div style="color:var(--accent);font-weight:700;margin-bottom:4px">📊 المصدر: ${rateMeta.source}</div>
+  el.innerHTML = `<div style="color:var(--accent);font-weight:700;margin-bottom:4px">🏛️ المصدر الرسمي: ${rateMeta.source}</div>
     <div>1 ر.س = ${rates.EGP} ج.م | 1 $ = ${rates.USD} ر.س</div>
-    <div style="margin-top:4px;font-size:10px">آخر تحديث ${timeStr} · سعر بيناقش (قريب من سعر البنك ±2%)</div>`;
+    <div style="margin-top:4px;font-size:10px">آخر تحديث ${timeStr} · سعر مرجعي رسمي (يُحدَّث يومياً ~4م بتوقيت أوروبا الوسطى)</div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -8120,8 +8201,12 @@ renderIslamicOccasionCard = function() {
 };
 
 // ── (V9) GOLD PRICES IN EGYPT ──
-// Uses gold-api.com (free, no key, CORS-enabled) for spot XAU in USD/oz,
-// then converts to EGP per gram per karat using current rates.
+// Source: gold-api.com (free, no key, CORS-enabled).
+// Provides international spot XAU/USD price aggregated from major financial
+// markets (LBMA-derived market data). For 100% official LBMA pricing, a paid
+// license is required which isn't viable for a free PWA. The price shown is
+// the international reference spot — local Egyptian retail price differs by
+// شعبة الذهب (Gold Division) margin + manufacturing fee + VAT.
 const GRAMS_PER_OZ = 31.1034768;
 var goldData = JSON.parse(localStorage.getItem('msarifyi_gold') || 'null');
 
@@ -8138,7 +8223,8 @@ async function fetchGoldPrice() {
     goldData = {
       usdPerOz,
       ts: Date.now(),
-      symbol: data.symbol || 'XAU/USD'
+      symbol: data.symbol || 'XAU/USD',
+      source: 'السعر الفوري العالمي (LBMA-derived)'
     };
     localStorage.setItem('msarifyi_gold', JSON.stringify(goldData));
     renderGoldCard(); // re-render with fresh data
@@ -8245,7 +8331,7 @@ function buildGoldCardHTML() {
       <div class="gold-calc-result" id="goldCalcResult"></div>
     </div>
     <div class="gold-meta">
-      ${hasData ? 'السعر الفوري — السوق المحلي يضيف مصنعية + ضريبة (آخر تحديث: ' + ageStr + ')' : ageStr}
+      ${hasData ? '🏛️ السعر الفوري العالمي (LBMA-derived) · السوق المحلي يضيف مصنعية + ضريبة (آخر تحديث: ' + ageStr + ')' : ageStr}
     </div>
   </div>`;
 }
@@ -8328,20 +8414,9 @@ window.renderHome = function() {
   setTimeout(() => { try { updateGoldCalc(); } catch(e){} }, 0);
 };
 
-// ── (V9) Better exchange rate source: Fawaz Ahmed currency-api ──
-// CORS-enabled, no API key, daily updates. Add as primary source.
-RATE_SOURCES.unshift({
-  name: 'Fawaz Currency-API',
-  url: 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/sar.json',
-  parse: (d) => {
-    const r = d.sar || {};
-    return {
-      EGP: r.egp,
-      USD_per_SAR: r.usd,
-      EUR_per_SAR: r.eur
-    };
-  }
-});
+// ── (V15) Fawaz Currency-API REMOVED — not an official central bank source ──
+// All currency rates now come from Frankfurter (ECB + 55 central banks) only.
+// See RATE_SOURCES above for current official sources.
 
 // ── (V9) Init: fetch gold once on app open if stale (>4 hours) ──
 (function v9Init() {
@@ -9938,6 +10013,700 @@ async function updateInvestmentPrice(id) {
   style.textContent = css;
   document.head.appendChild(style);
 })();
+// ═══════════════════════════════════════════════════════════════
+// V15 — ORDERS TRACKING + CURRENCY DISPLAY + HOME REORDER
+// ═══════════════════════════════════════════════════════════════
+(function v15Init() {
+
+  // ── STORAGE ──
+  window.orders = JSON.parse(localStorage.getItem('msarifyi_orders') || '[]');
+  window.saveOrders = function() { localStorage.setItem('msarifyi_orders', JSON.stringify(orders)); };
+
+  // ── STORE METADATA ──
+  const STORE_LABELS = {
+    amazon: { name: 'أمازون', emoji: '📦' },
+    shein: { name: 'شي إن', emoji: '👗' },
+    trendyol: { name: 'ترينديول', emoji: '🛍️' },
+    noon: { name: 'نون', emoji: '🌙' },
+    aliexpress: { name: 'علي إكسبرس', emoji: '🇨🇳' },
+    jumia: { name: 'جوميا', emoji: '🟧' },
+    namshi: { name: 'نمشي', emoji: '👟' },
+    ounass: { name: 'أوناس', emoji: '💎' },
+    centerpoint: { name: 'سنتربوينت', emoji: '🛒' },
+    hm: { name: 'H&M', emoji: '🧥' },
+    zara: { name: 'Zara', emoji: '🧣' },
+    apple: { name: 'Apple', emoji: '🍎' },
+    other: { name: 'متجر آخر', emoji: '🛍️' }
+  };
+
+  // ── PAYMENT METHOD METADATA ──
+  const PAY_LABELS = {
+    cash: { name: 'كاش', emoji: '💵', isInstallment: false },
+    visa: { name: 'فيزا', emoji: '💳', isInstallment: false },
+    visa_signature: { name: 'فيزا سيجنتشر', emoji: '⭐', isInstallment: false },
+    mastercard: { name: 'ماستركارد', emoji: '🟠', isInstallment: false },
+    mada: { name: 'مدى', emoji: '🟢', isInstallment: false },
+    meeza: { name: 'ميزة', emoji: '🟡', isInstallment: false },
+    apple_pay: { name: 'Apple Pay', emoji: '🍎', isInstallment: false },
+    stc_pay: { name: 'STC Pay', emoji: '💚', isInstallment: false },
+    instapay: { name: 'InstaPay', emoji: '⚡', isInstallment: false },
+    tabby: { name: 'تابي', emoji: '🟢', isInstallment: true },
+    tamara: { name: 'تمارا', emoji: '🟣', isInstallment: true },
+    valu: { name: 'فاليو', emoji: '🔶', isInstallment: true },
+    postpay: { name: 'Postpay', emoji: '🟦', isInstallment: true },
+    cod: { name: 'عند الاستلام', emoji: '📬', isInstallment: false },
+    other: { name: 'أخرى', emoji: '💰', isInstallment: false }
+  };
+
+  // ── HELPERS ──
+  function daysBetween(d1, d2) {
+    const a = new Date(d1); a.setHours(0,0,0,0);
+    const b = new Date(d2); b.setHours(0,0,0,0);
+    return Math.round((b - a) / 86400000);
+  }
+  function todayStr() { return new Date().toISOString().split('T')[0]; }
+
+  // ── FORM HANDLERS ──
+  window.onOrdStoreChange = function() {
+    const sel = document.getElementById('ordStore');
+    const customRow = document.getElementById('ordStoreCustomRow');
+    if (!sel || !customRow) return;
+    customRow.style.display = sel.value === 'other' ? 'block' : 'none';
+  };
+
+  window.onOrdPayChange = function() {
+    const sel = document.getElementById('ordPayMethod');
+    const instRow = document.getElementById('ordInstallmentsRow');
+    if (!sel || !instRow) return;
+    const meta = PAY_LABELS[sel.value];
+    instRow.style.display = (meta && meta.isInstallment) ? 'block' : 'none';
+  };
+
+  // ── RENDER ORDERS LIST ──
+  window.renderOrders = function() {
+    const el = document.getElementById('ordersList');
+    if (!el) return;
+    // Set defaults for new entries
+    const od = document.getElementById('ordOrderDate');
+    if (od && !od.value) od.value = todayStr();
+    const ed = document.getElementById('ordExpectedDate');
+    if (ed && !ed.value) {
+      const future = new Date(); future.setDate(future.getDate() + 7);
+      ed.value = future.toISOString().split('T')[0];
+    }
+    onOrdStoreChange();
+    onOrdPayChange();
+
+    if (!orders.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">📦</div>لسه ما سجلتش طلبات<br><span style="font-size:11px">سجل أول طلب من تحت</span></div>`;
+      return;
+    }
+
+    const sym = BASE_LABELS[baseCurrency].sym;
+    // Sort: pending first by closest delivery, then delivered
+    const pending = orders.filter(o => o.status === 'pending').sort((a,b)=>(a.expectedDate||'').localeCompare(b.expectedDate||''));
+    const delivered = orders.filter(o => o.status !== 'pending').sort((a,b)=>(b.orderDate||'').localeCompare(a.orderDate||''));
+
+    let totalPendingSAR = 0;
+    pending.forEach(o => { totalPendingSAR += curToSAR(o.amount, o.currency); });
+
+    let html = '';
+
+    // Summary card for pending orders
+    if (pending.length) {
+      html += `<div style="background:linear-gradient(135deg,rgba(88,166,255,.12),rgba(88,166,255,.03));border:1px solid var(--accent);border-radius:14px;padding:14px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:11px;color:var(--muted);font-weight:700">📦 طلبات في الطريق</div>
+            <div style="font-size:22px;font-weight:900;color:var(--accent);direction:ltr;margin-top:2px">${fmt(toBase(totalPendingSAR),0)} ${sym}</div>
+          </div>
+          <div style="font-size:32px;font-weight:900;color:var(--accent)">${toArabicDigits(pending.length)}</div>
+        </div>
+      </div>`;
+    }
+
+    // Pending orders
+    if (pending.length) {
+      html += `<div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px">🚚 في الطريق</div>`;
+      pending.forEach(o => { html += orderCardHTML(o); });
+    }
+
+    // Delivered orders
+    if (delivered.length) {
+      html += `<div style="font-size:12px;font-weight:700;color:var(--muted);margin:14px 0 8px">✅ تم استلامه (${toArabicDigits(delivered.length)})</div>`;
+      delivered.slice(0, 10).forEach(o => { html += orderCardHTML(o); });
+      if (delivered.length > 10) {
+        html += `<div style="text-align:center;font-size:11px;color:var(--muted);margin-top:8px">عرض أحدث ١٠ — الإجمالي ${toArabicDigits(delivered.length)}</div>`;
+      }
+    }
+
+    el.innerHTML = html;
+  };
+
+  function orderCardHTML(o) {
+    const sym = BASE_LABELS[baseCurrency].sym;
+    const storeMeta = STORE_LABELS[o.store] || STORE_LABELS.other;
+    const storeName = o.storeCustom || storeMeta.name;
+    const payMeta = PAY_LABELS[o.paymentMethod] || PAY_LABELS.other;
+    const sarAmount = curToSAR(o.amount, o.currency);
+
+    // Days left calculation
+    let daysLeft = null;
+    let statusBadge = '';
+    if (o.status === 'pending' && o.expectedDate) {
+      daysLeft = daysBetween(todayStr(), o.expectedDate);
+      if (daysLeft < 0) {
+        statusBadge = `<span style="background:var(--red-dim);color:var(--red);padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700">⚠️ متأخر ${toArabicDigits(Math.abs(daysLeft))} يوم</span>`;
+      } else if (daysLeft === 0) {
+        statusBadge = `<span style="background:rgba(255,193,7,.15);color:#ffc107;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700">📍 النهاردة</span>`;
+      } else if (daysLeft <= 2) {
+        statusBadge = `<span style="background:rgba(255,193,7,.15);color:#ffc107;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700">🔥 باقي ${toArabicDigits(daysLeft)} يوم</span>`;
+      } else {
+        statusBadge = `<span style="background:rgba(88,166,255,.12);color:var(--accent);padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700">⏳ باقي ${toArabicDigits(daysLeft)} يوم</span>`;
+      }
+    } else if (o.status === 'delivered') {
+      statusBadge = `<span style="background:var(--green-dim);color:var(--green);padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700">✅ تم الاستلام</span>`;
+    } else if (o.status === 'cancelled') {
+      statusBadge = `<span style="background:var(--card2);color:var(--muted);padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700">❌ ملغي</span>`;
+    }
+
+    const installmentInfo = (payMeta.isInstallment && o.installments)
+      ? `<span style="color:var(--accent);font-weight:700">· ${toArabicDigits(o.installments)} أقساط (${fmt(o.amount/o.installments, 0)} ${SYM[o.currency]||o.currency}/قسط)</span>` : '';
+
+    const trackingLink = o.tracking
+      ? (o.tracking.startsWith('http') ? `<a href="${esc(o.tracking)}" target="_blank" style="color:var(--accent);font-size:10px;text-decoration:none">🔗 تتبع الطلب</a>` : `<span style="font-size:10px;color:var(--muted)">🔢 ${esc(o.tracking)}</span>`)
+      : '';
+
+    return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+            <span style="font-size:18px">${storeMeta.emoji}</span>
+            <span style="font-weight:800;font-size:14px">${esc(storeName)}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text);margin-bottom:4px">${esc(o.itemName||'—')}</div>
+        </div>
+        <div style="text-align:left">
+          <div style="font-size:15px;font-weight:900;direction:ltr;color:var(--text)">${fmt(o.amount,0)} ${SYM[o.currency]||o.currency}</div>
+          ${o.currency !== baseCurrency ? `<div style="font-size:10px;color:var(--muted);direction:ltr">≈ ${fmt(toBase(sarAmount),0)} ${sym}</div>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;font-size:10px;color:var(--muted)">
+        <span style="background:var(--card2);padding:3px 8px;border-radius:6px">${payMeta.emoji} ${payMeta.name}</span>
+        ${installmentInfo}
+        <span>طلبت ${esc(o.orderDate||'—')}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          ${statusBadge}
+          ${trackingLink}
+        </div>
+        <div style="display:flex;gap:4px">
+          ${o.status === 'pending' ? `<button onclick="markOrderDelivered('${o.id}')" style="background:var(--green-dim);border:1px solid var(--green);color:var(--green);padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif">✅ وصل</button>` : ''}
+          <button onclick="delOrder('${o.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px 6px">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── SAVE ORDER ──
+  window.saveOrder = function() {
+    const store = document.getElementById('ordStore').value;
+    const storeCustom = document.getElementById('ordStoreCustom').value.trim();
+    const itemName = document.getElementById('ordItemName').value.trim();
+    const amount = parseFloat(document.getElementById('ordAmount').value);
+    const currency = document.getElementById('ordCurrency').value;
+    const orderDate = document.getElementById('ordOrderDate').value || todayStr();
+    const expectedDate = document.getElementById('ordExpectedDate').value || '';
+    const paymentMethod = document.getElementById('ordPayMethod').value;
+    const instSel = document.getElementById('ordInstallments');
+    const installments = (PAY_LABELS[paymentMethod] && PAY_LABELS[paymentMethod].isInstallment && instSel) ? parseInt(instSel.value) : null;
+    const tracking = document.getElementById('ordTracking').value.trim();
+    const note = document.getElementById('ordNote').value.trim();
+
+    if (!itemName) { showAlert('اكتب اسم المنتج', 'error'); return; }
+    if (!amount || amount <= 0) { showAlert('املأ المبلغ', 'error'); return; }
+    if (store === 'other' && !storeCustom) { showAlert('اكتب اسم المتجر', 'error'); return; }
+
+    const id = 'ord_' + Date.now();
+    const newOrder = {
+      id, store, storeCustom: store === 'other' ? storeCustom : null,
+      itemName, amount, currency, orderDate, expectedDate,
+      paymentMethod, installments, tracking, note,
+      status: 'pending', createdAt: Date.now()
+    };
+    orders.unshift(newOrder);
+    saveOrders();
+
+    // Also create a transaction
+    const rate = currency === 'SAR' ? 1 : (currency === 'EGP' ? rates.EGP : rates[currency]);
+    const amountSAR = curToSAR(amount, currency);
+    const storeMeta = STORE_LABELS[store] || STORE_LABELS.other;
+    const storeName = storeCustom || storeMeta.name;
+    const payMeta = PAY_LABELS[paymentMethod] || PAY_LABELS.other;
+    txs.unshift({
+      id: 'tx_ord_' + Date.now(),
+      type: 'expense',
+      name: `${storeMeta.emoji} ${storeName}: ${itemName}`,
+      amount, currency, rate, amountSAR,
+      cat: 'تسوق',
+      date: orderDate,
+      time: new Date().toTimeString().slice(0,5),
+      note: note || `${payMeta.name}${installments?` - ${installments} أقساط`:''}`,
+      account: accounts[0]?.id,
+      recurring: false,
+      orderId: id
+    });
+    saveData();
+
+    // Reset form
+    ['ordItemName','ordAmount','ordTracking','ordNote','ordStoreCustom'].forEach(fid => {
+      const el = document.getElementById(fid); if (el) el.value = '';
+    });
+    document.getElementById('ordExpectedDate').value = '';
+
+    renderOrders();
+    if (typeof renderAll === 'function') renderAll();
+    if (typeof updateMenuCounts === 'function') updateMenuCounts();
+    updateOrdersMenuCount();
+    if (typeof showToast === 'function') showToast('✅ تم حفظ الطلب', 'success');
+  };
+
+  // ── MARK DELIVERED / DELETE ──
+  window.markOrderDelivered = function(id) {
+    const o = orders.find(x => x.id === id);
+    if (!o) return;
+    o.status = 'delivered';
+    o.deliveredAt = todayStr();
+    saveOrders();
+    renderOrders();
+    if (typeof renderHome === 'function') renderHome();
+    if (typeof showToast === 'function') showToast('🎉 وصل! تم التحديث', 'success');
+  };
+
+  window.delOrder = function(id) {
+    if (!confirm('حذف الطلب؟ (هتمسح الحركة المرتبطة بيه برضه)')) return;
+    orders = orders.filter(o => o.id !== id);
+    txs = txs.filter(t => t.orderId !== id);
+    saveOrders(); saveData();
+    renderOrders();
+    if (typeof renderAll === 'function') renderAll();
+    updateOrdersMenuCount();
+    if (typeof updateMenuCounts === 'function') updateMenuCounts();
+  };
+
+  // ── MENU COUNT ──
+  function updateOrdersMenuCount() {
+    const el = document.getElementById('menuOrdersCount');
+    if (!el) return;
+    const pending = orders.filter(o => o.status === 'pending');
+    const sym = BASE_LABELS[baseCurrency].sym;
+    if (orders.length === 0) {
+      el.textContent = 'لا توجد طلبات';
+    } else if (pending.length === 0) {
+      el.textContent = `${toArabicDigits(orders.length)} طلب · كلهم وصلوا ✓`;
+    } else {
+      const totalSAR = pending.reduce((s,o)=>s+curToSAR(o.amount,o.currency),0);
+      el.textContent = `${toArabicDigits(pending.length)} في الطريق · ${fmt(toBase(totalSAR),0)} ${sym}`;
+    }
+  }
+  window.updateOrdersMenuCount = updateOrdersMenuCount;
+
+  // Hook into existing updateMenuCounts
+  const _origUpdateMenuCounts = window.updateMenuCounts;
+  window.updateMenuCounts = function() {
+    if (_origUpdateMenuCounts) _origUpdateMenuCounts();
+    updateOrdersMenuCount();
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // CURRENCY DISPLAY CARD (under gold)
+  // ═══════════════════════════════════════════════════════════════
+  window.buildCurrencyCardHTML = function() {
+    // Compute cross rates from the canonical SAR-based rates object
+    // rates.EGP = EGP per 1 SAR
+    // rates.USD = SAR per 1 USD
+    // rates.EUR = SAR per 1 EUR
+    const sarToEgp = rates.EGP || 0;
+    const usdToSar = rates.USD || 0;
+    const usdToEgp = usdToSar * sarToEgp;
+    const eurToSar = rates.EUR || 0;
+    const eurToEgp = eurToSar * sarToEgp;
+
+    const sourceLine = rateMeta.source
+      ? `🏛️ ${rateMeta.source}`
+      : '⚠️ لم يتم التحديث بعد';
+
+    return `<div class="currency-card" data-section="currency">
+      <div class="currency-title">
+        <span>💱 أسعار العملات الرسمية</span>
+        <button class="currency-refresh" onclick="updateRatesFromHome()">🔄 تحديث</button>
+      </div>
+      <div class="currency-grid">
+        <div class="currency-cell">
+          <div class="cur-pair">🇸🇦 → 🇪🇬</div>
+          <div class="cur-rate">${fmt(sarToEgp, 2)}</div>
+          <div class="cur-unit">١ ر.س = ج.م</div>
+        </div>
+        <div class="currency-cell">
+          <div class="cur-pair">🇺🇸 → 🇪🇬</div>
+          <div class="cur-rate">${fmt(usdToEgp, 2)}</div>
+          <div class="cur-unit">١ $ = ج.م</div>
+        </div>
+        <div class="currency-cell">
+          <div class="cur-pair">🇺🇸 → 🇸🇦</div>
+          <div class="cur-rate">${fmt(usdToSar, 2)}</div>
+          <div class="cur-unit">١ $ = ر.س</div>
+        </div>
+        <div class="currency-cell">
+          <div class="cur-pair">🇪🇺 → 🇸🇦</div>
+          <div class="cur-rate">${fmt(eurToSar, 2)}</div>
+          <div class="cur-unit">١ € = ر.س</div>
+        </div>
+        <div class="currency-cell">
+          <div class="cur-pair">🇪🇺 → 🇪🇬</div>
+          <div class="cur-rate">${fmt(eurToEgp, 2)}</div>
+          <div class="cur-unit">١ € = ج.م</div>
+        </div>
+        <div class="currency-cell">
+          <div class="cur-pair">🇪🇺 → 🇺🇸</div>
+          <div class="cur-rate">${fmt(eurToSar / Math.max(usdToSar,0.0001), 4)}</div>
+          <div class="cur-unit">١ € = $</div>
+        </div>
+      </div>
+      <div class="currency-meta">${sourceLine}</div>
+    </div>`;
+  };
+
+  window.updateRatesFromHome = async function() {
+    if (typeof fetchLiveRates !== 'function') return;
+    await fetchLiveRates();
+    if (typeof renderHome === 'function') renderHome();
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // HOME PAGE — INJECT CURRENCY CARD + ORDERS CARD + REORDER
+  // ═══════════════════════════════════════════════════════════════
+
+  // Pending orders card on home
+  function buildPendingOrdersHomeCard() {
+    const pending = orders.filter(o => o.status === 'pending');
+    if (!pending.length) return '';
+    const sym = BASE_LABELS[baseCurrency].sym;
+    const sortedByDate = [...pending].sort((a,b)=>(a.expectedDate||'9999').localeCompare(b.expectedDate||'9999'));
+    const next3 = sortedByDate.slice(0, 3);
+    const totalSAR = pending.reduce((s,o)=>s+curToSAR(o.amount,o.currency),0);
+
+    let html = `<div class="home-section" data-section="orders-pending">
+      <div class="home-section-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>📦 طلبات في الطريق (${toArabicDigits(pending.length)})</span>
+        <span style="font-size:12px;color:var(--accent);direction:ltr">${fmt(toBase(totalSAR),0)} ${sym}</span>
+      </div>`;
+
+    next3.forEach(o => {
+      const storeMeta = STORE_LABELS[o.store] || STORE_LABELS.other;
+      const storeName = o.storeCustom || storeMeta.name;
+      let daysLeftLabel = '—';
+      let daysColor = 'var(--muted)';
+      if (o.expectedDate) {
+        const dl = daysBetween(todayStr(), o.expectedDate);
+        if (dl < 0) { daysLeftLabel = `متأخر ${toArabicDigits(Math.abs(dl))} يوم`; daysColor = 'var(--red)'; }
+        else if (dl === 0) { daysLeftLabel = 'النهاردة'; daysColor = '#ffc107'; }
+        else if (dl <= 2) { daysLeftLabel = `${toArabicDigits(dl)} يوم`; daysColor = '#ffc107'; }
+        else { daysLeftLabel = `${toArabicDigits(dl)} يوم`; daysColor = 'var(--accent)'; }
+      }
+      html += `<div class="home-mini-row" onclick="closeAndOpen('','ordersModal',renderOrders)" style="cursor:pointer">
+        <div class="em">${storeMeta.emoji}</div>
+        <div class="info">
+          <div class="nm">${esc(o.itemName || storeName)}</div>
+          <div class="sb">${esc(storeName)} · ${fmt(o.amount,0)} ${SYM[o.currency]||o.currency}</div>
+        </div>
+        <div class="am" style="color:${daysColor};font-size:11px;font-weight:700">${daysLeftLabel}</div>
+      </div>`;
+    });
+    if (pending.length > 3) {
+      html += `<div style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px;cursor:pointer" onclick="closeAndOpen('','ordersModal',renderOrders)">و ${toArabicDigits(pending.length - 3)} طلب آخر ›</div>`;
+    }
+    html += `</div>`;
+    return html;
+  }
+
+  // ── HOME REORDER FUNCTION ──
+  // Runs after renderHome to enforce a logical priority order
+  function reorderHomeContent() {
+    const home = document.getElementById('homeContent');
+    if (!home) return;
+
+    // Define the desired order. Each entry is a CSS selector;
+    // the first matching child element is moved into position.
+    const priorityOrder = [
+      '.hero-card',                           // 1. Mood / savings status
+      '.stats-grid',                          // 2. Income / expense
+      '.mini-stats',                          // 3. Today / week / daily
+      '.standalone-days-left',                // 4. Days left in month (when no runway)
+      '.runway-card',                         // 5. Runway card
+      '[data-section="orders-pending"]',      // 6. Orders coming soon (urgent!)
+      '[data-section="commitments"]',         // 7. Active commitments
+      '.flight-card',                         // 8. Travel info
+      '.travel-card',                         // 9.
+      '.gold-card',                           // 10. Gold prices
+      '[data-section="currency"]',            // 11. Currency rates (under gold)
+      '.forecast-card',                       // 12. Forecast insights
+      '[data-section="anomalies"]',           // 13. Anomaly detection
+      '[data-section="forecast"]',            // 14.
+      '.home-section'                         // 15+. Everything else (recent, budgets, goals, occasions)
+    ];
+
+    // Collect all direct children
+    const children = Array.from(home.children);
+    const placed = new Set();
+    const ordered = [];
+
+    // First pass: pull elements in priority order
+    priorityOrder.forEach(sel => {
+      children.forEach(child => {
+        if (placed.has(child)) return;
+        try {
+          if (child.matches(sel)) {
+            ordered.push(child);
+            placed.add(child);
+          }
+        } catch(e) {}
+      });
+    });
+    // Second pass: anything not yet placed goes at the end
+    children.forEach(child => {
+      if (!placed.has(child)) ordered.push(child);
+    });
+
+    // Re-append in new order (this moves them since they're already in DOM)
+    ordered.forEach(child => home.appendChild(child));
+  }
+
+  // ── HOOK INTO renderHome ──
+  // We want to:
+  // 1. Inject orders-pending card if any
+  // 2. Inject currency card after gold
+  // 3. Reorder everything by priority
+  const _origRenderHomeV15 = window.renderHome;
+  window.renderHome = function() {
+    if (_origRenderHomeV15) _origRenderHomeV15();
+    const home = document.getElementById('homeContent');
+    if (!home) return;
+
+    // Inject pending orders card if any (and not already there)
+    if (!home.querySelector('[data-section="orders-pending"]')) {
+      const ordersHTML = buildPendingOrdersHomeCard();
+      if (ordersHTML) home.insertAdjacentHTML('beforeend', ordersHTML);
+    }
+
+    // Inject currency card if not already there
+    if (!home.querySelector('[data-section="currency"]')) {
+      home.insertAdjacentHTML('beforeend', buildCurrencyCardHTML());
+    }
+
+    // Re-tag commitments section so reorder can find it
+    home.querySelectorAll('.home-section').forEach(s => {
+      const title = s.querySelector('.home-section-title');
+      if (!title) return;
+      const t = title.textContent || '';
+      if (t.includes('الالتزامات الشهرية') && !s.dataset.section) s.dataset.section = 'commitments';
+      else if (t.includes('ميزانيات قربت') && !s.dataset.section) s.dataset.section = 'budget-warn';
+      else if (t.includes('أقرب هدف') && !s.dataset.section) s.dataset.section = 'goal';
+      else if (t.includes('المناسبات') && !s.dataset.section) s.dataset.section = 'occasions';
+      else if (t.includes('آخر الحركات') && !s.dataset.section) s.dataset.section = 'recent';
+    });
+
+    // Reorder by priority
+    reorderHomeContent();
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // BACKUP/RESTORE — INCLUDE ORDERS
+  // ═══════════════════════════════════════════════════════════════
+  const _origExportV15 = window.exportJSON;
+  window.exportJSON = function() {
+    // Run original export, then patch the saved file by re-running with orders
+    // Since the original builds and downloads in one go, we duplicate the data
+    // to ensure orders are included. Easiest: write a fresh export.
+    const data = {
+      txs: typeof txs !== 'undefined' ? txs : [],
+      savings: typeof savings !== 'undefined' ? savings : [],
+      rates, budgets,
+      accounts: typeof accounts !== 'undefined' ? accounts : [],
+      goals: typeof goals !== 'undefined' ? goals : [],
+      debts: typeof debts !== 'undefined' ? debts : [],
+      recurringTxs: typeof recurringTxs !== 'undefined' ? recurringTxs : [],
+      installments, jameya, occasions, dualSalary, rateMeta,
+      orders, // V15
+      bills: typeof bills !== 'undefined' ? bills : [],
+      investments: typeof investments !== 'undefined' ? investments : [],
+      netWorthHistory: typeof netWorthHistory !== 'undefined' ? netWorthHistory : [],
+      priceAlerts: typeof priceAlerts !== 'undefined' ? priceAlerts : [],
+      travelMode: localStorage.getItem('msarifyi_travel_mode') || null,
+      ramadanMode: localStorage.getItem('msarifyi_ramadan_mode') || null,
+      hajjBudget: typeof hajjBudget !== 'undefined' ? hajjBudget : null,
+      goldHistory: typeof goldHistory !== 'undefined' ? goldHistory : [],
+      baseCurrency,
+      theme: localStorage.getItem('msarifyi_theme') || 'dark',
+      schemaVersion: 15,
+      version: 15,
+      exported: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json;charset=utf-8'});
+    if (typeof downloadBlob === 'function') {
+      downloadBlob(blob, `masarefy_backup_${new Date().toISOString().split('T')[0]}.json`);
+    } else {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `masarefy_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+    if (typeof showToast === 'function') showToast('✅ تم تصدير النسخة الاحتياطية الكاملة', 'success');
+  };
+
+  // Patch restore to include orders
+  const _origRestoreV15 = window.restoreBackup;
+  window.restoreBackup = function(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data.txs && !data.savings) {
+          showAlert('❌ الملف ده مش نسخة احتياطية صحيحة', 'error');
+          event.target.value = '';
+          return;
+        }
+        const ok = confirm(`⚠️ هتستبدل بياناتك الحالية بـ:\n\n• ${(data.txs?.length||0)+(data.savings?.length||0)} حركة\n• ${data.installments?.length||0} قسط\n• ${data.jameya?.length||0} جمعية\n• ${data.occasions?.length||0} مناسبة\n• ${data.orders?.length||0} طلب\n\nالبيانات الحالية هتتمسح. متأكد؟`);
+        if (!ok) { event.target.value = ''; return; }
+        if (data.txs) { txs = data.txs; saveData(); }
+        if (data.savings) { savings = data.savings; saveSavings(); }
+        if (data.rates) { rates = data.rates; saveRates(); }
+        if (data.budgets) { budgets = data.budgets; saveBudgets(); }
+        if (data.accounts) { accounts = data.accounts; saveAccounts(); }
+        if (data.goals) { goals = data.goals; saveGoals(); }
+        if (data.debts) { debts = data.debts; saveDebts(); }
+        if (data.recurringTxs) { recurringTxs = data.recurringTxs; saveRecurring(); }
+        if (data.installments) { installments = data.installments; saveInstallments(); }
+        if (data.jameya) { jameya = data.jameya; saveJameyaData(); }
+        if (data.occasions) { occasions = data.occasions; saveOccasions(); }
+        if (data.orders) { orders = data.orders; saveOrders(); } // V15
+        if (data.dualSalary !== undefined) { dualSalary = data.dualSalary; saveDualSalary(); }
+        if (data.rateMeta) { rateMeta = data.rateMeta; saveRateMeta(); }
+        if (data.bills && typeof bills !== 'undefined') { bills = data.bills; if (typeof saveBills === 'function') saveBills(); }
+        if (data.investments && typeof investments !== 'undefined') { investments = data.investments; if (typeof saveInvestments === 'function') saveInvestments(); }
+        if (data.netWorthHistory && typeof netWorthHistory !== 'undefined') { netWorthHistory = data.netWorthHistory; if (typeof saveNetWorthHistory === 'function') saveNetWorthHistory(); }
+        if (data.priceAlerts && typeof priceAlerts !== 'undefined') { priceAlerts = data.priceAlerts; if (typeof savePriceAlerts === 'function') savePriceAlerts(); }
+        if (data.goldHistory) { localStorage.setItem('msarifyi_gold_history', JSON.stringify(data.goldHistory)); if (typeof goldHistory !== 'undefined') goldHistory = data.goldHistory; }
+        if (data.travelMode != null) localStorage.setItem('msarifyi_travel_mode', data.travelMode);
+        if (data.ramadanMode != null) localStorage.setItem('msarifyi_ramadan_mode', data.ramadanMode);
+        if (data.hajjBudget != null) { localStorage.setItem('msarifyi_hajj_budget', JSON.stringify(data.hajjBudget)); if (typeof hajjBudget !== 'undefined') hajjBudget = data.hajjBudget; }
+        if (data.baseCurrency) { baseCurrency = data.baseCurrency; localStorage.setItem('msarifyi_base', data.baseCurrency); }
+        if (data.theme) { localStorage.setItem('msarifyi_theme', data.theme); document.documentElement.setAttribute('data-theme', data.theme); }
+        event.target.value = '';
+        document.getElementById('settingsModal').classList.remove('open');
+        showAlert('✅ تم استرداد البيانات بنجاح!', 'success');
+        if (typeof updateBaseChip === 'function') updateBaseChip();
+        if (typeof highlightBaseOpt === 'function') highlightBaseOpt();
+        if (typeof fillAccountSelect === 'function') fillAccountSelect();
+        if (typeof renderAll === 'function') renderAll();
+        if (typeof updateMenuCounts === 'function') updateMenuCounts();
+        updateOrdersMenuCount();
+      } catch (err) {
+        showAlert('❌ خطأ في قراءة الملف: ' + err.message, 'error');
+        event.target.value = '';
+      }
+    };
+    reader.onerror = () => { showAlert('❌ فشل قراءة الملف', 'error'); event.target.value = ''; };
+    reader.readAsText(file);
+  };
+
+  // ── INITIAL UI UPDATE ──
+  setTimeout(() => {
+    updateOrdersMenuCount();
+    if (typeof renderHome === 'function') renderHome();
+  }, 600);
+
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// V15 — STYLES (currency card + orders polish)
+// ═══════════════════════════════════════════════════════════════
+(function v15Styles() {
+  const css = `
+    /* Currency card — matches gold-card visual style */
+    .currency-card {
+      background: linear-gradient(135deg, rgba(88,166,255,0.10), rgba(88,166,255,0.02));
+      border: 1px solid rgba(88,166,255,0.25);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .currency-title {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 13px; font-weight: 900; margin-bottom: 10px;
+    }
+    .currency-refresh {
+      background: var(--card2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 4px 10px;
+      color: var(--accent); font-size: 11px; font-weight: 700;
+      cursor: pointer; font-family: 'Cairo', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .currency-refresh:active { transform: scale(0.95); }
+    .currency-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .currency-cell {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 4px;
+      text-align: center;
+    }
+    .currency-cell .cur-pair {
+      font-size: 11px; color: var(--muted); font-weight: 700;
+      margin-bottom: 3px;
+    }
+    .currency-cell .cur-rate {
+      font-size: 14px; color: var(--text); font-weight: 900;
+      direction: ltr;
+    }
+    .currency-cell .cur-unit {
+      font-size: 9px; color: var(--muted); margin-top: 2px;
+    }
+    .currency-meta {
+      font-size: 10px; color: var(--muted);
+      text-align: center; margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px dashed var(--border);
+    }
+    @media (max-width: 360px) {
+      .currency-grid { grid-template-columns: repeat(2, 1fr); }
+      .currency-cell .cur-rate { font-size: 13px; }
+    }
+  `;
+  const style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// V15 — ENSURE renderHome RUNS AFTER ORDERS SCRIPT LOADS
+// (the original v9Init at line ~8347 calls renderHome before this
+// script extends it. Force one more re-render now.)
+// ═══════════════════════════════════════════════════════════════
+setTimeout(() => {
+  try {
+    if (typeof renderHome === 'function') renderHome();
+    if (typeof updateOrdersMenuCount === 'function') updateOrdersMenuCount();
+  } catch(e) { console.warn('V15 final init:', e); }
+}, 800);
 </script>
 
 </body>
