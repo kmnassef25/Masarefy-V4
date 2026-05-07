@@ -1,4 +1,4 @@
-const APP_VERSION = 'v19.0.0';
+const APP_VERSION = 'v20.0.0';
 const CACHE_NAME = 'masarefy-' + APP_VERSION;
 const URLS_TO_CACHE = [
   './', './index.html', './manifest.json',
