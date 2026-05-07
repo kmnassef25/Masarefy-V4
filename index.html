@@ -9303,10 +9303,6 @@ function renderFlights() {
   el.innerHTML = `
     <p style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px">سجّل تذكرتك مع الفلوس وميعاد الرحلة وعدّاد الأيام</p>
     <button class="save-btn" onclick="addFlight()" style="margin-bottom:12px">➕ إضافة تذكرة جديدة</button>
-    <div style="background:var(--card2);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:11px;color:var(--muted);line-height:1.6">
-      <div style="color:var(--accent);font-weight:900;margin-bottom:4px">🔍 مقارنة الأسعار</div>
-      اضغط على زرار "ابحث" في تذكرة عشان يفتحلك Skyscanner للمقارنة. التطبيق ما بيتصلش بشركات الطيران مباشرة.
-    </div>
     ${cards}
   `;
 }
@@ -9343,7 +9339,6 @@ function buildFlightCard(f, isUpcoming) {
       <div class="flight-price-each">${f.passengers>1 ? `(${fmt(f.amount/f.passengers,0)} للراكب)` : ''}</div>
     </div>
     <div class="flight-actions">
-      <button class="feat-mini-btn" onclick="searchFlightPrices('${escAttr(f.from)}','${escAttr(f.to)}','${escAttr(f.flightDate)}')">🔍 ابحث</button>
       <button class="feat-mini-btn" onclick="editFlight('${escAttr(f.id)}')" style="color:var(--accent);border-color:var(--accent)">✏️ تعديل</button>
       <button class="feat-mini-btn danger" onclick="delFlight('${escAttr(f.id)}')">🗑️ حذف</button>
     </div>
@@ -14269,6 +14264,478 @@ setTimeout(() => {
     @media (max-width: 360px) {
       .v20-store-grid { grid-template-columns: repeat(3, 1fr); }
       .v20-provider-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  `;
+  const style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// V21 — STORE REPORT + HOME REORGANIZATION
+// ═══════════════════════════════════════════════════════════════
+(function v21Init() {
+
+  // ─────────────────────────────────────────────────────────────
+  // PART A — STORE REPORT
+  // Aggregates spending by store/provider across:
+  //   - Online orders (orders array)
+  //   - Installments (installments array, grouped by storeKey + provider)
+  //   - Transactions (txs) — text-matched against known stores
+  // ─────────────────────────────────────────────────────────────
+
+  function buildStoreReport() {
+    const SL = window.STORE_LOGOS_SVG || {};
+    const guessFn = window.guessStoreKey || ((t) => '');
+    const sym = BASE_LABELS[baseCurrency].sym;
+
+    // Aggregate by store (where you bought)
+    const storeSpend = {}; // key -> { name, amountSAR, count, sources: Set, monthly:{}, lastDate }
+    // Aggregate by provider (how you paid)
+    const providerSpend = {}; // key -> { name, amountSAR, count, monthly:{} }
+
+    function addToStore(key, name, amountSAR, source, date) {
+      if (!key) key = 'other';
+      if (!storeSpend[key]) {
+        storeSpend[key] = {
+          key, name: name || key,
+          amountSAR: 0, count: 0,
+          sources: new Set(),
+          monthly: {},
+          lastDate: ''
+        };
+      }
+      const s = storeSpend[key];
+      s.amountSAR += (amountSAR || 0);
+      s.count += 1;
+      s.sources.add(source);
+      if (date) {
+        const ym = date.slice(0, 7);
+        s.monthly[ym] = (s.monthly[ym] || 0) + (amountSAR || 0);
+        if (date > s.lastDate) s.lastDate = date;
+      }
+    }
+    function addToProvider(key, name, amountSAR, date) {
+      if (!key) return;
+      if (!providerSpend[key]) {
+        providerSpend[key] = { key, name: name || key, amountSAR: 0, count: 0, monthly: {}, lastDate: '' };
+      }
+      const p = providerSpend[key];
+      p.amountSAR += (amountSAR || 0);
+      p.count += 1;
+      if (date) {
+        const ym = date.slice(0, 7);
+        p.monthly[ym] = (p.monthly[ym] || 0) + (amountSAR || 0);
+        if (date > p.lastDate) p.lastDate = date;
+      }
+    }
+
+    // ─── Source 1: Orders ───
+    if (typeof orders !== 'undefined' && Array.isArray(orders)) {
+      const STORE_NAMES = {};
+      (window.ALL_STORES || []).forEach(s => { STORE_NAMES[s.key] = s.name; });
+      orders.forEach(o => {
+        const key = o.store || 'other';
+        const name = o.storeCustom || STORE_NAMES[key] || key;
+        const amountSAR = curToSAR(o.amount, o.currency);
+        addToStore(key, name, amountSAR, 'orders', o.orderDate || '');
+
+        // Provider = payment method
+        if (o.paymentMethod) {
+          const PAY_LABELS_LOCAL = window.PAY_LABELS || {};
+          const meta = PAY_LABELS_LOCAL[o.paymentMethod];
+          if (meta) addToProvider(o.paymentMethod, meta.name, amountSAR, o.orderDate || '');
+        }
+      });
+    }
+
+    // ─── Source 2: Installments ───
+    if (typeof installments !== 'undefined' && Array.isArray(installments)) {
+      installments.forEach(inst => {
+        const totalSAR = curToSAR(inst.totalAmount || 0, inst.currency);
+        // Store
+        const storeKey = inst.storeKey || (inst.store ? guessFn(inst.store) : '');
+        if (storeKey || inst.store) {
+          const STORE_NAMES = {};
+          (window.ALL_STORES || []).forEach(s => { STORE_NAMES[s.key] = s.name; });
+          addToStore(storeKey || 'other', STORE_NAMES[storeKey] || inst.store || 'متجر', totalSAR, 'installments',
+                     inst.startDate || '');
+        }
+        // Provider
+        if (inst.provider) {
+          const provNames = { tabby: 'tabby', tamara: 'tamara', bank: 'بنك', dealer: 'محل' };
+          addToProvider(inst.provider, provNames[inst.provider] || inst.provider, totalSAR, inst.startDate || '');
+        } else {
+          addToProvider('manual', 'يدوي', totalSAR, inst.startDate || '');
+        }
+      });
+    }
+
+    // ─── Source 3: Transactions (text matching) ───
+    if (typeof txs !== 'undefined' && Array.isArray(txs)) {
+      txs.forEach(t => {
+        if (t.type !== 'expense') return;
+        // Skip txs already linked to orders/installments to avoid double-counting
+        if (t.orderId || t.installmentId) return;
+
+        const text = (t.name || '') + ' ' + (t.note || '');
+        const key = guessFn(text);
+        if (key) {
+          const STORE_NAMES = {};
+          (window.ALL_STORES || []).forEach(s => { STORE_NAMES[s.key] = s.name; });
+          const amountSAR = t.amountSAR || curToSAR(t.amount || 0, t.currency);
+          addToStore(key, STORE_NAMES[key] || key, amountSAR, 'transactions', t.date || '');
+        }
+      });
+    }
+
+    // Build sorted arrays
+    const stores = Object.values(storeSpend).sort((a, b) => b.amountSAR - a.amountSAR);
+    const providers = Object.values(providerSpend).sort((a, b) => b.amountSAR - a.amountSAR);
+    const totalStoresSAR = stores.reduce((s, x) => s + x.amountSAR, 0);
+    const totalProvidersSAR = providers.reduce((s, x) => s + x.amountSAR, 0);
+
+    // ─── HTML ───
+    let html = '';
+
+    if (!stores.length && !providers.length) {
+      return `<div class="empty"><div class="empty-icon">📊</div>لا توجد بيانات بعد<br><span style="font-size:11px">سجّل طلبات أونلاين، أقساط، أو حركات بأسماء متاجر معروفة</span></div>`;
+    }
+
+    // ── Summary cards ──
+    html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="background:linear-gradient(135deg,rgba(88,166,255,0.12),rgba(88,166,255,0.03));border:1px solid var(--accent);border-radius:12px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);font-weight:700">🛍️ متاجر</div>
+        <div style="font-size:18px;font-weight:900;color:var(--accent);margin-top:4px;direction:ltr">${fmt(toBase(totalStoresSAR), 0)} ${sym}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px">${toArabicDigits(stores.length)} متجر</div>
+      </div>
+      <div style="background:linear-gradient(135deg,rgba(63,185,80,0.12),rgba(63,185,80,0.03));border:1px solid var(--green);border-radius:12px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);font-weight:700">💳 طرق الدفع</div>
+        <div style="font-size:18px;font-weight:900;color:var(--green);margin-top:4px;direction:ltr">${fmt(toBase(totalProvidersSAR), 0)} ${sym}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px">${toArabicDigits(providers.length)} موفّر</div>
+      </div>
+    </div>`;
+
+    // ── Stores section ──
+    if (stores.length) {
+      html += `<div style="font-size:13px;font-weight:900;color:var(--accent);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+        <span>🛍️ المتاجر — كم صرفت من كل واحد</span>
+      </div>`;
+
+      stores.forEach((s, idx) => {
+        const logo = SL[s.key] || SL.other;
+        const pct = totalStoresSAR > 0 ? (s.amountSAR / totalStoresSAR) * 100 : 0;
+        const isTop = idx === 0;
+        const sourceCount = s.sources.size;
+        const sourceLabels = [];
+        if (s.sources.has('orders')) sourceLabels.push('📦 طلبات');
+        if (s.sources.has('installments')) sourceLabels.push('💳 أقساط');
+        if (s.sources.has('transactions')) sourceLabels.push('💸 حركات');
+
+        html += `<div class="v21-store-row" style="${isTop ? 'border-color:var(--accent);background:rgba(88,166,255,0.05)' : ''}">
+          <div class="v21-store-row-head">
+            <div class="v21-store-logo-wrap">${logo}</div>
+            <div class="v21-store-info">
+              <div class="v21-store-name">${esc(s.name)}${isTop ? ' 🏆' : ''}</div>
+              <div class="v21-store-meta">${toArabicDigits(s.count)} ${s.count === 1 ? 'عملية' : 'عمليات'} · ${sourceLabels.join(' · ')}${s.lastDate ? ' · آخرها ' + esc(s.lastDate) : ''}</div>
+            </div>
+            <div class="v21-store-amt">
+              <div class="v21-store-amt-val" style="color:${isTop ? 'var(--accent)' : 'var(--text)'}">${fmt(toBase(s.amountSAR), 0)}</div>
+              <div class="v21-store-amt-sym">${sym}</div>
+            </div>
+          </div>
+          <div class="v21-store-bar-bg">
+            <div class="v21-store-bar-fill" style="width:${pct}%;background:${isTop ? 'var(--accent)' : 'var(--green)'}"></div>
+          </div>
+          <div class="v21-store-pct">${fmt(pct, 1)}٪ من إجمالي الإنفاق على المتاجر</div>
+        </div>`;
+      });
+    }
+
+    // ── Providers section ──
+    if (providers.length) {
+      html += `<div style="font-size:13px;font-weight:900;color:var(--green);margin:18px 0 8px">💳 طرق الدفع وشركات التقسيط</div>`;
+
+      providers.forEach((p, idx) => {
+        const logoKey = p.key === 'other' ? 'other_pay' : p.key;
+        const logo = SL[logoKey] || SL.other_pay || SL.manual;
+        const pct = totalProvidersSAR > 0 ? (p.amountSAR / totalProvidersSAR) * 100 : 0;
+        const isTop = idx === 0;
+
+        html += `<div class="v21-store-row" style="${isTop ? 'border-color:var(--green);background:rgba(63,185,80,0.05)' : ''}">
+          <div class="v21-store-row-head">
+            <div class="v21-store-logo-wrap">${logo}</div>
+            <div class="v21-store-info">
+              <div class="v21-store-name">${esc(p.name)}${isTop ? ' 🥇' : ''}</div>
+              <div class="v21-store-meta">${toArabicDigits(p.count)} ${p.count === 1 ? 'دفعة' : 'دفعات'}${p.lastDate ? ' · آخرها ' + esc(p.lastDate) : ''}</div>
+            </div>
+            <div class="v21-store-amt">
+              <div class="v21-store-amt-val" style="color:${isTop ? 'var(--green)' : 'var(--text)'}">${fmt(toBase(p.amountSAR), 0)}</div>
+              <div class="v21-store-amt-sym">${sym}</div>
+            </div>
+          </div>
+          <div class="v21-store-bar-bg">
+            <div class="v21-store-bar-fill" style="width:${pct}%;background:${isTop ? 'var(--green)' : 'var(--accent)'}"></div>
+          </div>
+          <div class="v21-store-pct">${fmt(pct, 1)}٪ من إجمالي طرق الدفع</div>
+        </div>`;
+      });
+    }
+
+    return html;
+  }
+  window.buildStoreReport = buildStoreReport;
+
+  window.renderStoreReport = function() {
+    const el = document.getElementById('storeReportContent');
+    if (el) el.innerHTML = buildStoreReport();
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // PART B — INJECT STORE REPORT MODAL + MENU ROW
+  // ─────────────────────────────────────────────────────────────
+
+  function injectV21Modal() {
+    if (document.getElementById('storeReportModal')) return;
+    const modal = document.createElement('div');
+    modal.className = 'overlay';
+    modal.id = 'storeReportModal';
+    modal.setAttribute('onclick', "closeIfOut(event,'storeReportModal')");
+    modal.innerHTML = `<div class="sheet" style="max-height:94vh">
+      <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+      <div class="modal-title">📊 تقرير المتاجر والدفع</div>
+      <p style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px">شوف فين فلوسك بتروح — بيشمل الطلبات الأونلاين، الأقساط، والحركات</p>
+      <div id="storeReportContent"></div>
+    </div>`;
+    document.body.appendChild(modal);
+  }
+
+  function injectV21MenuRow() {
+    const menuModal = document.getElementById('menuModal');
+    if (!menuModal) return;
+    if (menuModal.querySelector('[data-v21-menu]')) return;
+
+    // Find orders row
+    const ordersRow = [...menuModal.querySelectorAll('.menu-row')].find(r =>
+      r.getAttribute('onclick') && r.getAttribute('onclick').includes('ordersModal'));
+    if (!ordersRow) return;
+
+    const reportRow = document.createElement('div');
+    reportRow.className = 'menu-row';
+    reportRow.dataset.v21Menu = 'storeReport';
+    reportRow.setAttribute('onclick', "closeAndOpen('menuModal','storeReportModal',renderStoreReport)");
+    reportRow.innerHTML = `<div class="mi">📊</div>
+      <div class="mt"><div class="mt-l">تقرير المتاجر والدفع</div><div class="mt-s" id="menuStoreReportCount">--</div></div>
+      <div class="mc">‹</div>`;
+
+    // Insert right after orders
+    ordersRow.parentNode.insertBefore(reportRow, ordersRow.nextSibling);
+  }
+
+  function updateStoreReportMenuCount() {
+    const el = document.getElementById('menuStoreReportCount');
+    if (!el) return;
+    let totalOps = 0;
+    if (typeof orders !== 'undefined') totalOps += orders.length;
+    if (typeof installments !== 'undefined') totalOps += installments.length;
+    if (totalOps === 0) {
+      el.textContent = 'لا توجد بيانات بعد';
+    } else {
+      el.textContent = `${toArabicDigits(totalOps)} عملية مسجّلة`;
+    }
+  }
+  window.updateStoreReportMenuCount = updateStoreReportMenuCount;
+
+  // Hook into updateMenuCounts
+  const _origUpdateMenuCountsV21 = window.updateMenuCounts;
+  window.updateMenuCounts = function() {
+    if (_origUpdateMenuCountsV21) _origUpdateMenuCountsV21();
+    updateStoreReportMenuCount();
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // PART C — HOME PAGE REORGANIZATION
+  //
+  // Apply a clean, opinionated order to home sections:
+  //
+  //   1. Hero (mood/savings status)
+  //   2. Quick stats grid (income/expense/balance)
+  //   3. Today/week/daily mini stats
+  //   4. Days left in month / runway
+  //   5. URGENT alerts: anomalies, budget warnings, bills due
+  //   6. Active items: orders pending, upcoming flights, commitments
+  //   7. Goals progress
+  //   8. Live data: gold + currency rates
+  //   9. Recent transactions (most useful in middle)
+  //  10. Insights: forecast, comparison, recommendations
+  //  11. Other: occasions, Ramadan/travel/Hajj cards
+  //
+  // We also add visual section headers grouped logically.
+  // ─────────────────────────────────────────────────────────────
+
+  function reorganizeHome() {
+    const home = document.getElementById('homeContent');
+    if (!home) return;
+
+    // Tag each existing section by inferring its purpose
+    const children = Array.from(home.children);
+    children.forEach(el => {
+      if (el.dataset.v21Tagged) return;
+      const text = (el.textContent || '').slice(0, 100);
+      const cls = el.className || '';
+
+      if (cls.includes('hero-card')) el.dataset.v21Group = '1-hero';
+      else if (cls.includes('stats-grid')) el.dataset.v21Group = '2-stats';
+      else if (cls.includes('mini-stats')) el.dataset.v21Group = '3-mini';
+      else if (cls.includes('standalone-days-left') || cls.includes('runway-card')) el.dataset.v21Group = '4-time';
+      else if (el.dataset.section === 'anomalies' || text.includes('شذوذ')) el.dataset.v21Group = '5-alerts';
+      else if (text.includes('ميزانيات قربت')) el.dataset.v21Group = '5-alerts';
+      else if (el.dataset.section === 'orders-pending' || text.includes('طلبات في الطريق')) el.dataset.v21Group = '6-active';
+      else if (cls.includes('flight-card') || cls.includes('travel-card') || text.includes('رحلتك القادمة')) el.dataset.v21Group = '6-active';
+      else if (el.dataset.section === 'commitments' || text.includes('الالتزامات الشهرية')) el.dataset.v21Group = '6-active';
+      else if (el.dataset.section === 'goal' || text.includes('أقرب هدف')) el.dataset.v21Group = '7-goals';
+      else if (cls.includes('gold-card')) el.dataset.v21Group = '8-live';
+      else if (el.dataset.section === 'currency') el.dataset.v21Group = '8-live';
+      else if (cls.includes('forecast-card') || el.dataset.section === 'forecast') el.dataset.v21Group = '9-insights';
+      else if (el.dataset.section === 'recent' || text.includes('آخر الحركات')) el.dataset.v21Group = '95-recent'; // near end but before extras
+      else if (el.dataset.section === 'occasions' || text.includes('المناسبات')) el.dataset.v21Group = '99-other';
+      else el.dataset.v21Group = '99-other';
+
+      el.dataset.v21Tagged = '1';
+    });
+
+    // Sort children by group
+    const sorted = children.slice().sort((a, b) => {
+      const ga = a.dataset.v21Group || 'z';
+      const gb = b.dataset.v21Group || 'z';
+      return ga.localeCompare(gb);
+    });
+
+    // Apply order
+    sorted.forEach(el => home.appendChild(el));
+  }
+
+  // Hook into renderHome
+  const _origRenderHomeV21 = window.renderHome;
+  if (typeof _origRenderHomeV21 === 'function') {
+    window.renderHome = function() {
+      _origRenderHomeV21.apply(this, arguments);
+      // Reset tags so they get re-evaluated each render (in case content changed)
+      const home = document.getElementById('homeContent');
+      if (home) {
+        home.querySelectorAll('[data-v21-tagged]').forEach(el => {
+          delete el.dataset.v21Tagged;
+          delete el.dataset.v21Group;
+        });
+      }
+      setTimeout(reorganizeHome, 50);
+    };
+  }
+
+  // Re-trigger once after init
+  setTimeout(() => {
+    if (typeof renderHome === 'function') renderHome();
+  }, 1500);
+
+  // ─────────────────────────────────────────────────────────────
+  // PART D — INIT
+  // ─────────────────────────────────────────────────────────────
+  setTimeout(() => {
+    try {
+      injectV21Modal();
+      injectV21MenuRow();
+      updateStoreReportMenuCount();
+    } catch (e) {
+      console.warn('V21 init error:', e);
+    }
+  }, 800);
+
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// V21 — STYLES
+// ═══════════════════════════════════════════════════════════════
+(function v21Styles() {
+  const css = `
+    .v21-store-row {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 8px;
+      transition: border-color 0.2s;
+    }
+    .v21-store-row-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .v21-store-logo-wrap {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .v21-store-logo-wrap svg { width: 100%; height: 100%; }
+    .v21-store-info {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .v21-store-name {
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--text);
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .v21-store-meta {
+      font-size: 10px;
+      color: var(--muted);
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .v21-store-amt {
+      text-align: left;
+      direction: ltr;
+      flex-shrink: 0;
+    }
+    .v21-store-amt-val {
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .v21-store-amt-sym {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .v21-store-bar-bg {
+      height: 6px;
+      background: var(--card2);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+    .v21-store-bar-fill {
+      height: 100%;
+      transition: width 0.4s ease-out;
+      border-radius: 3px;
+    }
+    .v21-store-pct {
+      font-size: 10px;
+      color: var(--muted);
+      text-align: left;
+      direction: ltr;
     }
   `;
   const style = document.createElement('style');
