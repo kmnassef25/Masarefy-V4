@@ -15555,6 +15555,962 @@ setTimeout(() => {
   style.textContent = css;
   document.head.appendChild(style);
 })();
+
+// ═══════════════════════════════════════════════════════════════
+// V23 — PROFESSIONAL ACCOUNTS / WALLETS REDESIGN
+//   • Saudi & Egyptian banks + InstaPay + Vodafone Cash with real logos
+//   • Beautiful card-style wallet display with balance, color, icon
+//   • Account picker enhanced for transactions (visual selector)
+// ═══════════════════════════════════════════════════════════════
+(function v23Init() {
+
+  // ─────────────────────────────────────────────────────────────
+  // PART A — BANK LOGOS (SVG inline, work offline)
+  // Each entry: { id, name, type, logo, color, country }
+  // ─────────────────────────────────────────────────────────────
+  const BANK_LIBRARY = {
+    // ═════ SAUDI BANKS ═════
+    'sa_alrajhi': {
+      name: 'مصرف الراجحي', type: 'bank', country: 'sa', color: '#003B71',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#003B71"/><text x="30" y="35" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="11" font-weight="900">الراجحي</text></svg>`
+    },
+    'sa_snb': {
+      name: 'البنك الأهلي (SNB)', type: 'bank', country: 'sa', color: '#00833E',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#00833E"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="14" font-weight="900">SNB</text></svg>`
+    },
+    'sa_riyad': {
+      name: 'بنك الرياض', type: 'bank', country: 'sa', color: '#0070C0',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#0070C0"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="11" font-weight="900">الرياض</text></svg>`
+    },
+    'sa_sab': {
+      name: 'SAB (الأول)', type: 'bank', country: 'sa', color: '#DC0019',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#DC0019"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="15" font-weight="900">SAB</text></svg>`
+    },
+    'sa_albilad': {
+      name: 'بنك البلاد', type: 'bank', country: 'sa', color: '#82BC00',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#82BC00"/><text x="30" y="35" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="11" font-weight="900">البلاد</text></svg>`
+    },
+    'sa_anb': {
+      name: 'العربي الوطني', type: 'bank', country: 'sa', color: '#1B3F8B',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#1B3F8B"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="13" font-weight="900">ANB</text></svg>`
+    },
+    'sa_aljazira': {
+      name: 'بنك الجزيرة', type: 'bank', country: 'sa', color: '#7A2D8C',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#7A2D8C"/><text x="30" y="35" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="11" font-weight="900">الجزيرة</text></svg>`
+    },
+    'sa_alinma': {
+      name: 'مصرف الإنماء', type: 'bank', country: 'sa', color: '#5C2D91',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#5C2D91"/><text x="30" y="35" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="11" font-weight="900">الإنماء</text></svg>`
+    },
+    'sa_stcpay': {
+      name: 'STC Pay', type: 'wallet', country: 'sa', color: '#4F008C',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#4F008C"/><text x="30" y="28" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="11" font-weight="900">stc</text><text x="30" y="44" text-anchor="middle" fill="#FFFFFF" font-family="Arial" font-size="10" font-weight="700">pay</text></svg>`
+    },
+    'sa_urpay': {
+      name: 'urpay', type: 'wallet', country: 'sa', color: '#E94E1B',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#E94E1B"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="14" font-weight="900">urpay</text></svg>`
+    },
+    'sa_mada': {
+      name: 'بطاقة مدى', type: 'card', country: 'sa', color: '#84BD00',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#FFFFFF"/><text x="30" y="34" text-anchor="middle" fill="#84BD00" font-family="Arial Black" font-size="13" font-weight="900">mada</text><text x="30" y="44" text-anchor="middle" fill="#005EB8" font-family="Arial" font-size="9">مدى</text></svg>`
+    },
+
+    // ═════ EGYPTIAN BANKS ═════
+    'eg_nbe': {
+      name: 'البنك الأهلي المصري', type: 'bank', country: 'eg', color: '#0E5E2C',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#0E5E2C"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="13" font-weight="900">NBE</text></svg>`
+    },
+    'eg_cib': {
+      name: 'CIB', type: 'bank', country: 'eg', color: '#6B0F1A',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#6B0F1A"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="14" font-weight="900">CIB</text></svg>`
+    },
+    'eg_qnb': {
+      name: 'QNB الأهلي', type: 'bank', country: 'eg', color: '#82185D',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#82185D"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="14" font-weight="900">QNB</text></svg>`
+    },
+    'eg_banque_misr': {
+      name: 'بنك مصر', type: 'bank', country: 'eg', color: '#C8102E',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#C8102E"/><text x="30" y="35" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="11" font-weight="900">بنك مصر</text></svg>`
+    },
+    'eg_aaib': {
+      name: 'البنك العربي الأفريقي', type: 'bank', country: 'eg', color: '#003F87',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#003F87"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="13" font-weight="900">AAIB</text></svg>`
+    },
+    'eg_alex': {
+      name: 'بنك الإسكندرية', type: 'bank', country: 'eg', color: '#003D7A',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#003D7A"/><text x="30" y="35" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="10" font-weight="900">الإسكندرية</text></svg>`
+    },
+    'eg_hsbc': {
+      name: 'HSBC مصر', type: 'bank', country: 'eg', color: '#DB0011',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#FFFFFF"/><rect x="6" y="22" width="48" height="16" fill="#DB0011"/><text x="30" y="34" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="12" font-weight="900">HSBC</text></svg>`
+    },
+    'eg_adib': {
+      name: 'ADIB مصر', type: 'bank', country: 'eg', color: '#9D2235',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#9D2235"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="13" font-weight="900">ADIB</text></svg>`
+    },
+    'eg_faisal': {
+      name: 'بنك فيصل الإسلامي', type: 'bank', country: 'eg', color: '#1B5E20',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#1B5E20"/><text x="30" y="35" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="11" font-weight="900">فيصل</text></svg>`
+    },
+    'eg_dev_bank': {
+      name: 'بنك التعمير والإسكان', type: 'bank', country: 'eg', color: '#1F4E79',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#1F4E79"/><text x="30" y="35" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="10" font-weight="900">HD-Bank</text></svg>`
+    },
+    'eg_instapay': {
+      name: 'InstaPay', type: 'wallet', country: 'eg', color: '#E91E63',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#E91E63"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="11" font-weight="900">InstaPay</text></svg>`
+    },
+    'eg_vodafone_cash': {
+      name: 'فودافون كاش', type: 'wallet', country: 'eg', color: '#E60000',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#E60000"/><circle cx="30" cy="26" r="11" fill="none" stroke="#FFFFFF" stroke-width="3"/><path d="M30 18 L30 35" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/><text x="30" y="50" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="8" font-weight="900">Cash</text></svg>`
+    },
+    'eg_orange_cash': {
+      name: 'Orange Cash', type: 'wallet', country: 'eg', color: '#FF6600',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#FF6600"/><rect x="14" y="14" width="32" height="32" rx="4" fill="#FFFFFF"/><text x="30" y="34" text-anchor="middle" fill="#FF6600" font-family="Arial Black" font-size="9" font-weight="900">orange</text></svg>`
+    },
+    'eg_etisalat_cash': {
+      name: 'Etisalat Cash', type: 'wallet', country: 'eg', color: '#67B33A',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#67B33A"/><text x="30" y="32" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="10" font-weight="900">etisalat</text><text x="30" y="46" text-anchor="middle" fill="#FFFFFF" font-family="Arial" font-size="9" font-weight="700">Cash</text></svg>`
+    },
+    'eg_we_pay': {
+      name: 'WE Pay', type: 'wallet', country: 'eg', color: '#5E2D91',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#5E2D91"/><text x="30" y="32" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="14" font-weight="900">WE</text><text x="30" y="46" text-anchor="middle" fill="#FFFFFF" font-family="Arial" font-size="9" font-weight="700">Pay</text></svg>`
+    },
+    'eg_meeza': {
+      name: 'بطاقة ميزة', type: 'card', country: 'eg', color: '#FFC72C',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#FFC72C"/><text x="30" y="38" text-anchor="middle" fill="#000000" font-family="Arial Black" font-size="14" font-weight="900">meeza</text></svg>`
+    },
+
+    // ═════ INTERNATIONAL CARDS / WALLETS ═════
+    'visa': {
+      name: 'بطاقة Visa', type: 'card', country: 'intl', color: '#1A1F71',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#1A1F71"/><text x="30" y="38" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-style="italic" font-size="16" font-weight="900">VISA</text></svg>`
+    },
+    'mastercard': {
+      name: 'Mastercard', type: 'card', country: 'intl', color: '#1A1A1A',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#1A1A1A"/><circle cx="24" cy="30" r="11" fill="#EB001B"/><circle cx="36" cy="30" r="11" fill="#F79E1B" fill-opacity="0.85"/></svg>`
+    },
+    'apple_pay': {
+      name: 'Apple Pay', type: 'wallet', country: 'intl', color: '#000000',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#000000"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial" font-size="13" font-weight="700"> Pay</text></svg>`
+    },
+    'paypal': {
+      name: 'PayPal', type: 'wallet', country: 'intl', color: '#003087',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#003087"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-style="italic" font-size="11" font-weight="900">PayPal</text></svg>`
+    },
+
+    // ═════ GENERIC ═════
+    'cash': {
+      name: 'كاش / نقدي', type: 'cash', country: 'any', color: '#16A34A',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#16A34A"/><text x="30" y="40" text-anchor="middle" fill="#FFFFFF" font-size="26">💵</text></svg>`
+    },
+    'savings': {
+      name: 'حساب توفير', type: 'savings', country: 'any', color: '#0891B2',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#0891B2"/><text x="30" y="40" text-anchor="middle" fill="#FFFFFF" font-size="26">🏛️</text></svg>`
+    },
+    'gold': {
+      name: 'ذهب / استثمار', type: 'investment', country: 'any', color: '#CA8A04',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#CA8A04"/><text x="30" y="40" text-anchor="middle" fill="#FFFFFF" font-size="26">💰</text></svg>`
+    },
+    'custom': {
+      name: 'محفظة مخصصة', type: 'custom', country: 'any', color: '#475569',
+      logo: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="10" fill="#475569"/><text x="30" y="40" text-anchor="middle" fill="#FFFFFF" font-size="26">🏦</text></svg>`
+    }
+  };
+  window.BANK_LIBRARY = BANK_LIBRARY;
+
+  // Helpers to get bank info from account
+  function getBankInfo(account) {
+    if (!account) return BANK_LIBRARY.custom;
+    if (account.bankKey && BANK_LIBRARY[account.bankKey]) return BANK_LIBRARY[account.bankKey];
+    return BANK_LIBRARY.custom;
+  }
+  window.getBankInfo = getBankInfo;
+
+  // ─────────────────────────────────────────────────────────────
+  // PART B — REPLACE ACCOUNTS MODAL CONTENT (PRO REDESIGN)
+  // ─────────────────────────────────────────────────────────────
+
+  function ensureAccountsModalUpgrade() {
+    const modal = document.getElementById('accountsModal');
+    if (!modal) return;
+    if (modal.dataset.v23Upgraded) return;
+    modal.dataset.v23Upgraded = '1';
+
+    const sheet = modal.querySelector('.sheet');
+    if (!sheet) return;
+
+    // Replace the entire body
+    const handle = sheet.querySelector('.handle');
+    sheet.innerHTML = '';
+    if (handle) sheet.appendChild(handle);
+
+    sheet.insertAdjacentHTML('beforeend', `
+      <div class="v23-acc-header">
+        <div>
+          <div class="v23-acc-title">🏦 المحافظ</div>
+          <div class="v23-acc-sub">إدارة حساباتك ومحافظك المالية</div>
+        </div>
+        <button class="v22-close-x" onclick="document.getElementById('accountsModal').classList.remove('open')">✕</button>
+      </div>
+
+      <!-- TOTAL BALANCE BANNER -->
+      <div id="v23TotalBalance" class="v23-total-balance"></div>
+
+      <!-- WALLETS LIST -->
+      <div class="v23-section-title">💼 محافظك</div>
+      <div id="v23AccountsList"></div>
+
+      <!-- ADD NEW BUTTON -->
+      <button class="v23-add-btn" onclick="v23OpenBankPicker()">
+        ＋ إضافة محفظة جديدة
+      </button>
+    `);
+  }
+
+  // Override renderAccounts with the new design
+  window.renderAccounts = function() {
+    ensureAccountsModalUpgrade();
+    if (typeof accounts === 'undefined') return;
+    const list = document.getElementById('v23AccountsList');
+    const totalEl = document.getElementById('v23TotalBalance');
+    if (!list || !totalEl) return;
+
+    const sym = BASE_LABELS[baseCurrency].sym;
+
+    // Compute total balance across all accounts
+    let totalBal = 0;
+    let totalIn = 0, totalOut = 0;
+    accounts.forEach(a => {
+      const accTxs = txs.filter(t => t.account === a.id);
+      const inc = accTxs.filter(t => t.type === 'income').reduce((s, t) => s + (t.amountSAR || 0), 0);
+      const exp = accTxs.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amountSAR || 0), 0);
+      totalBal += (inc - exp);
+      totalIn += inc;
+      totalOut += exp;
+    });
+
+    totalEl.innerHTML = `
+      <div class="v23-tb-icon">💎</div>
+      <div class="v23-tb-content">
+        <div class="v23-tb-label">إجمالي الرصيد</div>
+        <div class="v23-tb-amount" style="direction:ltr">${fmt(toBase(totalBal), 0)} ${sym}</div>
+        <div class="v23-tb-stats">
+          <span class="v23-tb-in">↑ ${fmt(toBase(totalIn), 0)}</span>
+          <span class="v23-tb-out">↓ ${fmt(toBase(totalOut), 0)}</span>
+          <span class="v23-tb-count">${toArabicDigits(accounts.length)} ${accounts.length === 1 ? 'محفظة' : 'محافظ'}</span>
+        </div>
+      </div>
+    `;
+
+    if (!accounts.length) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">🏦</div>لا توجد محافظ بعد<br><span style="font-size:11px">اضغط "إضافة محفظة" للبدء</span></div>`;
+      return;
+    }
+
+    // Sort by balance desc
+    const sortedAccounts = [...accounts].sort((a, b) => {
+      const balA = txs.filter(t => t.account === a.id).reduce((s, t) => s + (t.type === 'income' ? t.amountSAR : -t.amountSAR), 0);
+      const balB = txs.filter(t => t.account === b.id).reduce((s, t) => s + (t.type === 'income' ? t.amountSAR : -t.amountSAR), 0);
+      return balB - balA;
+    });
+
+    list.innerHTML = sortedAccounts.map(a => {
+      const accTxs = txs.filter(t => t.account === a.id);
+      const inc = accTxs.filter(t => t.type === 'income').reduce((s, t) => s + (t.amountSAR || 0), 0);
+      const exp = accTxs.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amountSAR || 0), 0);
+      const bal = inc - exp;
+      const bank = getBankInfo(a);
+      const lastTx = accTxs.sort((x, y) => (y.date || '').localeCompare(x.date || ''))[0];
+      const lastTxStr = lastTx ? `آخر حركة: ${esc(lastTx.date || '')}` : 'لا توجد حركات بعد';
+
+      return `<div class="v23-wallet-card" style="--brand-color:${bank.color}">
+        <div class="v23-wallet-header">
+          <div class="v23-wallet-logo">${bank.logo}</div>
+          <div class="v23-wallet-info">
+            <div class="v23-wallet-name">${esc(a.name)}</div>
+            <div class="v23-wallet-bank">${bank.name !== 'محفظة مخصصة' ? esc(bank.name) : esc(a.note || 'محفظة')}</div>
+          </div>
+          <div class="v23-wallet-actions">
+            <button class="v23-mini-btn" onclick="v23EditAccount('${esc(a.id)}')" title="تعديل">✎</button>
+            <button class="v23-mini-btn danger" onclick="delAccount('${esc(a.id)}')" title="حذف">✕</button>
+          </div>
+        </div>
+        <div class="v23-wallet-balance">
+          <div class="v23-wallet-bal-label">الرصيد</div>
+          <div class="v23-wallet-bal-amount" style="color:${bal >= 0 ? 'var(--green)' : 'var(--red)'};direction:ltr">
+            ${bal >= 0 ? '+' : ''}${fmt(toBase(bal), 0)} <span class="v23-wallet-bal-sym">${sym}</span>
+          </div>
+        </div>
+        <div class="v23-wallet-stats">
+          <div class="v23-wallet-stat">
+            <span class="v23-stat-icon" style="color:var(--green)">↑</span>
+            <div>
+              <div class="v23-stat-val" style="direction:ltr">${fmt(toBase(inc), 0)} ${sym}</div>
+              <div class="v23-stat-lbl">داخل</div>
+            </div>
+          </div>
+          <div class="v23-wallet-stat">
+            <span class="v23-stat-icon" style="color:var(--red)">↓</span>
+            <div>
+              <div class="v23-stat-val" style="direction:ltr">${fmt(toBase(exp), 0)} ${sym}</div>
+              <div class="v23-stat-lbl">خارج</div>
+            </div>
+          </div>
+          <div class="v23-wallet-stat">
+            <span class="v23-stat-icon" style="color:var(--accent)">🔄</span>
+            <div>
+              <div class="v23-stat-val">${toArabicDigits(accTxs.length)}</div>
+              <div class="v23-stat-lbl">حركة</div>
+            </div>
+          </div>
+        </div>
+        <div class="v23-wallet-footer">${lastTxStr}</div>
+      </div>`;
+    }).join('');
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // PART C — BANK PICKER MODAL
+  // ─────────────────────────────────────────────────────────────
+
+  window.v23OpenBankPicker = function(editingId) {
+    let m = document.getElementById('v23BankPicker');
+    if (!m) {
+      m = document.createElement('div');
+      m.id = 'v23BankPicker';
+      m.className = 'overlay';
+      m.style.zIndex = '99998';
+      m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+      document.body.appendChild(m);
+    }
+
+    const editing = editingId ? accounts.find(a => a.id === editingId) : null;
+    const currentKey = editing ? (editing.bankKey || 'custom') : '';
+    const currentName = editing ? editing.name : '';
+
+    // Group banks by country
+    const groups = {
+      sa: { title: '🇸🇦 السعودية', items: [] },
+      eg: { title: '🇪🇬 مصر', items: [] },
+      intl: { title: '🌍 دولي', items: [] },
+      any: { title: '💼 عام', items: [] }
+    };
+    Object.entries(BANK_LIBRARY).forEach(([k, b]) => {
+      if (groups[b.country]) groups[b.country].items.push({ key: k, ...b });
+    });
+
+    const groupHtml = (g) => `
+      <div class="v23-bp-section">${g.title}</div>
+      <div class="v23-bp-grid">
+        ${g.items.map(b => `
+          <button type="button" class="v23-bp-cell ${currentKey === b.key ? 'sel' : ''}" data-key="${b.key}" onclick="v23SelectBank('${b.key}')">
+            <div class="v23-bp-logo">${b.logo}</div>
+            <div class="v23-bp-name">${esc(b.name)}</div>
+          </button>
+        `).join('')}
+      </div>
+    `;
+
+    m.innerHTML = `<div class="sheet" style="max-height:94vh">
+      <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+      <div class="v23-acc-header">
+        <div>
+          <div class="v23-acc-title">${editing ? '✏️ تعديل المحفظة' : '＋ محفظة جديدة'}</div>
+          <div class="v23-acc-sub">اختار البنك أو المحفظة من القائمة</div>
+        </div>
+        <button class="v22-close-x" onclick="document.getElementById('v23BankPicker').classList.remove('open')">✕</button>
+      </div>
+
+      <div class="v23-bp-search-wrap">
+        <input type="text" class="v23-bp-search" id="v23BPSearch" placeholder="🔍 ابحث عن بنك..." oninput="v23FilterBanks(this.value)"/>
+      </div>
+
+      <div id="v23BPList" style="max-height:50vh;overflow-y:auto;padding:4px">
+        ${groupHtml(groups.sa)}
+        ${groupHtml(groups.eg)}
+        ${groupHtml(groups.intl)}
+        ${groupHtml(groups.any)}
+      </div>
+
+      <div class="v23-section-title" style="margin-top:14px">📝 تفاصيل المحفظة</div>
+      <div class="form-row">
+        <div class="form-lbl">اسم المحفظة (مثل: حسابي الجاري، فيزا الراجحي)</div>
+        <input class="form-inp" id="v23AccName" placeholder="اكتب اسم مميز للمحفظة" value="${esc(currentName || '')}"/>
+      </div>
+      <input type="hidden" id="v23SelectedKey" value="${esc(currentKey)}"/>
+
+      <button class="save-btn" onclick="v23SaveAccount('${editingId || ''}')">💾 حفظ</button>
+    </div>`;
+
+    m.classList.add('open');
+
+    // If editing, scroll to the selected one and pre-fill name
+    setTimeout(() => {
+      if (currentKey) {
+        const cell = m.querySelector(`[data-key="${currentKey}"]`);
+        if (cell) cell.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    }, 200);
+  };
+
+  window.v23SelectBank = function(key) {
+    const m = document.getElementById('v23BankPicker');
+    if (!m) return;
+    m.querySelectorAll('.v23-bp-cell').forEach(c => c.classList.remove('sel'));
+    const cell = m.querySelector(`[data-key="${key}"]`);
+    if (cell) cell.classList.add('sel');
+    document.getElementById('v23SelectedKey').value = key;
+    // Auto-fill name if empty
+    const nameEl = document.getElementById('v23AccName');
+    if (nameEl && !nameEl.value.trim() && BANK_LIBRARY[key]) {
+      nameEl.value = BANK_LIBRARY[key].name;
+    }
+  };
+
+  window.v23FilterBanks = function(q) {
+    q = (q || '').trim().toLowerCase();
+    const list = document.getElementById('v23BPList');
+    if (!list) return;
+    list.querySelectorAll('.v23-bp-cell').forEach(c => {
+      const name = (c.querySelector('.v23-bp-name')?.textContent || '').toLowerCase();
+      const matches = !q || name.indexOf(q) >= 0;
+      c.style.display = matches ? '' : 'none';
+    });
+    // Hide section headers with no visible cells
+    list.querySelectorAll('.v23-bp-section').forEach(sec => {
+      const grid = sec.nextElementSibling;
+      if (!grid) return;
+      const visible = [...grid.querySelectorAll('.v23-bp-cell')].some(c => c.style.display !== 'none');
+      sec.style.display = visible ? '' : 'none';
+      grid.style.display = visible ? '' : 'none';
+    });
+  };
+
+  window.v23SaveAccount = function(editingId) {
+    const key = document.getElementById('v23SelectedKey').value;
+    const name = document.getElementById('v23AccName').value.trim();
+
+    if (!key) { showAlert('اختار البنك أو المحفظة', 'error'); return; }
+    if (!name) { showAlert('اكتب اسم المحفظة', 'error'); return; }
+
+    const bank = BANK_LIBRARY[key];
+
+    if (editingId) {
+      const acc = accounts.find(a => a.id === editingId);
+      if (acc) {
+        acc.name = name;
+        acc.bankKey = key;
+        acc.emoji = ''; // logo replaces emoji
+      }
+    } else {
+      accounts.push({
+        id: 'acc_' + Date.now(),
+        emoji: '',
+        name: name,
+        bankKey: key,
+        createdAt: Date.now()
+      });
+    }
+
+    saveAccounts();
+    document.getElementById('v23BankPicker').classList.remove('open');
+    renderAccounts();
+    if (typeof fillAccountSelect === 'function') fillAccountSelect();
+    if (typeof showToast === 'function') showToast(editingId ? '✅ تم التعديل' : '✅ تمت إضافة المحفظة', 'success');
+  };
+
+  window.v23EditAccount = function(id) {
+    v23OpenBankPicker(id);
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // PART D — ENHANCED ACCOUNT PICKER FOR TRANSACTIONS
+  // Replace the small <select> with a visual button row above it
+  // ─────────────────────────────────────────────────────────────
+
+  function enhanceTxAccountPicker() {
+    const sel = document.getElementById('fAccount');
+    if (!sel) return;
+    if (sel.dataset.v23Enhanced) return;
+    sel.dataset.v23Enhanced = '1';
+
+    // Create the visual picker
+    const picker = document.createElement('div');
+    picker.id = 'v23TxAccountPicker';
+    picker.className = 'v23-tx-acc-picker';
+
+    sel.parentNode.insertBefore(picker, sel);
+
+    // Hide original select but keep it for form logic
+    sel.style.display = 'none';
+
+    // Re-render whenever accounts change
+    refreshTxAccountPicker();
+
+    // Sync changes back when select value changes (e.g. from edit flow)
+    const observer = new MutationObserver(() => refreshTxAccountPicker());
+    observer.observe(sel, { childList: true, attributes: true, attributeFilter: ['value'] });
+
+    // Also intercept programmatic value changes
+    Object.defineProperty(sel, '_v23Value', { writable: true, value: sel.value });
+    setInterval(() => {
+      if (sel.value !== sel._v23Value) {
+        sel._v23Value = sel.value;
+        refreshTxAccountPicker();
+      }
+    }, 500);
+  }
+
+  function refreshTxAccountPicker() {
+    const picker = document.getElementById('v23TxAccountPicker');
+    const sel = document.getElementById('fAccount');
+    if (!picker || !sel || typeof accounts === 'undefined') return;
+
+    const currentVal = sel.value;
+    picker.innerHTML = accounts.map(a => {
+      const bank = getBankInfo(a);
+      const isSel = a.id === currentVal;
+      return `<button type="button" class="v23-tx-acc-cell ${isSel ? 'sel' : ''}" data-acc-id="${esc(a.id)}" onclick="v23SelectTxAccount('${esc(a.id)}')" style="${isSel ? '--bc:' + bank.color : ''}">
+        <div class="v23-tx-acc-logo">${bank.logo}</div>
+        <div class="v23-tx-acc-name">${esc(a.name)}</div>
+      </button>`;
+    }).join('') + `<button type="button" class="v23-tx-acc-cell add" onclick="document.getElementById('accountsModal').classList.add('open');renderAccounts()" title="إضافة محفظة">
+      <div class="v23-tx-acc-add">＋</div>
+      <div class="v23-tx-acc-name">إضافة</div>
+    </button>`;
+  }
+
+  window.v23SelectTxAccount = function(accId) {
+    const sel = document.getElementById('fAccount');
+    if (!sel) return;
+    sel.value = accId;
+    sel.dispatchEvent(new Event('change'));
+    refreshTxAccountPicker();
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // PART E — INIT
+  // ─────────────────────────────────────────────────────────────
+  function v23Boot() {
+    try {
+      ensureAccountsModalUpgrade();
+      enhanceTxAccountPicker();
+      // If renderAccounts has been called before our override registered,
+      // re-render on next opportunity
+      if (document.getElementById('accountsModal')?.classList.contains('open')) {
+        renderAccounts();
+      }
+    } catch (e) { console.warn('V23 init:', e); }
+  }
+  setTimeout(v23Boot, 500);
+  setTimeout(v23Boot, 1500);
+  setTimeout(v23Boot, 3000);
+
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// V23 — STYLES
+// ═══════════════════════════════════════════════════════════════
+(function v23Styles() {
+  const css = `
+    /* Accounts header */
+    .v23-acc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+    .v23-acc-title {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    .v23-acc-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Total balance banner */
+    .v23-total-balance {
+      background: linear-gradient(135deg, rgba(88,166,255,0.18), rgba(63,185,80,0.08));
+      border: 1px solid rgba(88,166,255,0.35);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .v23-total-balance::before {
+      content: '';
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 130px;
+      height: 130px;
+      background: radial-gradient(circle, rgba(88,166,255,0.2), transparent 70%);
+      pointer-events: none;
+    }
+    .v23-tb-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--accent), #88c0f0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      box-shadow: 0 4px 14px rgba(88,166,255,0.4);
+      flex-shrink: 0;
+      position: relative;
+    }
+    .v23-tb-content {
+      flex: 1;
+      min-width: 0;
+      position: relative;
+    }
+    .v23-tb-label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .v23-tb-amount {
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--text);
+      margin: 2px 0 6px;
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+    .v23-tb-stats {
+      display: flex;
+      gap: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      flex-wrap: wrap;
+    }
+    .v23-tb-in { color: var(--green); direction: ltr; }
+    .v23-tb-out { color: var(--red); direction: ltr; }
+    .v23-tb-count { color: var(--muted); }
+
+    /* Section title */
+    .v23-section-title {
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--accent);
+      margin: 4px 0 10px;
+      letter-spacing: 0.3px;
+    }
+
+    /* Wallet card */
+    .v23-wallet-card {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 10px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.1s;
+    }
+    .v23-wallet-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--brand-color, var(--accent));
+    }
+    .v23-wallet-card:active { transform: scale(0.99); }
+
+    .v23-wallet-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .v23-wallet-logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .v23-wallet-logo svg { width: 100%; height: 100%; display: block; }
+    .v23-wallet-info {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .v23-wallet-name {
+      font-size: 14px;
+      font-weight: 900;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: -0.2px;
+    }
+    .v23-wallet-bank {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+      font-weight: 600;
+    }
+    .v23-wallet-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .v23-mini-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'Cairo', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: rgba(88,166,255,0.3);
+    }
+    .v23-mini-btn:active { transform: scale(0.92); background: var(--accent); color: #000; }
+    .v23-mini-btn.danger:active { background: var(--red); color: #fff; }
+
+    .v23-wallet-balance {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 10px 12px;
+      background: var(--card2);
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+    .v23-wallet-bal-label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .v23-wallet-bal-amount {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: -0.3px;
+    }
+    .v23-wallet-bal-sym {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-right: 2px;
+    }
+
+    .v23-wallet-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .v23-wallet-stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .v23-stat-icon {
+      font-size: 16px;
+      font-weight: 900;
+    }
+    .v23-stat-val {
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--text);
+    }
+    .v23-stat-lbl {
+      font-size: 9px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .v23-wallet-footer {
+      font-size: 10px;
+      color: var(--muted);
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+      text-align: center;
+    }
+
+    /* Add new wallet button */
+    .v23-add-btn {
+      width: 100%;
+      background: linear-gradient(135deg, rgba(88,166,255,0.1), rgba(88,166,255,0.04));
+      border: 2px dashed var(--accent);
+      border-radius: 14px;
+      padding: 14px;
+      color: var(--accent);
+      font-family: 'Cairo', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 8px;
+      -webkit-tap-highlight-color: rgba(88,166,255,0.2);
+    }
+    .v23-add-btn:active {
+      transform: scale(0.99);
+      background: rgba(88,166,255,0.18);
+    }
+
+    /* ═══ BANK PICKER ═══ */
+    .v23-bp-search-wrap { margin-bottom: 12px; }
+    .v23-bp-search {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--card2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'Cairo', sans-serif;
+      font-size: 13px;
+      direction: rtl;
+    }
+    .v23-bp-search:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .v23-bp-section {
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--muted);
+      margin: 12px 0 8px;
+      padding-right: 4px;
+    }
+    .v23-bp-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .v23-bp-cell {
+      background: var(--card2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 6px;
+      cursor: pointer;
+      font-family: 'Cairo', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      -webkit-tap-highlight-color: rgba(88,166,255,0.3);
+      transition: transform 0.1s, border-color 0.15s, background 0.15s;
+    }
+    .v23-bp-cell:active { transform: scale(0.95); }
+    .v23-bp-cell.sel {
+      border-color: var(--accent);
+      background: rgba(88,166,255,0.12);
+    }
+    .v23-bp-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .v23-bp-logo svg { width: 100%; height: 100%; display: block; }
+    .v23-bp-name {
+      font-size: 9.5px;
+      color: var(--text);
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.2;
+      overflow: hidden;
+      max-width: 100%;
+      max-height: 26px;
+    }
+
+    /* ═══ TRANSACTION ACCOUNT PICKER (visual buttons) ═══ */
+    .v23-tx-acc-picker {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 4px 2px 8px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .v23-tx-acc-picker::-webkit-scrollbar { display: none; }
+    .v23-tx-acc-cell {
+      flex-shrink: 0;
+      min-width: 80px;
+      background: var(--card2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 6px;
+      cursor: pointer;
+      font-family: 'Cairo', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      -webkit-tap-highlight-color: rgba(88,166,255,0.3);
+      transition: transform 0.1s, border-color 0.15s;
+    }
+    .v23-tx-acc-cell:active { transform: scale(0.93); }
+    .v23-tx-acc-cell.sel {
+      border-color: var(--bc, var(--accent));
+      background: rgba(88,166,255,0.12);
+      border-width: 2px;
+    }
+    .v23-tx-acc-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .v23-tx-acc-logo svg { width: 100%; height: 100%; display: block; }
+    .v23-tx-acc-name {
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--text);
+      max-width: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: center;
+    }
+    .v23-tx-acc-cell.add {
+      border-style: dashed;
+      border-color: var(--accent);
+      background: transparent;
+    }
+    .v23-tx-acc-add {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--card2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: var(--accent);
+      font-weight: 900;
+    }
+
+    /* Responsive — small screens */
+    @media (max-width: 359px) {
+      .v23-bp-grid { grid-template-columns: repeat(2, 1fr); }
+      .v23-wallet-stats { grid-template-columns: 1fr 1fr; }
+      .v23-wallet-stat:last-child { grid-column: span 2; justify-content: center; }
+      .v23-tb-amount { font-size: 22px; }
+    }
+  `;
+  const style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
+})();
 </script>
 
 </body>
