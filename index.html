@@ -14742,6 +14742,819 @@ setTimeout(() => {
   style.textContent = css;
   document.head.appendChild(style);
 })();
+
+// ═══════════════════════════════════════════════════════════════
+// V22 — JAMEYA PAYMENTS + RESPONSIVE + BETTER MENU + UX FIXES
+// ═══════════════════════════════════════════════════════════════
+(function v22Init() {
+
+  // ─────────────────────────────────────────────────────────────
+  // PART A — JAMEYA: MANUAL PAYMENT TRACKING
+  // Each jameya tracks `paidMonthsLog` (array of "YYYY-MM" strings)
+  // for true manual control over which months were actually paid.
+  // ─────────────────────────────────────────────────────────────
+
+  function jamPaidLog(j) {
+    if (!j.paidMonthsLog) j.paidMonthsLog = [];
+    return j.paidMonthsLog;
+  }
+
+  function getCurrentJameyaMonth() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  function getJameyaMonthsList(j) {
+    // Returns array of "YYYY-MM" for the entire jameya duration
+    if (!j.startDate || !j.totalMembers) return [];
+    const start = new Date(j.startDate);
+    const months = [];
+    for (let i = 0; i < j.totalMembers; i++) {
+      const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
+      months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    }
+    return months;
+  }
+  window.getJameyaMonthsList = getJameyaMonthsList;
+
+  // Open payment-tracking modal for a jameya
+  window.openJameyaPaymentModal = function(jamId) {
+    const j = (typeof jameya !== 'undefined' ? jameya : []).find(x => x.id === jamId);
+    if (!j) return;
+
+    let m = document.getElementById('jameyaPaymentModal');
+    if (!m) {
+      m = document.createElement('div');
+      m.id = 'jameyaPaymentModal';
+      m.className = 'overlay';
+      m.style.zIndex = '99996';
+      m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+      document.body.appendChild(m);
+    }
+
+    renderJameyaPaymentModalContent(j);
+    m.classList.add('open');
+  };
+
+  function renderJameyaPaymentModalContent(j) {
+    const m = document.getElementById('jameyaPaymentModal');
+    if (!m) return;
+    const log = jamPaidLog(j);
+    const months = getJameyaMonthsList(j);
+    const sym = SYM[j.currency] || j.currency;
+    const today = new Date();
+    const currentMonth = getCurrentJameyaMonth();
+
+    // Determine my-turn month
+    const start = new Date(j.startDate);
+    const myTurnDate = new Date(start.getFullYear(), start.getMonth() + j.myTurn - 1, 1);
+    const myTurnMonth = `${myTurnDate.getFullYear()}-${String(myTurnDate.getMonth() + 1).padStart(2, '0')}`;
+
+    let monthsHtml = months.map((mk, idx) => {
+      const isPaid = log.indexOf(mk) >= 0;
+      const isCurrent = mk === currentMonth;
+      const isPast = mk < currentMonth;
+      const isFuture = mk > currentMonth;
+      const isMyTurn = mk === myTurnMonth;
+
+      const [y, mm] = mk.split('-');
+      const monthName = new Date(parseInt(y), parseInt(mm) - 1, 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+
+      let badge = '';
+      if (isMyTurn) badge = '<span style="background:#06b6d4;color:#000;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:900;margin-right:6px">🎉 دوري</span>';
+      else if (isCurrent) badge = '<span style="background:var(--accent);color:#000;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:900;margin-right:6px">الشهر ده</span>';
+      else if (isPast && !isPaid) badge = '<span style="background:var(--red);color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:900;margin-right:6px">متأخر</span>';
+
+      const buttonLabel = isPaid ? '✅ مدفوع' : '💳 سجّل دفعة';
+      const buttonClass = isPaid ? 'v22-jam-paid' : 'v22-jam-unpaid';
+
+      return `<div class="v22-jam-month-row">
+        <div style="flex:1;min-width:0">
+          <div class="v22-jam-month-name">${esc(monthName)}${badge}</div>
+          <div class="v22-jam-month-info">شهر ${idx + 1}/${j.totalMembers} · ${fmt(j.monthlyAmount, 0)} ${sym}</div>
+        </div>
+        <button class="v22-jam-btn ${buttonClass}" onclick="toggleJameyaPaid('${esc(j.id)}','${mk}')">${buttonLabel}</button>
+      </div>`;
+    }).join('');
+
+    const paidCount = log.length;
+    const totalDue = j.monthlyAmount * paidCount;
+    const remaining = j.monthlyAmount * (j.totalMembers - paidCount);
+
+    m.innerHTML = `<div class="sheet" style="max-height:94vh">
+      <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+      <div class="v22-payment-header">
+        <div>
+          <div class="v22-payment-title">🤝 ${esc(j.name)}</div>
+          <div class="v22-payment-sub">سجّل دفعاتك يدوياً</div>
+        </div>
+        <button class="v22-close-x" onclick="document.getElementById('jameyaPaymentModal').classList.remove('open')">✕</button>
+      </div>
+
+      <div class="v22-jam-summary">
+        <div class="v22-jam-sum-cell">
+          <div class="v22-jam-sum-lbl">دفعت</div>
+          <div class="v22-jam-sum-val" style="color:var(--green)">${toArabicDigits(paidCount)}/${toArabicDigits(j.totalMembers)}</div>
+          <div class="v22-jam-sum-amt" style="color:var(--green);direction:ltr">${fmt(totalDue, 0)} ${sym}</div>
+        </div>
+        <div class="v22-jam-sum-cell">
+          <div class="v22-jam-sum-lbl">باقي</div>
+          <div class="v22-jam-sum-val" style="color:var(--accent)">${toArabicDigits(j.totalMembers - paidCount)}</div>
+          <div class="v22-jam-sum-amt" style="color:var(--accent);direction:ltr">${fmt(remaining, 0)} ${sym}</div>
+        </div>
+        <div class="v22-jam-sum-cell">
+          <div class="v22-jam-sum-lbl">حالة الدور</div>
+          <div class="v22-jam-sum-val" style="color:#06b6d4">${j.received ? '✅' : '⏳'}</div>
+          <div class="v22-jam-sum-amt" style="color:#06b6d4">${j.received ? 'قبضت' : 'لسه'}</div>
+        </div>
+      </div>
+
+      ${!j.received ? `<button class="v22-claim-btn" onclick="claimJameyaFromModal('${esc(j.id)}')">💰 سجّل قبض دوري (${fmt(j.monthlyAmount * j.totalMembers, 0)} ${sym})</button>` : `<div class="v22-claim-done">✅ قبضت دورك بالفعل</div>`}
+
+      <div class="v22-jam-months-title">📅 الشهور</div>
+      <div class="v22-jam-months-list">${monthsHtml}</div>
+    </div>`;
+  }
+
+  // Toggle pay/unpay for a specific month
+  window.toggleJameyaPaid = function(jamId, monthKey) {
+    const j = jameya.find(x => x.id === jamId);
+    if (!j) return;
+    const log = jamPaidLog(j);
+    const idx = log.indexOf(monthKey);
+    if (idx >= 0) {
+      // Was paid → unpay (also remove the auto-tx if exists)
+      log.splice(idx, 1);
+      // Try to find a matching tx
+      const txIdx = txs.findIndex(t => t.jamId === jamId && t.type === 'expense' && (t.date || '').slice(0, 7) === monthKey);
+      if (txIdx >= 0) {
+        if (confirm('فيه حركة مرتبطة بدفعة الشهر ده — تحب تشيلها؟')) {
+          txs.splice(txIdx, 1);
+          saveData();
+        }
+      }
+      if (typeof showToast === 'function') showToast('🗑️ تم إلغاء التسجيل', 'info');
+    } else {
+      // Was unpaid → mark as paid + record tx
+      log.push(monthKey);
+      const rate = j.currency === 'SAR' ? 1 : (j.currency === 'EGP' ? rates.EGP : rates[j.currency]);
+      const amountSAR = curToSAR(j.monthlyAmount, j.currency);
+      const start = new Date(j.startDate);
+      const day = start.getDate();
+      const dStr = `${monthKey}-${String(Math.min(day, 28)).padStart(2, '0')}`;
+
+      txs.unshift({
+        id: 'tx_jam_pay_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+        type: 'expense',
+        name: `🤝 ${j.name} (دفعة ${log.length}/${j.totalMembers})`,
+        amount: j.monthlyAmount,
+        currency: j.currency, rate, amountSAR,
+        cat: 'أخرى',
+        date: dStr, time: '09:00',
+        note: `مساهمة جمعية شهر ${monthKey}`,
+        account: accounts[0] && accounts[0].id,
+        recurring: false,
+        jamId: j.id
+      });
+      saveData();
+      if (typeof showToast === 'function') showToast(`💳 سُجِّلت دفعة ${monthKey}`, 'success');
+    }
+    // Sync paidMonths counter for legacy compatibility
+    j.paidMonths = log.length;
+    j.lastPaidMonth = log[log.length - 1] || null;
+    saveJameyaData();
+
+    // Refresh the modal & main list
+    renderJameyaPaymentModalContent(j);
+    if (typeof renderJameya === 'function') renderJameya();
+    if (typeof renderAll === 'function') renderAll();
+  };
+
+  // Claim my turn from inside the payment modal
+  window.claimJameyaFromModal = function(jamId) {
+    if (typeof claimJameya === 'function') claimJameya(jamId);
+    setTimeout(() => {
+      const j = jameya.find(x => x.id === jamId);
+      if (j) renderJameyaPaymentModalContent(j);
+    }, 200);
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // PART B — Add a clear "💳 الدفع" button to each jameya card
+  // ─────────────────────────────────────────────────────────────
+
+  const _origRenderJameya = window.renderJameya;
+  if (typeof _origRenderJameya === 'function') {
+    window.renderJameya = function() {
+      _origRenderJameya.apply(this, arguments);
+      // Inject a payment button into each card
+      const list = document.getElementById('jameyaList');
+      if (!list || typeof jameya === 'undefined') return;
+      jameya.forEach(j => {
+        const editBtn = list.querySelector(`button[onclick*="editJameya('${j.id}')"]`);
+        if (!editBtn) return;
+        const actions = editBtn.parentElement;
+        if (!actions || actions.querySelector('.v22-jam-pay-btn')) return;
+        const paidCount = jamPaidLog(j).length;
+        const total = j.totalMembers;
+        const isComplete = paidCount >= total;
+        const payBtn = document.createElement('button');
+        payBtn.className = 'feat-mini-btn v22-jam-pay-btn';
+        payBtn.style.cssText = `color:${isComplete ? 'var(--green)' : 'var(--sav)'};border-color:${isComplete ? 'var(--green)' : 'var(--sav)'};font-weight:700`;
+        payBtn.textContent = isComplete ? `✅ مكتمل (${toArabicDigits(paidCount)}/${toArabicDigits(total)})` : `💳 الدفع (${toArabicDigits(paidCount)}/${toArabicDigits(total)})`;
+        payBtn.setAttribute('onclick', `openJameyaPaymentModal('${j.id}')`);
+        actions.insertBefore(payBtn, editBtn);
+      });
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // PART C — DISABLE LEGACY AUTO-DEDUCT (we now use manual log)
+  // ─────────────────────────────────────────────────────────────
+  if (typeof window.checkJameyaDue === 'function') {
+    const _origCheckDue = window.checkJameyaDue;
+    window.checkJameyaDue = function() {
+      // Sync paidMonths from the manual log instead of auto-creating txs
+      if (typeof jameya === 'undefined') return;
+      let changed = false;
+      jameya.forEach(j => {
+        const log = jamPaidLog(j);
+        // On first run, migrate from legacy auto-tracked paidMonths
+        if (j.paidMonths > 0 && log.length === 0) {
+          // Best-effort migration: assume paidMonths consecutive months from start
+          const months = getJameyaMonthsList(j);
+          for (let i = 0; i < Math.min(j.paidMonths, months.length); i++) {
+            log.push(months[i]);
+          }
+          changed = true;
+        }
+        j.paidMonths = log.length;
+      });
+      if (changed) saveJameyaData();
+      // Don't auto-create transactions anymore - user controls payments
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // PART D — RENAME "المزيد" → "مركز التحكم" + RESTRUCTURE MENU
+  // Move occasions to bottom, give it new pro name, fix stuck modal
+  // ─────────────────────────────────────────────────────────────
+
+  function renameMenuTitle() {
+    const menuModal = document.getElementById('menuModal');
+    if (!menuModal) return;
+    // Find the title that says "المزيد" and rename it
+    const titles = menuModal.querySelectorAll('.modal-title, [class*="title"], div');
+    titles.forEach(t => {
+      const txt = (t.textContent || '').trim();
+      if (txt === '☰ المزيد' || txt === 'المزيد' || txt.match(/^☰\s*المزيد\s*$/)) {
+        t.innerHTML = '🎯 مركز التحكم';
+      }
+    });
+  }
+
+  function restructureMenuOrder() {
+    // Move occasions to bottom, reorder sections for clarity
+    if (typeof window.MENU_STRUCTURE_V22 !== 'undefined') return; // already done
+    window.MENU_STRUCTURE_V22 = true;
+
+    // Wait for V17 menu to be built then reorder
+    setTimeout(() => {
+      const menu = document.getElementById('menuModal');
+      if (!menu) return;
+      const sheet = menu.querySelector('.sheet');
+      if (!sheet) return;
+
+      // Find occasions card
+      const occCard = sheet.querySelector('[onclick*="occasionsModal"]');
+      if (!occCard) return;
+      const occCardWrapper = occCard.closest('.v17-menu-card') || occCard;
+
+      // Find its parent grid
+      const grid = occCardWrapper.parentElement;
+      if (!grid) return;
+
+      // Find/create "أخرى" section at the bottom
+      let lastSection = sheet.querySelector('.v17-menu-section[data-section="other"]');
+      if (!lastSection) {
+        lastSection = document.createElement('div');
+        lastSection.className = 'v17-menu-section';
+        lastSection.dataset.section = 'other';
+        lastSection.textContent = '🎉 المناسبات والإضافات';
+        sheet.appendChild(lastSection);
+      }
+      let lastGrid = sheet.querySelector('.v17-menu-grid[data-section-grid="other"]');
+      if (!lastGrid) {
+        lastGrid = document.createElement('div');
+        lastGrid.className = 'v17-menu-grid';
+        lastGrid.dataset.sectionGrid = 'other';
+        sheet.appendChild(lastGrid);
+      }
+
+      // Move occasion card to the bottom section
+      lastGrid.appendChild(occCardWrapper);
+
+      // If the "projects" section now only has 2 items (vehicles + weddings), that's fine
+      // If old "أدوات" section exists below, move it AFTER the occasions section
+      const toolsSection = sheet.querySelector('.v17-menu-section[data-section="tools"]');
+      const toolsGrid = sheet.querySelector('.v17-menu-grid[data-section-grid="tools"]');
+      if (toolsSection && toolsGrid && lastSection) {
+        // Move tools section AFTER the new "other" section
+        lastGrid.parentNode.insertBefore(toolsSection, lastGrid.nextSibling);
+        toolsSection.parentNode.insertBefore(toolsGrid, toolsSection.nextSibling);
+      }
+    }, 200);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // PART E — UPGRADED HERO/HEADER FOR THE MENU
+  // (replaces the basic "المزيد" header with elegant card)
+  // ─────────────────────────────────────────────────────────────
+
+  function upgradeMenuHeader() {
+    const menu = document.getElementById('menuModal');
+    if (!menu) return;
+    const sheet = menu.querySelector('.sheet');
+    if (!sheet) return;
+    if (sheet.querySelector('.v22-menu-header')) return;
+
+    // Find the title element
+    const oldTitle = [...sheet.querySelectorAll('div')].find(d => {
+      const t = (d.textContent || '').trim();
+      return t === '☰ المزيد' || t === '🎯 مركز التحكم' || t.match(/^☰\s*المزيد\s*$/);
+    });
+    if (!oldTitle) return;
+
+    // Stats: count features + items
+    function getStats() {
+      let totalItems = 0;
+      let activeFeatures = 0;
+      ['orders','installments','jameya','goals','debts','accounts','bills','occasions','cars','weddings'].forEach(k => {
+        const arr = window[k];
+        if (Array.isArray(arr)) {
+          totalItems += arr.length;
+          if (arr.length > 0) activeFeatures++;
+        }
+      });
+      return { totalItems, activeFeatures };
+    }
+
+    const stats = getStats();
+    const sym = BASE_LABELS[baseCurrency].sym;
+
+    const header = document.createElement('div');
+    header.className = 'v22-menu-header';
+    header.innerHTML = `
+      <div class="v22-mh-top">
+        <div class="v22-mh-icon">🎯</div>
+        <div class="v22-mh-text">
+          <div class="v22-mh-title">مركز التحكم</div>
+          <div class="v22-mh-sub">كل أدواتك المالية في مكان واحد</div>
+        </div>
+      </div>
+      <div class="v22-mh-stats">
+        <div class="v22-mh-stat">
+          <div class="v22-mh-stat-val">${toArabicDigits(stats.activeFeatures)}</div>
+          <div class="v22-mh-stat-lbl">أداة نشطة</div>
+        </div>
+        <div class="v22-mh-stat">
+          <div class="v22-mh-stat-val">${toArabicDigits(stats.totalItems)}</div>
+          <div class="v22-mh-stat-lbl">عنصر مسجّل</div>
+        </div>
+      </div>
+    `;
+    oldTitle.style.display = 'none';
+    oldTitle.parentNode.insertBefore(header, oldTitle.nextSibling);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // PART F — STUCK MODAL FIX (force-close on body class detection)
+  // ─────────────────────────────────────────────────────────────
+
+  function ensureModalCanAlwaysClose() {
+    // Add a global "panic" close: triple-tap the top of the screen
+    let lastTaps = [];
+    document.addEventListener('touchend', (e) => {
+      if (e.changedTouches.length === 0) return;
+      const t = e.changedTouches[0];
+      if (t.clientY < 80) {
+        const now = Date.now();
+        lastTaps.push(now);
+        lastTaps = lastTaps.filter(x => now - x < 800);
+        if (lastTaps.length >= 3) {
+          // Panic close
+          document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open'));
+          lastTaps = [];
+          if (typeof showToast === 'function') showToast('✅ تم إغلاق كل النوافذ', 'success');
+        }
+      }
+    });
+
+    // Periodic safety check: if a modal is "open" but body has no scroll lock,
+    // fix any state inconsistency
+    setInterval(() => {
+      const openModals = document.querySelectorAll('.overlay.open');
+      openModals.forEach(m => {
+        // Make sure the close button still works
+        const closeBtn = m.querySelector('.v19-close-btn, .v22-close-x, [onclick*="classList.remove"]');
+        if (closeBtn && !closeBtn.dataset.v22Verified) {
+          closeBtn.dataset.v22Verified = '1';
+          // Add backup pointerdown listener (works even if onclick gets stripped)
+          closeBtn.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            m.classList.remove('open');
+          });
+        }
+      });
+    }, 1500);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // PART G — RESPONSIVE STYLES
+  // Make the entire app adapt to small screens (320px+)
+  // ─────────────────────────────────────────────────────────────
+
+  // (CSS injected at the bottom)
+
+  // ─────────────────────────────────────────────────────────────
+  // INIT
+  // ─────────────────────────────────────────────────────────────
+  function v22Boot() {
+    try {
+      renameMenuTitle();
+      restructureMenuOrder();
+      upgradeMenuHeader();
+      ensureModalCanAlwaysClose();
+    } catch (e) { console.warn('V22 init:', e); }
+  }
+  setTimeout(v22Boot, 300);
+  setTimeout(v22Boot, 1200);
+  setTimeout(v22Boot, 2500);
+
+  // Also re-run when menu opens
+  const _origUpdateMenuCounts = window.updateMenuCounts;
+  window.updateMenuCounts = function() {
+    if (_origUpdateMenuCounts) _origUpdateMenuCounts();
+    setTimeout(() => {
+      // refresh header stats
+      const header = document.querySelector('.v22-menu-header');
+      if (header && header.parentNode) {
+        header.remove();
+        upgradeMenuHeader();
+      }
+    }, 100);
+  };
+
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// V22 — STYLES
+// ═══════════════════════════════════════════════════════════════
+(function v22Styles() {
+  const css = `
+    /* ═══ ELEGANT MENU HEADER ═══ */
+    .v22-menu-header {
+      background: linear-gradient(135deg, rgba(88,166,255,0.18), rgba(63,185,80,0.08));
+      border: 1px solid rgba(88,166,255,0.3);
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .v22-menu-header::before {
+      content: '';
+      position: absolute;
+      top: -30px;
+      left: -30px;
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle, rgba(88,166,255,0.15), transparent 70%);
+      pointer-events: none;
+    }
+    .v22-mh-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      position: relative;
+    }
+    .v22-mh-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2, var(--accent)));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 4px 12px rgba(88,166,255,0.3);
+      flex-shrink: 0;
+    }
+    .v22-mh-text {
+      flex: 1;
+      min-width: 0;
+    }
+    .v22-mh-title {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: -0.3px;
+      line-height: 1.2;
+    }
+    .v22-mh-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+      font-weight: 500;
+    }
+    .v22-mh-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      position: relative;
+    }
+    .v22-mh-stat {
+      background: rgba(13,17,23,0.4);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 10px;
+      text-align: center;
+    }
+    .v22-mh-stat-val {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--accent);
+      direction: ltr;
+      line-height: 1;
+    }
+    .v22-mh-stat-lbl {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 4px;
+      font-weight: 700;
+    }
+
+    /* ═══ JAMEYA PAYMENT MODAL ═══ */
+    .v22-payment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+    .v22-payment-title {
+      font-size: 17px;
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: -0.2px;
+    }
+    .v22-payment-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .v22-close-x {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--card2);
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 900;
+      cursor: pointer;
+      font-family: 'Cairo', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: rgba(248,81,73,0.3);
+    }
+    .v22-close-x:active { transform: scale(0.92); background: var(--red); color: #fff; }
+
+    .v22-jam-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .v22-jam-sum-cell {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 6px;
+      text-align: center;
+    }
+    .v22-jam-sum-lbl {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .v22-jam-sum-val {
+      font-size: 18px;
+      font-weight: 900;
+      direction: ltr;
+      margin: 4px 0 2px;
+    }
+    .v22-jam-sum-amt {
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .v22-claim-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #06b6d4, #0891b2);
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      color: #fff;
+      font-family: 'Cairo', sans-serif;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 12px rgba(6,182,212,0.3);
+      -webkit-tap-highlight-color: rgba(255,255,255,0.2);
+    }
+    .v22-claim-btn:active { transform: scale(0.98); }
+    .v22-claim-done {
+      background: rgba(63,185,80,0.1);
+      border: 1px solid var(--green);
+      border-radius: 12px;
+      padding: 12px;
+      color: var(--green);
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 14px;
+      font-size: 13px;
+    }
+
+    .v22-jam-months-title {
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .v22-jam-months-list {
+      max-height: 50vh;
+      overflow-y: auto;
+      padding: 4px;
+      background: var(--card);
+      border-radius: 10px;
+    }
+    .v22-jam-month-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+    }
+    .v22-jam-month-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .v22-jam-month-info {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .v22-jam-btn {
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      border: 1.5px solid;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: rgba(88,166,255,0.3);
+      white-space: nowrap;
+    }
+    .v22-jam-btn:active { transform: scale(0.95); }
+    .v22-jam-paid {
+      background: rgba(63,185,80,0.15);
+      color: var(--green);
+      border-color: var(--green);
+    }
+    .v22-jam-unpaid {
+      background: var(--card);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* ═══ RESPONSIVE FIXES ═══ */
+    /* Default: comfortable for 360-430px (standard phones) */
+
+    /* Small phones (320-359px - iPhone SE 1st gen, older Android) */
+    @media (max-width: 359px) {
+      body { font-size: 13px; }
+      .sheet, .settings-sheet {
+        padding: 14px 12px 28px !important;
+      }
+      /* Compact stats grid */
+      .stats-grid {
+        gap: 6px !important;
+      }
+      .stat-card {
+        padding: 10px 8px !important;
+      }
+      .stat-card .val {
+        font-size: 16px !important;
+      }
+      /* Tighter forms */
+      .form-row {
+        margin-bottom: 8px !important;
+      }
+      .form-inp {
+        font-size: 13px !important;
+        padding: 8px 10px !important;
+      }
+      /* Hero card */
+      .hero-card {
+        padding: 14px !important;
+      }
+      /* Buttons */
+      .feat-mini-btn {
+        font-size: 10px !important;
+        padding: 5px 8px !important;
+      }
+      /* V17 menu cards smaller */
+      .v17-menu-card {
+        padding: 10px 8px !important;
+        gap: 6px !important;
+      }
+      .v17-title { font-size: 12px !important; }
+      .v17-sub { font-size: 9px !important; }
+      .v17-icon { width: 40px !important; height: 40px !important; font-size: 18px !important; }
+      /* V22 hero */
+      .v22-mh-icon { width: 40px; height: 40px; font-size: 20px; }
+      .v22-mh-title { font-size: 15px; }
+      .v22-mh-sub { font-size: 10px; }
+      .v22-mh-stat-val { font-size: 18px; }
+      /* V20 store grid: 3 cols */
+      .v20-store-grid { grid-template-columns: repeat(3, 1fr) !important; }
+      .v20-provider-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      /* V21 store rows */
+      .v21-store-row { padding: 10px !important; }
+      .v21-store-logo-wrap { width: 36px !important; height: 36px !important; }
+      .v21-store-amt-val { font-size: 14px !important; }
+      /* Jameya summary cells */
+      .v22-jam-sum-val { font-size: 14px; }
+      .v22-jam-sum-amt { font-size: 10px; }
+      /* Currency card cells */
+      .currency-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+      /* Modal title smaller */
+      .modal-title { font-size: 14px !important; }
+    }
+
+    /* Medium phones (360-389px) */
+    @media (min-width: 360px) and (max-width: 389px) {
+      .v17-menu-card { padding: 12px 10px; }
+      .v22-mh-stat-val { font-size: 20px; }
+    }
+
+    /* Large phones (430px+) - bring on the breathing room */
+    @media (min-width: 430px) {
+      .sheet { max-width: 520px; margin: 0 auto; }
+      .settings-sheet { max-width: 520px; margin: 0 auto; }
+    }
+
+    /* Tablets and beyond */
+    @media (min-width: 768px) {
+      .sheet, .settings-sheet { max-width: 640px; }
+      .v17-menu-grid { grid-template-columns: repeat(3, 1fr) !important; }
+      .v20-store-grid { grid-template-columns: repeat(6, 1fr) !important; }
+    }
+
+    /* Prevent any horizontal overflow */
+    body, html {
+      overflow-x: hidden !important;
+    }
+    .home-section, .feat-card, .stat-card {
+      max-width: 100%;
+      overflow: hidden;
+    }
+    /* Long text never breaks layout */
+    .feat-name, .nm, .tx-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  `;
+  const style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
+})();
 </script>
 
 </body>
