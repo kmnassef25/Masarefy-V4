@@ -311,9 +311,10 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);displ
 .overlay.open{opacity:1;pointer-events:all;}
 .sheet{background:var(--card);border-radius:24px 24px 0 0;border-top:1px solid var(--border);padding:16px 16px 30px;width:100%;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,0,.67,0);max-height:94vh;overflow-y:auto;}
 .overlay.open .sheet{transform:translateY(0);}
-.handle{width:50px;height:5px;background:var(--border);border-radius:4px;margin:0 auto 14px;cursor:pointer;padding:8px 0;background-clip:content-box;box-sizing:content-box;position:relative;}
-.handle:hover{background-color:var(--accent);}
-.handle::after{content:'اضغط للإغلاق';position:absolute;top:100%;left:50%;transform:translateX(-50%);font-size:9px;color:var(--muted);white-space:nowrap;margin-top:-2px;opacity:.6;}
+.handle{width:60px;height:5px;background:var(--border);border-radius:4px;margin:0 auto 14px;cursor:pointer;padding:14px 30px;background-clip:content-box;box-sizing:content-box;position:relative;-webkit-tap-highlight-color:rgba(248,81,73,0.3);touch-action:manipulation;}
+.handle:active{background-color:var(--accent);}
+.handle::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:100%;cursor:pointer;}
+.handle::before{content:'اضغط للإغلاق ↓';position:absolute;top:100%;left:50%;transform:translateX(-50%);font-size:10px;color:var(--muted);white-space:nowrap;margin-top:2px;opacity:.7;font-weight:700;pointer-events:none;}
 .modal-title{font-size:15px;font-weight:900;margin-bottom:14px;text-align:center;}
 
 /* ── SETTINGS MODAL ── */
@@ -13220,6 +13221,465 @@ setTimeout(() => {
     }
   }, 700);
 
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// V19 — MODAL CLOSE FIX + STORE LOGOS
+// ═══════════════════════════════════════════════════════════════
+(function v19Init() {
+
+  // ─────────────────────────────────────────────────────────────
+  // PART A — UNIVERSAL MODAL CLOSE FIX
+  //
+  // Issues being fixed:
+  //   1. Handle area too small for finger taps on iOS
+  //   2. The "اضغط للإغلاق" text is non-clickable pseudo-element
+  //   3. No visible X button on most modals
+  //   4. Tapping the dim background sometimes doesn't work because
+  //      child elements (the .sheet) capture the click
+  //   5. No swipe-down-to-close gesture
+  //   6. Stale .open state can persist in DOM after history.back()
+  // ─────────────────────────────────────────────────────────────
+
+  function closeAnyOpenOverlay() {
+    const openOverlays = document.querySelectorAll('.overlay.open');
+    openOverlays.forEach(o => o.classList.remove('open'));
+    // Also close any floating menus or selectors
+    document.querySelectorAll('.dropdown-open').forEach(d => d.classList.remove('dropdown-open'));
+    return openOverlays.length;
+  }
+  window.closeAnyOpenOverlay = closeAnyOpenOverlay;
+
+  // Universal X button — added to every modal
+  function ensureCloseButton(overlay) {
+    const sheet = overlay.querySelector('.sheet, .settings-sheet');
+    if (!sheet) return;
+    if (sheet.querySelector('.v19-close-btn')) return;
+
+    const btn = document.createElement('button');
+    btn.className = 'v19-close-btn';
+    btn.setAttribute('aria-label', 'إغلاق');
+    btn.setAttribute('type', 'button');
+    btn.innerHTML = '✕';
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      overlay.classList.remove('open');
+    };
+    sheet.appendChild(btn);  // CSS positions it absolutely
+  }
+
+  // Enhance handle: make it clickable across a much wider area
+  function enhanceHandle(overlay) {
+    const handle = overlay.querySelector('.handle');
+    if (!handle) return;
+    if (handle.dataset.v19Enhanced) return;
+    handle.dataset.v19Enhanced = '1';
+
+    // Wrap in a generous touch zone
+    const wrapper = document.createElement('div');
+    wrapper.className = 'v19-handle-zone';
+    wrapper.setAttribute('aria-label', 'سحب أو اضغط للإغلاق');
+    wrapper.setAttribute('role', 'button');
+    handle.parentNode.insertBefore(wrapper, handle);
+    wrapper.appendChild(handle);
+
+    // Click anywhere in zone closes
+    wrapper.addEventListener('click', (e) => {
+      e.stopPropagation();
+      overlay.classList.remove('open');
+    });
+
+    // Swipe-down-to-close
+    let startY = null;
+    let currentY = null;
+    let dragging = false;
+    const sheet = overlay.querySelector('.sheet, .settings-sheet');
+
+    wrapper.addEventListener('touchstart', (e) => {
+      if (!e.touches[0]) return;
+      startY = e.touches[0].clientY;
+      currentY = startY;
+      dragging = true;
+    }, { passive: true });
+
+    wrapper.addEventListener('touchmove', (e) => {
+      if (!dragging || !e.touches[0]) return;
+      currentY = e.touches[0].clientY;
+      const delta = currentY - startY;
+      if (delta > 0 && sheet) {
+        sheet.style.transform = `translateY(${delta}px)`;
+        sheet.style.transition = 'none';
+      }
+    }, { passive: true });
+
+    wrapper.addEventListener('touchend', () => {
+      if (!dragging) return;
+      dragging = false;
+      const delta = (currentY || startY) - startY;
+      if (sheet) {
+        sheet.style.transition = '';
+        sheet.style.transform = '';
+      }
+      if (delta > 80) {
+        overlay.classList.remove('open');
+      }
+      startY = null; currentY = null;
+    });
+
+    wrapper.addEventListener('touchcancel', () => {
+      dragging = false;
+      if (sheet) {
+        sheet.style.transition = '';
+        sheet.style.transform = '';
+      }
+    });
+  }
+
+  // Make sure tapping the dim background ALWAYS closes, regardless of overlay's onclick
+  function ensureBackdropClose(overlay) {
+    if (overlay.dataset.v19BackdropFixed) return;
+    overlay.dataset.v19BackdropFixed = '1';
+    overlay.addEventListener('click', (e) => {
+      // If click target is the overlay itself (not a child), close it
+      if (e.target === overlay) {
+        overlay.classList.remove('open');
+      }
+    });
+  }
+
+  function applyV19FixesToAllModals() {
+    document.querySelectorAll('.overlay').forEach(o => {
+      try {
+        enhanceHandle(o);
+        ensureCloseButton(o);
+        ensureBackdropClose(o);
+      } catch (e) { console.warn('V19 fix failed for overlay', o.id, e); }
+    });
+  }
+  window.applyV19FixesToAllModals = applyV19FixesToAllModals;
+
+  // Re-apply when new modals are added (V18 cars/weddings, etc.)
+  const observer = new MutationObserver((mutations) => {
+    let needsRescan = false;
+    mutations.forEach(m => {
+      m.addedNodes.forEach(n => {
+        if (n.nodeType === 1 && (n.classList && n.classList.contains('overlay') || n.querySelector && n.querySelector('.overlay'))) {
+          needsRescan = true;
+        }
+      });
+    });
+    if (needsRescan) {
+      setTimeout(applyV19FixesToAllModals, 50);
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // Listen for back button / hash change to close open modal first
+  window.addEventListener('popstate', (e) => {
+    const closed = closeAnyOpenOverlay();
+    if (closed > 0) {
+      // Push a state back so subsequent back also goes through this handler
+      try { history.pushState({}, ''); } catch (err) {}
+    }
+  });
+
+  // ESC key support
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' || e.keyCode === 27) {
+      closeAnyOpenOverlay();
+    }
+  });
+
+  // Push initial state so first back press doesn't exit app
+  setTimeout(() => {
+    try { history.pushState({}, ''); } catch (e) {}
+  }, 500);
+
+  // ─────────────────────────────────────────────────────────────
+  // PART B — STORE LOGOS / BRAND ICONS
+  //
+  // Uses real SVG logos rendered inline so they work offline.
+  // Each logo is a small custom-drawn SVG that captures the brand's
+  // distinct visual identity (color + simplified mark).
+  // ─────────────────────────────────────────────────────────────
+
+  const STORE_LOGOS_SVG = {
+    // E-commerce
+    amazon: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#232F3E"/><text x="30" y="32" text-anchor="middle" fill="#FF9900" font-family="Arial Black" font-size="14" font-weight="900">amazon</text><path d="M14 38 Q30 48 46 38" stroke="#FF9900" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M44 36 L46 38 L44 40" stroke="#FF9900" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    shein: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#000000"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="13" font-weight="900" letter-spacing="0.5">SHEIN</text></svg>`,
+    trendyol: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#F27A1A"/><text x="30" y="35" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="11" font-weight="900">Trendyol</text></svg>`,
+    noon: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#FEEE00"/><text x="30" y="38" text-anchor="middle" fill="#000000" font-family="Arial Black" font-size="22" font-weight="900">noon</text></svg>`,
+    aliexpress: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#E62E04"/><text x="30" y="27" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="9" font-weight="900">AliExpress</text><circle cx="30" cy="42" r="8" fill="#FFFFFF"/><text x="30" y="46" text-anchor="middle" fill="#E62E04" font-family="Arial Black" font-size="11" font-weight="900">A</text></svg>`,
+    jumia: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#F68B1E"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="13" font-weight="900">JUMIA</text></svg>`,
+    namshi: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#000000"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="11" font-weight="900">namshi</text></svg>`,
+    ounass: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#1A1A1A"/><text x="30" y="36" text-anchor="middle" fill="#D4AF37" font-family="Georgia" font-size="11" font-style="italic" font-weight="700">Ounass</text></svg>`,
+    centerpoint: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#E20613"/><text x="30" y="28" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="9" font-weight="900">CENTRE</text><text x="30" y="42" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="9" font-weight="900">POINT</text></svg>`,
+    hm: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#E50010"/><text x="30" y="40" text-anchor="middle" fill="#FFFFFF" font-family="Times" font-style="italic" font-size="22" font-weight="900">H&amp;M</text></svg>`,
+    zara: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#000000"/><text x="30" y="38" text-anchor="middle" fill="#FFFFFF" font-family="Times" font-size="18" font-weight="900" letter-spacing="-1">ZARA</text></svg>`,
+    apple: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#000000"/><path d="M30 18 C26 18 24 21 24 24 C24 22 25 20 26 19 C25 18 24 19 23 20 C20 22 19 26 21 30 C22 33 24 38 27 40 C29 41 30 41 32 40 C34 39 35 39 37 40 C40 41 42 39 44 36 C46 33 47 30 47 30 C44 28 43 25 44 22 C42 21 40 21 38 22 C36 21 35 19 33 19 C32 18 31 18 30 18 Z M33 14 C34 12 33 10 32 10 C31 11 30 12 30 14 C31 14 32 14 33 14 Z" fill="#FFFFFF"/></svg>`,
+    other: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#6B7280"/><text x="30" y="40" text-anchor="middle" fill="#FFFFFF" font-size="22">🛍️</text></svg>`,
+
+    // Payment methods (BNPL & cards)
+    tabby: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#3BFFC1"/><text x="30" y="38" text-anchor="middle" fill="#1F2937" font-family="Arial Black" font-size="15" font-weight="900">tabby</text></svg>`,
+    tamara: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#6F42C1"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="13" font-weight="900">tamara</text></svg>`,
+    valu: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#FF6E00"/><text x="30" y="38" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="16" font-weight="900">valU</text></svg>`,
+    postpay: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#0066FF"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="11" font-weight="900">postpay</text></svg>`,
+
+    visa: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#1A1F71"/><text x="30" y="38" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-style="italic" font-size="16" font-weight="900">VISA</text></svg>`,
+    visa_signature: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#0F0F0F"/><text x="30" y="26" text-anchor="middle" fill="#F7B600" font-family="Arial Black" font-style="italic" font-size="11" font-weight="900">VISA</text><text x="30" y="40" text-anchor="middle" fill="#F7B600" font-family="Arial" font-size="7" font-weight="700">SIGNATURE</text></svg>`,
+    mastercard: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#1A1A1A"/><circle cx="24" cy="30" r="11" fill="#EB001B"/><circle cx="36" cy="30" r="11" fill="#F79E1B" fill-opacity="0.85"/></svg>`,
+    mada: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#FFFFFF"/><text x="30" y="34" text-anchor="middle" fill="#84BD00" font-family="Arial Black" font-size="14" font-weight="900">mada</text><text x="30" y="44" text-anchor="middle" fill="#005EB8" font-family="Arial" font-size="8">مدى</text></svg>`,
+    meeza: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#FFC72C"/><text x="30" y="38" text-anchor="middle" fill="#000000" font-family="Arial Black" font-size="14" font-weight="900">meeza</text></svg>`,
+    apple_pay: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#000000"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial" font-size="11" font-weight="700"> Pay</text><path d="M21 30 C20 30 19 31 19 32 C19 33 20 34 21 34 C22 34 22 33 22 32 C22 31 22 30 21 30 Z M22 28 C22 27 21 27 21 27 C21 27 21 28 21 28 C21 28 21 28 22 28 Z" fill="#FFFFFF"/></svg>`,
+    stc_pay: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#4F008C"/><text x="30" y="28" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="11" font-weight="900">stc</text><text x="30" y="42" text-anchor="middle" fill="#FFFFFF" font-family="Arial" font-size="9" font-weight="700">pay</text></svg>`,
+    instapay: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#E91E63"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="11" font-weight="900">InstaPay</text></svg>`,
+    cash: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#16A34A"/><text x="30" y="40" text-anchor="middle" fill="#FFFFFF" font-size="26">💵</text></svg>`,
+    cod: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#0EA5E9"/><text x="30" y="40" text-anchor="middle" fill="#FFFFFF" font-size="24">📬</text></svg>`,
+    other_pay: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#475569"/><text x="30" y="40" text-anchor="middle" fill="#FFFFFF" font-size="24">💳</text></svg>`
+  };
+  window.STORE_LOGOS_SVG = STORE_LOGOS_SVG;
+
+  // Generate a small inline-SVG data URI we can use anywhere as <img src>
+  function getLogoDataURI(key) {
+    const svg = STORE_LOGOS_SVG[key];
+    if (!svg) return null;
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+  window.getLogoDataURI = getLogoDataURI;
+
+  // Helper: returns HTML for a 28x28 logo
+  function logoTag(key, size = 28) {
+    const svg = STORE_LOGOS_SVG[key];
+    if (!svg) return '';
+    return `<span class="brand-logo" style="width:${size}px;height:${size}px;display:inline-block;flex-shrink:0;border-radius:6px;overflow:hidden;vertical-align:middle">${svg}</span>`;
+  }
+  window.logoTag = logoTag;
+
+  // ── INJECT LOGOS INTO ORDER STORE DROPDOWN ──
+  // The dropdown options can't have HTML/SVG natively. Instead, we
+  // build a custom "logo selector" that mirrors the <select> behavior.
+  function enhanceStoreSelectors() {
+    const ordStore = document.getElementById('ordStore');
+    if (ordStore && !ordStore.dataset.v19Enhanced) {
+      ordStore.dataset.v19Enhanced = '1';
+      buildLogoPicker(ordStore, 'store-logos', STORE_LOGOS_SVG, [
+        'amazon','shein','trendyol','noon','aliexpress','jumia',
+        'namshi','ounass','centerpoint','hm','zara','apple','other'
+      ]);
+    }
+    const ordPay = document.getElementById('ordPayMethod');
+    if (ordPay && !ordPay.dataset.v19Enhanced) {
+      ordPay.dataset.v19Enhanced = '1';
+      buildLogoPicker(ordPay, 'pay-logos', STORE_LOGOS_SVG, [
+        'cash','visa','visa_signature','mastercard','mada','meeza',
+        'apple_pay','stc_pay','instapay','tabby','tamara','valu',
+        'postpay','cod','other'
+      ], { other: 'other_pay' });
+    }
+  }
+
+  function buildLogoPicker(selectEl, suffix, logos, keys, keyAlias = {}) {
+    // Insert a visual logo grid above the (hidden-on-tap) select.
+    // The grid drives the select's value, so all existing form logic still works.
+    if (!selectEl) return;
+
+    const grid = document.createElement('div');
+    grid.className = 'logo-picker';
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px';
+
+    const optionsByValue = {};
+    [...selectEl.options].forEach(o => { optionsByValue[o.value] = o.textContent; });
+
+    keys.forEach(k => {
+      const optionVal = k;
+      // Only add if select actually has this option
+      if (!optionsByValue.hasOwnProperty(optionVal)) return;
+      const logoKey = keyAlias[k] || k;
+      const svg = logos[logoKey] || logos.other;
+      const label = optionsByValue[optionVal];
+      // Strip emoji prefix for cleaner labels
+      const cleanLabel = label.replace(/^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\s]+/u, '').trim();
+
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'logo-cell';
+      cell.dataset.value = optionVal;
+      cell.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;background:var(--card2);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-family:'Cairo',sans-serif;-webkit-tap-highlight-color:rgba(88,166,255,0.3);transition:border-color .15s,transform .1s;`;
+      cell.innerHTML = `<div style="width:36px;height:36px;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">${svg}</div>
+        <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center;line-height:1.2;max-width:100%;overflow:hidden">${cleanLabel}</div>`;
+      cell.onclick = () => {
+        selectEl.value = optionVal;
+        selectEl.dispatchEvent(new Event('change'));
+        // Update selected visual
+        grid.querySelectorAll('.logo-cell').forEach(c => {
+          c.style.borderColor = 'var(--border)';
+          c.style.background = 'var(--card2)';
+        });
+        cell.style.borderColor = 'var(--accent)';
+        cell.style.background = 'rgba(88,166,255,0.1)';
+      };
+      grid.appendChild(cell);
+    });
+
+    // Hide the original <select> visually but keep it in the DOM for form logic
+    selectEl.style.display = 'none';
+    selectEl.parentNode.insertBefore(grid, selectEl);
+
+    // Sync initial selection
+    const currentVal = selectEl.value;
+    const initCell = grid.querySelector(`[data-value="${currentVal}"]`);
+    if (initCell) initCell.click();
+  }
+
+  // ── INJECT LOGOS INTO RENDERED ORDER CARDS ──
+  // Wrap renderOrders to swap emoji headers with logo SVG
+  const _origRenderOrders = window.renderOrders;
+  if (typeof _origRenderOrders === 'function') {
+    window.renderOrders = function() {
+      _origRenderOrders.apply(this, arguments);
+      // Post-process the rendered HTML: replace emoji+name with logo+name
+      enhanceRenderedOrders();
+    };
+  }
+
+  function enhanceRenderedOrders() {
+    if (typeof orders === 'undefined' || !orders.length) return;
+    const list = document.getElementById('ordersList');
+    if (!list) return;
+
+    // Find each order card and replace its emoji header with a brand logo
+    list.querySelectorAll('div').forEach(div => {
+      // Heuristic: look for the small header row inside an order card
+      // We injected each order's emoji as `<span style="font-size:18px">${emoji}</span>`
+      // Replace those.
+    });
+
+    // Simpler approach: re-render with the post-renderOrders logo overlay
+    orders.forEach(o => {
+      // Match each order card by looking for its delete button data
+      const cards = list.querySelectorAll('div[style*="background:var(--card)"]');
+      cards.forEach(card => {
+        const delBtn = card.querySelector(`button[onclick*="${o.id}"]`);
+        if (!delBtn) return;
+        if (card.dataset.v19LogoApplied) return;
+        card.dataset.v19LogoApplied = '1';
+        const emojiSpan = card.querySelector('span[style*="font-size:18px"]');
+        if (emojiSpan) {
+          const storeKey = o.store || 'other';
+          const svg = STORE_LOGOS_SVG[storeKey] || STORE_LOGOS_SVG.other;
+          emojiSpan.outerHTML = `<span style="width:32px;height:32px;display:inline-block;border-radius:6px;overflow:hidden;flex-shrink:0;vertical-align:middle">${svg}</span>`;
+        }
+        // Also enhance payment-method badge
+        if (o.paymentMethod) {
+          const payKey = o.paymentMethod === 'other' ? 'other_pay' : o.paymentMethod;
+          const paySvg = STORE_LOGOS_SVG[payKey];
+          if (paySvg) {
+            const badges = card.querySelectorAll('span[style*="background:var(--card2)"]');
+            badges.forEach(b => {
+              if (b.dataset.v19PayApplied) return;
+              const txt = b.textContent || '';
+              // Look for the payment badge specifically
+              const PAY_LABELS_LOCAL = window.PAY_LABELS || {};
+              const meta = PAY_LABELS_LOCAL[o.paymentMethod];
+              if (meta && txt.includes(meta.name)) {
+                b.dataset.v19PayApplied = '1';
+                const cleanName = meta.name;
+                b.innerHTML = `<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:18px;height:18px;border-radius:3px;overflow:hidden;display:inline-block">${paySvg}</span> ${cleanName}</span>`;
+              }
+            });
+          }
+        }
+      });
+    });
+  }
+
+  // Hook into renderOrders to apply enhancements after each render
+  setInterval(() => {
+    const ordersModal = document.getElementById('ordersModal');
+    if (ordersModal && ordersModal.classList.contains('open')) {
+      enhanceRenderedOrders();
+    }
+  }, 800);
+
+  // Initialize once forms are available
+  function v19Boot() {
+    applyV19FixesToAllModals();
+    enhanceStoreSelectors();
+  }
+
+  // Run multiple times to catch dynamically-added modals (V18 cars/weddings inject after delay)
+  setTimeout(v19Boot, 300);
+  setTimeout(v19Boot, 1000);
+  setTimeout(v19Boot, 2000);
+
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// V19 — STYLES
+// ═══════════════════════════════════════════════════════════════
+(function v19Styles() {
+  const css = `
+    /* Universal X close button on all modals */
+    .v19-close-btn {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--card2);
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 900;
+      cursor: pointer;
+      font-family: 'Cairo', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      -webkit-tap-highlight-color: rgba(248,81,73,0.3);
+      touch-action: manipulation;
+      transition: all 0.15s;
+      padding: 0;
+    }
+    .v19-close-btn:active {
+      transform: scale(0.92);
+      background: var(--red);
+      color: #fff;
+      border-color: var(--red);
+    }
+    /* Avoid duplicate close on settings-sheet which already has its own */
+    .settings-sheet .v19-close-btn { display: none; }
+
+    /* Generous touch zone around the handle */
+    .v19-handle-zone {
+      width: 100%;
+      padding: 4px 0 18px;
+      margin-top: -4px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: rgba(248,81,73,0.3);
+      touch-action: manipulation;
+    }
+    .v19-handle-zone .handle {
+      pointer-events: none; /* the zone itself handles all touches */
+    }
+
+    /* Logo picker grid styles */
+    .logo-picker .logo-cell:active {
+      transform: scale(0.95);
+    }
+
+    /* Brand logo wrappers */
+    .brand-logo svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  `;
+  const style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
 })();
 </script>
 
