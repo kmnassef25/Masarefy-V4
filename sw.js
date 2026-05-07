@@ -1,88 +1,62 @@
-// Masarefy Service Worker
-const APP_VERSION = 'v16.0.0';
+const APP_VERSION = 'v18.0.0';
 const CACHE_NAME = 'masarefy-' + APP_VERSION;
 const URLS_TO_CACHE = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
-  './icon-192-maskable.png',
-  './icon-512-maskable.png'
+  './', './index.html', './manifest.json',
+  './icon-192.png', './icon-512.png',
+  './icon-192-maskable.png', './icon-512-maskable.png'
 ];
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(URLS_TO_CACHE).catch((err) => {
-        console.warn('Cache addAll failed:', err);
-      });
-    })
-  );
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(URLS_TO_CACHE).catch(()=>{})));
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
-  );
+self.addEventListener('activate', (e) => {
+  e.waitUntil(caches.keys().then(names =>
+    Promise.all(names.map(n => n !== CACHE_NAME ? caches.delete(n) : null))
+  ).then(() => self.clients.claim()));
 });
 
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
+self.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
+self.addEventListener('fetch', (e) => {
+  const url = new URL(e.request.url);
   if (url.origin !== self.location.origin) return;
-  if (event.request.method !== 'GET') return;
+  if (e.request.method !== 'GET') return;
 
-  const isHTML = event.request.mode === 'navigate' ||
-                 (event.request.headers.get('accept') || '').includes('text/html');
+  const isHTML = e.request.mode === 'navigate' ||
+                 (e.request.headers.get('accept') || '').includes('text/html');
 
   if (isHTML) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+    e.respondWith(
+      fetch(e.request)
+        .then(r => {
+          if (r && r.status === 200) {
+            const copy = r.clone();
+            caches.open(CACHE_NAME).then(c => c.put(e.request, copy));
           }
-          return response;
+          return r;
         })
-        .catch(() =>
-          caches.match(event.request, {ignoreSearch: true})
-            .then(c => c || caches.match('./index.html'))
-        )
+        .catch(() => caches.match(e.request, {ignoreSearch: true})
+          .then(c => c || caches.match('./index.html')))
     );
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request, {ignoreSearch: true}).then((cached) => {
+  e.respondWith(
+    caches.match(e.request, {ignoreSearch: true}).then(cached => {
       if (cached) {
-        fetch(event.request).then((response) => {
-          if (response && response.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response));
-          }
-        }).catch(() => {});
+        fetch(e.request).then(r => {
+          if (r && r.status === 200) caches.open(CACHE_NAME).then(c => c.put(e.request, r));
+        }).catch(()=>{});
         return cached;
       }
-      return fetch(event.request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== 'basic') return response;
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
-        return response;
+      return fetch(e.request).then(r => {
+        if (!r || r.status !== 200 || r.type !== 'basic') return r;
+        caches.open(CACHE_NAME).then(c => c.put(e.request, r.clone()));
+        return r;
       });
     })
   );

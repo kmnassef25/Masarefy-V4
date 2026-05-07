@@ -2,13 +2,16 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
 <!-- PWA Meta Tags -->
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="مصاريفي">
-<meta name="theme-color" content="#0d1117">
+<meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f8fa" media="(prefers-color-scheme: light)">
+<meta name="format-detection" content="telephone=no">
 <meta name="description" content="تطبيق إدارة المصاريف والدخل بالريال السعودي">
 
 <link rel="manifest" href="manifest.json">
@@ -55,10 +58,15 @@
   }
 </script>
 
-<!-- Favicons -->
+<!-- Favicons & iOS Icons -->
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon-precomposed" href="icon-192.png">
 <link rel="shortcut icon" type="image/png" href="icon-192.png">
 
 <!-- PDF.js for bank statement parsing -->
@@ -1246,6 +1254,35 @@ select.form-inp{padding-left:8px;}
   display:inline-block;background:rgba(88,166,255,0.12);
   color:var(--blue);padding:2px 8px;border-radius:10px;
   font-size:10px;font-weight:700;margin-right:6px;
+}
+
+/* ═══════ V17 — iOS SAFE AREA + POLISH ═══════ */
+body {
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+  background-color: var(--bg);
+}
+.sheet, .settings-sheet {
+  padding-bottom: calc(30px + env(safe-area-inset-bottom, 0)) !important;
+}
+button, .menu-row, .tx-card, .pay-cur-btn, .cat-btn, .inc-btn, .type-btn,
+.feat-mini-btn, .save-btn, .export-btn, .tab, .handle {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+input, textarea, [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+.sheet, .settings-sheet, .overlay {
+  -webkit-overflow-scrolling: touch;
+}
+/* Tap highlight: nicer feedback on iOS */
+button, .menu-row, .tx-card {
+  -webkit-tap-highlight-color: rgba(88,166,255,0.15);
 }
 
 </style>
@@ -4695,13 +4732,7 @@ window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 
 // ── LIVE EXCHANGE RATES ──
-// NOTE: This legacy function is superseded by the multi-source version below
-// (search for "OFFICIAL CURRENCY SOURCES ONLY"). Kept here as a no-op to avoid
-// breaking any old reference. The active implementation uses Frankfurter (ECB).
-async function fetchLiveRates_legacy_unused() {
-  // Intentionally empty - see RATE_SOURCES below
-  return false;
-}
+// (Legacy stub removed in V17 — see RATE_SOURCES + fetchLiveRates below)
 
 // ── AUTO LOCK ──
 var autoLockTimer = null;
@@ -10527,9 +10558,8 @@ async function updateInvestmentPrice(id) {
   };
 
   // ═══════════════════════════════════════════════════════════════
-  // BACKUP/RESTORE — INCLUDE ORDERS
+  // BACKUP/RESTORE — INCLUDE ORDERS (V15 replaces, doesn't chain)
   // ═══════════════════════════════════════════════════════════════
-  const _origExportV15 = window.exportJSON;
   window.exportJSON = function() {
     // Run original export, then patch the saved file by re-running with orders
     // Since the original builds and downloads in one go, we duplicate the data
@@ -10571,8 +10601,7 @@ async function updateInvestmentPrice(id) {
     if (typeof showToast === 'function') showToast('✅ تم تصدير النسخة الاحتياطية الكاملة', 'success');
   };
 
-  // Patch restore to include orders
-  const _origRestoreV15 = window.restoreBackup;
+  // Patch restore to include orders (V15 replaces, doesn't chain)
   window.restoreBackup = function(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
@@ -11206,6 +11235,1990 @@ setTimeout(() => {
 
   // Also inject on first DOMContentLoaded for safety
   setTimeout(injectApiKeySettings, 1200);
+
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// V17 — VEHICLES + WEDDINGS + REDESIGNED MENU + SAFETY FIXES
+// ═══════════════════════════════════════════════════════════════
+(function v17Init() {
+
+  // ─────────────────────────────────────────────────────────────
+  // PART A — SAFETY HELPERS (parseFloat + localStorage guards)
+  // ─────────────────────────────────────────────────────────────
+  window.safeParseFloat = function(v, fallback = 0) {
+    if (v === null || v === undefined || v === '') return fallback;
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : fallback;
+  };
+  window.safeParseInt = function(v, fallback = 0) {
+    if (v === null || v === undefined || v === '') return fallback;
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) ? n : fallback;
+  };
+  window.safeLSGet = function(key, fallback = null) {
+    try {
+      const v = localStorage.getItem(key);
+      if (v === null) return fallback;
+      try { return JSON.parse(v); } catch { return v; }
+    } catch (e) {
+      console.warn('localStorage read failed:', key, e);
+      return fallback;
+    }
+  };
+  window.safeLSSet = function(key, value) {
+    try {
+      const s = typeof value === 'string' ? value : JSON.stringify(value);
+      localStorage.setItem(key, s);
+      return true;
+    } catch (e) {
+      console.warn('localStorage write failed:', key, e);
+      if (typeof showToast === 'function') {
+        showToast('⚠️ التخزين امتلأ — احذف بيانات قديمة', 'warning');
+      }
+      return false;
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // PART B — DATA: vehicles + weddings
+  // ─────────────────────────────────────────────────────────────
+  window.vehicles = safeLSGet('msarifyi_vehicles', []);
+  window.vehicleLogs = safeLSGet('msarifyi_vehicle_logs', []);
+  window.saveVehicles = () => safeLSSet('msarifyi_vehicles', vehicles);
+  window.saveVehicleLogs = () => safeLSSet('msarifyi_vehicle_logs', vehicleLogs);
+
+  window.weddings = safeLSGet('msarifyi_weddings', []);
+  window.weddingItems = safeLSGet('msarifyi_wedding_items', []);
+  window.saveWeddings = () => safeLSSet('msarifyi_weddings', weddings);
+  window.saveWeddingItems = () => safeLSSet('msarifyi_wedding_items', weddingItems);
+
+  // ─────────────────────────────────────────────────────────────
+  // PART C — VEHICLES MODAL (HTML injected)
+  // ─────────────────────────────────────────────────────────────
+  function injectVehiclesModal() {
+    if (document.getElementById('vehiclesModal')) return;
+    const html = `
+<div class="overlay" id="vehiclesModal" onclick="closeIfOut(event,'vehiclesModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title">🚗 السيارات</div>
+    <p style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px">سجل عرباتك وكل صيانة وبنزين وحادثة</p>
+    <div id="vehiclesList"></div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">إضافة سيارة</div>
+      <div class="form-row"><input class="form-inp" id="vhName" placeholder="مثال: BMW 320i 2022، تويوتا كامري..."/></div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">رقم اللوحة</div><input class="form-inp" id="vhPlate" placeholder="ا ب ج 1234"/></div>
+        <div class="form-row"><div class="form-lbl">الموديل</div><input class="form-inp" id="vhYear" type="number" placeholder="2022" inputmode="numeric"/></div>
+      </div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">السعر الأصلي (ر.س)</div><input class="form-inp" id="vhPrice" type="number" placeholder="120000" inputmode="decimal"/></div>
+        <div class="form-row"><div class="form-lbl">العداد الحالي (كم)</div><input class="form-inp" id="vhOdometer" type="number" placeholder="45000" inputmode="numeric"/></div>
+      </div>
+      <button class="save-btn" onclick="saveVehicle()">💾 حفظ السيارة</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="vehicleLogModal" onclick="closeIfOut(event,'vehicleLogModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title" id="vehicleLogTitle">📋 سجل السيارة</div>
+    <div id="vehicleLogStats" style="margin-bottom:12px"></div>
+    <div id="vehicleLogList"></div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">تسجيل عملية جديدة</div>
+      <div class="form-row"><div class="form-lbl">نوع العملية</div>
+        <select class="form-inp" id="vlType">
+          <option value="fuel">⛽ بنزين</option>
+          <option value="oil">🛢️ تغيير زيت</option>
+          <option value="service">🔧 صيانة دورية</option>
+          <option value="repair">🛠️ إصلاح / عطل</option>
+          <option value="tires">⚫ كاوتش</option>
+          <option value="wash">🧼 غسيل</option>
+          <option value="parking">🅿️ موقف</option>
+          <option value="fines">🚨 مخالفة</option>
+          <option value="insurance">🛡️ تأمين</option>
+          <option value="license">📋 رخصة / استمارة</option>
+          <option value="accident">💥 حادث</option>
+          <option value="other">📋 أخرى</option>
+        </select>
+      </div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">المبلغ</div><input class="form-inp" id="vlAmount" type="number" step="0.01" placeholder="150" inputmode="decimal"/></div>
+        <div class="form-row"><div class="form-lbl">العملة</div>
+          <select class="form-inp" id="vlCurrency">
+            <option value="SAR">🇸🇦 ريال</option>
+            <option value="EGP">🇪🇬 جنيه</option>
+            <option value="USD">🇺🇸 دولار</option>
+            <option value="EUR">🇪🇺 يورو</option>
+          </select>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">📅 التاريخ</div><input class="form-inp" id="vlDate" type="date"/></div>
+        <div class="form-row"><div class="form-lbl">العداد (كم)</div><input class="form-inp" id="vlOdometer" type="number" placeholder="45200" inputmode="numeric"/></div>
+      </div>
+      <div class="form-row" id="vlFuelLitersRow" style="display:none">
+        <div class="form-lbl">عدد اللترات</div>
+        <input class="form-inp" id="vlLiters" type="number" step="0.01" placeholder="40" inputmode="decimal"/>
+      </div>
+      <div class="form-row"><input class="form-inp" id="vlNote" placeholder="ملاحظات (مكان البنزينة، اسم الورشة، رقم الفاتورة...)"/></div>
+      <button class="save-btn" onclick="saveVehicleLog()">💾 حفظ + إضافة كحركة</button>
+    </div>
+  </div>
+</div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+
+    // Toggle liters row when fuel
+    const vlType = document.getElementById('vlType');
+    if (vlType) vlType.addEventListener('change', () => {
+      document.getElementById('vlFuelLitersRow').style.display = vlType.value === 'fuel' ? 'block' : 'none';
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // PART D — VEHICLES LOGIC
+  // ─────────────────────────────────────────────────────────────
+  const VEHICLE_LOG_TYPES = {
+    fuel:     { label: 'بنزين', emoji: '⛽', color: '#f59e0b' },
+    oil:      { label: 'تغيير زيت', emoji: '🛢️', color: '#a78bfa' },
+    service:  { label: 'صيانة', emoji: '🔧', color: '#58a6ff' },
+    repair:   { label: 'إصلاح', emoji: '🛠️', color: '#ef4444' },
+    tires:    { label: 'كاوتش', emoji: '⚫', color: '#9ca3af' },
+    wash:     { label: 'غسيل', emoji: '🧼', color: '#06b6d4' },
+    parking:  { label: 'موقف', emoji: '🅿️', color: '#10b981' },
+    fines:    { label: 'مخالفة', emoji: '🚨', color: '#dc2626' },
+    insurance:{ label: 'تأمين', emoji: '🛡️', color: '#3b82f6' },
+    license:  { label: 'رخصة', emoji: '📋', color: '#8b5cf6' },
+    accident: { label: 'حادث', emoji: '💥', color: '#dc2626' },
+    other:    { label: 'أخرى', emoji: '📋', color: '#6b7280' }
+  };
+
+  window.renderVehicles = function() {
+    const el = document.getElementById('vehiclesList');
+    if (!el) return;
+    if (!vehicles.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">🚗</div>لسه ما سجلتش عربيات<br><span style="font-size:11px">أضف عربيتك من تحت لتتبع تكاليفها</span></div>`;
+      return;
+    }
+    const sym = BASE_LABELS[baseCurrency].sym;
+    let html = '';
+    vehicles.forEach(v => {
+      const logs = vehicleLogs.filter(l => l.vehicleId === v.id);
+      const totalSAR = logs.reduce((s, l) => s + curToSAR(l.amount, l.currency), 0);
+      const fuelLogs = logs.filter(l => l.type === 'fuel');
+      const fuelSAR = fuelLogs.reduce((s, l) => s + curToSAR(l.amount, l.currency), 0);
+      const last = logs.length ? logs.sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0] : null;
+      // Find ahead-of-time alerts (oil change due, etc.)
+      let alert = '';
+      if (logs.length) {
+        const oilLogs = logs.filter(l => l.type === 'oil').sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+        const lastOil = oilLogs[0];
+        if (lastOil && lastOil.odometer && v.odometer) {
+          const sinceOil = safeParseInt(v.odometer) - safeParseInt(lastOil.odometer);
+          if (sinceOil > 8000) alert = `<div style="background:#dc262620;color:#dc2626;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;margin-top:6px">🛢️ غير الزيت — مر ${toArabicDigits(sinceOil)} كم</div>`;
+          else if (sinceOil > 5000) alert = `<div style="background:#f59e0b20;color:#f59e0b;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;margin-top:6px">🛢️ الزيت قارب — مر ${toArabicDigits(sinceOil)} كم</div>`;
+        }
+      }
+      html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer" onclick="openVehicleLog('${v.id}')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:900;font-size:15px;display:flex;align-items:center;gap:6px"><span>🚗</span><span>${esc(v.name)}</span></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(v.plate||'—')} · موديل ${toArabicDigits(v.year||'—')}${v.odometer?` · ${toArabicDigits(v.odometer)} كم`:''}</div>
+          </div>
+          <button onclick="event.stopPropagation();delVehicle('${v.id}')" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px 8px">✕</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px">
+          <div style="background:var(--card2);padding:8px;border-radius:8px;text-align:center">
+            <div style="font-size:9px;color:var(--muted)">إجمالي مصاريف</div>
+            <div style="font-size:13px;font-weight:900;color:var(--accent);direction:ltr">${fmt(toBase(totalSAR),0)} ${sym}</div>
+          </div>
+          <div style="background:var(--card2);padding:8px;border-radius:8px;text-align:center">
+            <div style="font-size:9px;color:var(--muted)">بنزين</div>
+            <div style="font-size:13px;font-weight:900;color:#f59e0b;direction:ltr">${fmt(toBase(fuelSAR),0)} ${sym}</div>
+          </div>
+          <div style="background:var(--card2);padding:8px;border-radius:8px;text-align:center">
+            <div style="font-size:9px;color:var(--muted)">عمليات</div>
+            <div style="font-size:13px;font-weight:900;color:var(--text)">${toArabicDigits(logs.length)}</div>
+          </div>
+        </div>
+        ${alert}
+        ${last ? `<div style="font-size:10px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">آخر عملية: ${VEHICLE_LOG_TYPES[last.type]?.emoji||''} ${VEHICLE_LOG_TYPES[last.type]?.label||last.type} · ${esc(last.date||'')}</div>` : ''}
+        <div style="text-align:center;font-size:10px;color:var(--accent);margin-top:6px">اضغط لعرض السجل ›</div>
+      </div>`;
+    });
+    el.innerHTML = html;
+  };
+
+  window.saveVehicle = function() {
+    const name = (document.getElementById('vhName').value || '').trim();
+    const plate = (document.getElementById('vhPlate').value || '').trim();
+    const year = safeParseInt(document.getElementById('vhYear').value);
+    const price = safeParseFloat(document.getElementById('vhPrice').value);
+    const odometer = safeParseInt(document.getElementById('vhOdometer').value);
+    if (!name) { showAlert('اكتب اسم السيارة', 'error'); return; }
+    vehicles.unshift({
+      id: 'veh_' + Date.now(),
+      name, plate, year, price, odometer,
+      createdAt: Date.now()
+    });
+    saveVehicles();
+    ['vhName','vhPlate','vhYear','vhPrice','vhOdometer'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    renderVehicles();
+    updateMenuV17Counts();
+    if (typeof showToast === 'function') showToast('✅ تم حفظ السيارة', 'success');
+  };
+
+  window.delVehicle = function(id) {
+    if (!confirm('حذف السيارة وكل سجلاتها؟')) return;
+    vehicles = vehicles.filter(v => v.id !== id);
+    vehicleLogs = vehicleLogs.filter(l => l.vehicleId !== id);
+    saveVehicles(); saveVehicleLogs();
+    renderVehicles();
+    updateMenuV17Counts();
+  };
+
+  window.__currentVehicleId = null;
+
+  window.openVehicleLog = function(vehicleId) {
+    const v = vehicles.find(x => x.id === vehicleId);
+    if (!v) return;
+    window.__currentVehicleId = vehicleId;
+    document.getElementById('vehicleLogTitle').textContent = `📋 ${v.name}`;
+    // Set defaults
+    const dt = document.getElementById('vlDate');
+    if (dt && !dt.value) dt.value = new Date().toISOString().split('T')[0];
+    const od = document.getElementById('vlOdometer');
+    if (od && !od.value && v.odometer) od.value = v.odometer;
+    document.getElementById('vehicleLogModal').classList.add('open');
+    renderVehicleLog();
+  };
+
+  window.renderVehicleLog = function() {
+    const id = window.__currentVehicleId;
+    if (!id) return;
+    const v = vehicles.find(x => x.id === id);
+    const logs = vehicleLogs.filter(l => l.vehicleId === id).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+    // Stats
+    const sym = BASE_LABELS[baseCurrency].sym;
+    const stats = {};
+    Object.keys(VEHICLE_LOG_TYPES).forEach(k => stats[k] = 0);
+    logs.forEach(l => stats[l.type] = (stats[l.type]||0) + curToSAR(l.amount, l.currency));
+    const total = Object.values(stats).reduce((a,b)=>a+b, 0);
+
+    let statsHtml = '';
+    if (logs.length) {
+      // Show top 4 categories
+      const sorted = Object.entries(stats).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0, 4);
+      statsHtml = `<div style="background:linear-gradient(135deg,rgba(88,166,255,.10),rgba(88,166,255,.02));border:1px solid var(--accent);border-radius:14px;padding:14px;margin-bottom:12px">
+        <div style="font-size:11px;color:var(--muted);font-weight:700">إجمالي تكاليف ${esc(v.name)}</div>
+        <div style="font-size:24px;font-weight:900;color:var(--accent);direction:ltr;margin:4px 0">${fmt(toBase(total),0)} ${sym}</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:8px">
+          ${sorted.map(([k,v]) => `<div style="background:var(--card2);padding:8px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;font-size:11px">
+            <span>${VEHICLE_LOG_TYPES[k].emoji} ${VEHICLE_LOG_TYPES[k].label}</span>
+            <span style="font-weight:700;direction:ltr">${fmt(toBase(v),0)} ${sym}</span>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }
+    document.getElementById('vehicleLogStats').innerHTML = statsHtml;
+
+    // List
+    const el = document.getElementById('vehicleLogList');
+    if (!logs.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div>لسه ما فيش سجلات<br><span style="font-size:11px">سجل أول عملية من تحت</span></div>`;
+      return;
+    }
+    el.innerHTML = logs.map(l => {
+      const meta = VEHICLE_LOG_TYPES[l.type] || VEHICLE_LOG_TYPES.other;
+      const fuelInfo = l.type === 'fuel' && l.liters
+        ? `<div style="font-size:10px;color:var(--muted)">${toArabicDigits(l.liters)} لتر · ${fmt(l.amount/l.liters,2)} ${SYM[l.currency]||l.currency}/لتر</div>` : '';
+      return `<div style="background:var(--card);border:1px solid var(--border);border-left:3px solid ${meta.color};border-radius:10px;padding:10px 12px;margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px"><span style="color:${meta.color}">${meta.emoji}</span> ${meta.label}</div>
+            <div style="font-size:10px;color:var(--muted)">${esc(l.date||'')}${l.odometer?` · ${toArabicDigits(l.odometer)} كم`:''}</div>
+            ${fuelInfo}
+            ${l.note ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">📝 ${esc(l.note)}</div>` : ''}
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="font-weight:900;font-size:13px;direction:ltr">${fmt(l.amount,0)} ${SYM[l.currency]||l.currency}</div>
+            <button onclick="delVehicleLog('${l.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 4px">✕</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  };
+
+  window.saveVehicleLog = function() {
+    const id = window.__currentVehicleId;
+    if (!id) return;
+    const type = document.getElementById('vlType').value;
+    const amount = safeParseFloat(document.getElementById('vlAmount').value);
+    const currency = document.getElementById('vlCurrency').value;
+    const date = document.getElementById('vlDate').value;
+    const odometer = safeParseInt(document.getElementById('vlOdometer').value);
+    const liters = type === 'fuel' ? safeParseFloat(document.getElementById('vlLiters').value) : null;
+    const note = (document.getElementById('vlNote').value || '').trim();
+
+    if (amount <= 0) { showAlert('اكتب المبلغ', 'error'); return; }
+    if (!date) { showAlert('اكتب التاريخ', 'error'); return; }
+
+    const logId = 'vl_' + Date.now();
+    vehicleLogs.unshift({
+      id: logId, vehicleId: id, type, amount, currency, date,
+      odometer: odometer || null, liters: liters || null,
+      note, createdAt: Date.now()
+    });
+    saveVehicleLogs();
+
+    // Update vehicle's current odometer if higher
+    if (odometer) {
+      const v = vehicles.find(x => x.id === id);
+      if (v && (!v.odometer || odometer > v.odometer)) {
+        v.odometer = odometer;
+        saveVehicles();
+      }
+    }
+
+    // Create transaction
+    const v = vehicles.find(x => x.id === id);
+    const meta = VEHICLE_LOG_TYPES[type];
+    const rate = currency === 'SAR' ? 1 : (currency === 'EGP' ? rates.EGP : rates[currency]);
+    const amountSAR = curToSAR(amount, currency);
+    txs.unshift({
+      id: 'tx_vh_' + Date.now(),
+      type: 'expense',
+      name: `${meta.emoji} ${meta.label} - ${v?.name||'سيارة'}`,
+      amount, currency, rate, amountSAR,
+      cat: 'مواصلات',
+      date,
+      time: new Date().toTimeString().slice(0,5),
+      note: note || (liters ? `${liters} لتر` : ''),
+      account: accounts[0]?.id,
+      vehicleLogId: logId
+    });
+    saveData();
+
+    // Reset form
+    ['vlAmount','vlNote','vlLiters'].forEach(fid => {
+      const el = document.getElementById(fid); if (el) el.value = '';
+    });
+
+    renderVehicleLog();
+    if (typeof renderAll === 'function') renderAll();
+    updateMenuV17Counts();
+    if (typeof showToast === 'function') showToast(`✅ تم تسجيل ${meta.label}`, 'success');
+  };
+
+  window.delVehicleLog = function(logId) {
+    if (!confirm('حذف العملية؟ (هتمسح الحركة المرتبطة بيها)')) return;
+    vehicleLogs = vehicleLogs.filter(l => l.id !== logId);
+    txs = txs.filter(t => t.vehicleLogId !== logId);
+    saveVehicleLogs(); saveData();
+    renderVehicleLog();
+    if (typeof renderAll === 'function') renderAll();
+    updateMenuV17Counts();
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // PART E — WEDDINGS MODAL (HTML + LOGIC)
+  // ─────────────────────────────────────────────────────────────
+  function injectWeddingsModal() {
+    if (document.getElementById('weddingsModal')) return;
+    const html = `
+<div class="overlay" id="weddingsModal" onclick="closeIfOut(event,'weddingsModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title">💍 الفرح</div>
+    <p style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px">من الشبكة لحد شهر العسل — تتبع كل تكلفة</p>
+    <div id="weddingsList"></div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">إنشاء ملف فرح جديد</div>
+      <div class="form-row"><input class="form-inp" id="wdName" placeholder="مثال: فرح كريم وسارة"/></div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">📅 تاريخ الفرح</div><input class="form-inp" id="wdDate" type="date"/></div>
+        <div class="form-row"><div class="form-lbl">الميزانية الكلية</div><input class="form-inp" id="wdBudget" type="number" placeholder="200000" inputmode="decimal"/></div>
+      </div>
+      <button class="save-btn" onclick="saveWedding()">💾 إنشاء ملف الفرح</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="weddingDetailModal" onclick="closeIfOut(event,'weddingDetailModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title" id="weddingDetailTitle">💍 الفرح</div>
+    <div id="weddingDetailStats" style="margin-bottom:12px"></div>
+    <div id="weddingDetailList"></div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">إضافة بند جديد</div>
+      <div class="form-row"><div class="form-lbl">المرحلة</div>
+        <select class="form-inp" id="wiCategory">
+          <option value="shabka">💍 الشبكة والدبل</option>
+          <option value="dowry">💰 المهر</option>
+          <option value="contract">📜 كتب الكتاب</option>
+          <option value="apartment">🏠 الشقة (مقدم/إيجار)</option>
+          <option value="furniture">🛋️ الأثاث</option>
+          <option value="appliances">🔌 الأجهزة الكهربائية</option>
+          <option value="kitchen">🍳 تجهيز المطبخ</option>
+          <option value="bedroom">🛏️ غرفة النوم</option>
+          <option value="dress">👰 فستان الفرح</option>
+          <option value="suit">🤵 بدلة العريس</option>
+          <option value="rings">💍 محابس</option>
+          <option value="gold">🪙 ذهب / شبكة</option>
+          <option value="venue">🎊 صالة الفرح</option>
+          <option value="catering">🍽️ بوفيه / كيترينج</option>
+          <option value="dj">🎵 دي جي / فرقة</option>
+          <option value="photographer">📸 المصور / فيديو</option>
+          <option value="makeup">💄 كوافير / مكياج</option>
+          <option value="invitations">✉️ كروت الدعوة</option>
+          <option value="flowers">💐 ورد وزينة</option>
+          <option value="cars">🚗 ليموزين</option>
+          <option value="honeymoon">✈️ شهر العسل</option>
+          <option value="other">📋 أخرى</option>
+        </select>
+      </div>
+      <div class="form-row"><input class="form-inp" id="wiName" placeholder="وصف البند..."/></div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">المبلغ</div><input class="form-inp" id="wiAmount" type="number" step="0.01" placeholder="0" inputmode="decimal"/></div>
+        <div class="form-row"><div class="form-lbl">العملة</div>
+          <select class="form-inp" id="wiCurrency">
+            <option value="SAR">🇸🇦 ريال</option>
+            <option value="EGP">🇪🇬 جنيه</option>
+            <option value="USD">🇺🇸 دولار</option>
+            <option value="EUR">🇪🇺 يورو</option>
+          </select>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">📅 تاريخ الدفع</div><input class="form-inp" id="wiDate" type="date"/></div>
+        <div class="form-row"><div class="form-lbl">من دفع؟</div>
+          <select class="form-inp" id="wiPayer">
+            <option value="me">👤 أنا</option>
+            <option value="family">👨‍👩‍👧 أهلي</option>
+            <option value="bride">👰 العروس / أهلها</option>
+            <option value="shared">🤝 مشترك</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row"><div class="form-lbl">الحالة</div>
+        <select class="form-inp" id="wiStatus">
+          <option value="paid">✅ تم الدفع</option>
+          <option value="planned">📋 مخطط</option>
+          <option value="partial">⏳ دفعة جزئية</option>
+        </select>
+      </div>
+      <div class="form-row"><input class="form-inp" id="wiNote" placeholder="ملاحظات (اختياري)"/></div>
+      <button class="save-btn" onclick="saveWeddingItem()">💾 حفظ البند</button>
+    </div>
+  </div>
+</div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
+
+  const WEDDING_CATS = {
+    shabka:{e:'💍',l:'الشبكة'}, dowry:{e:'💰',l:'المهر'}, contract:{e:'📜',l:'كتب الكتاب'},
+    apartment:{e:'🏠',l:'الشقة'}, furniture:{e:'🛋️',l:'الأثاث'}, appliances:{e:'🔌',l:'الأجهزة'},
+    kitchen:{e:'🍳',l:'المطبخ'}, bedroom:{e:'🛏️',l:'غرفة النوم'}, dress:{e:'👰',l:'الفستان'},
+    suit:{e:'🤵',l:'البدلة'}, rings:{e:'💍',l:'المحابس'}, gold:{e:'🪙',l:'الذهب'},
+    venue:{e:'🎊',l:'الصالة'}, catering:{e:'🍽️',l:'البوفيه'}, dj:{e:'🎵',l:'الدي جي'},
+    photographer:{e:'📸',l:'المصور'}, makeup:{e:'💄',l:'الكوافير'}, invitations:{e:'✉️',l:'الكروت'},
+    flowers:{e:'💐',l:'الورد'}, cars:{e:'🚗',l:'الليموزين'}, honeymoon:{e:'✈️',l:'شهر العسل'},
+    other:{e:'📋',l:'أخرى'}
+  };
+
+  window.renderWeddings = function() {
+    const el = document.getElementById('weddingsList');
+    if (!el) return;
+    if (!weddings.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">💍</div>لسه ما فيش فرح مسجل<br><span style="font-size:11px">أنشئ ملف الفرح من تحت</span></div>`;
+      return;
+    }
+    const sym = BASE_LABELS[baseCurrency].sym;
+    el.innerHTML = weddings.map(w => {
+      const items = weddingItems.filter(it => it.weddingId === w.id);
+      const totalSAR = items.filter(it=>it.status!=='planned').reduce((s,it)=>s+curToSAR(it.amount,it.currency),0);
+      const plannedSAR = items.filter(it=>it.status==='planned').reduce((s,it)=>s+curToSAR(it.amount,it.currency),0);
+      const myShareSAR = items.filter(it=>it.payer==='me'&&it.status!=='planned').reduce((s,it)=>s+curToSAR(it.amount,it.currency),0);
+      const budget = safeParseFloat(w.budget);
+      const pct = budget ? Math.min(100, (totalSAR/budget)*100) : 0;
+      const daysToWedding = w.date ? Math.round((new Date(w.date)-new Date())/86400000) : null;
+      let countdown = '';
+      if (daysToWedding != null) {
+        if (daysToWedding > 0) countdown = `<span style="background:rgba(88,166,255,.15);color:var(--accent);padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700">⏳ باقي ${toArabicDigits(daysToWedding)} يوم</span>`;
+        else if (daysToWedding === 0) countdown = `<span style="background:#10b98120;color:#10b981;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700">🎉 النهاردة!</span>`;
+        else countdown = `<span style="background:var(--card2);color:var(--muted);padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700">✓ تم</span>`;
+      }
+      return `<div style="background:linear-gradient(135deg,rgba(244,114,182,.12),rgba(244,114,182,.02));border:1px solid rgba(244,114,182,.4);border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer" onclick="openWeddingDetail('${w.id}')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:900;font-size:15px;display:flex;align-items:center;gap:6px"><span>💍</span><span>${esc(w.name)}</span></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(w.date||'')} · ${countdown}</div>
+          </div>
+          <button onclick="event.stopPropagation();delWedding('${w.id}')" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px 8px">✕</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px">
+          <div style="background:var(--card2);padding:8px;border-radius:8px;text-align:center">
+            <div style="font-size:9px;color:var(--muted)">المدفوع</div>
+            <div style="font-size:13px;font-weight:900;color:#10b981;direction:ltr">${fmt(toBase(totalSAR),0)} ${sym}</div>
+          </div>
+          <div style="background:var(--card2);padding:8px;border-radius:8px;text-align:center">
+            <div style="font-size:9px;color:var(--muted)">حصتي</div>
+            <div style="font-size:13px;font-weight:900;color:var(--accent);direction:ltr">${fmt(toBase(myShareSAR),0)} ${sym}</div>
+          </div>
+          <div style="background:var(--card2);padding:8px;border-radius:8px;text-align:center">
+            <div style="font-size:9px;color:var(--muted)">بنود</div>
+            <div style="font-size:13px;font-weight:900;color:var(--text)">${toArabicDigits(items.length)}</div>
+          </div>
+        </div>
+        ${budget ? `<div style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:4px">
+            <span>الميزانية: ${fmt(toBase(budget),0)} ${sym}</span>
+            <span style="color:${pct>100?'var(--red)':pct>80?'#f59e0b':'#10b981'}">${toArabicDigits(Math.round(pct))}%</span>
+          </div>
+          <div style="background:var(--card2);height:6px;border-radius:3px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:${pct>100?'var(--red)':pct>80?'#f59e0b':'#10b981'};transition:width .3s"></div>
+          </div>
+        </div>` : ''}
+        <div style="text-align:center;font-size:10px;color:var(--accent);margin-top:8px">اضغط للتفاصيل ›</div>
+      </div>`;
+    }).join('');
+  };
+
+  window.saveWedding = function() {
+    const name = (document.getElementById('wdName').value||'').trim();
+    const date = document.getElementById('wdDate').value;
+    const budget = safeParseFloat(document.getElementById('wdBudget').value);
+    if (!name) { showAlert('اكتب اسم الفرح', 'error'); return; }
+    weddings.unshift({
+      id: 'wd_' + Date.now(),
+      name, date, budget, createdAt: Date.now()
+    });
+    saveWeddings();
+    ['wdName','wdDate','wdBudget'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    renderWeddings();
+    updateMenuV17Counts();
+    if (typeof showToast === 'function') showToast('✅ تم إنشاء ملف الفرح', 'success');
+  };
+
+  window.delWedding = function(id) {
+    if (!confirm('حذف الفرح وكل بنوده؟')) return;
+    weddings = weddings.filter(w => w.id !== id);
+    weddingItems = weddingItems.filter(it => it.weddingId !== id);
+    saveWeddings(); saveWeddingItems();
+    renderWeddings();
+    updateMenuV17Counts();
+  };
+
+  window.__currentWeddingId = null;
+
+  window.openWeddingDetail = function(id) {
+    const w = weddings.find(x => x.id === id);
+    if (!w) return;
+    window.__currentWeddingId = id;
+    document.getElementById('weddingDetailTitle').textContent = `💍 ${w.name}`;
+    const dt = document.getElementById('wiDate');
+    if (dt && !dt.value) dt.value = new Date().toISOString().split('T')[0];
+    document.getElementById('weddingDetailModal').classList.add('open');
+    renderWeddingDetail();
+  };
+
+  window.renderWeddingDetail = function() {
+    const id = window.__currentWeddingId;
+    if (!id) return;
+    const w = weddings.find(x => x.id === id);
+    const items = weddingItems.filter(it => it.weddingId === id).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    const sym = BASE_LABELS[baseCurrency].sym;
+
+    // Stats by payer
+    const byPayer = { me:0, family:0, bride:0, shared:0 };
+    items.filter(it=>it.status!=='planned').forEach(it => {
+      byPayer[it.payer||'me'] = (byPayer[it.payer||'me']||0) + curToSAR(it.amount, it.currency);
+    });
+    const total = Object.values(byPayer).reduce((a,b)=>a+b, 0);
+
+    let statsHtml = `<div style="background:linear-gradient(135deg,rgba(244,114,182,.10),rgba(244,114,182,.02));border:1px solid rgba(244,114,182,.4);border-radius:14px;padding:14px">
+      <div style="font-size:11px;color:var(--muted);font-weight:700">إجمالي تكلفة الفرح</div>
+      <div style="font-size:24px;font-weight:900;color:#f472b6;direction:ltr;margin:4px 0">${fmt(toBase(total),0)} ${sym}</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:8px;font-size:11px">
+        <div style="background:var(--card2);padding:8px;border-radius:8px;display:flex;justify-content:space-between">
+          <span>👤 أنا</span><span style="font-weight:700;direction:ltr">${fmt(toBase(byPayer.me),0)} ${sym}</span>
+        </div>
+        <div style="background:var(--card2);padding:8px;border-radius:8px;display:flex;justify-content:space-between">
+          <span>👨‍👩‍👧 أهلي</span><span style="font-weight:700;direction:ltr">${fmt(toBase(byPayer.family),0)} ${sym}</span>
+        </div>
+        <div style="background:var(--card2);padding:8px;border-radius:8px;display:flex;justify-content:space-between">
+          <span>👰 العروس</span><span style="font-weight:700;direction:ltr">${fmt(toBase(byPayer.bride),0)} ${sym}</span>
+        </div>
+        <div style="background:var(--card2);padding:8px;border-radius:8px;display:flex;justify-content:space-between">
+          <span>🤝 مشترك</span><span style="font-weight:700;direction:ltr">${fmt(toBase(byPayer.shared),0)} ${sym}</span>
+        </div>
+      </div>
+    </div>`;
+    document.getElementById('weddingDetailStats').innerHTML = statsHtml;
+
+    // List
+    const el = document.getElementById('weddingDetailList');
+    if (!items.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div>ابدأ بإضافة البنود من تحت</div>`;
+      return;
+    }
+    const PAYERS = {me:'👤 أنا',family:'👨‍👩‍👧 أهلي',bride:'👰 العروس',shared:'🤝 مشترك'};
+    const STATUS = {paid:{l:'مدفوع',c:'#10b981'},planned:{l:'مخطط',c:'#9ca3af'},partial:{l:'جزئي',c:'#f59e0b'}};
+    el.innerHTML = items.map(it => {
+      const cat = WEDDING_CATS[it.category] || WEDDING_CATS.other;
+      const st = STATUS[it.status||'paid'];
+      return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px">${cat.e} ${esc(it.name||cat.l)}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">${cat.l} · ${esc(it.date||'')} · ${PAYERS[it.payer||'me']}</div>
+            ${it.note?`<div style="font-size:10px;color:var(--muted);margin-top:2px">📝 ${esc(it.note)}</div>`:''}
+            <span style="background:${st.c}20;color:${st.c};padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;margin-top:4px;display:inline-block">${st.l}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="font-weight:900;font-size:13px;direction:ltr">${fmt(it.amount,0)} ${SYM[it.currency]||it.currency}</div>
+            <button onclick="delWeddingItem('${it.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 4px">✕</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  };
+
+  window.saveWeddingItem = function() {
+    const id = window.__currentWeddingId;
+    if (!id) return;
+    const category = document.getElementById('wiCategory').value;
+    const name = (document.getElementById('wiName').value||'').trim();
+    const amount = safeParseFloat(document.getElementById('wiAmount').value);
+    const currency = document.getElementById('wiCurrency').value;
+    const date = document.getElementById('wiDate').value;
+    const payer = document.getElementById('wiPayer').value;
+    const status = document.getElementById('wiStatus').value;
+    const note = (document.getElementById('wiNote').value||'').trim();
+
+    if (amount <= 0) { showAlert('اكتب المبلغ', 'error'); return; }
+
+    const itemId = 'wi_' + Date.now();
+    weddingItems.unshift({
+      id: itemId, weddingId: id, category, name, amount, currency,
+      date, payer, status, note, createdAt: Date.now()
+    });
+    saveWeddingItems();
+
+    // Create transaction only if I'm the payer and status is paid/partial
+    if ((payer === 'me' || payer === 'shared') && status !== 'planned') {
+      const cat = WEDDING_CATS[category];
+      const w = weddings.find(x => x.id === id);
+      const rate = currency === 'SAR' ? 1 : (currency === 'EGP' ? rates.EGP : rates[currency]);
+      const txAmount = payer === 'shared' ? amount/2 : amount;
+      txs.unshift({
+        id: 'tx_wd_' + Date.now(),
+        type: 'expense',
+        name: `💍 ${w?.name||'الفرح'}: ${cat.e} ${name||cat.l}`,
+        amount: txAmount, currency, rate, amountSAR: curToSAR(txAmount, currency),
+        cat: 'مناسبات',
+        date: date || new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().slice(0,5),
+        note: payer==='shared'?'(50% من تكلفة مشتركة)':'',
+        account: accounts[0]?.id,
+        weddingItemId: itemId
+      });
+      saveData();
+    }
+
+    ['wiName','wiAmount','wiNote'].forEach(fid => {
+      const el = document.getElementById(fid); if (el) el.value = '';
+    });
+
+    renderWeddingDetail();
+    if (typeof renderAll === 'function') renderAll();
+    updateMenuV17Counts();
+    if (typeof showToast === 'function') showToast('✅ تم إضافة البند', 'success');
+  };
+
+  window.delWeddingItem = function(itemId) {
+    if (!confirm('حذف البند؟')) return;
+    weddingItems = weddingItems.filter(it => it.id !== itemId);
+    txs = txs.filter(t => t.weddingItemId !== itemId);
+    saveWeddingItems(); saveData();
+    renderWeddingDetail();
+    if (typeof renderAll === 'function') renderAll();
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // PART F — REDESIGNED MENU (CARD GRID)
+  // ─────────────────────────────────────────────────────────────
+  function injectMenuStyles() {
+    if (document.getElementById('v17MenuStyles')) return;
+    const css = `
+      .v17-menu-search {
+        background: var(--card2);
+        border: 1.5px solid var(--border);
+        border-radius: 14px;
+        padding: 11px 14px;
+        margin-bottom: 14px;
+        font-family: 'Cairo', sans-serif;
+        font-size: 13px;
+        color: var(--text);
+        width: 100%;
+        outline: none;
+        transition: border-color .15s;
+      }
+      .v17-menu-search:focus { border-color: var(--accent); }
+      .v17-menu-section {
+        font-size: 11px; font-weight: 800; color: var(--muted);
+        margin: 14px 4px 8px; letter-spacing: .5px;
+      }
+      .v17-menu-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      .v17-menu-card {
+        background: var(--card);
+        border: 1.5px solid var(--border);
+        border-radius: 14px;
+        padding: 14px 12px;
+        cursor: pointer;
+        text-align: right;
+        transition: transform .12s, border-color .15s, box-shadow .15s;
+        -webkit-tap-highlight-color: transparent;
+        position: relative;
+        overflow: hidden;
+        min-height: 92px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .v17-menu-card:active { transform: scale(0.97); }
+      .v17-menu-card:hover { border-color: var(--accent); }
+      .v17-menu-card .v17-icon {
+        font-size: 22px; line-height: 1;
+        margin-bottom: 6px;
+        display: flex; align-items: center; justify-content: space-between;
+      }
+      .v17-menu-card .v17-badge {
+        background: var(--accent); color: #0d1117;
+        font-size: 10px; font-weight: 900;
+        padding: 2px 6px; border-radius: 8px;
+        min-width: 18px; text-align: center;
+      }
+      .v17-menu-card .v17-badge.zero {
+        background: var(--card2); color: var(--muted);
+      }
+      .v17-menu-card .v17-title {
+        font-weight: 900; font-size: 13px;
+        color: var(--text); line-height: 1.3;
+      }
+      .v17-menu-card .v17-sub {
+        font-size: 10px; color: var(--muted);
+        margin-top: 2px; line-height: 1.4;
+      }
+      .v17-menu-card[data-cat="vehicles"] { border-color: rgba(245,158,11,.4); }
+      .v17-menu-card[data-cat="vehicles"]:hover { border-color: #f59e0b; }
+      .v17-menu-card[data-cat="weddings"] { border-color: rgba(244,114,182,.4); }
+      .v17-menu-card[data-cat="weddings"]:hover { border-color: #f472b6; }
+      .v17-menu-card[data-cat="finance"]:hover { border-color: var(--green); }
+      .v17-menu-card[data-cat="commitments"]:hover { border-color: #f59e0b; }
+      .v17-menu-card.hide { display: none; }
+      .v17-menu-empty {
+        text-align: center; color: var(--muted);
+        padding: 40px 20px; font-size: 13px;
+      }
+      @media (max-width: 360px) {
+        .v17-menu-card { padding: 12px 10px; }
+        .v17-menu-card .v17-icon { font-size: 20px; }
+        .v17-menu-card .v17-title { font-size: 12px; }
+      }
+    `;
+    const style = document.createElement('style');
+    style.id = 'v17MenuStyles';
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
+
+  // Define menu structure
+  const MENU_STRUCTURE = [
+    {
+      section: '💰 الأساسيات',
+      cat: 'finance',
+      items: [
+        { id:'accounts', icon:'🏦', title:'المحافظ', sub:'كل أموالك في مكان واحد', modal:'accountsModal', render:'renderAccounts', countKey:'menuAccCount' },
+        { id:'goals', icon:'🎯', title:'أهداف الادخار', sub:'وفّر للحاجات الكبيرة', modal:'goalsModal', render:'renderGoals', countKey:'menuGoalCount' },
+        { id:'subs', icon:'📅', title:'الاشتراكات', sub:'Netflix, Spotify, إلخ', modal:'subsModal', render:'renderSubs', countKey:'menuSubCount' },
+        { id:'bills', icon:'🏠', title:'فواتير المنزل', sub:'كهرباء، ماء، إنترنت', modal:'billsModal', render:'renderBills', countKey:'menuBillCount' }
+      ]
+    },
+    {
+      section: '🔄 الالتزامات',
+      cat: 'commitments',
+      items: [
+        { id:'debts', icon:'💸', title:'الديون', sub:'تسلف ودين', modal:'debtsModal', render:'renderDebts', countKey:'menuDebtCount' },
+        { id:'installments', icon:'💳', title:'الأقساط', sub:'موبايل، أثاث، عربية', modal:'installmentsModal', render:'renderInstallments', countKey:'menuInstCount' },
+        { id:'jameya', icon:'🤝', title:'الجمعية', sub:'تتبع الدفع والقبض', modal:'jameyaModal', render:'renderJameya', countKey:'menuJamCount' },
+        { id:'orders', icon:'📦', title:'الطلبات أونلاين', sub:'أمازون، نون، شي إن', modal:'ordersModal', render:'renderOrders', countKey:'menuOrdersCount' }
+      ]
+    },
+    {
+      section: '🎯 المشاريع الكبيرة',
+      cat: 'projects',
+      items: [
+        { id:'vehicles', icon:'🚗', title:'السيارات', sub:'بنزين، صيانة، تأمين', modal:'vehiclesModal', render:'renderVehicles', countKey:'menuVehCount', cat:'vehicles' },
+        { id:'weddings', icon:'💍', title:'الفرح', sub:'شبكة، مهر، جهاز', modal:'weddingsModal', render:'renderWeddings', countKey:'menuWedCount', cat:'weddings' },
+        { id:'occasions', icon:'🎁', title:'العيدية والمناسبات', sub:'عيد، فرح غيرك، عزا', modal:'occasionsModal', render:'renderOccasions', countKey:'menuOccCount' }
+      ]
+    },
+    {
+      section: '🛠️ أدوات',
+      cat: 'tools',
+      items: [
+        { id:'calc', icon:'🔄', title:'حاسبة العملات', sub:'حوّل بسرعة', modal:'calcModal', render:'openCalc' },
+        { id:'dualSal', icon:'💼', title:'الراتب بعملتين', sub:'لو بتقبض من بلدين', modal:'dualSalaryModal', render:'renderDualSalary', countKey:'menuDualSal' },
+        { id:'wrapped', icon:'🎵', title:'تقرير السنة', sub:'ملخص سنوي احتفالي', custom:'showWrappedReport' },
+        { id:'season', icon:'🌙', title:'الثيمات الموسمية', sub:'رمضان، عيد، شتاء', custom:'openSeasonTheme' }
+      ]
+    }
+  ];
+
+  function buildNewMenuHTML() {
+    let html = `<input type="text" class="v17-menu-search" id="v17MenuSearch" placeholder="🔍 ابحث عن ميزة..." oninput="filterV17Menu(this.value)"/>`;
+    MENU_STRUCTURE.forEach(sec => {
+      html += `<div class="v17-menu-section" data-section="${sec.cat}">${sec.section}</div>`;
+      html += `<div class="v17-menu-grid" data-section-grid="${sec.cat}">`;
+      sec.items.forEach(it => {
+        const onclick = it.custom
+          ? `document.getElementById('menuModal').classList.remove('open');${it.custom}()`
+          : `closeAndOpen('menuModal','${it.modal}',${it.render})`;
+        html += `<div class="v17-menu-card" data-cat="${it.cat||sec.cat}" data-search="${it.title} ${it.sub}" onclick="${onclick}">
+          <div class="v17-icon">
+            <span>${it.icon}</span>
+            ${it.countKey ? `<span class="v17-badge zero" id="${it.countKey}_v17">٠</span>` : ''}
+          </div>
+          <div>
+            <div class="v17-title">${it.title}</div>
+            <div class="v17-sub">${it.sub}</div>
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+    return html;
+  }
+
+  function rebuildMenu() {
+    const menu = document.getElementById('menuModal');
+    if (!menu) return;
+    const sheet = menu.querySelector('.sheet');
+    if (!sheet) return;
+    // Keep handle and title row
+    const handle = sheet.querySelector('.handle');
+    const titleRow = sheet.querySelector('.handle + div');
+    // Remove all current menu rows
+    sheet.querySelectorAll('.menu-row').forEach(r => r.remove());
+    // Remove any old V17 content
+    sheet.querySelectorAll('.v17-menu-search, .v17-menu-section, .v17-menu-grid').forEach(r => r.remove());
+    // Append new structure
+    sheet.insertAdjacentHTML('beforeend', buildNewMenuHTML());
+  }
+
+  window.filterV17Menu = function(q) {
+    q = (q||'').trim().toLowerCase();
+    const cards = document.querySelectorAll('.v17-menu-card');
+    let anyVisible = {};
+    cards.forEach(c => {
+      const txt = (c.dataset.search||'').toLowerCase();
+      const match = !q || txt.includes(q);
+      c.classList.toggle('hide', !match);
+      const sec = c.closest('.v17-menu-grid')?.dataset.sectionGrid;
+      if (match && sec) anyVisible[sec] = true;
+    });
+    // Hide section headers if all cards in it are hidden
+    document.querySelectorAll('.v17-menu-section').forEach(s => {
+      const sec = s.dataset.section;
+      s.style.display = (q && !anyVisible[sec]) ? 'none' : '';
+    });
+    document.querySelectorAll('.v17-menu-grid').forEach(g => {
+      const sec = g.dataset.sectionGrid;
+      g.style.display = (q && !anyVisible[sec]) ? 'none' : '';
+    });
+  };
+
+  // Update count badges (V17 IDs)
+  window.updateMenuV17Counts = function() {
+    const setBadge = (key, count, label) => {
+      const el = document.getElementById(key + '_v17');
+      if (!el) return;
+      if (count > 0) {
+        el.textContent = toArabicDigits(count);
+        el.classList.remove('zero');
+      } else {
+        el.textContent = '٠';
+        el.classList.add('zero');
+      }
+      // Optional: tooltip via title attr
+      if (label) el.title = label;
+    };
+    try {
+      setBadge('menuAccCount', accounts?.length || 0);
+      setBadge('menuGoalCount', goals?.filter(g=>!g.achieved).length || 0);
+      setBadge('menuSubCount', recurringTxs?.filter(r=>r.type==='expense').length || 0);
+      setBadge('menuBillCount', (typeof bills!=='undefined'?bills:[]).length);
+      setBadge('menuDebtCount', debts?.filter(d=>!d.cleared).length || 0);
+      setBadge('menuInstCount', installments?.filter(i=>{const paid=i.paidMonths||0;return paid<i.months;}).length || 0);
+      setBadge('menuJamCount', jameya?.length || 0);
+      setBadge('menuOrdersCount', orders?.filter(o=>o.status==='pending').length || 0);
+      setBadge('menuVehCount', vehicles?.length || 0);
+      setBadge('menuWedCount', weddings?.length || 0);
+      setBadge('menuOccCount', occasions?.length || 0);
+    } catch(e) { console.warn('updateMenuV17Counts:', e); }
+  };
+
+  // Hook openMenu to refresh counts (V17 fully replaces the legacy openMenu
+  // since we removed the old menu rows that the legacy version was updating)
+  window.openMenu = function() {
+    document.getElementById('menuModal').classList.add('open');
+    setTimeout(() => {
+      updateMenuV17Counts();
+      const search = document.getElementById('v17MenuSearch');
+      if (search) search.value = '';
+      filterV17Menu('');
+    }, 50);
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // PART G — INITIALIZATION
+  // ─────────────────────────────────────────────────────────────
+  function init() {
+    injectMenuStyles();
+    injectVehiclesModal();
+    injectWeddingsModal();
+    rebuildMenu();
+    updateMenuV17Counts();
+    // Update V17 badges whenever data changes
+    const _origRenderAll = window.renderAll;
+    window.renderAll = function() {
+      if (_origRenderAll) _origRenderAll.apply(this, arguments);
+      updateMenuV17Counts();
+    };
+  }
+
+  // Wait for the rest of the app to initialize
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(init, 300));
+  } else {
+    setTimeout(init, 300);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // PART H — BACKUP/RESTORE (include vehicles + weddings)
+  // ─────────────────────────────────────────────────────────────
+  // Wrap exportJSON to add V17 fields. We do this by replacing the function
+  // entirely with a copy that includes our new data fields.
+  window.exportJSON = function() {
+    const data = {
+      txs: typeof txs !== 'undefined' ? txs : [],
+      savings: typeof savings !== 'undefined' ? savings : [],
+      rates, budgets,
+      accounts: typeof accounts !== 'undefined' ? accounts : [],
+      goals: typeof goals !== 'undefined' ? goals : [],
+      debts: typeof debts !== 'undefined' ? debts : [],
+      recurringTxs: typeof recurringTxs !== 'undefined' ? recurringTxs : [],
+      installments: typeof installments !== 'undefined' ? installments : [],
+      jameya: typeof jameya !== 'undefined' ? jameya : [],
+      occasions: typeof occasions !== 'undefined' ? occasions : [],
+      orders: typeof orders !== 'undefined' ? orders : [],
+      dualSalary: typeof dualSalary !== 'undefined' ? dualSalary : null,
+      rateMeta: typeof rateMeta !== 'undefined' ? rateMeta : null,
+      bills: typeof bills !== 'undefined' ? bills : [],
+      investments: typeof investments !== 'undefined' ? investments : [],
+      netWorthHistory: typeof netWorthHistory !== 'undefined' ? netWorthHistory : [],
+      priceAlerts: typeof priceAlerts !== 'undefined' ? priceAlerts : [],
+      // V17 fields
+      vehicles: vehicles || [],
+      vehicleLogs: vehicleLogs || [],
+      weddings: weddings || [],
+      weddingItems: weddingItems || [],
+      // metadata
+      travelMode: localStorage.getItem('msarifyi_travel_mode') || null,
+      ramadanMode: localStorage.getItem('msarifyi_ramadan_mode') || null,
+      hajjBudget: typeof hajjBudget !== 'undefined' ? hajjBudget : null,
+      goldHistory: typeof goldHistory !== 'undefined' ? goldHistory : [],
+      baseCurrency: typeof baseCurrency !== 'undefined' ? baseCurrency : 'SAR',
+      theme: localStorage.getItem('msarifyi_theme') || 'dark',
+      schemaVersion: 17,
+      version: 17,
+      exported: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json;charset=utf-8'});
+    if (typeof downloadBlob === 'function') {
+      downloadBlob(blob, `masarefy_backup_${new Date().toISOString().split('T')[0]}.json`);
+    } else {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `masarefy_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+    if (typeof showToast === 'function') showToast('✅ تم تصدير النسخة الاحتياطية الكاملة', 'success');
+  };
+
+  const _origRestoreV17 = window.restoreBackup;
+  window.restoreBackup = function(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    // Read file ourselves to extract V17 fields, then call original
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.vehicles) { vehicles = data.vehicles; saveVehicles(); }
+        if (data.vehicleLogs) { vehicleLogs = data.vehicleLogs; saveVehicleLogs(); }
+        if (data.weddings) { weddings = data.weddings; saveWeddings(); }
+        if (data.weddingItems) { weddingItems = data.weddingItems; saveWeddingItems(); }
+      } catch(e) { console.warn('V17 restore extract:', e); }
+    };
+    reader.onerror = () => {};
+    reader.readAsText(file);
+    // Call original handler
+    if (_origRestoreV17) _origRestoreV17.apply(this, [event]);
+  };
+
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// V18 — CAR (سيارة) + WEDDING (فرح) + BUG FIXES
+// ═══════════════════════════════════════════════════════════════
+(function v18Init() {
+
+  // ─────────────────────────────────────────────────────────────
+  // PART A — STORAGE-SAFE HELPERS (bug fix #1)
+  // ─────────────────────────────────────────────────────────────
+  function safeGetLS(key, defaultVal) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw == null) return defaultVal;
+      return JSON.parse(raw);
+    } catch (e) {
+      console.warn('localStorage read failed for', key, e.message);
+      return defaultVal;
+    }
+  }
+  function safeSetLS(key, val) {
+    try {
+      localStorage.setItem(key, JSON.stringify(val));
+      return true;
+    } catch (e) {
+      // Quota exceeded or storage disabled
+      console.warn('localStorage write failed for', key, e.message);
+      if (typeof showToast === 'function') {
+        showToast('⚠️ التخزين المحلي ممتلئ — صدّر نسخة احتياطية وامسح بيانات قديمة', 'error');
+      }
+      return false;
+    }
+  }
+  // Safe number parse (bug fix #2)
+  function safeParse(v, def = 0) {
+    if (v == null || v === '') return def;
+    const n = parseFloat(v);
+    return isNaN(n) ? def : n;
+  }
+  window.safeGetLS = safeGetLS;
+  window.safeSetLS = safeSetLS;
+  window.safeParse = safeParse;
+
+  // ─────────────────────────────────────────────────────────────
+  // PART B — CAR MODULE (السيارة)
+  // ─────────────────────────────────────────────────────────────
+
+  // Storage
+  window.cars = safeGetLS('msarifyi_cars', []);
+  window.carExpenses = safeGetLS('msarifyi_car_expenses', []);
+  window.saveCars = function() { safeSetLS('msarifyi_cars', cars); };
+  window.saveCarExpenses = function() { safeSetLS('msarifyi_car_expenses', carExpenses); };
+
+  // Expense type metadata
+  const CAR_EXP_TYPES = {
+    fuel: { name: 'بنزين', emoji: '⛽', color: '#f59e0b' },
+    oil: { name: 'زيت', emoji: '🛢️', color: '#8b5cf6' },
+    service: { name: 'صيانة دورية', emoji: '🔧', color: '#3b82f6' },
+    repair: { name: 'تصليح', emoji: '🛠️', color: '#ef4444' },
+    tires: { name: 'إطارات', emoji: '⚫', color: '#6b7280' },
+    insurance: { name: 'تأمين', emoji: '🛡️', color: '#10b981' },
+    license: { name: 'رخصة/تراخيص', emoji: '📋', color: '#0891b2' },
+    fines: { name: 'مخالفات', emoji: '🚨', color: '#dc2626' },
+    parking: { name: 'موقف/جراج', emoji: '🅿️', color: '#7c3aed' },
+    wash: { name: 'غسيل', emoji: '💧', color: '#06b6d4' },
+    accessories: { name: 'إكسسوارات', emoji: '✨', color: '#ec4899' },
+    other: { name: 'أخرى', emoji: '🚗', color: '#6b7280' }
+  };
+  window.CAR_EXP_TYPES = CAR_EXP_TYPES;
+
+  // Form helpers
+  window.onCarSelectChange = function() {
+    const sel = document.getElementById('cExpCarId');
+    if (!sel) return;
+    if (sel.value === '__new__') {
+      const newCarRow = document.getElementById('newCarRow');
+      if (newCarRow) newCarRow.style.display = 'block';
+    } else {
+      const newCarRow = document.getElementById('newCarRow');
+      if (newCarRow) newCarRow.style.display = 'none';
+    }
+  };
+
+  // Build car selector options
+  function buildCarSelector() {
+    const sel = document.getElementById('cExpCarId');
+    if (!sel) return;
+    const current = sel.value;
+    let html = '';
+    cars.forEach(c => {
+      html += `<option value="${esc(c.id)}">${esc(c.emoji || '🚗')} ${esc(c.name)}${c.plate ? ` (${esc(c.plate)})` : ''}</option>`;
+    });
+    html += '<option value="__new__">➕ سيارة جديدة</option>';
+    sel.innerHTML = html;
+    if (current && [...sel.options].some(o => o.value === current)) sel.value = current;
+  }
+
+  // Render cars list and dashboard
+  window.renderCars = function() {
+    buildCarSelector();
+    const list = document.getElementById('carsList');
+    if (!list) return;
+
+    // Set defaults
+    const dEl = document.getElementById('cExpDate');
+    if (dEl && !dEl.value) dEl.value = new Date().toISOString().split('T')[0];
+
+    if (!cars.length) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">🚗</div>سجل سيارتك من تحت<br><span style="font-size:11px">وابدأ تتبع البنزين، الزيت، والصيانة</span></div>`;
+      return;
+    }
+
+    const sym = BASE_LABELS[baseCurrency].sym;
+    let html = '';
+
+    cars.forEach(car => {
+      const carExps = carExpenses.filter(e => e.carId === car.id);
+      const totalSAR = carExps.reduce((s, e) => s + (safeParse(e.amountSAR) || 0), 0);
+
+      // This month
+      const now = new Date();
+      const thisMonthKey = now.toISOString().slice(0, 7);
+      const thisMonth = carExps.filter(e => (e.date || '').slice(0, 7) === thisMonthKey);
+      const monthTotalSAR = thisMonth.reduce((s, e) => s + (safeParse(e.amountSAR) || 0), 0);
+
+      // Fuel-only this month (most common metric)
+      const fuelThisMonth = thisMonth.filter(e => e.expType === 'fuel').reduce((s, e) => s + (safeParse(e.amountSAR) || 0), 0);
+
+      // Last service date
+      const lastService = carExps.filter(e => e.expType === 'service' || e.expType === 'oil')
+        .sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+
+      // Breakdown by type
+      const byType = {};
+      carExps.forEach(e => {
+        byType[e.expType] = (byType[e.expType] || 0) + (safeParse(e.amountSAR) || 0);
+      });
+      const sortedTypes = Object.entries(byType).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+      html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span style="font-size:24px">${esc(car.emoji || '🚗')}</span>
+              <div>
+                <div style="font-weight:900;font-size:15px">${esc(car.name)}</div>
+                ${car.plate ? `<div style="font-size:11px;color:var(--muted);direction:ltr">${esc(car.plate)}</div>` : ''}
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:4px">
+            <button class="feat-mini-btn" onclick="editCar('${esc(car.id)}')" style="padding:4px 8px;font-size:11px">✎</button>
+            <button class="feat-mini-btn danger" onclick="delCar('${esc(car.id)}')" style="padding:4px 8px;font-size:11px">✕</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">
+          <div style="background:var(--card2);border-radius:10px;padding:8px;text-align:center">
+            <div style="font-size:10px;color:var(--muted)">الإجمالي</div>
+            <div style="font-size:13px;font-weight:900;color:var(--text);direction:ltr">${fmt(toBase(totalSAR), 0)} ${sym}</div>
+          </div>
+          <div style="background:var(--card2);border-radius:10px;padding:8px;text-align:center">
+            <div style="font-size:10px;color:var(--muted)">الشهر ده</div>
+            <div style="font-size:13px;font-weight:900;color:var(--accent);direction:ltr">${fmt(toBase(monthTotalSAR), 0)} ${sym}</div>
+          </div>
+          <div style="background:var(--card2);border-radius:10px;padding:8px;text-align:center">
+            <div style="font-size:10px;color:var(--muted)">⛽ بنزين/شهر</div>
+            <div style="font-size:13px;font-weight:900;color:#f59e0b;direction:ltr">${fmt(toBase(fuelThisMonth), 0)} ${sym}</div>
+          </div>
+        </div>
+
+        ${sortedTypes.length ? `<div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:6px">أكثر المصروفات</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">
+          ${sortedTypes.map(([type, amt]) => {
+            const meta = CAR_EXP_TYPES[type] || CAR_EXP_TYPES.other;
+            return `<span style="background:${meta.color}22;color:${meta.color};padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700">${meta.emoji} ${meta.name}: ${fmt(toBase(amt), 0)} ${sym}</span>`;
+          }).join('')}
+        </div>` : ''}
+
+        ${lastService ? `<div style="font-size:11px;color:var(--muted);padding-top:8px;border-top:1px dashed var(--border)">
+          🔧 آخر صيانة/زيت: ${esc(lastService.date || '—')} — ${fmt(safeParse(lastService.amount), 0)} ${esc(lastService.currency || 'SAR')}
+        </div>` : '<div style="font-size:11px;color:var(--muted);padding-top:8px;border-top:1px dashed var(--border);text-align:center">لم تُسجَّل صيانة بعد</div>'}
+
+        <button onclick="showCarHistory('${esc(car.id)}')" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px;color:var(--accent);font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;margin-top:8px">📜 سجل المصروفات (${toArabicDigits(carExps.length)})</button>
+      </div>`;
+    });
+
+    list.innerHTML = html;
+  };
+
+  window.showCarHistory = function(carId) {
+    const car = cars.find(c => c.id === carId);
+    if (!car) return;
+    const exps = carExpenses.filter(e => e.carId === carId)
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    const sym = BASE_LABELS[baseCurrency].sym;
+    let html = `<div style="font-size:13px;font-weight:900;margin-bottom:8px">📜 سجل ${esc(car.name)}</div>`;
+    if (!exps.length) {
+      html += '<div class="empty"><div class="empty-icon">📭</div>لا توجد مصروفات بعد</div>';
+    } else {
+      exps.forEach(e => {
+        const meta = CAR_EXP_TYPES[e.expType] || CAR_EXP_TYPES.other;
+        html += `<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:13px"><span style="color:${meta.color}">${meta.emoji}</span> ${meta.name}${e.note ? ` — ${esc(e.note)}` : ''}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(e.date || '—')}${e.km ? ` · ${toArabicDigits(e.km)} كم` : ''}</div>
+          </div>
+          <div style="text-align:left">
+            <div style="font-weight:900;direction:ltr;font-size:13px">${fmt(safeParse(e.amount), 0)} ${esc(e.currency || 'SAR')}</div>
+            <button onclick="delCarExpense('${esc(e.id)}')" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 6px">✕</button>
+          </div>
+        </div>`;
+      });
+    }
+
+    // Show in a simple alert-style modal
+    showCustomModal('📜 سجل السيارة', html);
+  };
+
+  // Simple modal for showing content
+  function showCustomModal(title, htmlContent) {
+    let modal = document.getElementById('customDisplayModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'customDisplayModal';
+      modal.className = 'overlay';
+      modal.innerHTML = `<div class="sheet"><div class="handle" onclick="document.getElementById('customDisplayModal').classList.remove('open')"></div>
+        <div id="customDisplayContent" style="max-height:70vh;overflow-y:auto"></div>
+        <button class="export-btn" style="width:100%;margin-top:12px" onclick="document.getElementById('customDisplayModal').classList.remove('open')">إغلاق</button>
+      </div>`;
+      modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('open'); };
+      document.body.appendChild(modal);
+    }
+    modal.querySelector('#customDisplayContent').innerHTML = htmlContent;
+    modal.classList.add('open');
+  }
+  window.showCustomModal = showCustomModal;
+
+  // Save new car expense
+  window.saveCarExpense = function() {
+    let carId = document.getElementById('cExpCarId').value;
+    const expType = document.getElementById('cExpType').value;
+    const amount = safeParse(document.getElementById('cExpAmount').value);
+    const currency = document.getElementById('cExpCurrency').value;
+    const date = document.getElementById('cExpDate').value || new Date().toISOString().split('T')[0];
+    const km = safeParse(document.getElementById('cExpKm').value, null);
+    const note = document.getElementById('cExpNote').value.trim();
+
+    if (!amount || amount <= 0) { showAlert('املأ المبلغ', 'error'); return; }
+
+    // If creating new car
+    if (carId === '__new__') {
+      const newName = document.getElementById('cNewName').value.trim();
+      const newPlate = document.getElementById('cNewPlate').value.trim();
+      if (!newName) { showAlert('اكتب اسم السيارة', 'error'); return; }
+      const id = 'car_' + Date.now();
+      cars.push({ id, name: newName, plate: newPlate, emoji: '🚗', createdAt: Date.now() });
+      saveCars();
+      carId = id;
+    }
+
+    const car = cars.find(c => c.id === carId);
+    if (!car) { showAlert('اختار السيارة', 'error'); return; }
+
+    // Compute SAR amount
+    const rate = currency === 'SAR' ? 1 : (currency === 'EGP' ? rates.EGP : rates[currency]);
+    const amountSAR = currency === 'SAR' ? amount : (currency === 'EGP' ? amount / rates.EGP : amount * rates[currency]);
+
+    const expId = 'cexp_' + Date.now();
+    const meta = CAR_EXP_TYPES[expType] || CAR_EXP_TYPES.other;
+
+    carExpenses.unshift({
+      id: expId, carId, expType, amount, currency, rate, amountSAR,
+      date, km, note, createdAt: Date.now()
+    });
+    saveCarExpenses();
+
+    // Also create a transaction
+    txs.unshift({
+      id: 'tx_carexp_' + Date.now(),
+      type: 'expense',
+      name: `${meta.emoji} ${car.name}: ${meta.name}${note ? ' - ' + note : ''}`,
+      amount, currency, rate, amountSAR,
+      cat: 'مواصلات',
+      date,
+      time: new Date().toTimeString().slice(0, 5),
+      note: note || `${meta.name}${km ? ` (${km} كم)` : ''}`,
+      account: accounts[0] && accounts[0].id,
+      recurring: false,
+      carExpenseId: expId
+    });
+    saveData();
+
+    // Reset form
+    ['cExpAmount', 'cExpKm', 'cExpNote', 'cNewName', 'cNewPlate'].forEach(fid => {
+      const el = document.getElementById(fid); if (el) el.value = '';
+    });
+
+    renderCars();
+    if (typeof renderAll === 'function') renderAll();
+    if (typeof updateMenuCounts === 'function') updateMenuCounts();
+    updateCarMenuCount();
+    if (typeof showToast === 'function') showToast(`✅ ${meta.name} تسجل لـ ${car.name}`, 'success');
+  };
+
+  window.delCarExpense = function(id) {
+    if (!confirm('حذف هذا المصروف؟')) return;
+    carExpenses = carExpenses.filter(e => e.id !== id);
+    txs = txs.filter(t => t.carExpenseId !== id);
+    saveCarExpenses(); saveData();
+    document.getElementById('customDisplayModal').classList.remove('open');
+    renderCars();
+    if (typeof renderAll === 'function') renderAll();
+    if (typeof showToast === 'function') showToast('🗑️ تم الحذف', 'info');
+  };
+
+  window.editCar = function(carId) {
+    const car = cars.find(c => c.id === carId);
+    if (!car) return;
+    const newName = prompt('اسم السيارة:', car.name);
+    if (newName == null) return;
+    if (!newName.trim()) { showAlert('اكتب اسم السيارة', 'error'); return; }
+    const newPlate = prompt('رقم اللوحة (اختياري):', car.plate || '');
+    if (newPlate == null) return;
+    car.name = newName.trim();
+    car.plate = newPlate.trim();
+    saveCars();
+    renderCars();
+    if (typeof showToast === 'function') showToast('✅ تم التعديل', 'success');
+  };
+
+  window.delCar = function(carId) {
+    const car = cars.find(c => c.id === carId);
+    if (!car) return;
+    const expCount = carExpenses.filter(e => e.carId === carId).length;
+    if (!confirm(`حذف ${car.name}؟ (هتنحذف معاها ${expCount} مصروف وكل الحركات المرتبطة)`)) return;
+    cars = cars.filter(c => c.id !== carId);
+    const removedExpIds = carExpenses.filter(e => e.carId === carId).map(e => e.id);
+    carExpenses = carExpenses.filter(e => e.carId !== carId);
+    txs = txs.filter(t => !removedExpIds.includes(t.carExpenseId));
+    saveCars(); saveCarExpenses(); saveData();
+    renderCars();
+    if (typeof renderAll === 'function') renderAll();
+    if (typeof updateMenuCounts === 'function') updateMenuCounts();
+    updateCarMenuCount();
+    if (typeof showToast === 'function') showToast('🗑️ تم حذف السيارة', 'info');
+  };
+
+  // Menu count
+  function updateCarMenuCount() {
+    const el = document.getElementById('menuCarsCount');
+    if (!el) return;
+    const sym = BASE_LABELS[baseCurrency].sym;
+    if (!cars.length) { el.textContent = 'لا توجد سيارات'; return; }
+    const now = new Date();
+    const thisMonthKey = now.toISOString().slice(0, 7);
+    const monthTotal = carExpenses.filter(e => (e.date || '').slice(0, 7) === thisMonthKey)
+      .reduce((s, e) => s + (safeParse(e.amountSAR) || 0), 0);
+    el.textContent = `${toArabicDigits(cars.length)} ${cars.length === 1 ? 'سيارة' : 'سيارات'} · الشهر: ${fmt(toBase(monthTotal), 0)} ${sym}`;
+  }
+  window.updateCarMenuCount = updateCarMenuCount;
+
+  // ─────────────────────────────────────────────────────────────
+  // PART C — WEDDING MODULE (الفرح)
+  // ─────────────────────────────────────────────────────────────
+
+  window.weddings = safeGetLS('msarifyi_weddings', []);
+  window.weddingExpenses = safeGetLS('msarifyi_wedding_expenses', []);
+  window.saveWeddings = function() { safeSetLS('msarifyi_weddings', weddings); };
+  window.saveWeddingExpenses = function() { safeSetLS('msarifyi_wedding_expenses', weddingExpenses); };
+
+  const WED_CATEGORIES = {
+    dowry: { name: 'مهر/شبكة', emoji: '💍', color: '#fbbf24' },
+    apartment: { name: 'شقة', emoji: '🏠', color: '#3b82f6' },
+    furniture: { name: 'أثاث', emoji: '🛋️', color: '#8b5cf6' },
+    appliances: { name: 'أجهزة', emoji: '🍳', color: '#06b6d4' },
+    venue: { name: 'قاعة الفرح', emoji: '🏛️', color: '#ec4899' },
+    photographer: { name: 'مصور', emoji: '📸', color: '#f59e0b' },
+    catering: { name: 'بوفيه/أكل', emoji: '🍽️', color: '#10b981' },
+    decoration: { name: 'تزيين/ورود', emoji: '🌸', color: '#ef4444' },
+    dress: { name: 'فستان/بدلة', emoji: '👗', color: '#d946ef' },
+    makeup: { name: 'كوافير/مكياج', emoji: '💄', color: '#f43f5e' },
+    rings: { name: 'دبل/خواتم', emoji: '💎', color: '#fbbf24' },
+    invitations: { name: 'دعوات', emoji: '✉️', color: '#0891b2' },
+    honeymoon: { name: 'شهر العسل', emoji: '✈️', color: '#7c3aed' },
+    contracts: { name: 'كاتب كتاب/توثيق', emoji: '📜', color: '#64748b' },
+    gifts: { name: 'هدايا/شبكات', emoji: '🎁', color: '#dc2626' },
+    other: { name: 'أخرى', emoji: '💐', color: '#6b7280' }
+  };
+  window.WED_CATEGORIES = WED_CATEGORIES;
+
+  window.onWedSelectChange = function() {
+    const sel = document.getElementById('wExpWedId');
+    if (!sel) return;
+    const newRow = document.getElementById('newWedRow');
+    if (newRow) newRow.style.display = sel.value === '__new__' ? 'block' : 'none';
+  };
+
+  function buildWeddingSelector() {
+    const sel = document.getElementById('wExpWedId');
+    if (!sel) return;
+    const current = sel.value;
+    let html = '';
+    weddings.forEach(w => {
+      html += `<option value="${esc(w.id)}">${esc(w.name)}</option>`;
+    });
+    html += '<option value="__new__">➕ فرح جديد</option>';
+    sel.innerHTML = html;
+    if (current && [...sel.options].some(o => o.value === current)) sel.value = current;
+  }
+
+  window.renderWeddings = function() {
+    buildWeddingSelector();
+    const list = document.getElementById('weddingsList');
+    if (!list) return;
+
+    const dEl = document.getElementById('wExpDate');
+    if (dEl && !dEl.value) dEl.value = new Date().toISOString().split('T')[0];
+
+    if (!weddings.length) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">💍</div>سجل فرحك من تحت<br><span style="font-size:11px">وتابع كل تكاليفه في مكان واحد</span></div>`;
+      return;
+    }
+
+    const sym = BASE_LABELS[baseCurrency].sym;
+    let html = '';
+
+    weddings.forEach(wed => {
+      const wedExps = weddingExpenses.filter(e => e.weddingId === wed.id);
+      const totalSAR = wedExps.reduce((s, e) => s + (safeParse(e.amountSAR) || 0), 0);
+      const budgetSAR = wed.budgetSAR ? safeParse(wed.budgetSAR) : 0;
+      const remainingSAR = budgetSAR - totalSAR;
+      const pct = budgetSAR > 0 ? Math.min(100, (totalSAR / budgetSAR) * 100) : 0;
+
+      // Days until/since wedding
+      let dayLabel = '';
+      let dayColor = 'var(--muted)';
+      if (wed.weddingDate) {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const wDate = new Date(wed.weddingDate); wDate.setHours(0,0,0,0);
+        const diff = Math.round((wDate - today) / 86400000);
+        if (diff > 0) {
+          dayLabel = `باقي ${toArabicDigits(diff)} يوم`;
+          dayColor = diff <= 30 ? 'var(--accent)' : 'var(--muted)';
+        } else if (diff === 0) {
+          dayLabel = '🎉 النهاردة!';
+          dayColor = 'var(--green)';
+        } else {
+          dayLabel = `🎊 من ${toArabicDigits(Math.abs(diff))} يوم`;
+          dayColor = 'var(--green)';
+        }
+      }
+
+      // Breakdown by category
+      const byCat = {};
+      wedExps.forEach(e => { byCat[e.category] = (byCat[e.category] || 0) + (safeParse(e.amountSAR) || 0); });
+      const sortedCats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+
+      const progressColor = pct >= 100 ? 'var(--red)' : pct >= 80 ? '#f59e0b' : 'var(--green)';
+
+      html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+              <span style="font-size:24px">💍</span>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:900;font-size:15px">${esc(wed.name)}</div>
+                ${wed.weddingDate ? `<div style="font-size:10px;color:${dayColor};font-weight:700">📅 ${esc(wed.weddingDate)} — ${dayLabel}</div>` : ''}
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:4px">
+            <button class="feat-mini-btn" onclick="editWedding('${esc(wed.id)}')" style="padding:4px 8px;font-size:11px">✎</button>
+            <button class="feat-mini-btn danger" onclick="delWedding('${esc(wed.id)}')" style="padding:4px 8px;font-size:11px">✕</button>
+          </div>
+        </div>
+
+        ${budgetSAR > 0 ? `<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+            <span style="color:var(--muted)">${fmt(toBase(totalSAR), 0)} / ${fmt(toBase(budgetSAR), 0)} ${sym}</span>
+            <span style="color:${progressColor};font-weight:700">${fmt(pct, 0)}٪</span>
+          </div>
+          <div style="height:8px;background:var(--card2);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${Math.min(100, pct)}%;background:${progressColor};transition:width .3s"></div>
+          </div>
+          <div style="font-size:10px;color:${remainingSAR < 0 ? 'var(--red)' : 'var(--muted)'};margin-top:4px;direction:ltr">
+            ${remainingSAR >= 0 ? `متبقي ${fmt(toBase(remainingSAR), 0)} ${sym}` : `تجاوزت بـ ${fmt(toBase(-remainingSAR), 0)} ${sym}`}
+          </div>
+        </div>` : `<div style="background:var(--card2);border-radius:10px;padding:8px;text-align:center;margin-bottom:10px">
+          <div style="font-size:10px;color:var(--muted)">المصروف الإجمالي</div>
+          <div style="font-size:18px;font-weight:900;color:var(--accent);direction:ltr">${fmt(toBase(totalSAR), 0)} ${sym}</div>
+        </div>`}
+
+        ${sortedCats.length ? `<div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:6px">تفاصيل الإنفاق</div>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
+          ${sortedCats.slice(0, 6).map(([cat, amt]) => {
+            const meta = WED_CATEGORIES[cat] || WED_CATEGORIES.other;
+            const catPct = totalSAR > 0 ? (amt / totalSAR) * 100 : 0;
+            return `<div style="display:flex;align-items:center;gap:6px;font-size:11px">
+              <span style="min-width:90px">${meta.emoji} ${meta.name}</span>
+              <div style="flex:1;height:6px;background:var(--card2);border-radius:3px;overflow:hidden">
+                <div style="height:100%;width:${catPct}%;background:${meta.color}"></div>
+              </div>
+              <span style="min-width:60px;text-align:left;direction:ltr;font-weight:700">${fmt(toBase(amt), 0)} ${sym}</span>
+            </div>`;
+          }).join('')}
+        </div>` : ''}
+
+        <button onclick="showWeddingHistory('${esc(wed.id)}')" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px;color:var(--accent);font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer">📜 السجل الكامل (${toArabicDigits(wedExps.length)} حركة)</button>
+      </div>`;
+    });
+
+    list.innerHTML = html;
+  };
+
+  window.showWeddingHistory = function(wedId) {
+    const wed = weddings.find(w => w.id === wedId);
+    if (!wed) return;
+    const exps = weddingExpenses.filter(e => e.weddingId === wedId)
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    let html = `<div style="font-size:13px;font-weight:900;margin-bottom:8px">📜 سجل ${esc(wed.name)}</div>`;
+    if (!exps.length) {
+      html += '<div class="empty"><div class="empty-icon">📭</div>لا توجد مصروفات بعد</div>';
+    } else {
+      exps.forEach(e => {
+        const meta = WED_CATEGORIES[e.category] || WED_CATEGORIES.other;
+        html += `<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:13px"><span style="color:${meta.color}">${meta.emoji}</span> ${meta.name}${e.note ? ` — ${esc(e.note)}` : ''}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(e.date || '—')}</div>
+          </div>
+          <div style="text-align:left">
+            <div style="font-weight:900;direction:ltr;font-size:13px">${fmt(safeParse(e.amount), 0)} ${esc(e.currency || 'SAR')}</div>
+            <button onclick="delWeddingExpense('${esc(e.id)}')" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 6px">✕</button>
+          </div>
+        </div>`;
+      });
+    }
+    showCustomModal('💍 سجل الفرح', html);
+  };
+
+  window.saveWeddingExpense = function() {
+    let wedId = document.getElementById('wExpWedId').value;
+    const category = document.getElementById('wExpCategory').value;
+    const amount = safeParse(document.getElementById('wExpAmount').value);
+    const currency = document.getElementById('wExpCurrency').value;
+    const date = document.getElementById('wExpDate').value || new Date().toISOString().split('T')[0];
+    const note = document.getElementById('wExpNote').value.trim();
+
+    if (!amount || amount <= 0) { showAlert('املأ المبلغ', 'error'); return; }
+
+    if (wedId === '__new__') {
+      const newName = document.getElementById('wNewName').value.trim();
+      const newDate = document.getElementById('wNewDate').value;
+      const newBudget = safeParse(document.getElementById('wNewBudget').value);
+      if (!newName) { showAlert('اكتب اسم الفرح', 'error'); return; }
+      const id = 'wed_' + Date.now();
+      const budgetCurrency = document.getElementById('wExpCurrency').value;
+      const budgetSAR = newBudget ? (budgetCurrency === 'SAR' ? newBudget : (budgetCurrency === 'EGP' ? newBudget / rates.EGP : newBudget * rates[budgetCurrency])) : 0;
+      weddings.push({ id, name: newName, weddingDate: newDate, budget: newBudget, budgetCurrency, budgetSAR, createdAt: Date.now() });
+      saveWeddings();
+      wedId = id;
+    }
+
+    const wed = weddings.find(w => w.id === wedId);
+    if (!wed) { showAlert('اختار الفرح', 'error'); return; }
+
+    const rate = currency === 'SAR' ? 1 : (currency === 'EGP' ? rates.EGP : rates[currency]);
+    const amountSAR = currency === 'SAR' ? amount : (currency === 'EGP' ? amount / rates.EGP : amount * rates[currency]);
+
+    const expId = 'wexp_' + Date.now();
+    const meta = WED_CATEGORIES[category] || WED_CATEGORIES.other;
+
+    weddingExpenses.unshift({
+      id: expId, weddingId: wedId, category, amount, currency, rate, amountSAR,
+      date, note, createdAt: Date.now()
+    });
+    saveWeddingExpenses();
+
+    txs.unshift({
+      id: 'tx_wedexp_' + Date.now(),
+      type: 'expense',
+      name: `💍 ${wed.name}: ${meta.name}${note ? ' - ' + note : ''}`,
+      amount, currency, rate, amountSAR,
+      cat: 'مناسبات',
+      date,
+      time: new Date().toTimeString().slice(0, 5),
+      note: note || meta.name,
+      account: accounts[0] && accounts[0].id,
+      recurring: false,
+      weddingExpenseId: expId
+    });
+    saveData();
+
+    ['wExpAmount', 'wExpNote', 'wNewName', 'wNewBudget'].forEach(fid => {
+      const el = document.getElementById(fid); if (el) el.value = '';
+    });
+
+    renderWeddings();
+    if (typeof renderAll === 'function') renderAll();
+    if (typeof updateMenuCounts === 'function') updateMenuCounts();
+    updateWeddingMenuCount();
+    if (typeof showToast === 'function') showToast(`✅ ${meta.name} تسجل لـ ${wed.name}`, 'success');
+  };
+
+  window.delWeddingExpense = function(id) {
+    if (!confirm('حذف هذا المصروف؟')) return;
+    weddingExpenses = weddingExpenses.filter(e => e.id !== id);
+    txs = txs.filter(t => t.weddingExpenseId !== id);
+    saveWeddingExpenses(); saveData();
+    document.getElementById('customDisplayModal').classList.remove('open');
+    renderWeddings();
+    if (typeof renderAll === 'function') renderAll();
+    if (typeof showToast === 'function') showToast('🗑️ تم الحذف', 'info');
+  };
+
+  window.editWedding = function(wedId) {
+    const wed = weddings.find(w => w.id === wedId);
+    if (!wed) return;
+    const newName = prompt('اسم الفرح:', wed.name);
+    if (newName == null) return;
+    if (!newName.trim()) { showAlert('اكتب الاسم', 'error'); return; }
+    const newDate = prompt('تاريخ الفرح (YYYY-MM-DD):', wed.weddingDate || '');
+    if (newDate == null) return;
+    const newBudget = prompt('الميزانية الإجمالية (نفس عملة الإدخال السابقة):', wed.budget || '');
+    if (newBudget == null) return;
+    wed.name = newName.trim();
+    wed.weddingDate = newDate.trim();
+    if (newBudget !== '') {
+      const budgetVal = safeParse(newBudget);
+      wed.budget = budgetVal;
+      wed.budgetSAR = wed.budgetCurrency === 'SAR' ? budgetVal : (wed.budgetCurrency === 'EGP' ? budgetVal / rates.EGP : budgetVal * rates[wed.budgetCurrency]);
+    }
+    saveWeddings();
+    renderWeddings();
+    if (typeof showToast === 'function') showToast('✅ تم التعديل', 'success');
+  };
+
+  window.delWedding = function(wedId) {
+    const wed = weddings.find(w => w.id === wedId);
+    if (!wed) return;
+    const expCount = weddingExpenses.filter(e => e.weddingId === wedId).length;
+    if (!confirm(`حذف ${wed.name}؟ (هتنحذف معاه ${expCount} مصروف وكل الحركات المرتبطة)`)) return;
+    weddings = weddings.filter(w => w.id !== wedId);
+    const removedExpIds = weddingExpenses.filter(e => e.weddingId === wedId).map(e => e.id);
+    weddingExpenses = weddingExpenses.filter(e => e.weddingId !== wedId);
+    txs = txs.filter(t => !removedExpIds.includes(t.weddingExpenseId));
+    saveWeddings(); saveWeddingExpenses(); saveData();
+    renderWeddings();
+    if (typeof renderAll === 'function') renderAll();
+    if (typeof updateMenuCounts === 'function') updateMenuCounts();
+    updateWeddingMenuCount();
+    if (typeof showToast === 'function') showToast('🗑️ تم حذف الفرح', 'info');
+  };
+
+  function updateWeddingMenuCount() {
+    const el = document.getElementById('menuWedCount');
+    if (!el) return;
+    const sym = BASE_LABELS[baseCurrency].sym;
+    if (!weddings.length) { el.textContent = 'لم تُسجَّل أي أفراح'; return; }
+    const totalAll = weddingExpenses.reduce((s, e) => s + (safeParse(e.amountSAR) || 0), 0);
+    el.textContent = `${toArabicDigits(weddings.length)} ${weddings.length === 1 ? 'فرح' : 'أفراح'} · ${fmt(toBase(totalAll), 0)} ${sym}`;
+  }
+  window.updateWeddingMenuCount = updateWeddingMenuCount;
+
+  // ─────────────────────────────────────────────────────────────
+  // PART D — INJECT MENU ROWS + MODALS
+  // ─────────────────────────────────────────────────────────────
+
+  function injectV18Menus() {
+    // Add menu rows after orders
+    const menuModal = document.getElementById('menuModal');
+    if (!menuModal) return;
+    if (menuModal.querySelector('[data-v18-menu]')) return;
+
+    const ordersRow = [...menuModal.querySelectorAll('.menu-row')].find(r =>
+      r.getAttribute('onclick') && r.getAttribute('onclick').includes('ordersModal'));
+    if (!ordersRow) return;
+
+    const carRow = document.createElement('div');
+    carRow.className = 'menu-row';
+    carRow.dataset.v18Menu = 'cars';
+    carRow.setAttribute('onclick', "closeAndOpen('menuModal','carsModal',renderCars)");
+    carRow.innerHTML = `<div class="mi">🚗</div>
+      <div class="mt"><div class="mt-l">السيارات</div><div class="mt-s" id="menuCarsCount">--</div></div>
+      <div class="mc">‹</div>`;
+
+    const wedRow = document.createElement('div');
+    wedRow.className = 'menu-row';
+    wedRow.dataset.v18Menu = 'weddings';
+    wedRow.setAttribute('onclick', "closeAndOpen('menuModal','weddingsModal',renderWeddings)");
+    wedRow.innerHTML = `<div class="mi">💍</div>
+      <div class="mt"><div class="mt-l">الفرح</div><div class="mt-s" id="menuWedCount">--</div></div>
+      <div class="mc">‹</div>`;
+
+    ordersRow.parentNode.insertBefore(carRow, ordersRow.nextSibling);
+    ordersRow.parentNode.insertBefore(wedRow, carRow.nextSibling);
+  }
+
+  function injectV18Modals() {
+    if (document.getElementById('carsModal')) return;
+
+    // CARS MODAL
+    const carsModal = document.createElement('div');
+    carsModal.className = 'overlay';
+    carsModal.id = 'carsModal';
+    carsModal.setAttribute('onclick', "closeIfOut(event,'carsModal')");
+    carsModal.innerHTML = `<div class="sheet">
+      <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+      <div class="modal-title">🚗 السيارات</div>
+      <p style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px">سجّل سياراتك وتابع كل مصروفاتها — بنزين، زيت، صيانة، تأمين</p>
+      <div id="carsList"></div>
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">إضافة مصروف جديد</div>
+        <div class="form-row"><div class="form-lbl">🚗 السيارة</div>
+          <select class="form-inp" id="cExpCarId" onchange="onCarSelectChange()"></select>
+        </div>
+        <div id="newCarRow" style="display:none">
+          <div class="two-col">
+            <div class="form-row"><div class="form-lbl">اسم السيارة</div><input class="form-inp" id="cNewName" placeholder="مثال: لانسر، سوناتا، البي إم"/></div>
+            <div class="form-row"><div class="form-lbl">رقم اللوحة</div><input class="form-inp" id="cNewPlate" placeholder="اختياري"/></div>
+          </div>
+        </div>
+        <div class="form-row"><div class="form-lbl">📂 نوع المصروف</div>
+          <select class="form-inp" id="cExpType">
+            <option value="fuel">⛽ بنزين</option>
+            <option value="oil">🛢️ زيت</option>
+            <option value="service">🔧 صيانة دورية</option>
+            <option value="repair">🛠️ تصليح</option>
+            <option value="tires">⚫ إطارات</option>
+            <option value="insurance">🛡️ تأمين</option>
+            <option value="license">📋 رخصة/تراخيص</option>
+            <option value="fines">🚨 مخالفات</option>
+            <option value="parking">🅿️ موقف/جراج</option>
+            <option value="wash">💧 غسيل</option>
+            <option value="accessories">✨ إكسسوارات</option>
+            <option value="other">🚗 أخرى</option>
+          </select>
+        </div>
+        <div class="two-col">
+          <div class="form-row"><div class="form-lbl">المبلغ</div><input class="form-inp" id="cExpAmount" type="number" step="0.01" placeholder="200" inputmode="decimal"/></div>
+          <div class="form-row"><div class="form-lbl">العملة</div>
+            <select class="form-inp" id="cExpCurrency">
+              <option value="SAR">🇸🇦 ريال</option>
+              <option value="EGP">🇪🇬 جنيه</option>
+              <option value="USD">🇺🇸 دولار</option>
+              <option value="EUR">🇪🇺 يورو</option>
+            </select>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="form-row"><div class="form-lbl">📅 التاريخ</div><input class="form-inp" id="cExpDate" type="date"/></div>
+          <div class="form-row"><div class="form-lbl">🛣️ العداد (كم)</div><input class="form-inp" id="cExpKm" type="number" placeholder="اختياري"/></div>
+        </div>
+        <div class="form-row"><input class="form-inp" id="cExpNote" placeholder="ملاحظات (اختياري)"/></div>
+        <button class="save-btn" onclick="saveCarExpense()">💾 حفظ + إضافة كحركة</button>
+      </div>
+    </div>`;
+    document.body.appendChild(carsModal);
+
+    // WEDDINGS MODAL
+    const wedModal = document.createElement('div');
+    wedModal.className = 'overlay';
+    wedModal.id = 'weddingsModal';
+    wedModal.setAttribute('onclick', "closeIfOut(event,'weddingsModal')");
+    wedModal.innerHTML = `<div class="sheet">
+      <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+      <div class="modal-title">💍 الفرح</div>
+      <p style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px">تتبع كل تكاليف الفرح في مكان واحد — مهر، شقة، أثاث، قاعة، مصور</p>
+      <div id="weddingsList"></div>
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">إضافة مصروف جديد</div>
+        <div class="form-row"><div class="form-lbl">💍 الفرح</div>
+          <select class="form-inp" id="wExpWedId" onchange="onWedSelectChange()"></select>
+        </div>
+        <div id="newWedRow" style="display:none">
+          <div class="form-row"><input class="form-inp" id="wNewName" placeholder="اسم الفرح: مثل فرح أحمد ومنى"/></div>
+          <div class="two-col">
+            <div class="form-row"><div class="form-lbl">📅 تاريخ الفرح</div><input class="form-inp" id="wNewDate" type="date"/></div>
+            <div class="form-row"><div class="form-lbl">💵 الميزانية المتوقعة</div><input class="form-inp" id="wNewBudget" type="number" placeholder="اختياري"/></div>
+          </div>
+        </div>
+        <div class="form-row"><div class="form-lbl">📂 نوع المصروف</div>
+          <select class="form-inp" id="wExpCategory">
+            <option value="dowry">💍 مهر/شبكة</option>
+            <option value="rings">💎 دبل/خواتم</option>
+            <option value="apartment">🏠 شقة</option>
+            <option value="furniture">🛋️ أثاث</option>
+            <option value="appliances">🍳 أجهزة</option>
+            <option value="venue">🏛️ قاعة الفرح</option>
+            <option value="catering">🍽️ بوفيه/أكل</option>
+            <option value="photographer">📸 مصور</option>
+            <option value="decoration">🌸 تزيين/ورود</option>
+            <option value="dress">👗 فستان/بدلة</option>
+            <option value="makeup">💄 كوافير/مكياج</option>
+            <option value="invitations">✉️ دعوات</option>
+            <option value="contracts">📜 كاتب كتاب/توثيق</option>
+            <option value="honeymoon">✈️ شهر العسل</option>
+            <option value="gifts">🎁 هدايا/شبكات</option>
+            <option value="other">💐 أخرى</option>
+          </select>
+        </div>
+        <div class="two-col">
+          <div class="form-row"><div class="form-lbl">المبلغ</div><input class="form-inp" id="wExpAmount" type="number" step="0.01" placeholder="500" inputmode="decimal"/></div>
+          <div class="form-row"><div class="form-lbl">العملة</div>
+            <select class="form-inp" id="wExpCurrency">
+              <option value="SAR">🇸🇦 ريال</option>
+              <option value="EGP">🇪🇬 جنيه</option>
+              <option value="USD">🇺🇸 دولار</option>
+              <option value="EUR">🇪🇺 يورو</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row"><div class="form-lbl">📅 التاريخ</div><input class="form-inp" id="wExpDate" type="date"/></div>
+        <div class="form-row"><input class="form-inp" id="wExpNote" placeholder="ملاحظات (اختياري)"/></div>
+        <button class="save-btn" onclick="saveWeddingExpense()">💾 حفظ + إضافة كحركة</button>
+      </div>
+    </div>`;
+    document.body.appendChild(wedModal);
+  }
+
+  // Hook into updateMenuCounts
+  const _origUpdateMenuCountsV18 = window.updateMenuCounts;
+  window.updateMenuCounts = function() {
+    if (_origUpdateMenuCountsV18) _origUpdateMenuCountsV18();
+    updateCarMenuCount();
+    updateWeddingMenuCount();
+  };
+
+  // Hook into export/restore
+  const _origExportJSONV18 = window.exportJSON;
+  window.exportJSON = function() {
+    // Run original first (it includes everything except v18 data)
+    // Then we patch the saved file by augmenting with v18 data via re-export
+    // The simplest path: build our own export including v18 data
+    try {
+      const data = {
+        txs: typeof txs !== 'undefined' ? txs : [],
+        savings: typeof savings !== 'undefined' ? savings : [],
+        rates, budgets,
+        accounts: typeof accounts !== 'undefined' ? accounts : [],
+        goals: typeof goals !== 'undefined' ? goals : [],
+        debts: typeof debts !== 'undefined' ? debts : [],
+        recurringTxs: typeof recurringTxs !== 'undefined' ? recurringTxs : [],
+        installments: typeof installments !== 'undefined' ? installments : [],
+        jameya: typeof jameya !== 'undefined' ? jameya : [],
+        occasions: typeof occasions !== 'undefined' ? occasions : [],
+        dualSalary: typeof dualSalary !== 'undefined' ? dualSalary : null,
+        rateMeta: typeof rateMeta !== 'undefined' ? rateMeta : {},
+        orders: typeof orders !== 'undefined' ? orders : [],
+        cars, carExpenses,                      // V18
+        weddings, weddingExpenses,              // V18
+        bills: typeof bills !== 'undefined' ? bills : [],
+        investments: typeof investments !== 'undefined' ? investments : [],
+        netWorthHistory: typeof netWorthHistory !== 'undefined' ? netWorthHistory : [],
+        priceAlerts: typeof priceAlerts !== 'undefined' ? priceAlerts : [],
+        flights: typeof flights !== 'undefined' ? flights : [],
+        travelMode: localStorage.getItem('msarifyi_travel_mode') || null,
+        ramadanMode: localStorage.getItem('msarifyi_ramadan_mode') || null,
+        hajjBudget: typeof hajjBudget !== 'undefined' ? hajjBudget : null,
+        goldHistory: safeGetLS('msarifyi_gold_history', []),
+        baseCurrency,
+        theme: localStorage.getItem('msarifyi_theme') || 'dark',
+        schemaVersion: 18,
+        version: 18,
+        exported: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+      if (typeof downloadBlob === 'function') {
+        downloadBlob(blob, `masarefy_backup_${new Date().toISOString().split('T')[0]}.json`);
+      } else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `masarefy_backup_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      }
+      if (typeof showToast === 'function') showToast('✅ تم تصدير النسخة الكاملة (V18)', 'success');
+    } catch (e) {
+      console.error('Export V18 failed:', e);
+      if (typeof showToast === 'function') showToast('❌ فشل التصدير: ' + e.message, 'error');
+    }
+  };
+
+  // Hook into restore to load V18 data
+  const _origRestoreBackupV18 = window.restoreBackup;
+  window.restoreBackup = function(event) {
+    // Wrap original handler to also load V18 data after it succeeds
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    // Use a separate FileReader pass to extract V18 data, while delegating
+    // the main restore to the original.
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.cars) { cars = data.cars; saveCars(); }
+        if (data.carExpenses) { carExpenses = data.carExpenses; saveCarExpenses(); }
+        if (data.weddings) { weddings = data.weddings; saveWeddings(); }
+        if (data.weddingExpenses) { weddingExpenses = data.weddingExpenses; saveWeddingExpenses(); }
+        setTimeout(() => {
+          updateCarMenuCount();
+          updateWeddingMenuCount();
+        }, 600);
+      } catch (err) {
+        console.warn('V18 restore failed:', err);
+      }
+    };
+    reader.readAsText(file);
+    if (_origRestoreBackupV18) _origRestoreBackupV18.apply(this, [event]);
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // PART E — INIT
+  // ─────────────────────────────────────────────────────────────
+  setTimeout(() => {
+    try {
+      injectV18Modals();
+      injectV18Menus();
+      updateCarMenuCount();
+      updateWeddingMenuCount();
+    } catch (e) {
+      console.warn('V18 init error:', e);
+    }
+  }, 700);
 
 })();
 </script>
