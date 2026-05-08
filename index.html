@@ -17421,5 +17421,704 @@ setTimeout(() => {
 })();
 </script>
 
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- V25-PRO — OCCASIONS AS EVENTS (containers w/ multiple txs)      -->
+<!--           + CONTROL CENTER POLISH (money badges, hero refresh)  -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<script>
+(function v25OccasionsAsEvents(){
+  'use strict';
+
+  // ─────────────────────────────────────────────────────
+  // 1) STYLES (event cards, detail modal, money badges)
+  // ─────────────────────────────────────────────────────
+  function injectStyles(){
+    if (document.getElementById('v25ProStyles')) return;
+    const css = `
+      /* ── Occasion event cards ── */
+      .v25-occ-card {
+        background: linear-gradient(135deg, rgba(168,85,247,.12), rgba(168,85,247,.02));
+        border: 1px solid rgba(168,85,247,.45);
+        border-radius: 14px;
+        padding: 14px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: transform .12s, box-shadow .15s, border-color .15s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .v25-occ-card:active { transform: scale(.98); }
+      .v25-occ-card:hover { border-color: rgba(168,85,247,.8); box-shadow: 0 4px 14px rgba(168,85,247,.15); }
+      .v25-occ-head {
+        display: flex; justify-content: space-between; align-items: flex-start;
+        margin-bottom: 10px;
+      }
+      .v25-occ-name {
+        font-weight: 900; font-size: 15px;
+        display: flex; align-items: center; gap: 6px;
+        color: var(--text);
+      }
+      .v25-occ-meta {
+        font-size: 11px; color: var(--muted); margin-top: 3px;
+        line-height: 1.4;
+      }
+      .v25-occ-pill {
+        display: inline-block; padding: 2px 8px;
+        background: rgba(168,85,247,.15); color: rgba(168,85,247,1);
+        border-radius: 6px; font-size: 10px; font-weight: 800;
+        margin-right: 4px;
+      }
+      .v25-occ-stats {
+        display: grid; grid-template-columns: repeat(3,1fr); gap: 6px;
+      }
+      .v25-occ-stat {
+        background: var(--card2); padding: 8px 6px;
+        border-radius: 9px; text-align: center;
+      }
+      .v25-occ-stat-lbl { font-size: 9px; color: var(--muted); font-weight: 700; }
+      .v25-occ-stat-val { font-size: 13px; font-weight: 900; direction: ltr; margin-top: 3px; }
+      .v25-occ-cta {
+        text-align: center; font-size: 11px;
+        color: rgba(168,85,247,1);
+        margin-top: 10px; font-weight: 800;
+        background: rgba(168,85,247,.08);
+        padding: 7px; border-radius: 8px;
+      }
+      .v25-occ-tx-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 11px 12px; background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px; margin-bottom: 6px;
+      }
+      .v25-occ-tx-row.expense { border-left: 3px solid var(--red); }
+      .v25-occ-tx-row.income  { border-left: 3px solid var(--green); }
+      .v25-occ-tx-name { font-weight: 700; font-size: 13px; color: var(--text); }
+      .v25-occ-tx-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
+      .v25-occ-tx-amt  { font-weight: 900; font-size: 14px; direction: ltr; }
+      .v25-occ-tx-amt.expense { color: var(--red); }
+      .v25-occ-tx-amt.income  { color: var(--green); }
+      .v25-occ-empty {
+        text-align: center; padding: 32px 16px;
+        color: var(--muted); font-size: 13px;
+      }
+      .v25-occ-empty-ic { font-size: 36px; margin-bottom: 8px; opacity: .55; }
+
+      /* ── Type chips (quick switch in tx form) ── */
+      .v25-typetabs { display: flex; gap: 6px; margin-bottom: 10px; }
+      .v25-typetab {
+        flex: 1; text-align: center;
+        padding: 10px; border-radius: 10px;
+        border: 1.5px solid var(--border);
+        background: var(--card2); cursor: pointer;
+        font-size: 13px; font-weight: 800;
+        color: var(--muted);
+        transition: all .15s;
+        font-family: 'Cairo', sans-serif;
+      }
+      .v25-typetab.active.expense {
+        background: var(--red-dim); color: var(--red);
+        border-color: var(--red);
+      }
+      .v25-typetab.active.income {
+        background: var(--green-dim); color: var(--green);
+        border-color: var(--green);
+      }
+
+      /* ── Hero refresh for control center menu ── */
+      .v25-mh-bar {
+        margin-top: 10px; padding-top: 10px;
+        border-top: 1px solid rgba(255,255,255,0.06);
+        display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
+      }
+      .v25-mh-bar-item { text-align: center; }
+      .v25-mh-bar-lbl { font-size: 9px; color: var(--muted); font-weight: 700; }
+      .v25-mh-bar-val { font-size: 12px; font-weight: 900; direction: ltr; margin-top: 2px; }
+
+      /* ── Money badge under v17 menu cards ── */
+      .v17-menu-card .v17-money {
+        font-size: 10.5px; font-weight: 800;
+        margin-top: 4px;
+        padding: 2px 6px;
+        background: var(--card2);
+        border-radius: 6px;
+        display: inline-block;
+        direction: ltr;
+        color: var(--accent);
+        line-height: 1.3;
+      }
+      .v17-menu-card .v17-money.green { color: var(--green); background: var(--green-dim); }
+      .v17-menu-card .v17-money.red   { color: var(--red); background: var(--red-dim); }
+      .v17-menu-card .v17-money.muted { color: var(--muted); }
+    `;
+    const s = document.createElement('style');
+    s.id = 'v25ProStyles';
+    s.textContent = css;
+    document.head.appendChild(s);
+  }
+
+  // ─────────────────────────────────────────────────────
+  // 2) EVENT-DETAIL MODAL HTML
+  // ─────────────────────────────────────────────────────
+  function injectEventModal(){
+    if (document.getElementById('occEventModal')) return;
+    const html = `
+<div class="overlay" id="occEventModal" onclick="closeIfOut(event,'occEventModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;padding:0 4px">
+      <div style="flex:1;min-width:0">
+        <div id="occEvTitle" class="modal-title" style="margin:0;text-align:right">🎁 المناسبة</div>
+        <div id="occEvSub" class="modal-hint" style="margin:4px 0 0;text-align:right">—</div>
+      </div>
+      <button type="button" onclick="document.getElementById('occEventModal').classList.remove('open')"
+        style="background:var(--card2);border:1.5px solid var(--border);border-radius:50%;width:38px;height:38px;font-size:16px;cursor:pointer;color:var(--text);font-family:'Cairo',sans-serif;flex-shrink:0;margin-right:8px">✕</button>
+    </div>
+    <div id="occEvStats"></div>
+    <div style="font-size:12px;font-weight:800;color:var(--muted);margin:10px 4px 6px">📋 الحركات</div>
+    <div id="occEvTxList" style="max-height:38vh;overflow-y:auto;margin-bottom:12px"></div>
+    <div class="section-divider">
+      <div class="subsection-label">➕ إضافة حركة جديدة</div>
+      <div class="v25-typetabs">
+        <div class="v25-typetab expense active" data-type="expense" onclick="selectOccEvType('expense')">📤 مصروف</div>
+        <div class="v25-typetab income" data-type="income" onclick="selectOccEvType('income')">📥 إيداع / استلام</div>
+      </div>
+      <input type="hidden" id="occEvTxType" value="expense"/>
+      <div class="form-row">
+        <input class="form-inp" id="occEvTxName" placeholder="اسم الحركة (مثال: السيارة، الورد، عيدية أحمد)"/>
+      </div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">المبلغ</div>
+          <input class="form-inp" id="occEvTxAmount" type="number" step="0.01" placeholder="100" inputmode="decimal"/>
+        </div>
+        <div class="form-row"><div class="form-lbl">العملة</div>
+          <select class="form-inp" id="occEvTxCurrency">
+            <option value="SAR">🇸🇦 ريال</option>
+            <option value="EGP">🇪🇬 جنيه</option>
+            <option value="USD">🇺🇸 دولار</option>
+            <option value="EUR">🇪🇺 يورو</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row"><div class="form-lbl">📅 التاريخ</div>
+        <input class="form-inp" id="occEvTxDate" type="date"/>
+      </div>
+      <div class="form-row">
+        <input class="form-inp" id="occEvTxNote" placeholder="ملاحظات (اختياري)"/>
+      </div>
+      <button class="save-btn" onclick="saveOccEventTx()">💾 إضافة الحركة</button>
+    </div>
+  </div>
+</div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
+
+  // ─────────────────────────────────────────────────────
+  // 3) HELPERS
+  // ─────────────────────────────────────────────────────
+  function getOccTxs(occId){
+    if (!Array.isArray(window.txs)) return [];
+    return window.txs.filter(t => t.occId === occId);
+  }
+
+  function calcOccTotals(txList){
+    let totalIn = 0, totalOut = 0;
+    txList.forEach(t => {
+      if (t.type === 'income')      totalIn  += t.amountSAR || 0;
+      else if (t.type === 'expense') totalOut += t.amountSAR || 0;
+    });
+    return { totalIn, totalOut, net: totalIn - totalOut };
+  }
+
+  // ─────────────────────────────────────────────────────
+  // 4) RENDER LIST OF OCCASION-EVENTS
+  //    (replaces the legacy renderOccasions UI)
+  // ─────────────────────────────────────────────────────
+  function renderOccasionsV25(){
+    const el = document.getElementById('occasionsList');
+    if (!el) return;
+
+    // default the legacy form date to today
+    const dt = document.getElementById('occDate');
+    if (dt && !dt.value) dt.value = new Date().toISOString().split('T')[0];
+
+    const occList = (window.occasions || []).slice();
+
+    if (!occList.length){
+      el.innerHTML = `<div class="empty"><div class="empty-icon">🎁</div>لسه ما فيش مناسبات<br><span style="font-size:11px">أنشئ أول مناسبة من تحت</span></div>`;
+      return;
+    }
+
+    const sym = BASE_LABELS[baseCurrency].sym;
+
+    // overall totals across all occasions
+    let allIn = 0, allOut = 0, allCount = 0;
+    occList.forEach(o => {
+      const list = getOccTxs(o.id);
+      allCount += list.length;
+      list.forEach(t => {
+        if (t.type === 'income')       allIn  += t.amountSAR || 0;
+        else if (t.type === 'expense') allOut += t.amountSAR || 0;
+      });
+    });
+    const netAll = allIn - allOut;
+
+    let html = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
+      <div style="background:var(--green-dim);border:1px solid var(--green);border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--green);font-weight:700">📥 استلمت</div>
+        <div style="font-size:14px;font-weight:900;color:var(--green);direction:ltr;margin-top:3px">${fmt(toBase(allIn),0)} ${sym}</div>
+      </div>
+      <div style="background:var(--red-dim);border:1px solid var(--red);border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--red);font-weight:700">📤 دفعت</div>
+        <div style="font-size:14px;font-weight:900;color:var(--red);direction:ltr;margin-top:3px">${fmt(toBase(allOut),0)} ${sym}</div>
+      </div>
+      <div style="background:var(--card2);border:1px solid ${netAll>=0?'var(--green)':'var(--red)'};border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);font-weight:700">صافي</div>
+        <div style="font-size:14px;font-weight:900;direction:ltr;margin-top:3px;color:${netAll>=0?'var(--green)':'var(--red)'}">${netAll>=0?'+':''}${fmt(toBase(netAll),0)} ${sym}</div>
+      </div>
+    </div>`;
+
+    const occEmoji = window.OCC_EMOJI || {};
+    occList
+      .sort((a,b) => (b.date||'').localeCompare(a.date||''))
+      .forEach(o => {
+        const list = getOccTxs(o.id);
+        const { totalIn, totalOut, net } = calcOccTotals(list);
+        const em = occEmoji[o.type] || '🎁';
+        const txCount = list.length;
+        html += `<div class="v25-occ-card" onclick="openOccEvent('${o.id}')">
+          <div class="v25-occ-head">
+            <div style="flex:1;min-width:0">
+              <div class="v25-occ-name"><span>${em}</span><span>${esc(o.name||'بدون اسم')}</span></div>
+              <div class="v25-occ-meta">
+                <span class="v25-occ-pill">${esc(o.type||'مناسبة')}</span>
+                ${o.date ? `<span>${esc(o.date)}</span> · ` : ''}<span>${toArabicDigits(txCount)} حركة</span>
+                ${o.note ? ` · <span>${esc(o.note)}</span>` : ''}
+              </div>
+            </div>
+            <button onclick="event.stopPropagation();delOccasion('${o.id}')"
+              style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px 8px;flex-shrink:0">✕</button>
+          </div>
+          <div class="v25-occ-stats">
+            <div class="v25-occ-stat">
+              <div class="v25-occ-stat-lbl">📥 استلمت</div>
+              <div class="v25-occ-stat-val" style="color:var(--green)">${fmt(toBase(totalIn),0)} ${sym}</div>
+            </div>
+            <div class="v25-occ-stat">
+              <div class="v25-occ-stat-lbl">📤 دفعت</div>
+              <div class="v25-occ-stat-val" style="color:var(--red)">${fmt(toBase(totalOut),0)} ${sym}</div>
+            </div>
+            <div class="v25-occ-stat">
+              <div class="v25-occ-stat-lbl">الصافي</div>
+              <div class="v25-occ-stat-val" style="color:${net>=0?'var(--green)':'var(--red)'}">${net>=0?'+':''}${fmt(toBase(net),0)} ${sym}</div>
+            </div>
+          </div>
+          <div class="v25-occ-cta">📋 اضغط لإضافة / عرض الحركات ›</div>
+        </div>`;
+      });
+    el.innerHTML = html;
+  }
+
+  // ─────────────────────────────────────────────────────
+  // 5) OPEN EVENT DETAIL
+  // ─────────────────────────────────────────────────────
+  window.openOccEvent = function(occId){
+    injectEventModal();
+    window.__currentOccId = occId;
+    const occ = (window.occasions||[]).find(x => x.id === occId);
+    if (!occ) return;
+
+    const em = (window.OCC_EMOJI || {})[occ.type] || '🎁';
+    document.getElementById('occEvTitle').innerHTML = `${em} ${esc(occ.name||'مناسبة')}`;
+    const subParts = [];
+    if (occ.type) subParts.push(occ.type);
+    if (occ.date) subParts.push(occ.date);
+    if (occ.note) subParts.push(occ.note);
+    document.getElementById('occEvSub').textContent = subParts.join(' · ') || '—';
+
+    const dt = document.getElementById('occEvTxDate');
+    if (dt) dt.value = new Date().toISOString().split('T')[0];
+    // Reset the type selector to 'expense' as default
+    selectOccEvType('expense');
+
+    renderOccEventDetail();
+    document.getElementById('occEventModal').classList.add('open');
+  };
+
+  window.selectOccEvType = function(type){
+    const hidden = document.getElementById('occEvTxType');
+    if (hidden) hidden.value = type;
+    document.querySelectorAll('#occEventModal .v25-typetab').forEach(t => {
+      t.classList.toggle('active', t.dataset.type === type);
+    });
+  };
+
+  function renderOccEventDetail(){
+    const occId = window.__currentOccId;
+    if (!occId) return;
+    const occ = (window.occasions||[]).find(x => x.id === occId);
+    if (!occ) return;
+
+    const list = getOccTxs(occId).sort((a,b) =>
+      (b.date||'').localeCompare(a.date||'') || (b.time||'').localeCompare(a.time||'')
+    );
+    const { totalIn, totalOut, net } = calcOccTotals(list);
+    const sym = BASE_LABELS[baseCurrency].sym;
+
+    const stats = document.getElementById('occEvStats');
+    if (stats){
+      stats.innerHTML = `<div style="background:linear-gradient(135deg,rgba(168,85,247,.12),rgba(168,85,247,.02));border:1px solid rgba(168,85,247,.4);border-radius:14px;padding:12px;margin-bottom:6px">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          <div style="background:rgba(13,17,23,0.4);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:10px;color:var(--green);font-weight:700">📥 استلمت</div>
+            <div style="font-size:16px;font-weight:900;color:var(--green);direction:ltr;margin-top:3px">${fmt(toBase(totalIn),0)} ${sym}</div>
+          </div>
+          <div style="background:rgba(13,17,23,0.4);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:10px;color:var(--red);font-weight:700">📤 دفعت</div>
+            <div style="font-size:16px;font-weight:900;color:var(--red);direction:ltr;margin-top:3px">${fmt(toBase(totalOut),0)} ${sym}</div>
+          </div>
+          <div style="background:rgba(13,17,23,0.4);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:10px;color:var(--muted);font-weight:700">الصافي</div>
+            <div style="font-size:16px;font-weight:900;direction:ltr;margin-top:3px;color:${net>=0?'var(--green)':'var(--red)'}">${net>=0?'+':''}${fmt(toBase(net),0)} ${sym}</div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    const listEl = document.getElementById('occEvTxList');
+    if (!listEl) return;
+    if (!list.length){
+      listEl.innerHTML = `<div class="v25-occ-empty"><div class="v25-occ-empty-ic">📋</div>لسه ما فيش حركات<br><span style="font-size:11px">ضيف أول حركة من تحت</span></div>`;
+      return;
+    }
+    listEl.innerHTML = list.map(t => {
+      const cls = t.type === 'income' ? 'income' : 'expense';
+      const sign = t.type === 'income' ? '+' : '-';
+      // Show clean name (strip the auto-prefix if present)
+      let displayName = t.name || '';
+      const prefixMatch = displayName.match(/^.{1,3}\s.+?:\s(.+)$/);
+      if (prefixMatch) displayName = prefixMatch[1];
+      return `<div class="v25-occ-tx-row ${cls}">
+        <div style="flex:1;min-width:0">
+          <div class="v25-occ-tx-name">${t.type==='income'?'📥':'📤'} ${esc(displayName)}</div>
+          <div class="v25-occ-tx-meta">${esc(t.date||'')}${t.note?' · '+esc(t.note):''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <div class="v25-occ-tx-amt ${cls}">${sign}${fmt(t.amount,0)} ${SYM[t.currency]||t.currency}</div>
+          <button onclick="delOccEventTx('${t.id}')"
+            style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 6px">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ─────────────────────────────────────────────────────
+  // 6) ADD / DELETE TX FOR EVENT
+  // ─────────────────────────────────────────────────────
+  window.saveOccEventTx = function(){
+    const occId = window.__currentOccId;
+    if (!occId) return;
+    const occ = (window.occasions||[]).find(x => x.id === occId);
+    if (!occ) return;
+
+    const type = (document.getElementById('occEvTxType').value || 'expense');
+    const name = (document.getElementById('occEvTxName').value || '').trim();
+    const amount = parseFloat(document.getElementById('occEvTxAmount').value);
+    const currency = document.getElementById('occEvTxCurrency').value;
+    const date = document.getElementById('occEvTxDate').value || new Date().toISOString().split('T')[0];
+    const note = (document.getElementById('occEvTxNote').value || '').trim();
+
+    if (!name) { showAlert('اكتب اسم الحركة', 'error'); return; }
+    if (!amount || amount <= 0) { showAlert('اكتب المبلغ', 'error'); return; }
+
+    const rate = currency === 'SAR' ? 1 : (currency === 'EGP' ? rates.EGP : rates[currency]);
+    const amountSAR = curToSAR(amount, currency);
+    const em = (window.OCC_EMOJI || {})[occ.type] || '🎁';
+
+    txs.unshift({
+      id: 'tx_occev_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      type,
+      name: `${em} ${occ.name||'مناسبة'}: ${name}`,
+      amount, currency, rate, amountSAR,
+      cat: 'مناسبات',
+      date,
+      time: new Date().toTimeString().slice(0,5),
+      note: note || occ.type || '',
+      account: (window.accounts||[])[0]?.id,
+      recurring: false,
+      occId
+    });
+    saveData();
+
+    // Reset inputs
+    ['occEvTxName','occEvTxAmount','occEvTxNote'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+
+    renderOccEventDetail();
+    if (typeof window.renderOccasions === 'function') window.renderOccasions();
+    if (typeof renderAll === 'function') renderAll();
+    if (typeof updateMenuV17Counts === 'function') updateMenuV17Counts();
+    if (typeof showToast === 'function') showToast('✅ تمت إضافة الحركة', 'success');
+  };
+
+  window.delOccEventTx = function(txId){
+    if (!confirm('حذف هذه الحركة؟')) return;
+    window.txs = txs.filter(t => t.id !== txId);
+    saveData();
+    renderOccEventDetail();
+    if (typeof window.renderOccasions === 'function') window.renderOccasions();
+    if (typeof renderAll === 'function') renderAll();
+    if (typeof updateMenuV17Counts === 'function') updateMenuV17Counts();
+    if (typeof showToast === 'function') showToast('🗑️ تم الحذف', 'success');
+  };
+
+  // ─────────────────────────────────────────────────────
+  // 7) MOUNT
+  // ─────────────────────────────────────────────────────
+  injectStyles();
+  // Replace the legacy renderOccasions with v25 version
+  const _legacyRender = window.renderOccasions;
+  window.renderOccasions = function(){
+    try { renderOccasionsV25(); }
+    catch(e){ console.warn('v25 occasions render error', e); if(_legacyRender) _legacyRender(); }
+  };
+
+  // First render after a tick (so all data is in place)
+  setTimeout(() => {
+    try { if (document.getElementById('occasionsList')) renderOccasionsV25(); } catch(e){}
+  }, 300);
+
+  // Re-render whenever the occasions modal opens
+  document.addEventListener('click', (e) => {
+    const target = e.target.closest('[onclick*="occasionsModal"]');
+    if (target) setTimeout(() => { try { renderOccasionsV25(); } catch(_){} }, 60);
+  }, true);
+
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// V25-PRO — CONTROL CENTER MONEY BADGES
+//   Show real money totals on each menu card (not just count)
+// ═══════════════════════════════════════════════════════════════
+(function v25MenuMoneyBadges(){
+  'use strict';
+
+  // Capture the original sub-text once per card so we can restore it when count is 0
+  function captureOriginalSubs(){
+    document.querySelectorAll('.v17-menu-card').forEach(card => {
+      if (card.dataset.v25SubBackup) return;
+      const sub = card.querySelector('.v17-sub');
+      if (sub) card.dataset.v25SubBackup = sub.textContent;
+    });
+  }
+
+  function setMoney(countKey, text, kind){
+    const badge = document.getElementById(countKey + '_v17');
+    if (!badge) return;
+    const card = badge.closest('.v17-menu-card');
+    if (!card) return;
+    let money = card.querySelector('.v17-money');
+    if (!money){
+      money = document.createElement('div');
+      money.className = 'v17-money';
+      const titleBlock = card.querySelector('.v17-title')?.parentElement;
+      if (titleBlock) titleBlock.appendChild(money);
+      else card.appendChild(money);
+    }
+    money.textContent = text;
+    money.className = 'v17-money' + (kind ? ' ' + kind : '');
+    money.style.display = '';
+  }
+
+  function clearMoney(countKey){
+    const badge = document.getElementById(countKey + '_v17');
+    if (!badge) return;
+    const card = badge.closest('.v17-menu-card');
+    if (!card) return;
+    const money = card.querySelector('.v17-money');
+    if (money) money.style.display = 'none';
+  }
+
+  function updateMoneyBadges(){
+    captureOriginalSubs();
+    try {
+      if (typeof BASE_LABELS === 'undefined') return;
+      const sym = BASE_LABELS[baseCurrency].sym;
+
+      // ── Occasions: net amount ──
+      const occList = window.occasions || [];
+      if (occList.length){
+        let occIn = 0, occOut = 0;
+        occList.forEach(o => {
+          (window.txs||[]).filter(t => t.occId === o.id).forEach(t => {
+            if (t.type === 'income')       occIn  += t.amountSAR || 0;
+            else if (t.type === 'expense') occOut += t.amountSAR || 0;
+          });
+        });
+        const occNet = occIn - occOut;
+        const txt = `صافي ${occNet>=0?'+':'-'}${fmt(toBase(Math.abs(occNet)),0)} ${sym}`;
+        setMoney('menuOccCount', txt, occNet>=0?'green':'red');
+      } else clearMoney('menuOccCount');
+
+      // ── Installments: total monthly ──
+      const installs = (window.installments||[]).filter(i => (i.paidMonths||0) < (i.months||0));
+      if (installs.length){
+        const monthly = installs.reduce((s, i) => {
+          const m = parseFloat(i.monthlyAmount||i.monthly||0) || 0;
+          return s + curToSAR(m, i.currency||'SAR');
+        }, 0);
+        if (monthly > 0) setMoney('menuInstCount', `${fmt(toBase(monthly),0)} ${sym}/شهر`, 'red');
+        else clearMoney('menuInstCount');
+      } else clearMoney('menuInstCount');
+
+      // ── Debts: net (lent vs borrowed) ──
+      const debts = (window.debts||[]).filter(d => !d.cleared);
+      if (debts.length){
+        let lent = 0, borrowed = 0;
+        debts.forEach(d => {
+          const sar = curToSAR(parseFloat(d.amount||0)||0, d.currency||'SAR');
+          if (d.type === 'lent') lent += sar; else borrowed += sar;
+        });
+        const net = lent - borrowed;
+        if (Math.abs(net) > 0.01){
+          const txt = net >= 0 ? `ليّا ${fmt(toBase(net),0)} ${sym}` : `عليّا ${fmt(toBase(-net),0)} ${sym}`;
+          setMoney('menuDebtCount', txt, net >= 0 ? 'green' : 'red');
+        } else clearMoney('menuDebtCount');
+      } else clearMoney('menuDebtCount');
+
+      // ── Goals: total saved ──
+      const goals = (window.goals||[]).filter(g => !g.achieved);
+      if (goals.length){
+        const saved = goals.reduce((s, g) => s + curToSAR(parseFloat(g.saved||0)||0, g.currency||'SAR'), 0);
+        if (saved > 0) setMoney('menuGoalCount', `${fmt(toBase(saved),0)} ${sym} موفّر`, 'green');
+        else clearMoney('menuGoalCount');
+      } else clearMoney('menuGoalCount');
+
+      // ── Vehicles: total spent ──
+      const vlogs = window.vehicleLogs || [];
+      if (vlogs.length){
+        const total = vlogs.reduce((s, l) => s + curToSAR(parseFloat(l.amount||0)||0, l.currency||'SAR'), 0);
+        if (total > 0) setMoney('menuVehCount', `${fmt(toBase(total),0)} ${sym} مصاريف`, 'red');
+        else clearMoney('menuVehCount');
+      } else clearMoney('menuVehCount');
+
+      // ── Weddings: total paid ──
+      const witems = window.weddingItems || [];
+      if (witems.length){
+        const total = witems
+          .filter(w => w.status !== 'planned')
+          .reduce((s, w) => s + curToSAR(parseFloat(w.amount||0)||0, w.currency||'SAR'), 0);
+        if (total > 0) setMoney('menuWedCount', `${fmt(toBase(total),0)} ${sym} مدفوع`, 'red');
+        else clearMoney('menuWedCount');
+      } else clearMoney('menuWedCount');
+
+      // ── Bills: this month total ──
+      const bills = window.bills || [];
+      if (bills.length){
+        const ym = new Date().toISOString().slice(0,7);
+        const monthTot = bills
+          .filter(b => (b.date||'').startsWith(ym))
+          .reduce((s, b) => s + curToSAR(parseFloat(b.amount||0)||0, b.currency||'SAR'), 0);
+        if (monthTot > 0) setMoney('menuBillCount', `${fmt(toBase(monthTot),0)} ${sym} هالشهر`, 'red');
+        else clearMoney('menuBillCount');
+      } else clearMoney('menuBillCount');
+
+      // ── Jameya: monthly commitment ──
+      const jamList = window.jameya || [];
+      if (jamList.length){
+        const tot = jamList.reduce((s, j) => s + curToSAR(parseFloat(j.monthlyAmount||0)||0, j.currency||'SAR'), 0);
+        if (tot > 0) setMoney('menuJamCount', `${fmt(toBase(tot),0)} ${sym}/شهر`, '');
+        else clearMoney('menuJamCount');
+      } else clearMoney('menuJamCount');
+
+      // ── Orders: pending total ──
+      const ords = window.orders || [];
+      if (ords.length){
+        const pending = ords.filter(o => o.status === 'pending');
+        if (pending.length){
+          const tot = pending.reduce((s, o) => s + curToSAR(parseFloat(o.amount||0)||0, o.currency||'SAR'), 0);
+          if (tot > 0) setMoney('menuOrdersCount', `${fmt(toBase(tot),0)} ${sym} متبقّي`, '');
+          else clearMoney('menuOrdersCount');
+        } else clearMoney('menuOrdersCount');
+      } else clearMoney('menuOrdersCount');
+
+    } catch(e){ console.warn('v25 menu money badges:', e); }
+  }
+
+  // Hook into the existing count updater
+  const _origUpdate = window.updateMenuV17Counts;
+  window.updateMenuV17Counts = function(){
+    if (_origUpdate) try { _origUpdate(); } catch(_){}
+    setTimeout(updateMoneyBadges, 50);
+  };
+
+  // Also refresh while the menu is open (live updates as user adds tx)
+  setInterval(() => {
+    const m = document.getElementById('menuModal');
+    if (m && m.classList.contains('open')) updateMoneyBadges();
+  }, 1500);
+
+  // First-load attempt
+  setTimeout(updateMoneyBadges, 600);
+  setTimeout(updateMoneyBadges, 1500);
+  setTimeout(updateMoneyBadges, 3000);
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// V25-PRO — CONTROL CENTER HERO REFRESH
+//   Adds a money summary bar to the v22 hero card
+// ═══════════════════════════════════════════════════════════════
+(function v25MenuHeroRefresh(){
+  'use strict';
+
+  function refreshHeroBar(){
+    try {
+      const header = document.querySelector('.v22-menu-header');
+      if (!header) return;
+      let bar = header.querySelector('.v25-mh-bar');
+      if (!bar){
+        bar = document.createElement('div');
+        bar.className = 'v25-mh-bar';
+        header.appendChild(bar);
+      }
+      const sym = BASE_LABELS[baseCurrency].sym;
+      // Compute "this month" income/expense totals from all txs
+      const ym = new Date().toISOString().slice(0,7);
+      let inc = 0, exp = 0;
+      (window.txs||[]).forEach(t => {
+        if (!t.date || !t.date.startsWith(ym)) return;
+        if (t.isTransfer) return;
+        if (t.type === 'income')       inc += t.amountSAR || 0;
+        else if (t.type === 'expense') exp += t.amountSAR || 0;
+      });
+      const net = inc - exp;
+      bar.innerHTML = `
+        <div class="v25-mh-bar-item">
+          <div class="v25-mh-bar-lbl">📥 دخل الشهر</div>
+          <div class="v25-mh-bar-val" style="color:var(--green)">${fmt(toBase(inc),0)} ${sym}</div>
+        </div>
+        <div class="v25-mh-bar-item">
+          <div class="v25-mh-bar-lbl">📤 صرف الشهر</div>
+          <div class="v25-mh-bar-val" style="color:var(--red)">${fmt(toBase(exp),0)} ${sym}</div>
+        </div>
+        <div class="v25-mh-bar-item">
+          <div class="v25-mh-bar-lbl">صافي</div>
+          <div class="v25-mh-bar-val" style="color:${net>=0?'var(--green)':'var(--red)'}">${net>=0?'+':'-'}${fmt(toBase(Math.abs(net)),0)} ${sym}</div>
+        </div>
+      `;
+    } catch(e){ console.warn('v25 hero refresh:', e); }
+  }
+
+  setInterval(() => {
+    const m = document.getElementById('menuModal');
+    if (m && m.classList.contains('open')) refreshHeroBar();
+  }, 1500);
+
+  setTimeout(refreshHeroBar, 800);
+  setTimeout(refreshHeroBar, 2000);
+  setTimeout(refreshHeroBar, 3500);
+})();
+</script>
+
 </body>
 </html>
