@@ -4626,7 +4626,6 @@ renderAll();
 </script>
 
 
-
 <!-- OFFLINE BADGE -->
 <div class="offline-badge" id="offlineBadge">⚠️ أنت offline — البيانات هتتزامن لما ترجع online</div>
 
@@ -9500,19 +9499,6 @@ function delFlight(id) {
   if (typeof renderHome === 'function') renderHome();
 }
 
-function searchFlightPrices(from, to, date) {
-  // Open Skyscanner for price comparison
-  // Format: yyyy-mm-dd → yymmdd for skyscanner URL
-  const d = date ? new Date(date) : new Date();
-  const yymmdd = d.toISOString().slice(2,10).replace(/-/g,'');
-  const url = `https://www.skyscanner.com/transport/flights/${encodeURIComponent(from)}/${encodeURIComponent(to)}/${yymmdd}/`;
-  if (window.open) {
-    window.open(url, '_blank');
-  } else {
-    showAlert(url, 'info');
-  }
-}
-
 // Render upcoming flight card on home if any are within 30 days
 function renderUpcomingFlightCard() {
   const home = document.getElementById('homeContent');
@@ -13614,11 +13600,8 @@ setTimeout(() => {
 // ═══════════════════════════════════════════════════════════════
 (function v19Styles() {
   const css = `
-    /* Universal X close button on all modals */
-    .v19-close-btn {
-      position: absolute;
-      top: 12px;
-      left: 12px;
+    /* Universal X close button on all modals (v19/v22 unified) */
+    .v19-close-btn, .v22-close-x {
       width: 38px;
       height: 38px;
       border-radius: 50%;
@@ -13632,13 +13615,19 @@ setTimeout(() => {
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 50;
+      flex-shrink: 0;
       -webkit-tap-highlight-color: rgba(248,81,73,0.3);
       touch-action: manipulation;
       transition: all 0.15s;
       padding: 0;
     }
-    .v19-close-btn:active {
+    .v19-close-btn {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 50;
+    }
+    .v19-close-btn:active, .v22-close-x:active {
       transform: scale(0.92);
       background: var(--red);
       color: #fff;
@@ -15313,24 +15302,7 @@ setTimeout(() => {
       color: var(--muted);
       margin-top: 2px;
     }
-    .v22-close-x {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: var(--card2);
-      border: 1.5px solid var(--border);
-      color: var(--text);
-      font-size: 18px;
-      font-weight: 900;
-      cursor: pointer;
-      font-family: 'Cairo', sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      -webkit-tap-highlight-color: rgba(248,81,73,0.3);
-    }
-    .v22-close-x:active { transform: scale(0.92); background: var(--red); color: #fff; }
+    /* .v22-close-x styles unified with .v19-close-btn earlier */
 
     .v22-jam-summary {
       display: grid;
@@ -16505,6 +16477,1120 @@ setTimeout(() => {
       .v23-wallet-stats { grid-template-columns: 1fr 1fr; }
       .v23-wallet-stat:last-child { grid-column: span 2; justify-content: center; }
       .v23-tb-amount { font-size: 22px; }
+    }
+  `;
+  const style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// V24 — ANIMATIONS + JAMEYA EDIT + FACTS + SMART SEARCH + TIPS
+// ═══════════════════════════════════════════════════════════════
+(function v24Init() {
+
+  // ─────────────────────────────────────────────────────────────
+  // PART A — COUNTER ANIMATION
+  // Animate any number from 0 to its target value over 800ms
+  // ─────────────────────────────────────────────────────────────
+
+  function animateCounter(el, targetText, duration = 800) {
+    if (!el) return;
+    // Extract numeric portion
+    const cleanText = String(targetText).replace(/[٠-٩]/g, d => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)]);
+    const match = cleanText.match(/-?[\d,]+(\.\d+)?/);
+    if (!match) {
+      el.textContent = targetText;
+      return;
+    }
+    const targetNum = parseFloat(match[0].replace(/,/g, ''));
+    if (isNaN(targetNum)) {
+      el.textContent = targetText;
+      return;
+    }
+    const prefix = cleanText.slice(0, match.index);
+    const suffix = cleanText.slice(match.index + match[0].length);
+    const isInt = !match[1];
+    const startTime = performance.now();
+    const startVal = 0;
+
+    function step(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const cur = startVal + (targetNum - startVal) * eased;
+      const formatted = isInt
+        ? Math.round(cur).toLocaleString('en-US')
+        : cur.toFixed(2);
+      el.textContent = prefix + formatted + suffix;
+      if (progress < 1) {
+        el.dataset.v24Animating = '1';
+        requestAnimationFrame(step);
+      } else {
+        delete el.dataset.v24Animating;
+        el.textContent = targetText;
+      }
+    }
+    requestAnimationFrame(step);
+  }
+  window.animateCounter = animateCounter;
+
+  // Auto-animate elements with class .v24-animate (added selectively below)
+  function animateAll(selector) {
+    document.querySelectorAll(selector).forEach(el => {
+      if (el.dataset.v24Animated || el.dataset.v24Animating) return;
+      el.dataset.v24Animated = '1';
+      const target = el.textContent.trim();
+      animateCounter(el, target);
+    });
+  }
+  window.animateAll = animateAll;
+
+  // Find big-number elements and animate them when home renders
+  const _origRenderHomeV24 = window.renderHome;
+  if (typeof _origRenderHomeV24 === 'function') {
+    window.renderHome = function() {
+      _origRenderHomeV24.apply(this, arguments);
+      setTimeout(() => {
+        // Animate hero balance, stat values
+        animateAll('.hero-card .val, .stats-grid .val, .v23-tb-amount');
+      }, 50);
+    };
+  }
+
+  // Animate accounts modal big numbers when it renders
+  const _origRenderAccountsV24 = window.renderAccounts;
+  if (typeof _origRenderAccountsV24 === 'function') {
+    window.renderAccounts = function() {
+      _origRenderAccountsV24.apply(this, arguments);
+      setTimeout(() => {
+        animateAll('.v23-tb-amount, .v23-wallet-bal-amount');
+      }, 50);
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // PART B — RIPPLE EFFECT
+  // ─────────────────────────────────────────────────────────────
+
+  function createRipple(event, color = 'rgba(63,185,80,0.5)') {
+    const button = event.currentTarget || event.target.closest('button');
+    if (!button) return;
+    const rect = button.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    const size = Math.max(rect.width, rect.height);
+    const x = (event.clientX || rect.left + rect.width / 2) - rect.left - size / 2;
+    const y = (event.clientY || rect.top + rect.height / 2) - rect.top - size / 2;
+    ripple.className = 'v24-ripple';
+    ripple.style.cssText = `width:${size}px;height:${size}px;left:${x}px;top:${y}px;background:${color}`;
+    // Make sure button has overflow:hidden + position:relative
+    const cs = getComputedStyle(button);
+    if (cs.position === 'static') button.style.position = 'relative';
+    button.style.overflow = 'hidden';
+    button.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 700);
+  }
+  window.createRipple = createRipple;
+
+  // Auto-attach to all save-btn elements
+  function attachRippleToSaveButtons() {
+    document.querySelectorAll('.save-btn').forEach(btn => {
+      if (btn.dataset.v24Ripple) return;
+      btn.dataset.v24Ripple = '1';
+      btn.addEventListener('click', (e) => createRipple(e, 'rgba(63,185,80,0.5)'));
+    });
+  }
+
+  // Run periodically since modals add new buttons dynamically
+  setInterval(attachRippleToSaveButtons, 1500);
+
+  // ─────────────────────────────────────────────────────────────
+  // PART C — SWIPE TO DELETE
+  // Adds swipe-left to delete on transaction rows
+  // ─────────────────────────────────────────────────────────────
+
+  function attachSwipeToTxRows() {
+    document.querySelectorAll('.tx-row, .txn-row').forEach(row => {
+      if (row.dataset.v24Swipe) return;
+      row.dataset.v24Swipe = '1';
+      // Wrap in container with delete background
+      if (!row.parentElement.classList.contains('v24-swipe-wrap')) {
+        const wrap = document.createElement('div');
+        wrap.className = 'v24-swipe-wrap';
+        wrap.innerHTML = `<div class="v24-swipe-bg">🗑️ حذف</div>`;
+        row.parentNode.insertBefore(wrap, row);
+        wrap.appendChild(row);
+        row.classList.add('v24-swipeable');
+      }
+
+      let startX = null;
+      let currentX = null;
+      let dragging = false;
+      const THRESHOLD = 80;
+
+      row.addEventListener('touchstart', (e) => {
+        if (!e.touches[0]) return;
+        startX = e.touches[0].clientX;
+        currentX = startX;
+        dragging = true;
+        row.style.transition = 'none';
+      }, { passive: true });
+
+      row.addEventListener('touchmove', (e) => {
+        if (!dragging || !e.touches[0]) return;
+        currentX = e.touches[0].clientX;
+        // RTL: swipe right means positive delta = reveal delete
+        const delta = currentX - startX;
+        if (delta > 0) {
+          row.style.transform = `translateX(${Math.min(delta, 120)}px)`;
+        }
+      }, { passive: true });
+
+      row.addEventListener('touchend', () => {
+        if (!dragging) return;
+        dragging = false;
+        const delta = (currentX || startX) - startX;
+        row.style.transition = 'transform 0.25s';
+        if (delta > THRESHOLD) {
+          // Trigger delete
+          const txId = row.dataset.txId || row.getAttribute('data-tx-id');
+          if (txId) {
+            row.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+              if (typeof delTx === 'function') {
+                if (confirm('🗑️ احذف الحركة؟')) {
+                  delTx(txId, false);
+                } else {
+                  row.style.transform = '';
+                }
+              } else {
+                row.style.transform = '';
+              }
+            }, 200);
+          } else {
+            row.style.transform = '';
+          }
+        } else {
+          row.style.transform = '';
+        }
+        startX = null; currentX = null;
+      });
+
+      row.addEventListener('touchcancel', () => {
+        dragging = false;
+        row.style.transition = 'transform 0.25s';
+        row.style.transform = '';
+      });
+    });
+  }
+  setInterval(attachSwipeToTxRows, 1500);
+
+  // ─────────────────────────────────────────────────────────────
+  // PART D — JAMEYA EDIT (proper modal, like adding a new one)
+  // ─────────────────────────────────────────────────────────────
+
+  window.editJameya = function(id) {
+    const j = (typeof jameya !== 'undefined' ? jameya : []).find(x => x.id === id);
+    if (!j) return;
+
+    let m = document.getElementById('v24EditJameyaModal');
+    if (!m) {
+      m = document.createElement('div');
+      m.id = 'v24EditJameyaModal';
+      m.className = 'overlay';
+      m.style.zIndex = '99997';
+      m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+      document.body.appendChild(m);
+    }
+
+    m.innerHTML = `<div class="sheet" style="max-height:94vh">
+      <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+
+      <div class="v23-acc-header">
+        <div>
+          <div class="v23-acc-title">✏️ تعديل الجمعية</div>
+          <div class="v23-acc-sub">عدّل تفاصيل ${esc(j.name)}</div>
+        </div>
+        <button class="v22-close-x" onclick="document.getElementById('v24EditJameyaModal').classList.remove('open')">✕</button>
+      </div>
+
+      <div class="form-row">
+        <div class="form-lbl">📝 اسم الجمعية</div>
+        <input class="form-inp" id="v24jName" value="${esc(j.name)}" placeholder="مثل: جمعية الشغل، جمعية العيلة..."/>
+      </div>
+
+      <div class="two-col">
+        <div class="form-row">
+          <div class="form-lbl">💵 المبلغ الشهري</div>
+          <input class="form-inp" id="v24jMonthly" type="number" inputmode="decimal" value="${j.monthlyAmount}" oninput="v24RecalcJameyaTotal()"/>
+        </div>
+        <div class="form-row">
+          <div class="form-lbl">العملة</div>
+          <select class="form-inp" id="v24jCurrency">
+            <option value="SAR" ${j.currency==='SAR'?'selected':''}>🇸🇦 ريال</option>
+            <option value="EGP" ${j.currency==='EGP'?'selected':''}>🇪🇬 جنيه</option>
+            <option value="USD" ${j.currency==='USD'?'selected':''}>🇺🇸 دولار</option>
+            <option value="EUR" ${j.currency==='EUR'?'selected':''}>🇪🇺 يورو</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="form-row">
+          <div class="form-lbl">👥 عدد المشتركين</div>
+          <input class="form-inp" id="v24jMembers" type="number" inputmode="numeric" min="2" value="${j.totalMembers}" oninput="v24RecalcJameyaTotal()"/>
+        </div>
+        <div class="form-row">
+          <div class="form-lbl">🎯 دورك</div>
+          <input class="form-inp" id="v24jMyTurn" type="number" inputmode="numeric" min="1" value="${j.myTurn}"/>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-lbl">📅 تاريخ البداية</div>
+        <input class="form-inp" id="v24jStart" type="date" value="${esc(j.startDate || '')}"/>
+      </div>
+
+      <!-- Live total preview -->
+      <div class="v24-jam-preview" id="v24jPreview"></div>
+
+      <div class="v22-jam-summary">
+        <div class="v22-jam-sum-cell">
+          <div class="v22-jam-sum-lbl">دفعت</div>
+          <div class="v22-jam-sum-val" style="color:var(--green)">${toArabicDigits((j.paidMonthsLog||[]).length || j.paidMonths || 0)}</div>
+        </div>
+        <div class="v22-jam-sum-cell">
+          <div class="v22-jam-sum-lbl">حالة الدور</div>
+          <div class="v22-jam-sum-val" style="color:#06b6d4">${j.received ? '✅' : '⏳'}</div>
+        </div>
+        <div class="v22-jam-sum-cell">
+          <div class="v22-jam-sum-lbl">منذ</div>
+          <div class="v22-jam-sum-val" style="font-size:11px">${esc(j.startDate||'—')}</div>
+        </div>
+      </div>
+
+      <button class="save-btn" onclick="v24SaveJameyaEdit('${esc(id)}')">💾 حفظ التعديلات</button>
+      <button class="v20-del-btn" style="margin-top:10px" onclick="v24DelJameyaFromEdit('${esc(id)}')">🗑️ حذف الجمعية</button>
+    </div>`;
+
+    m.classList.add('open');
+    setTimeout(v24RecalcJameyaTotal, 100);
+  };
+
+  window.v24RecalcJameyaTotal = function() {
+    const monthly = parseFloat(document.getElementById('v24jMonthly')?.value) || 0;
+    const members = parseInt(document.getElementById('v24jMembers')?.value) || 0;
+    const currency = document.getElementById('v24jCurrency')?.value || 'SAR';
+    const symMap = { SAR: 'ر.س', EGP: 'ج.م', USD: '$', EUR: '€' };
+    const total = monthly * members;
+    const preview = document.getElementById('v24jPreview');
+    if (preview) {
+      preview.innerHTML = `
+        <div class="v24-jp-icon">💰</div>
+        <div class="v24-jp-text">
+          <div class="v24-jp-lbl">إجمالي ما هتقبضه</div>
+          <div class="v24-jp-amount" style="direction:ltr">${total.toLocaleString('en-US', {maximumFractionDigits: 0})} ${symMap[currency]}</div>
+          <div class="v24-jp-info">${members} مشترك × ${monthly.toLocaleString('en-US', {maximumFractionDigits: 0})} ${symMap[currency]} شهرياً</div>
+        </div>
+      `;
+    }
+  };
+
+  window.v24SaveJameyaEdit = function(id) {
+    const j = jameya.find(x => x.id === id);
+    if (!j) return;
+    const name = document.getElementById('v24jName').value.trim();
+    const monthly = parseFloat(document.getElementById('v24jMonthly').value);
+    const members = parseInt(document.getElementById('v24jMembers').value);
+    const myTurn = parseInt(document.getElementById('v24jMyTurn').value);
+    const currency = document.getElementById('v24jCurrency').value;
+    const startDate = document.getElementById('v24jStart').value;
+
+    if (!name) { showAlert('اكتب اسم الجمعية', 'error'); return; }
+    if (!monthly || monthly <= 0) { showAlert('المبلغ غير صحيح', 'error'); return; }
+    if (!members || members < 2) { showAlert('عدد المشتركين غير صحيح', 'error'); return; }
+    if (!myTurn || myTurn < 1 || myTurn > members) { showAlert('دورك غير صحيح', 'error'); return; }
+
+    j.name = name;
+    j.monthlyAmount = monthly;
+    j.totalMembers = members;
+    j.myTurn = myTurn;
+    j.currency = currency;
+    if (startDate) j.startDate = startDate;
+    saveJameyaData();
+
+    document.getElementById('v24EditJameyaModal').classList.remove('open');
+    if (typeof renderJameya === 'function') renderJameya();
+    if (typeof updateMenuCounts === 'function') updateMenuCounts();
+    if (typeof showToast === 'function') showToast('✅ تم تعديل الجمعية', 'success');
+  };
+
+  window.v24DelJameyaFromEdit = function(id) {
+    if (typeof delJameyaItem === 'function') {
+      document.getElementById('v24EditJameyaModal').classList.remove('open');
+      delJameyaItem(id);
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // PART E — FINANCIAL FACTS
+  // Personalized facts based on user's data
+  // ─────────────────────────────────────────────────────────────
+
+  function computeFinancialFacts() {
+    const facts = [];
+    if (typeof txs === 'undefined' || !txs.length) return facts;
+    const sym = BASE_LABELS[baseCurrency].sym;
+
+    // Time analysis
+    const dates = txs.map(t => t.date).filter(Boolean).sort();
+    const firstDate = dates[0];
+    const lastDate = dates[dates.length - 1];
+    const totalDays = firstDate ? Math.ceil((new Date(lastDate) - new Date(firstDate)) / 86400000) || 1 : 1;
+
+    // Income & expense
+    const totalIncome = txs.filter(t => t.type === 'income').reduce((s, t) => s + (t.amountSAR || 0), 0);
+    const totalExpense = txs.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amountSAR || 0), 0);
+    const balance = totalIncome - totalExpense;
+    const dailyAvgExp = totalExpense / Math.max(totalDays, 1);
+    const monthlyAvgExp = dailyAvgExp * 30;
+    const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
+
+    // Top category
+    const catTotals = {};
+    txs.filter(t => t.type === 'expense').forEach(t => {
+      catTotals[t.cat || 'أخرى'] = (catTotals[t.cat || 'أخرى'] || 0) + (t.amountSAR || 0);
+    });
+    const topCat = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0];
+
+    // Most expensive day
+    const dayTotals = {};
+    txs.filter(t => t.type === 'expense').forEach(t => {
+      const d = (t.date || '').slice(0, 10);
+      if (d) dayTotals[d] = (dayTotals[d] || 0) + (t.amountSAR || 0);
+    });
+    const topDay = Object.entries(dayTotals).sort((a, b) => b[1] - a[1])[0];
+
+    // Day of week pattern
+    const weekdayTotals = [0, 0, 0, 0, 0, 0, 0];
+    const weekdayCounts = [0, 0, 0, 0, 0, 0, 0];
+    txs.filter(t => t.type === 'expense').forEach(t => {
+      if (!t.date) return;
+      const wd = new Date(t.date).getDay();
+      weekdayTotals[wd] += (t.amountSAR || 0);
+      weekdayCounts[wd]++;
+    });
+    const weekdayNames = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    let maxWdIdx = 0, maxWdAvg = 0;
+    for (let i = 0; i < 7; i++) {
+      if (weekdayCounts[i] > 0) {
+        const avg = weekdayTotals[i] / weekdayCounts[i];
+        if (avg > maxWdAvg) { maxWdAvg = avg; maxWdIdx = i; }
+      }
+    }
+
+    // Frequency facts
+    const expenseCount = txs.filter(t => t.type === 'expense').length;
+    const avgPerTx = expenseCount > 0 ? totalExpense / expenseCount : 0;
+
+    // Build facts array
+    if (firstDate) {
+      facts.push({
+        icon: '📅', title: 'منذ كم بدأت',
+        value: `${toArabicDigits(totalDays)} يوم`,
+        sub: `أول حركة: ${firstDate}`
+      });
+    }
+
+    facts.push({
+      icon: '💵', title: 'متوسط مصروفك اليومي',
+      value: `${fmt(toBase(dailyAvgExp), 0)} ${sym}`,
+      sub: `≈ ${fmt(toBase(monthlyAvgExp), 0)} ${sym} شهرياً`
+    });
+
+    if (savingsRate >= 0) {
+      const tier = savingsRate >= 30 ? '🏆 ممتاز' : savingsRate >= 20 ? '👍 جيد' : savingsRate >= 10 ? '🤔 مقبول' : '⚠️ منخفض';
+      facts.push({
+        icon: '🎯', title: 'معدل الادخار',
+        value: `${fmt(savingsRate, 1)}٪`,
+        sub: tier,
+        highlight: savingsRate >= 20 ? 'green' : savingsRate < 10 ? 'red' : null
+      });
+    }
+
+    if (topCat) {
+      const pct = (topCat[1] / totalExpense) * 100;
+      facts.push({
+        icon: '📂', title: 'أكتر فئة بتاكل من فلوسك',
+        value: topCat[0],
+        sub: `${fmt(toBase(topCat[1]), 0)} ${sym} (${fmt(pct, 0)}٪)`
+      });
+    }
+
+    if (topDay && topDay[1] > avgPerTx * 2) {
+      facts.push({
+        icon: '🔥', title: 'أكتر يوم صرفت فيه',
+        value: topDay[0],
+        sub: `${fmt(toBase(topDay[1]), 0)} ${sym}`
+      });
+    }
+
+    if (weekdayCounts[maxWdIdx] >= 3) {
+      facts.push({
+        icon: '📆', title: 'يوم الإنفاق المفضل',
+        value: weekdayNames[maxWdIdx],
+        sub: `بتصرف فيه أعلى متوسط`
+      });
+    }
+
+    facts.push({
+      icon: '🔢', title: 'عدد حركاتك',
+      value: toArabicDigits(txs.length),
+      sub: `بمتوسط ${fmt(toBase(avgPerTx), 0)} ${sym} لكل حركة`
+    });
+
+    // Pace this month
+    const now = new Date();
+    const thisMonthKey = now.toISOString().slice(0, 7);
+    const thisMonthExp = txs.filter(t => t.type === 'expense' && (t.date||'').slice(0,7) === thisMonthKey)
+                            .reduce((s,t) => s + (t.amountSAR||0), 0);
+    const dayOfMonth = now.getDate();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    const projected = (thisMonthExp / dayOfMonth) * daysInMonth;
+    if (dayOfMonth > 5 && thisMonthExp > 0) {
+      facts.push({
+        icon: '🔮', title: 'توقع نهاية الشهر',
+        value: `${fmt(toBase(projected), 0)} ${sym}`,
+        sub: `بناءً على نمطك الحالي`
+      });
+    }
+
+    return facts;
+  }
+  window.computeFinancialFacts = computeFinancialFacts;
+
+  // ─────────────────────────────────────────────────────────────
+  // PART F — SAVINGS TIPS
+  // Smart, personalized savings recommendations
+  // ─────────────────────────────────────────────────────────────
+
+  function computeSavingsTips() {
+    const tips = [];
+    if (typeof txs === 'undefined') return tips;
+    const sym = BASE_LABELS[baseCurrency].sym;
+    const expenseTxs = txs.filter(t => t.type === 'expense');
+
+    // Tip 1: Subscriptions audit
+    if (typeof subs !== 'undefined' && Array.isArray(subs)) {
+      const subTotal = subs.reduce((s, x) => {
+        const monthly = x.frequency === 'yearly' ? x.amount / 12 : x.frequency === 'weekly' ? x.amount * 4.33 : x.amount;
+        const sar = x.currency === 'SAR' ? monthly : (x.currency === 'EGP' ? monthly / rates.EGP : monthly * rates[x.currency]);
+        return s + sar;
+      }, 0);
+      if (subTotal > 100) {
+        tips.push({
+          icon: '📅', priority: 'high',
+          title: 'راجع اشتراكاتك',
+          text: `بتدفع ${fmt(toBase(subTotal), 0)} ${sym} شهرياً اشتراكات. شيك إذا فيه واحد مش مستخدمه — لو ألغيت اللي مش لازمة، ممكن توفر ${fmt(toBase(subTotal * 0.3), 0)} ${sym}/شهر.`
+        });
+      }
+    }
+
+    // Tip 2: Coffee/restaurants spending
+    const cafeKeywords = ['ستاربكس', 'starbucks', 'كافيه', 'قهوة', 'كوفي', 'مطعم', 'برجر', 'بيتزا', 'ماك', 'هرديز', 'kfc'];
+    const cafeTxs = expenseTxs.filter(t => {
+      const text = ((t.name || '') + ' ' + (t.note || '') + ' ' + (t.cat || '')).toLowerCase();
+      return cafeKeywords.some(k => text.includes(k));
+    });
+    if (cafeTxs.length >= 5) {
+      const cafeTotal = cafeTxs.reduce((s, t) => s + (t.amountSAR || 0), 0);
+      const monthsSpan = Math.max(1, getMonthSpan(cafeTxs));
+      const monthly = cafeTotal / monthsSpan;
+      if (monthly > 200) {
+        const yearly = monthly * 12;
+        tips.push({
+          icon: '☕', priority: 'medium',
+          title: 'مصاريف الكافيهات والمطاعم',
+          text: `صرفت ${fmt(toBase(cafeTotal), 0)} ${sym} على المطاعم والكافيهات (${cafeTxs.length} مرة). لو قللت ٣٠٪، توفر ${fmt(toBase(yearly * 0.3), 0)} ${sym} في السنة.`
+        });
+      }
+    }
+
+    // Tip 3: Big-ticket impulse buys
+    const avgExpense = expenseTxs.reduce((s, t) => s + (t.amountSAR || 0), 0) / Math.max(expenseTxs.length, 1);
+    const bigBuys = expenseTxs.filter(t => (t.amountSAR || 0) > avgExpense * 5);
+    if (bigBuys.length >= 3) {
+      tips.push({
+        icon: '💸', priority: 'medium',
+        title: 'مشتريات كبيرة',
+        text: `عندك ${bigBuys.length} مشتريات كل واحدة أكبر من متوسط حركاتك بـ ٥ مرات. لو طبّقت قاعدة "استنى ٧٢ ساعة قبل أي شراء كبير"، هتمنع نص المشتريات الاندفاعية.`
+      });
+    }
+
+    // Tip 4: Same-day duplicates (potential overspending)
+    const dayMap = {};
+    expenseTxs.forEach(t => {
+      const k = (t.date || '') + '|' + (t.cat || '');
+      dayMap[k] = (dayMap[k] || 0) + 1;
+    });
+    const dupDays = Object.values(dayMap).filter(c => c >= 3).length;
+    if (dupDays >= 3) {
+      tips.push({
+        icon: '🔄', priority: 'low',
+        title: 'حركات متكررة في نفس اليوم',
+        text: `لاحظنا إنك بتصرف ٣ مرات أو أكتر في نفس اليوم في نفس الفئة. حاول تجمع المشتريات في طلب واحد لتقليل الإنفاق الكلي.`
+      });
+    }
+
+    // Tip 5: Savings rate
+    const totalIncome = txs.filter(t => t.type === 'income').reduce((s, t) => s + (t.amountSAR || 0), 0);
+    const totalExp = expenseTxs.reduce((s, t) => s + (t.amountSAR || 0), 0);
+    if (totalIncome > 0) {
+      const sr = ((totalIncome - totalExp) / totalIncome) * 100;
+      if (sr < 10) {
+        tips.push({
+          icon: '🎯', priority: 'high',
+          title: 'معدل ادخارك منخفض',
+          text: `بتدخر أقل من ١٠٪ من دخلك. القاعدة المثالية: ٢٠٪. ابدأ بتحويل ٢٠٪ من راتبك أوتوماتيك لحساب التوفير أول الشهر.`
+        });
+      } else if (sr >= 30) {
+        tips.push({
+          icon: '🏆', priority: 'low',
+          title: 'أحسنت!',
+          text: `معدل ادخارك ${fmt(sr, 0)}٪ — ممتاز! فكّر تستثمر جزء من الادخار بدل ما يكون كاش.`
+        });
+      }
+    }
+
+    // Tip 6: Unused goals
+    if (typeof goals !== 'undefined' && goals.length > 0) {
+      const stagnant = goals.filter(g => {
+        const recent = txs.filter(t => t.goalId === g.id && t.date && (new Date() - new Date(t.date)) < 60 * 86400000);
+        return recent.length === 0 && (g.current || 0) < g.target;
+      });
+      if (stagnant.length > 0) {
+        tips.push({
+          icon: '😴', priority: 'medium',
+          title: 'أهداف نائمة',
+          text: `عندك ${stagnant.length} ${stagnant.length === 1 ? 'هدف' : 'أهداف'} ما ضفتش لها فلوس من شهرين. خصص ولو مبلغ صغير شهرياً عشان تستمر في التقدم.`
+        });
+      }
+    }
+
+    return tips.sort((a, b) => {
+      const order = { high: 0, medium: 1, low: 2 };
+      return order[a.priority] - order[b.priority];
+    });
+  }
+
+  function getMonthSpan(txArr) {
+    if (!txArr.length) return 1;
+    const dates = txArr.map(t => t.date).filter(Boolean).sort();
+    const span = (new Date(dates[dates.length - 1]) - new Date(dates[0])) / (30 * 86400000);
+    return Math.max(1, Math.ceil(span));
+  }
+  window.computeSavingsTips = computeSavingsTips;
+
+  // ─────────────────────────────────────────────────────────────
+  // PART G — INSIGHTS MODAL (combines facts + tips)
+  // Add to home as a card + standalone modal
+  // ─────────────────────────────────────────────────────────────
+
+  function buildInsightsCard() {
+    const facts = computeFinancialFacts();
+    const tips = computeSavingsTips();
+
+    if (facts.length === 0 && tips.length === 0) return '';
+
+    let html = '<div class="home-section v24-insights-card">';
+    html += '<div class="home-section-title">💡 نصائح وحقائق</div>';
+
+    // Show top 1 tip + open modal button
+    if (tips.length > 0) {
+      const t = tips[0];
+      const colorMap = { high: 'var(--red)', medium: '#f59e0b', low: 'var(--green)' };
+      html += `<div class="v24-tip-mini" style="border-color:${colorMap[t.priority]}">
+        <div class="v24-tip-mini-icon">${t.icon}</div>
+        <div class="v24-tip-mini-content">
+          <div class="v24-tip-mini-title">${esc(t.title)}</div>
+          <div class="v24-tip-mini-text">${esc(t.text)}</div>
+        </div>
+      </div>`;
+    }
+
+    // Show top 3 facts
+    if (facts.length > 0) {
+      html += '<div class="v24-facts-mini">';
+      facts.slice(0, 3).forEach(f => {
+        const colorClass = f.highlight === 'green' ? 'green' : f.highlight === 'red' ? 'red' : '';
+        html += `<div class="v24-fact-mini ${colorClass}">
+          <div class="v24-fact-mini-icon">${f.icon}</div>
+          <div class="v24-fact-mini-val">${esc(f.value)}</div>
+          <div class="v24-fact-mini-lbl">${esc(f.title)}</div>
+        </div>`;
+      });
+      html += '</div>';
+    }
+
+    html += `<button class="v24-insights-btn" onclick="v24OpenInsightsModal()">عرض كل النصائح والحقائق ›</button>`;
+    html += '</div>';
+
+    return html;
+  }
+  window.buildInsightsCard = buildInsightsCard;
+
+  window.v24OpenInsightsModal = function() {
+    let m = document.getElementById('v24InsightsModal');
+    if (!m) {
+      m = document.createElement('div');
+      m.id = 'v24InsightsModal';
+      m.className = 'overlay';
+      m.style.zIndex = '99996';
+      m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+      document.body.appendChild(m);
+    }
+
+    const facts = computeFinancialFacts();
+    const tips = computeSavingsTips();
+    const sym = BASE_LABELS[baseCurrency].sym;
+
+    let factsHtml = facts.map(f => {
+      const colorClass = f.highlight === 'green' ? 'v24-fact-green' : f.highlight === 'red' ? 'v24-fact-red' : '';
+      return `<div class="v24-fact-card ${colorClass}">
+        <div class="v24-fact-icon">${f.icon}</div>
+        <div class="v24-fact-content">
+          <div class="v24-fact-title">${esc(f.title)}</div>
+          <div class="v24-fact-value">${esc(f.value)}</div>
+          ${f.sub ? `<div class="v24-fact-sub">${esc(f.sub)}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    let tipsHtml = tips.map(t => {
+      const colorMap = { high: 'var(--red)', medium: '#f59e0b', low: 'var(--green)' };
+      const labelMap = { high: 'مهم جداً', medium: 'متوسط', low: 'تذكير' };
+      return `<div class="v24-tip-card" style="border-color:${colorMap[t.priority]}">
+        <div class="v24-tip-header">
+          <span class="v24-tip-icon">${t.icon}</span>
+          <span class="v24-tip-title">${esc(t.title)}</span>
+          <span class="v24-tip-priority" style="background:${colorMap[t.priority]}22;color:${colorMap[t.priority]}">${labelMap[t.priority]}</span>
+        </div>
+        <div class="v24-tip-text">${esc(t.text)}</div>
+      </div>`;
+    }).join('');
+
+    m.innerHTML = `<div class="sheet" style="max-height:94vh">
+      <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+      <div class="v23-acc-header">
+        <div>
+          <div class="v23-acc-title">💡 نصائح وحقائق</div>
+          <div class="v23-acc-sub">تحليل ذكي لبياناتك المالية</div>
+        </div>
+        <button class="v22-close-x" onclick="document.getElementById('v24InsightsModal').classList.remove('open')">✕</button>
+      </div>
+
+      ${tips.length ? `<div class="v23-section-title">🎯 نصائح ادخار شخصية</div>
+      <div style="margin-bottom:14px">${tipsHtml}</div>` : ''}
+
+      ${facts.length ? `<div class="v23-section-title">📊 حقائق عن حسابك</div>
+      <div class="v24-facts-grid">${factsHtml}</div>` : ''}
+    </div>`;
+
+    m.classList.add('open');
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // PART H — SMART SEARCH ENHANCEMENT
+  // When searching, show summary card with totals
+  // ─────────────────────────────────────────────────────────────
+
+  function injectSearchSummary() {
+    if (typeof searchQuery === 'undefined' || !searchQuery) {
+      const existing = document.getElementById('v24SearchSummary');
+      if (existing) existing.remove();
+      return;
+    }
+
+    const q = searchQuery.toLowerCase();
+    if (q.startsWith('#')) return; // Tag search has its own behavior
+
+    const matchedTxs = txs.filter(t => {
+      const text = ((t.name || '') + ' ' + (t.note || '') + ' ' + (t.cat || '')).toLowerCase();
+      return text.includes(q);
+    });
+
+    if (matchedTxs.length === 0) return;
+
+    const totalIn = matchedTxs.filter(t => t.type === 'income').reduce((s, t) => s + (t.amountSAR || 0), 0);
+    const totalOut = matchedTxs.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amountSAR || 0), 0);
+    const sym = BASE_LABELS[baseCurrency].sym;
+
+    // Date range
+    const dates = matchedTxs.map(t => t.date).filter(Boolean).sort();
+    const firstDate = dates[0];
+    const lastDate = dates[dates.length - 1];
+
+    // Find or create the summary
+    let summary = document.getElementById('v24SearchSummary');
+    if (!summary) {
+      summary = document.createElement('div');
+      summary.id = 'v24SearchSummary';
+      summary.className = 'v24-search-summary';
+      // Insert above the transactions list
+      const txList = document.querySelector('.tx-list, #txList, [id*="ransaction"]');
+      const filterChips = document.getElementById('filterChips');
+      if (filterChips && filterChips.parentNode) {
+        filterChips.parentNode.insertBefore(summary, filterChips.nextSibling);
+      } else if (txList && txList.parentNode) {
+        txList.parentNode.insertBefore(summary, txList);
+      }
+    }
+
+    summary.innerHTML = `
+      <div class="v24-ss-header">
+        <div class="v24-ss-icon">🔍</div>
+        <div class="v24-ss-title">
+          <div class="v24-ss-q">نتائج "${esc(searchQuery)}"</div>
+          <div class="v24-ss-count">${toArabicDigits(matchedTxs.length)} ${matchedTxs.length === 1 ? 'حركة' : 'حركة'}${firstDate ? ` · من ${firstDate}${firstDate !== lastDate ? ' حتى ' + lastDate : ''}` : ''}</div>
+        </div>
+      </div>
+      <div class="v24-ss-stats">
+        ${totalOut > 0 ? `<div class="v24-ss-stat out">
+          <div class="v24-ss-stat-lbl">↓ صرفت</div>
+          <div class="v24-ss-stat-val" style="direction:ltr">${fmt(toBase(totalOut), 0)} ${sym}</div>
+        </div>` : ''}
+        ${totalIn > 0 ? `<div class="v24-ss-stat in">
+          <div class="v24-ss-stat-lbl">↑ قبضت</div>
+          <div class="v24-ss-stat-val" style="direction:ltr">${fmt(toBase(totalIn), 0)} ${sym}</div>
+        </div>` : ''}
+        ${matchedTxs.length > 0 ? `<div class="v24-ss-stat avg">
+          <div class="v24-ss-stat-lbl">متوسط لكل حركة</div>
+          <div class="v24-ss-stat-val" style="direction:ltr">${fmt(toBase((totalOut + totalIn) / matchedTxs.length), 0)} ${sym}</div>
+        </div>` : ''}
+      </div>
+    `;
+  }
+
+  // Hook into renderAll/applySearch to inject summary
+  const _origApplySearchV24 = window.applySearch;
+  if (typeof _origApplySearchV24 === 'function') {
+    window.applySearch = function() {
+      _origApplySearchV24.apply(this, arguments);
+      setTimeout(injectSearchSummary, 200);
+    };
+  }
+  // Also re-inject after each renderAll (in case it removes the summary)
+  const _origRenderAllV24 = window.renderAll;
+  if (typeof _origRenderAllV24 === 'function') {
+    window.renderAll = function() {
+      _origRenderAllV24.apply(this, arguments);
+      setTimeout(injectSearchSummary, 100);
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // PART I — INSIGHTS CARD ON HOME
+  // ─────────────────────────────────────────────────────────────
+
+  const _origRenderHomeV24b = window.renderHome;
+  if (typeof _origRenderHomeV24b === 'function') {
+    let lastInsightsHtml = '';
+    window.renderHome = function() {
+      _origRenderHomeV24b.apply(this, arguments);
+      setTimeout(() => {
+        const home = document.getElementById('homeContent');
+        if (!home) return;
+        // Remove old insights card
+        home.querySelectorAll('.v24-insights-card').forEach(c => c.remove());
+        // Add new one near the top (after stats grid)
+        const insightsHtml = buildInsightsCard();
+        if (insightsHtml) {
+          const statsGrid = home.querySelector('.stats-grid');
+          if (statsGrid && statsGrid.nextSibling) {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = insightsHtml;
+            statsGrid.parentNode.insertBefore(wrapper.firstElementChild, statsGrid.nextSibling);
+          } else {
+            home.insertAdjacentHTML('beforeend', insightsHtml);
+          }
+        }
+      }, 100);
+    };
+  }
+
+  // Trigger initial render
+  setTimeout(() => {
+    if (typeof renderHome === 'function') renderHome();
+  }, 1500);
+
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// V24 — STYLES
+// ═══════════════════════════════════════════════════════════════
+(function v24Styles() {
+  const css = `
+    /* ═══ COUNTER ANIMATION (no special CSS - just smooth font rendering) ═══ */
+    .val, .v23-tb-amount, .v23-wallet-bal-amount {
+      font-feature-settings: "tnum"; /* tabular numbers for stable counter */
+    }
+
+    /* ═══ RIPPLE EFFECT ═══ */
+    .v24-ripple {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: v24-ripple-anim 0.6s ease-out;
+    }
+    @keyframes v24-ripple-anim {
+      from { transform: scale(0); opacity: 1; }
+      to { transform: scale(2.2); opacity: 0; }
+    }
+
+    /* ═══ SWIPE TO DELETE ═══ */
+    .v24-swipe-wrap {
+      position: relative;
+      overflow: hidden;
+    }
+    .v24-swipe-bg {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0 20px;
+      background: linear-gradient(90deg, var(--red), #b91c1c);
+      color: #fff;
+      font-weight: 900;
+      font-size: 13px;
+      pointer-events: none;
+    }
+    .v24-swipeable {
+      position: relative;
+      transition: transform 0.25s;
+      background: var(--card);
+    }
+
+    /* ═══ JAMEYA EDIT PREVIEW ═══ */
+    .v24-jam-preview {
+      background: linear-gradient(135deg, rgba(6,182,212,0.15), rgba(6,182,212,0.04));
+      border: 1px solid rgba(6,182,212,0.4);
+      border-radius: 14px;
+      padding: 12px;
+      margin: 8px 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .v24-jp-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+    .v24-jp-text { flex: 1; min-width: 0; }
+    .v24-jp-lbl {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .v24-jp-amount {
+      font-size: 22px;
+      font-weight: 900;
+      color: #06b6d4;
+      margin: 2px 0;
+      letter-spacing: -0.3px;
+    }
+    .v24-jp-info {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    /* ═══ INSIGHTS CARD ON HOME ═══ */
+    .v24-insights-card {
+      background: linear-gradient(135deg, rgba(240,180,41,0.08), rgba(240,180,41,0.02));
+      border: 1px solid rgba(240,180,41,0.25);
+    }
+    .v24-tip-mini {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      background: var(--card2);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      border-right: 3px solid var(--accent);
+    }
+    .v24-tip-mini-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .v24-tip-mini-content { flex: 1; min-width: 0; }
+    .v24-tip-mini-title {
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+    .v24-tip-mini-text {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .v24-facts-mini {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .v24-fact-mini {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 6px;
+      text-align: center;
+    }
+    .v24-fact-mini.green { border-color: rgba(63,185,80,0.4); background: rgba(63,185,80,0.08); }
+    .v24-fact-mini.red { border-color: rgba(248,81,73,0.4); background: rgba(248,81,73,0.08); }
+    .v24-fact-mini-icon {
+      font-size: 18px;
+    }
+    .v24-fact-mini-val {
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--text);
+      margin: 3px 0 1px;
+      direction: ltr;
+    }
+    .v24-fact-mini-lbl {
+      font-size: 9px;
+      color: var(--muted);
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .v24-insights-btn {
+      width: 100%;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      color: var(--accent);
+      font-family: 'Cairo', sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      -webkit-tap-highlight-color: rgba(240,180,41,0.2);
+    }
+    .v24-insights-btn:active { background: rgba(240,180,41,0.1); }
+
+    /* ═══ INSIGHTS MODAL ═══ */
+    .v24-fact-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    .v24-fact-card.v24-fact-green { border-color: var(--green); background: rgba(63,185,80,0.05); }
+    .v24-fact-card.v24-fact-red { border-color: var(--red); background: rgba(248,81,73,0.05); }
+    .v24-fact-icon { font-size: 28px; flex-shrink: 0; }
+    .v24-fact-content { flex: 1; min-width: 0; }
+    .v24-fact-title { font-size: 11px; color: var(--muted); font-weight: 700; }
+    .v24-fact-value { font-size: 18px; font-weight: 900; color: var(--text); margin: 2px 0; direction: ltr; }
+    .v24-fact-sub { font-size: 11px; color: var(--muted); }
+    .v24-facts-grid { margin-bottom: 14px; }
+
+    .v24-tip-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-right-width: 3px;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    .v24-tip-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .v24-tip-icon { font-size: 20px; }
+    .v24-tip-title { font-size: 13px; font-weight: 900; color: var(--text); flex: 1; }
+    .v24-tip-priority {
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 9px;
+      font-weight: 900;
+    }
+    .v24-tip-text {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ═══ SEARCH SUMMARY ═══ */
+    .v24-search-summary {
+      background: linear-gradient(135deg, rgba(88,166,255,0.12), rgba(88,166,255,0.03));
+      border: 1px solid var(--accent);
+      border-radius: 14px;
+      padding: 14px;
+      margin: 10px 0 14px;
+    }
+    .v24-ss-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .v24-ss-icon {
+      font-size: 26px;
+      flex-shrink: 0;
+    }
+    .v24-ss-title { flex: 1; min-width: 0; }
+    .v24-ss-q {
+      font-size: 14px;
+      font-weight: 900;
+      color: var(--accent);
+      letter-spacing: -0.2px;
+    }
+    .v24-ss-count {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .v24-ss-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 8px;
+    }
+    .v24-ss-stat {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 8px 6px;
+      text-align: center;
+    }
+    .v24-ss-stat.out { border: 1px solid rgba(248,81,73,0.4); }
+    .v24-ss-stat.in { border: 1px solid rgba(63,185,80,0.4); }
+    .v24-ss-stat.avg { border: 1px solid var(--border); }
+    .v24-ss-stat-lbl {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .v24-ss-stat-val {
+      font-size: 14px;
+      font-weight: 900;
+      color: var(--text);
+      margin-top: 3px;
+    }
+    .v24-ss-stat.out .v24-ss-stat-val { color: var(--red); }
+    .v24-ss-stat.in .v24-ss-stat-val { color: var(--green); }
+
+    /* Responsive — small screens */
+    @media (max-width: 359px) {
+      .v24-facts-mini { grid-template-columns: repeat(2, 1fr); }
     }
   `;
   const style = document.createElement('style');
