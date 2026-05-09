@@ -1638,6 +1638,15 @@ button, .menu-row, .tx-card {
       </select>
     </div>
 
+    <!-- LINK TO OCCASION (V27) -->
+    <div class="form-row" id="fOccLinkRow" style="display:none">
+      <div class="form-lbl">🎁 اربط بمناسبة (اختياري)</div>
+      <select class="form-inp" id="fOccLink">
+        <option value="">— مفيش —</option>
+      </select>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">الحركة هتترصد كمصروف/إيداع جوه المناسبة دي</div>
+    </div>
+
     <!-- TAGS (#27) -->
     <div class="form-row">
       <div class="form-lbl">🏷️ tags (اختياري — اضغط enter لإضافة)</div>
@@ -2064,44 +2073,106 @@ button, .menu-row, .tx-card {
   <div class="sheet">
     <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
     <div class="modal-title">🎁 العيدية والمناسبات</div>
-    <p class="modal-hint">تتبع مصاريف المناسبات — عيدية، فرح، عزا، هدايا</p>
+    <p class="modal-hint">كل مناسبة عبارة عن حاوية فيها كل حركاتها — مصاريف وإيداعات</p>
     <div id="occasionsList"></div>
     <div class="section-divider">
       <div class="subsection-label">إضافة مناسبة جديدة</div>
       <div class="form-row"><div class="form-lbl">📛 نوع المناسبة</div>
         <select class="form-inp" id="occType">
+          <option value="عيد ميلاد">🎂 عيد ميلاد</option>
+          <option value="فرح">💍 فرح</option>
+          <option value="خطوبة">💐 خطوبة</option>
           <option value="عيدية رمضان">🌙 عيدية رمضان</option>
           <option value="عيدية الفطر">🎉 عيدية عيد الفطر</option>
           <option value="عيدية الأضحى">🐑 عيدية عيد الأضحى</option>
-          <option value="فرح">💍 فرح</option>
           <option value="عزا">🤲 عزاء</option>
           <option value="هدية">🎁 هدية</option>
           <option value="مولود">👶 مولود جديد</option>
           <option value="نجاح">🎓 نجاح / تخرج</option>
+          <option value="سفر">✈️ سفر / رحلة</option>
+          <option value="حفلة">🎉 حفلة / مناسبة</option>
           <option value="أخرى">📌 أخرى</option>
         </select>
       </div>
-      <div class="form-row"><input class="form-inp" id="occName" placeholder="اسم الشخص أو المناسبة"/></div>
-      <div class="two-col">
-        <div class="form-row"><div class="form-lbl">المبلغ</div><input class="form-inp" id="occAmount" type="number" placeholder="100" inputmode="decimal"/></div>
-        <div class="form-row"><div class="form-lbl">العملة</div>
-          <select class="form-inp" id="occCurrency">
-            <option value="SAR">🇸🇦 ريال</option>
-            <option value="EGP">🇪🇬 جنيه</option>
-          </select>
-        </div>
-      </div>
+      <div class="form-row"><input class="form-inp" id="occName" placeholder="اسم المناسبة (مثال: عيد ميلاد فرح)"/></div>
       <div class="two-col">
         <div class="form-row"><div class="form-lbl">📅 التاريخ</div><input class="form-inp" id="occDate" type="date"/></div>
-        <div class="form-row"><div class="form-lbl">الاتجاه</div>
-          <select class="form-inp" id="occDirection">
-            <option value="out">📤 دفعتها</option>
-            <option value="in">📥 استلمتها</option>
+        <div class="form-row"><div class="form-lbl">ملاحظة</div><input class="form-inp" id="occNote" placeholder="اختياري"/></div>
+      </div>
+      <button class="save-btn" onclick="saveOccasion()">💾 إنشاء المناسبة</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ OCCASION DETAIL MODAL (V26 — container with multiple entries) ═══════ -->
+<div class="overlay" id="occDetailModal" onclick="closeIfOut(event,'occDetailModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div id="occDetailHead"></div>
+    <div id="occDetailBody"></div>
+    <div class="section-divider" id="oeFormSection">
+      <div class="subsection-label" id="oeFormTitle">إضافة حركة جديدة داخل المناسبة</div>
+      <div class="form-row"><input class="form-inp" id="oeName" placeholder="اسم الحركة (مثال: تورتة، عيدية من جدو، سيارة لعب)"/></div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">المبلغ</div><input class="form-inp" id="oeAmount" type="number" placeholder="0" inputmode="decimal"/></div>
+        <div class="form-row"><div class="form-lbl">العملة</div>
+          <select class="form-inp" id="oeCurrency">
+            <option value="SAR">🇸🇦 ريال</option>
+            <option value="EGP">🇪🇬 جنيه</option>
+            <option value="USD">🇺🇸 دولار</option>
+            <option value="EUR">🇪🇺 يورو</option>
           </select>
         </div>
       </div>
-      <div class="form-row"><input class="form-inp" id="occNote" placeholder="ملاحظات (اختياري)"/></div>
-      <button class="save-btn" onclick="saveOccasion()">💾 حفظ + إضافة كحركة</button>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">📅 التاريخ</div><input class="form-inp" id="oeDate" type="date"/></div>
+        <div class="form-row"><div class="form-lbl">النوع</div>
+          <select class="form-inp" id="oeDirection">
+            <option value="out">📤 مصروف</option>
+            <option value="in">📥 إيداع</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row"><input class="form-inp" id="oeNote" placeholder="ملاحظة (اختياري)"/></div>
+      <div style="display:flex;gap:8px">
+        <button class="save-btn" id="oeSaveBtn" style="flex:1" onclick="saveOccasionEntry()">➕ إضافة الحركة</button>
+        <button id="oeCancelBtn" onclick="cancelEntryEdit()" style="display:none;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700">❌ إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ EDIT OCCASION MODAL (V27 — edit container itself) ═══════ -->
+<div class="overlay" id="occEditModal" onclick="closeIfOut(event,'occEditModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title">✏️ تعديل المناسبة</div>
+    <p class="modal-hint">عدّل بيانات المناسبة — الحركات اللي جواها هتفضل زي ما هي</p>
+    <div class="form-row"><div class="form-lbl">📛 نوع المناسبة</div>
+      <select class="form-inp" id="occEditType">
+        <option value="عيد ميلاد">🎂 عيد ميلاد</option>
+        <option value="فرح">💍 فرح</option>
+        <option value="خطوبة">💐 خطوبة</option>
+        <option value="عيدية رمضان">🌙 عيدية رمضان</option>
+        <option value="عيدية الفطر">🎉 عيدية عيد الفطر</option>
+        <option value="عيدية الأضحى">🐑 عيدية عيد الأضحى</option>
+        <option value="عزا">🤲 عزاء</option>
+        <option value="هدية">🎁 هدية</option>
+        <option value="مولود">👶 مولود جديد</option>
+        <option value="نجاح">🎓 نجاح / تخرج</option>
+        <option value="سفر">✈️ سفر / رحلة</option>
+        <option value="حفلة">🎉 حفلة / مناسبة</option>
+        <option value="أخرى">📌 أخرى</option>
+      </select>
+    </div>
+    <div class="form-row"><div class="form-lbl">الاسم</div><input class="form-inp" id="occEditName" placeholder="اسم المناسبة"/></div>
+    <div class="two-col">
+      <div class="form-row"><div class="form-lbl">📅 التاريخ</div><input class="form-inp" id="occEditDate" type="date"/></div>
+      <div class="form-row"><div class="form-lbl">ملاحظة</div><input class="form-inp" id="occEditNote" placeholder="اختياري"/></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="save-btn" style="flex:1" onclick="saveOccasionEdit()">💾 حفظ التعديل</button>
+      <button onclick="document.getElementById('occEditModal').classList.remove('open')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700">إلغاء</button>
     </div>
   </div>
 </div>
@@ -2910,8 +2981,16 @@ function renderHome() {
   if (typeof occasions !== 'undefined' && occasions.length > 0) {
     let occIn = 0, occOut = 0;
     occasions.forEach(o => {
-      const sar = curToSAR(o.amount, o.currency);
-      if (o.direction === 'in') occIn += sar; else occOut += sar;
+      // V26: occasions are containers with entries; fall back to old single-amount style
+      if (Array.isArray(o.entries) && o.entries.length) {
+        o.entries.forEach(e => {
+          const sar = curToSAR(e.amount, e.currency);
+          if (e.direction === 'in') occIn += sar; else occOut += sar;
+        });
+      } else if (o.amount !== undefined && o.amount !== null) {
+        const sar = curToSAR(o.amount, o.currency);
+        if (o.direction === 'in') occIn += sar; else occOut += sar;
+      }
     });
     const occNet = occIn - occOut;
     html += `<div class="home-section">
@@ -3429,6 +3508,8 @@ function editTx(id) {
   if(t.type==='income'){selICat=t.cat;document.querySelectorAll('#incCatGrid .inc-btn').forEach(b=>b.classList.toggle('sel',b.dataset.cat===t.cat));}
   else{selECat=t.cat;document.querySelectorAll('#expCatGrid .cat-btn').forEach(b=>b.classList.toggle('sel',b.dataset.cat===t.cat));}
   document.querySelector('#modal .modal-title').textContent='✏️ تعديل الحركة';
+  // V27: pre-select the linked occasion if any
+  populateOccasionPicker(t.occId || null);
   document.getElementById('modal').classList.add('open');
 }
 function editSav(id) {
@@ -3454,6 +3535,36 @@ function editSav(id) {
   document.querySelectorAll('#savCatGrid .sav-btn').forEach(b=>b.classList.toggle('sel',b.dataset.cat===t.cat));
   document.querySelector('#modal .modal-title').textContent='✏️ تعديل المدخرات';
   document.getElementById('modal').classList.add('open');
+}
+
+// ── V27: Populate the occasion picker in tx form ──
+function populateOccasionPicker(selectedOccId) {
+  const sel = document.getElementById('fOccLink');
+  const row = document.getElementById('fOccLinkRow');
+  if (!sel || !row) return;
+  // Hide for transfer & savings (only relevant for income/expense)
+  if (txType === 'transfer' || txType === 'savings') {
+    row.style.display = 'none';
+    sel.value = '';
+    return;
+  }
+  // Hide if no occasions exist yet
+  if (!Array.isArray(occasions) || occasions.length === 0) {
+    row.style.display = 'none';
+    sel.value = '';
+    return;
+  }
+  // Build options: most recent first
+  const sorted = [...occasions].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  let html = '<option value="">— مفيش —</option>';
+  sorted.forEach(o => {
+    const em = OCC_EMOJI[o.type] || '🎁';
+    const safeName = (o.name || o.type).replace(/"/g,'&quot;');
+    html += `<option value="${o.id}">${em} ${safeName}</option>`;
+  });
+  sel.innerHTML = html;
+  sel.value = selectedOccId || '';
+  row.style.display = '';
 }
 
 // ── MODAL ──
@@ -3490,6 +3601,8 @@ function openModal() {
   document.getElementById('fRate').value='';
   document.getElementById('rateResult').textContent='';
   document.querySelector('#modal .modal-title').textContent='إضافة حركة جديدة';
+  // V27: populate occasion picker (empty selection)
+  populateOccasionPicker(null);
   document.getElementById('modal').classList.add('open');
 }
 function closeModal() { document.getElementById('modal').classList.remove('open'); }
@@ -3647,6 +3760,9 @@ function selType(type) {
   if (accountRow) accountRow.style.display = isTransfer ? 'none' : '';
   document.getElementById('recurringRow').style.display = isTransfer ? 'none' : '';
   if (isTransfer) fillTransferDropdowns();
+  // V27: re-evaluate occasion picker visibility (hidden for transfer/savings)
+  const occSel = document.getElementById('fOccLink');
+  if (typeof populateOccasionPicker === 'function') populateOccasionPicker(occSel ? occSel.value : null);
 }
 
 function fillTransferDropdowns() {
@@ -4987,11 +5103,16 @@ updateMenuStreak();
 renderAll();
 
 // Check for live rates on startup (once per day)
+// V26 fix: defer until all scripts loaded — fetchLiveRates is defined in a later <script> block
 const lastRateUpdate = localStorage.getItem('msarifyi_rates_last_update');
 const today = new Date().toDateString();
 if (lastRateUpdate !== today && navigator.onLine) {
-  fetchLiveRates();
-  localStorage.setItem('msarifyi_rates_last_update', today);
+  setTimeout(() => {
+    if (typeof fetchLiveRates === 'function') {
+      fetchLiveRates();
+      localStorage.setItem('msarifyi_rates_last_update', today);
+    }
+  }, 0);
 }
 
 </script><!-- ═══════ PDF IMPORT REVIEW MODAL ═══════ -->
@@ -5685,10 +5806,121 @@ function checkJameyaDue() {
 // ═══════════════════════════════════════════════════════════════
 
 const OCC_EMOJI = {
+  'عيد ميلاد':'🎂',
   'عيدية رمضان':'🌙', 'عيدية الفطر':'🎉', 'عيدية الأضحى':'🐑',
-  'فرح':'💍', 'عزا':'🤲', 'هدية':'🎁',
-  'مولود':'👶', 'نجاح':'🎓', 'أخرى':'📌'
+  'فرح':'💍', 'خطوبة':'💐',
+  'عزا':'🤲', 'هدية':'🎁',
+  'مولود':'👶', 'نجاح':'🎓',
+  'سفر':'✈️', 'حفلة':'🎉',
+  'أخرى':'📌'
 };
+
+// ═══════════════════════════════════════════════════════════════
+// V26: OCCASIONS AS CONTAINERS (multiple entries per occasion)
+// ═══════════════════════════════════════════════════════════════
+// Each occasion = { id, type, name, date, note, entries: [...] }
+// Each entry    = { id, name, amount, currency, direction, date, note }
+// Each entry creates a linked tx via occId + occEntryId
+
+// ── Migration: convert old single-entry occasions to new container format ──
+function _migrateOccasions() {
+  let changed = false;
+  occasions.forEach(o => {
+    if (!Array.isArray(o.entries)) {
+      // Old-style occasion with amount on container itself
+      if (o.amount !== undefined && o.amount !== null) {
+        const entryId = 'oe_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+        o.entries = [{
+          id: entryId,
+          name: o.name || o.type || 'حركة',
+          amount: o.amount,
+          currency: o.currency || baseCurrency,
+          direction: o.direction || 'out',
+          date: o.date || new Date().toISOString().split('T')[0],
+          note: o.note || ''
+        }];
+        // Link existing tx (if any) to this entry
+        txs.forEach(t => { if (t.occId === o.id && !t.occEntryId) t.occEntryId = entryId; });
+        // Clean container-level fields (kept for backwards-compat only — harmless if left)
+        delete o.amount; delete o.currency; delete o.direction;
+      } else {
+        o.entries = [];
+      }
+      changed = true;
+    }
+  });
+  if (changed) { saveOccasions(); saveData(); }
+}
+// Run migration once on load
+try { _migrateOccasions(); } catch(e) { console.warn('occ migration:', e); }
+
+// ── Helpers ──
+function _occTotals(o) {
+  let inSAR = 0, outSAR = 0, count = 0;
+  (o.entries || []).forEach(e => {
+    const sar = curToSAR(e.amount, e.currency);
+    if (e.direction === 'in') inSAR += sar; else outSAR += sar;
+    count++;
+  });
+  return { inSAR, outSAR, netSAR: inSAR - outSAR, count };
+}
+
+// ── Track which occasion is currently open in the detail view ──
+var _currentOccId = null;
+// ── V27: Track which entry is being edited (null = adding new) ──
+var _editingEntryId = null;
+
+function _resetEntryForm() {
+  _editingEntryId = null;
+  ['oeName','oeAmount','oeNote'].forEach(id => { const i = document.getElementById(id); if (i) i.value = ''; });
+  const dt = document.getElementById('oeDate'); if (dt) dt.value = new Date().toISOString().split('T')[0];
+  const dir = document.getElementById('oeDirection'); if (dir) dir.value = 'out';
+  const cur = document.getElementById('oeCurrency'); if (cur) cur.value = baseCurrency || 'SAR';
+  const title = document.getElementById('oeFormTitle'); if (title) title.textContent = 'إضافة حركة جديدة داخل المناسبة';
+  const btn = document.getElementById('oeSaveBtn'); if (btn) btn.innerHTML = '➕ إضافة الحركة';
+  const cancel = document.getElementById('oeCancelBtn'); if (cancel) cancel.style.display = 'none';
+  const section = document.getElementById('oeFormSection');
+  if (section) section.style.background = '';
+  if (section) section.style.borderRadius = '';
+  if (section) section.style.padding = '';
+}
+
+function startEditEntry(occId, entryId) {
+  const o = occasions.find(x => x.id === occId);
+  if (!o) return;
+  const e = (o.entries || []).find(x => x.id === entryId);
+  if (!e) return;
+  _editingEntryId = entryId;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  set('oeName', e.name || '');
+  set('oeAmount', e.amount || '');
+  set('oeCurrency', e.currency || 'SAR');
+  set('oeDate', e.date || new Date().toISOString().split('T')[0]);
+  set('oeDirection', e.direction || 'out');
+  set('oeNote', e.note || '');
+  const title = document.getElementById('oeFormTitle');
+  if (title) title.textContent = '✏️ تعديل الحركة';
+  const btn = document.getElementById('oeSaveBtn');
+  if (btn) btn.innerHTML = '💾 حفظ التعديل';
+  const cancel = document.getElementById('oeCancelBtn');
+  if (cancel) cancel.style.display = '';
+  // Highlight the form section so user sees they're editing
+  const section = document.getElementById('oeFormSection');
+  if (section) {
+    section.style.background = 'var(--card2)';
+    section.style.borderRadius = '12px';
+    section.style.padding = '12px';
+  }
+  // Scroll the form into view
+  setTimeout(() => {
+    const el = document.getElementById('oeName');
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
+  }, 100);
+}
+
+function cancelEntryEdit() {
+  _resetEntryForm();
+}
 
 function renderOccasions() {
   const el = document.getElementById('occasionsList');
@@ -5697,98 +5929,442 @@ function renderOccasions() {
   const dt = document.getElementById('occDate');
   if (dt && !dt.value) dt.value = new Date().toISOString().split('T')[0];
   if (!occasions.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">🎁</div>لا توجد مناسبات</div>`;
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🎁</div>لا توجد مناسبات<div style="font-size:11px;color:var(--muted);margin-top:6px">أنشئ مناسبة جديدة وابدأ تسجل حركاتها</div></div>`;
     return;
   }
   const sym = BASE_LABELS[baseCurrency].sym;
-  // Group by type
-  const grouped = {};
-  occasions.forEach(o => { if(!grouped[o.type])grouped[o.type]=[]; grouped[o.type].push(o); });
+  // Overall totals across all occasions
   let totalIn = 0, totalOut = 0;
   occasions.forEach(o => {
-    const sar = curToSAR(o.amount, o.currency);
-    if (o.direction === 'in') totalIn += sar; else totalOut += sar;
+    const t = _occTotals(o);
+    totalIn += t.inSAR; totalOut += t.outSAR;
   });
+  const totalNet = totalIn - totalOut;
 
-  let html = `<div style="display:flex;gap:8px;margin-bottom:12px">
+  let html = `<div style="display:flex;gap:6px;margin-bottom:12px">
     <div style="flex:1;background:var(--green-dim);border:1px solid var(--green);border-radius:12px;padding:10px;text-align:center">
-      <div style="font-size:10px;color:var(--green);font-weight:700">📥 استلمت</div>
-      <div style="font-size:15px;font-weight:900;color:var(--green);direction:ltr;margin-top:3px">${fmt(toBase(totalIn),0)} ${sym}</div>
+      <div style="font-size:10px;color:var(--green);font-weight:700">📥 إجمالي إيداع</div>
+      <div style="font-size:14px;font-weight:900;color:var(--green);direction:ltr;margin-top:3px">${fmt(toBase(totalIn),0)} ${sym}</div>
     </div>
     <div style="flex:1;background:var(--red-dim);border:1px solid var(--red);border-radius:12px;padding:10px;text-align:center">
-      <div style="font-size:10px;color:var(--red);font-weight:700">📤 دفعت</div>
-      <div style="font-size:15px;font-weight:900;color:var(--red);direction:ltr;margin-top:3px">${fmt(toBase(totalOut),0)} ${sym}</div>
+      <div style="font-size:10px;color:var(--red);font-weight:700">📤 إجمالي صرف</div>
+      <div style="font-size:14px;font-weight:900;color:var(--red);direction:ltr;margin-top:3px">${fmt(toBase(totalOut),0)} ${sym}</div>
+    </div>
+    <div style="flex:1;background:var(--card2);border:1px solid ${totalNet>=0?'var(--green)':'var(--red)'};border-radius:12px;padding:10px;text-align:center">
+      <div style="font-size:10px;color:var(--muted);font-weight:700">صافي</div>
+      <div style="font-size:14px;font-weight:900;direction:ltr;margin-top:3px;color:${totalNet>=0?'var(--green)':'var(--red)'}">${totalNet>=0?'+':''}${fmt(toBase(totalNet),0)} ${sym}</div>
     </div>
   </div>`;
 
-  Object.entries(grouped).sort((a,b)=>b[1].length-a[1].length).forEach(([type, list]) => {
-    const em = OCC_EMOJI[type] || '🎁';
-    const total = list.reduce((s,o)=>s+curToSAR(o.amount,o.currency)*(o.direction==='in'?1:-1), 0);
-    html += `<div style="background:var(--card);border-radius:12px;padding:12px;margin-bottom:10px;border:1px solid var(--border)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-weight:700">${em} ${type}</div>
-        <div style="font-size:13px;color:${total>=0?'var(--green)':'var(--red)'};direction:ltr">${total>=0?'+':''}${fmt(toBase(total),0)} ${sym}</div>
-      </div>`;
-    list.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).forEach(o => {
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border);font-size:13px">
-        <div>
-          <div style="font-weight:600">${o.name}</div>
-          <div style="font-size:10px;color:var(--muted)">${o.date}${o.note?' · '+o.note:''}</div>
+  // Sort occasions: most recent date first
+  const sorted = [...occasions].sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  sorted.forEach(o => {
+    const em = OCC_EMOJI[o.type] || '🎁';
+    const t = _occTotals(o);
+    const netColor = t.netSAR >= 0 ? 'var(--green)' : 'var(--red)';
+    html += `<div onclick="openOccasionDetail('${o.id}')" style="background:var(--card);border-radius:12px;padding:12px;margin-bottom:10px;border:1px solid var(--border);cursor:pointer;transition:transform .1s" onmousedown="this.style.transform='scale(.98)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:800;font-size:14px;display:flex;align-items:center;gap:6px">
+            <span style="font-size:18px">${em}</span>
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.name || o.type}</span>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:3px">${o.type} · ${o.date || ''}${o.note?' · '+o.note:''}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${t.count} ${t.count===1?'حركة':'حركات'}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="color:${o.direction==='in'?'var(--green)':'var(--red)'};direction:ltr">${o.direction==='in'?'+':'-'}${fmt(o.amount,0)} ${SYM[o.currency]||o.currency}</div>
-          <button onclick="delOccasion('${o.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">✕</button>
+        <div style="text-align:left;flex-shrink:0">
+          <div style="font-size:14px;font-weight:900;color:${netColor};direction:ltr">${t.netSAR>=0?'+':''}${fmt(toBase(t.netSAR),0)} ${sym}</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px;direction:ltr">📥 ${fmt(toBase(t.inSAR),0)} · 📤 ${fmt(toBase(t.outSAR),0)}</div>
         </div>
-      </div>`;
-    });
-    html += `</div>`;
+      </div>
+    </div>`;
   });
   el.innerHTML = html;
+}
+
+function openOccasionDetail(occId) {
+  _currentOccId = occId;
+  _resetEntryForm();
+  renderOccasionDetail();
+  document.getElementById('occDetailModal').classList.add('open');
+}
+
+function renderOccasionDetail() {
+  const o = occasions.find(x => x.id === _currentOccId);
+  const head = document.getElementById('occDetailHead');
+  const body = document.getElementById('occDetailBody');
+  if (!o || !head || !body) return;
+  const em = OCC_EMOJI[o.type] || '🎁';
+  const sym = BASE_LABELS[baseCurrency].sym;
+  const t = _occTotals(o);
+  const netColor = t.netSAR >= 0 ? 'var(--green)' : 'var(--red)';
+
+  head.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
+    <div style="flex:1;min-width:0">
+      <div class="modal-title" style="margin:0">${em} ${o.name || o.type}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${o.type} · ${o.date || ''}${o.note?' · '+o.note:''}</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <button onclick="openOccasionEdit('${o.id}')" title="تعديل المناسبة" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer">✏️</button>
+      <button onclick="delOccasion('${o.id}')" title="حذف المناسبة" style="background:var(--red-dim);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer">🗑️</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;margin:10px 0 12px">
+    <div style="flex:1;background:var(--green-dim);border:1px solid var(--green);border-radius:10px;padding:8px;text-align:center">
+      <div style="font-size:9px;color:var(--green);font-weight:700">📥 إيداع</div>
+      <div style="font-size:13px;font-weight:900;color:var(--green);direction:ltr;margin-top:2px">${fmt(toBase(t.inSAR),0)} ${sym}</div>
+    </div>
+    <div style="flex:1;background:var(--red-dim);border:1px solid var(--red);border-radius:10px;padding:8px;text-align:center">
+      <div style="font-size:9px;color:var(--red);font-weight:700">📤 صرف</div>
+      <div style="font-size:13px;font-weight:900;color:var(--red);direction:ltr;margin-top:2px">${fmt(toBase(t.outSAR),0)} ${sym}</div>
+    </div>
+    <div style="flex:1;background:var(--card2);border:1px solid ${netColor};border-radius:10px;padding:8px;text-align:center">
+      <div style="font-size:9px;color:var(--muted);font-weight:700">صافي</div>
+      <div style="font-size:13px;font-weight:900;direction:ltr;margin-top:2px;color:${netColor}">${t.netSAR>=0?'+':''}${fmt(toBase(t.netSAR),0)} ${sym}</div>
+    </div>
+  </div>`;
+
+  if (!o.entries || !o.entries.length) {
+    body.innerHTML = `<div class="empty" style="padding:20px"><div class="empty-icon">📋</div>لسه مفيش حركات<div style="font-size:11px;color:var(--muted);margin-top:6px">ابدأ ضيف حركة جديدة من تحت</div></div>`;
+    return;
+  }
+  let html = `<div class="subsection-label" style="margin-top:4px">الحركات (${o.entries.length}) <span style="font-size:10px;color:var(--muted);font-weight:400">— اضغط على أي حركة للتعديل</span></div>`;
+  const sorted = [...o.entries].sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  sorted.forEach(e => {
+    const isIn = e.direction === 'in';
+    const isEditing = _editingEntryId === e.id;
+    html += `<div onclick="startEditEntry('${o.id}','${e.id}')" style="background:${isEditing?'var(--card2)':'var(--card)'};border-radius:10px;padding:10px;margin-bottom:8px;border:1px solid ${isEditing?'var(--accent)':'var(--border)'};display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;transition:transform .1s" onmousedown="this.style.transform='scale(.98)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px">
+          <span>${isIn?'📥':'📤'}</span>
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.name}</span>
+          ${isEditing?'<span style="font-size:10px;color:var(--accent);font-weight:600">✏️ يتم التعديل</span>':''}
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">${e.date || ''}${e.note?' · '+e.note:''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        <div style="color:${isIn?'var(--green)':'var(--red)'};direction:ltr;font-weight:700;font-size:13px">${isIn?'+':'-'}${fmt(e.amount,0)} ${SYM[e.currency]||e.currency}</div>
+        <button onclick="event.stopPropagation();delOccasionEntry('${o.id}','${e.id}')" title="حذف" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px 6px">✕</button>
+      </div>
+    </div>`;
+  });
+  body.innerHTML = html;
 }
 
 function saveOccasion() {
   const type = document.getElementById('occType').value;
   const name = document.getElementById('occName').value.trim();
-  const amount = parseFloat(document.getElementById('occAmount').value);
-  const currency = document.getElementById('occCurrency').value;
   const date = document.getElementById('occDate').value || new Date().toISOString().split('T')[0];
-  const direction = document.getElementById('occDirection').value;
   const note = document.getElementById('occNote').value.trim();
-  if (!name || !amount) { showAlert('املأ الاسم والمبلغ','error'); return; }
+  if (!name) { showAlert('اكتب اسم المناسبة','error'); return; }
   const id = 'occ_' + Date.now();
-  occasions.unshift({id, type, name, amount, currency, date, direction, note});
+  occasions.unshift({ id, type, name, date, note, entries: [] });
   saveOccasions();
-  // Also create a transaction
-  const rate = currency === 'SAR' ? 1 : (currency === 'EGP' ? rates.EGP : rates[currency]);
+  // Clear form
+  ['occName','occNote'].forEach(i => { const el = document.getElementById(i); if (el) el.value=''; });
+  renderOccasions();
+  updateMenuCounts();
+  if (typeof renderAll === 'function') renderAll();
+  if (typeof showToast === 'function') showToast('✅ تم إنشاء المناسبة — افتحها وضيف حركاتها', 'success');
+  // Auto-open detail so user can start adding entries
+  openOccasionDetail(id);
+}
+
+function saveOccasionEntry() {
+  const occId = _currentOccId;
+  const o = occasions.find(x => x.id === occId);
+  if (!o) { showAlert('مناسبة غير موجودة','error'); return; }
+  const name = document.getElementById('oeName').value.trim();
+  const amount = parseFloat(document.getElementById('oeAmount').value);
+  const currency = document.getElementById('oeCurrency').value;
+  const date = document.getElementById('oeDate').value || new Date().toISOString().split('T')[0];
+  const direction = document.getElementById('oeDirection').value;
+  const note = document.getElementById('oeNote').value.trim();
+  if (!name || !amount || !(amount > 0)) { showAlert('املأ الاسم والمبلغ','error'); return; }
+  if (!Array.isArray(o.entries)) o.entries = [];
+
+  const em = OCC_EMOJI[o.type] || '🎁';
+  const rate = currency === 'SAR' ? 1 : (rates && rates[currency] ? rates[currency] : 1);
   const amountSAR = curToSAR(amount, currency);
+
+  if (_editingEntryId) {
+    // ── EDIT MODE: update existing entry + linked tx ──
+    const e = o.entries.find(x => x.id === _editingEntryId);
+    if (!e) { _editingEntryId = null; return; }
+    e.name = name; e.amount = amount; e.currency = currency;
+    e.direction = direction; e.date = date; e.note = note;
+    saveOccasions();
+    // Update linked tx
+    const linked = txs.find(t => t.occId === o.id && t.occEntryId === e.id);
+    if (linked) {
+      linked.type = direction === 'in' ? 'income' : 'expense';
+      linked.name = `${em} ${o.name || o.type}: ${name}`;
+      linked.amount = amount; linked.currency = currency;
+      linked.rate = rate; linked.amountSAR = amountSAR;
+      linked.date = date; linked.note = note || o.type;
+    } else {
+      // Linked tx missing — recreate it
+      txs.unshift({
+        id: 'tx_occ_' + Date.now(),
+        type: direction === 'in' ? 'income' : 'expense',
+        name: `${em} ${o.name || o.type}: ${name}`,
+        amount, currency, rate, amountSAR,
+        cat: 'هدايا',
+        date, time: new Date().toTimeString().slice(0,5),
+        note: note || o.type,
+        account: accounts[0]?.id,
+        recurring: false,
+        occId: o.id, occEntryId: e.id
+      });
+    }
+    saveData();
+    _resetEntryForm();
+    renderOccasionDetail(); renderOccasions();
+    if (typeof renderAll === 'function') renderAll();
+    updateMenuCounts();
+    if (typeof showToast === 'function') showToast('✅ تم تعديل الحركة', 'success');
+    return;
+  }
+
+  // ── ADD MODE: create new entry + linked tx ──
+  const entryId = 'oe_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  o.entries.unshift({ id: entryId, name, amount, currency, direction, date, note });
+  saveOccasions();
   txs.unshift({
     id: 'tx_occ_' + Date.now(),
     type: direction === 'in' ? 'income' : 'expense',
-    name: `${OCC_EMOJI[type]||'🎁'} ${type}: ${name}`,
+    name: `${em} ${o.name || o.type}: ${name}`,
     amount, currency, rate, amountSAR,
-    cat: direction === 'in' ? 'هدايا' : 'هدايا',
+    cat: 'هدايا',
     date, time: new Date().toTimeString().slice(0,5),
-    note: note || type,
+    note: note || o.type,
     account: accounts[0]?.id,
     recurring: false,
-    occId: id
+    occId: o.id,
+    occEntryId: entryId
   });
   saveData();
-  ['occName','occAmount','occNote'].forEach(id => document.getElementById(id).value='');
-  renderOccasions(); renderAll();
+  _resetEntryForm();
+  renderOccasionDetail(); renderOccasions();
+  if (typeof renderAll === 'function') renderAll();
   updateMenuCounts();
-  if (typeof showToast === 'function') showToast('✅ تم الحفظ', 'success');
+  if (typeof showToast === 'function') showToast('✅ تم إضافة الحركة', 'success');
+}
+
+// Backwards-compat alias (old onclick attr in case anything still calls it)
+function addOccasionEntry() { saveOccasionEntry(); }
+
+function delOccasionEntry(occId, entryId) {
+  if (!confirm('حذف الحركة؟')) return;
+  const o = occasions.find(x => x.id === occId);
+  if (!o) return;
+  o.entries = (o.entries || []).filter(e => e.id !== entryId);
+  // Remove linked tx
+  txs = txs.filter(t => !(t.occId === occId && t.occEntryId === entryId));
+  // If we were editing this entry, reset the form
+  if (_editingEntryId === entryId) _resetEntryForm();
+  saveOccasions(); saveData();
+  renderOccasionDetail();
+  renderOccasions();
+  if (typeof renderAll === 'function') renderAll();
+  updateMenuCounts();
+}
+
+// ── V27: Edit the occasion container itself (type, name, date, note) ──
+function openOccasionEdit(occId) {
+  const o = occasions.find(x => x.id === occId);
+  if (!o) return;
+  _currentOccId = occId;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  set('occEditType', o.type || 'أخرى');
+  set('occEditName', o.name || '');
+  set('occEditDate', o.date || new Date().toISOString().split('T')[0]);
+  set('occEditNote', o.note || '');
+  document.getElementById('occEditModal').classList.add('open');
+}
+
+function saveOccasionEdit() {
+  const o = occasions.find(x => x.id === _currentOccId);
+  if (!o) { showAlert('مناسبة غير موجودة','error'); return; }
+  const type = document.getElementById('occEditType').value;
+  const name = document.getElementById('occEditName').value.trim();
+  const date = document.getElementById('occEditDate').value || o.date;
+  const note = document.getElementById('occEditNote').value.trim();
+  if (!name) { showAlert('اكتب اسم المناسبة','error'); return; }
+  o.type = type; o.name = name; o.date = date; o.note = note;
+  saveOccasions();
+  // Update name/emoji in all linked txs to keep them in sync
+  const em = OCC_EMOJI[type] || '🎁';
+  (o.entries || []).forEach(e => {
+    const t = txs.find(x => x.occId === o.id && x.occEntryId === e.id);
+    if (t) {
+      t.name = `${em} ${name}: ${e.name}`;
+      // do NOT change t.note; user may have customized it
+    }
+  });
+  saveData();
+  document.getElementById('occEditModal').classList.remove('open');
+  renderOccasionDetail();
+  renderOccasions();
+  if (typeof renderAll === 'function') renderAll();
+  updateMenuCounts();
+  if (typeof showToast === 'function') showToast('✅ تم حفظ التعديل', 'success');
 }
 
 function delOccasion(id) {
-  if (!confirm('حذف المناسبة؟')) return;
+  const o = occasions.find(x => x.id === id);
+  const cnt = o && Array.isArray(o.entries) ? o.entries.length : 0;
+  if (!confirm(`حذف المناسبة${cnt?` و ${cnt} حركة جواها`:''}؟`)) return;
   occasions = occasions.filter(o => o.id !== id);
-  // Also remove linked transaction
+  // Also remove linked transactions
   txs = txs.filter(t => t.occId !== id);
   saveOccasions(); saveData();
-  renderOccasions(); renderAll();
+  // Close detail modal if it was showing this occasion
+  if (_currentOccId === id) {
+    _currentOccId = null;
+    document.getElementById('occDetailModal').classList.remove('open');
+  }
+  renderOccasions();
+  if (typeof renderAll === 'function') renderAll();
   updateMenuCounts();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// V27: Two-way sync between regular tx form and occasion entries
+// ═══════════════════════════════════════════════════════════════
+// When the user picks an occasion in the tx form, we automatically
+// keep an entry inside that occasion in sync with the tx — create on
+// save, update on edit, delete when tx is deleted or unlinked.
+
+(function setupOccLinkSync(){
+  const _origSaveTx = window.saveTx;
+  const _origDelTx = window.delTx;
+  if (typeof _origSaveTx !== 'function' || typeof _origDelTx !== 'function') {
+    console.warn('V27 occ sync: original saveTx/delTx not found, sync disabled');
+    return;
+  }
+
+  // Helper: apply a tx (just saved) to its linked occasion entry.
+  // Returns true if anything changed.
+  function syncTxToOccasion(tx, prevOccId) {
+    if (!tx) return false;
+    const newOccId = tx.occId || null;
+
+    // Case A: tx now linked to an occasion
+    if (newOccId) {
+      const o = occasions.find(x => x.id === newOccId);
+      if (!o) return false; // stale id
+      if (!Array.isArray(o.entries)) o.entries = [];
+
+      // If we changed which occasion it's linked to, remove the old entry
+      if (prevOccId && prevOccId !== newOccId) {
+        const old = occasions.find(x => x.id === prevOccId);
+        if (old && Array.isArray(old.entries) && tx.occEntryId) {
+          old.entries = old.entries.filter(e => e.id !== tx.occEntryId);
+        }
+      }
+
+      // Reuse existing entry (same occId+entryId) or create a new one
+      let entry = null;
+      if (tx.occEntryId && newOccId === prevOccId) {
+        entry = o.entries.find(e => e.id === tx.occEntryId);
+      }
+      if (!entry) {
+        const entryId = 'oe_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+        entry = { id: entryId };
+        o.entries.unshift(entry);
+        tx.occEntryId = entryId;
+      }
+      entry.name = tx.name;
+      entry.amount = tx.amount;
+      entry.currency = tx.currency;
+      entry.direction = (tx.type === 'income') ? 'in' : 'out';
+      entry.date = tx.date;
+      entry.note = tx.note || '';
+      return true;
+    }
+
+    // Case B: tx was unlinked (had occId before, now empty) — drop the old entry
+    if (prevOccId) {
+      const old = occasions.find(x => x.id === prevOccId);
+      if (old && Array.isArray(old.entries) && tx.occEntryId) {
+        old.entries = old.entries.filter(e => e.id !== tx.occEntryId);
+      }
+      delete tx.occEntryId;
+      return true;
+    }
+    return false;
+  }
+
+  window.saveTx = function() {
+    // Capture link state of the tx being edited (before _origSaveTx mutates state)
+    const isEditing = (typeof editingId !== 'undefined') && editingId && !editingIsSavings;
+    let prevOccId = null;
+    let prevTxId = null;
+    if (isEditing) {
+      const before = txs.find(t => t.id === editingId);
+      if (before) { prevOccId = before.occId || null; prevTxId = before.id; }
+    }
+    // Read the picker value (only meaningful for income/expense)
+    const sel = document.getElementById('fOccLink');
+    const pickedOccId = (sel && (txType === 'income' || txType === 'expense')) ? (sel.value || '') : '';
+
+    // Run the original save (this may add a new tx at txs[0] or replace one)
+    const result = _origSaveTx.apply(this, arguments);
+
+    // For transfer/savings, the picker is hidden — nothing to do.
+    if (txType === 'transfer' || txType === 'savings' || editingIsSavings) return result;
+
+    // Find the tx we just saved/edited.
+    let tx = null;
+    if (isEditing && prevTxId) {
+      // saveTx removed the old one and unshifted the new one with same id
+      tx = txs.find(t => t.id === prevTxId) || txs[0];
+    } else {
+      tx = txs[0]; // freshly added
+    }
+    if (!tx || tx.isTransfer) return result;
+
+    // Stamp the picked occId on the tx (so syncTxToOccasion sees the new state)
+    if (pickedOccId) tx.occId = pickedOccId;
+    else delete tx.occId;
+
+    const changed = syncTxToOccasion(tx, prevOccId);
+    if (changed) {
+      saveOccasions(); saveData();
+      if (typeof updateMenuCounts === 'function') updateMenuCounts();
+      if (typeof renderOccasions === 'function') renderOccasions();
+    }
+    return result;
+  };
+
+  window.delTx = function(id) {
+    // Capture occasion link before deletion
+    const t = txs.find(x => x.id === id);
+    const linkedOccId = t && t.occId ? t.occId : null;
+    const linkedEntryId = t && t.occEntryId ? t.occEntryId : null;
+
+    const result = _origDelTx.apply(this, arguments);
+
+    // If the tx was actually deleted (user confirmed), remove the matching entry
+    if (linkedOccId && linkedEntryId) {
+      const stillExists = txs.find(x => x.id === id);
+      if (!stillExists) {
+        const o = occasions.find(x => x.id === linkedOccId);
+        if (o && Array.isArray(o.entries)) {
+          const before = o.entries.length;
+          o.entries = o.entries.filter(e => e.id !== linkedEntryId);
+          if (o.entries.length !== before) {
+            saveOccasions();
+            if (typeof updateMenuCounts === 'function') updateMenuCounts();
+            if (typeof renderOccasions === 'function') renderOccasions();
+          }
+        }
+      }
+    }
+    return result;
+  };
+})();
 
 // ═══════════════════════════════════════════════════════════════
 // DUAL SALARY TRACKING
@@ -5919,11 +6495,18 @@ function updateMenuCounts() {
   const jamMonthlyTotal = activeJam.reduce((s,j) => s + curToSAR(j.monthlyAmount, j.currency), 0);
   setText('menuJamCount', activeJam.length ? `${fmt(toBase(jamMonthlyTotal),0)} ${sym}/شهر · ${activeJam.length} نشطة` : 'لا توجد');
 
-  // Occasions: show net (received - given)
+  // Occasions: show net (received - given) — V26: aggregate over entries
   let occIn = 0, occOut = 0;
   occasions.forEach(o => {
-    const sar = curToSAR(o.amount, o.currency);
-    if (o.direction === 'in') occIn += sar; else occOut += sar;
+    if (Array.isArray(o.entries) && o.entries.length) {
+      o.entries.forEach(e => {
+        const sar = curToSAR(e.amount, e.currency);
+        if (e.direction === 'in') occIn += sar; else occOut += sar;
+      });
+    } else if (o.amount !== undefined && o.amount !== null) {
+      const sar = curToSAR(o.amount, o.currency);
+      if (o.direction === 'in') occIn += sar; else occOut += sar;
+    }
   });
   const occNet = occIn - occOut;
   setText('menuOccCount', occasions.length ? `صافي ${occNet>=0?'+':''}${fmt(toBase(occNet),0)} ${sym} · ${occasions.length} مناسبة` : 'لا توجد');
@@ -17418,705 +18001,6 @@ setTimeout(() => {
   const style = document.createElement('style');
   style.textContent = css;
   document.head.appendChild(style);
-})();
-</script>
-
-
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- V25-PRO — OCCASIONS AS EVENTS (containers w/ multiple txs)      -->
-<!--           + CONTROL CENTER POLISH (money badges, hero refresh)  -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<script>
-(function v25OccasionsAsEvents(){
-  'use strict';
-
-  // ─────────────────────────────────────────────────────
-  // 1) STYLES (event cards, detail modal, money badges)
-  // ─────────────────────────────────────────────────────
-  function injectStyles(){
-    if (document.getElementById('v25ProStyles')) return;
-    const css = `
-      /* ── Occasion event cards ── */
-      .v25-occ-card {
-        background: linear-gradient(135deg, rgba(168,85,247,.12), rgba(168,85,247,.02));
-        border: 1px solid rgba(168,85,247,.45);
-        border-radius: 14px;
-        padding: 14px;
-        margin-bottom: 10px;
-        cursor: pointer;
-        transition: transform .12s, box-shadow .15s, border-color .15s;
-        -webkit-tap-highlight-color: transparent;
-      }
-      .v25-occ-card:active { transform: scale(.98); }
-      .v25-occ-card:hover { border-color: rgba(168,85,247,.8); box-shadow: 0 4px 14px rgba(168,85,247,.15); }
-      .v25-occ-head {
-        display: flex; justify-content: space-between; align-items: flex-start;
-        margin-bottom: 10px;
-      }
-      .v25-occ-name {
-        font-weight: 900; font-size: 15px;
-        display: flex; align-items: center; gap: 6px;
-        color: var(--text);
-      }
-      .v25-occ-meta {
-        font-size: 11px; color: var(--muted); margin-top: 3px;
-        line-height: 1.4;
-      }
-      .v25-occ-pill {
-        display: inline-block; padding: 2px 8px;
-        background: rgba(168,85,247,.15); color: rgba(168,85,247,1);
-        border-radius: 6px; font-size: 10px; font-weight: 800;
-        margin-right: 4px;
-      }
-      .v25-occ-stats {
-        display: grid; grid-template-columns: repeat(3,1fr); gap: 6px;
-      }
-      .v25-occ-stat {
-        background: var(--card2); padding: 8px 6px;
-        border-radius: 9px; text-align: center;
-      }
-      .v25-occ-stat-lbl { font-size: 9px; color: var(--muted); font-weight: 700; }
-      .v25-occ-stat-val { font-size: 13px; font-weight: 900; direction: ltr; margin-top: 3px; }
-      .v25-occ-cta {
-        text-align: center; font-size: 11px;
-        color: rgba(168,85,247,1);
-        margin-top: 10px; font-weight: 800;
-        background: rgba(168,85,247,.08);
-        padding: 7px; border-radius: 8px;
-      }
-      .v25-occ-tx-row {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 11px 12px; background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 10px; margin-bottom: 6px;
-      }
-      .v25-occ-tx-row.expense { border-left: 3px solid var(--red); }
-      .v25-occ-tx-row.income  { border-left: 3px solid var(--green); }
-      .v25-occ-tx-name { font-weight: 700; font-size: 13px; color: var(--text); }
-      .v25-occ-tx-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
-      .v25-occ-tx-amt  { font-weight: 900; font-size: 14px; direction: ltr; }
-      .v25-occ-tx-amt.expense { color: var(--red); }
-      .v25-occ-tx-amt.income  { color: var(--green); }
-      .v25-occ-empty {
-        text-align: center; padding: 32px 16px;
-        color: var(--muted); font-size: 13px;
-      }
-      .v25-occ-empty-ic { font-size: 36px; margin-bottom: 8px; opacity: .55; }
-
-      /* ── Type chips (quick switch in tx form) ── */
-      .v25-typetabs { display: flex; gap: 6px; margin-bottom: 10px; }
-      .v25-typetab {
-        flex: 1; text-align: center;
-        padding: 10px; border-radius: 10px;
-        border: 1.5px solid var(--border);
-        background: var(--card2); cursor: pointer;
-        font-size: 13px; font-weight: 800;
-        color: var(--muted);
-        transition: all .15s;
-        font-family: 'Cairo', sans-serif;
-      }
-      .v25-typetab.active.expense {
-        background: var(--red-dim); color: var(--red);
-        border-color: var(--red);
-      }
-      .v25-typetab.active.income {
-        background: var(--green-dim); color: var(--green);
-        border-color: var(--green);
-      }
-
-      /* ── Hero refresh for control center menu ── */
-      .v25-mh-bar {
-        margin-top: 10px; padding-top: 10px;
-        border-top: 1px solid rgba(255,255,255,0.06);
-        display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
-      }
-      .v25-mh-bar-item { text-align: center; }
-      .v25-mh-bar-lbl { font-size: 9px; color: var(--muted); font-weight: 700; }
-      .v25-mh-bar-val { font-size: 12px; font-weight: 900; direction: ltr; margin-top: 2px; }
-
-      /* ── Money badge under v17 menu cards ── */
-      .v17-menu-card .v17-money {
-        font-size: 10.5px; font-weight: 800;
-        margin-top: 4px;
-        padding: 2px 6px;
-        background: var(--card2);
-        border-radius: 6px;
-        display: inline-block;
-        direction: ltr;
-        color: var(--accent);
-        line-height: 1.3;
-      }
-      .v17-menu-card .v17-money.green { color: var(--green); background: var(--green-dim); }
-      .v17-menu-card .v17-money.red   { color: var(--red); background: var(--red-dim); }
-      .v17-menu-card .v17-money.muted { color: var(--muted); }
-    `;
-    const s = document.createElement('style');
-    s.id = 'v25ProStyles';
-    s.textContent = css;
-    document.head.appendChild(s);
-  }
-
-  // ─────────────────────────────────────────────────────
-  // 2) EVENT-DETAIL MODAL HTML
-  // ─────────────────────────────────────────────────────
-  function injectEventModal(){
-    if (document.getElementById('occEventModal')) return;
-    const html = `
-<div class="overlay" id="occEventModal" onclick="closeIfOut(event,'occEventModal')">
-  <div class="sheet">
-    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;padding:0 4px">
-      <div style="flex:1;min-width:0">
-        <div id="occEvTitle" class="modal-title" style="margin:0;text-align:right">🎁 المناسبة</div>
-        <div id="occEvSub" class="modal-hint" style="margin:4px 0 0;text-align:right">—</div>
-      </div>
-      <button type="button" onclick="document.getElementById('occEventModal').classList.remove('open')"
-        style="background:var(--card2);border:1.5px solid var(--border);border-radius:50%;width:38px;height:38px;font-size:16px;cursor:pointer;color:var(--text);font-family:'Cairo',sans-serif;flex-shrink:0;margin-right:8px">✕</button>
-    </div>
-    <div id="occEvStats"></div>
-    <div style="font-size:12px;font-weight:800;color:var(--muted);margin:10px 4px 6px">📋 الحركات</div>
-    <div id="occEvTxList" style="max-height:38vh;overflow-y:auto;margin-bottom:12px"></div>
-    <div class="section-divider">
-      <div class="subsection-label">➕ إضافة حركة جديدة</div>
-      <div class="v25-typetabs">
-        <div class="v25-typetab expense active" data-type="expense" onclick="selectOccEvType('expense')">📤 مصروف</div>
-        <div class="v25-typetab income" data-type="income" onclick="selectOccEvType('income')">📥 إيداع / استلام</div>
-      </div>
-      <input type="hidden" id="occEvTxType" value="expense"/>
-      <div class="form-row">
-        <input class="form-inp" id="occEvTxName" placeholder="اسم الحركة (مثال: السيارة، الورد، عيدية أحمد)"/>
-      </div>
-      <div class="two-col">
-        <div class="form-row"><div class="form-lbl">المبلغ</div>
-          <input class="form-inp" id="occEvTxAmount" type="number" step="0.01" placeholder="100" inputmode="decimal"/>
-        </div>
-        <div class="form-row"><div class="form-lbl">العملة</div>
-          <select class="form-inp" id="occEvTxCurrency">
-            <option value="SAR">🇸🇦 ريال</option>
-            <option value="EGP">🇪🇬 جنيه</option>
-            <option value="USD">🇺🇸 دولار</option>
-            <option value="EUR">🇪🇺 يورو</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row"><div class="form-lbl">📅 التاريخ</div>
-        <input class="form-inp" id="occEvTxDate" type="date"/>
-      </div>
-      <div class="form-row">
-        <input class="form-inp" id="occEvTxNote" placeholder="ملاحظات (اختياري)"/>
-      </div>
-      <button class="save-btn" onclick="saveOccEventTx()">💾 إضافة الحركة</button>
-    </div>
-  </div>
-</div>`;
-    document.body.insertAdjacentHTML('beforeend', html);
-  }
-
-  // ─────────────────────────────────────────────────────
-  // 3) HELPERS
-  // ─────────────────────────────────────────────────────
-  function getOccTxs(occId){
-    if (!Array.isArray(window.txs)) return [];
-    return window.txs.filter(t => t.occId === occId);
-  }
-
-  function calcOccTotals(txList){
-    let totalIn = 0, totalOut = 0;
-    txList.forEach(t => {
-      if (t.type === 'income')      totalIn  += t.amountSAR || 0;
-      else if (t.type === 'expense') totalOut += t.amountSAR || 0;
-    });
-    return { totalIn, totalOut, net: totalIn - totalOut };
-  }
-
-  // ─────────────────────────────────────────────────────
-  // 4) RENDER LIST OF OCCASION-EVENTS
-  //    (replaces the legacy renderOccasions UI)
-  // ─────────────────────────────────────────────────────
-  function renderOccasionsV25(){
-    const el = document.getElementById('occasionsList');
-    if (!el) return;
-
-    // default the legacy form date to today
-    const dt = document.getElementById('occDate');
-    if (dt && !dt.value) dt.value = new Date().toISOString().split('T')[0];
-
-    const occList = (window.occasions || []).slice();
-
-    if (!occList.length){
-      el.innerHTML = `<div class="empty"><div class="empty-icon">🎁</div>لسه ما فيش مناسبات<br><span style="font-size:11px">أنشئ أول مناسبة من تحت</span></div>`;
-      return;
-    }
-
-    const sym = BASE_LABELS[baseCurrency].sym;
-
-    // overall totals across all occasions
-    let allIn = 0, allOut = 0, allCount = 0;
-    occList.forEach(o => {
-      const list = getOccTxs(o.id);
-      allCount += list.length;
-      list.forEach(t => {
-        if (t.type === 'income')       allIn  += t.amountSAR || 0;
-        else if (t.type === 'expense') allOut += t.amountSAR || 0;
-      });
-    });
-    const netAll = allIn - allOut;
-
-    let html = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
-      <div style="background:var(--green-dim);border:1px solid var(--green);border-radius:12px;padding:10px;text-align:center">
-        <div style="font-size:10px;color:var(--green);font-weight:700">📥 استلمت</div>
-        <div style="font-size:14px;font-weight:900;color:var(--green);direction:ltr;margin-top:3px">${fmt(toBase(allIn),0)} ${sym}</div>
-      </div>
-      <div style="background:var(--red-dim);border:1px solid var(--red);border-radius:12px;padding:10px;text-align:center">
-        <div style="font-size:10px;color:var(--red);font-weight:700">📤 دفعت</div>
-        <div style="font-size:14px;font-weight:900;color:var(--red);direction:ltr;margin-top:3px">${fmt(toBase(allOut),0)} ${sym}</div>
-      </div>
-      <div style="background:var(--card2);border:1px solid ${netAll>=0?'var(--green)':'var(--red)'};border-radius:12px;padding:10px;text-align:center">
-        <div style="font-size:10px;color:var(--muted);font-weight:700">صافي</div>
-        <div style="font-size:14px;font-weight:900;direction:ltr;margin-top:3px;color:${netAll>=0?'var(--green)':'var(--red)'}">${netAll>=0?'+':''}${fmt(toBase(netAll),0)} ${sym}</div>
-      </div>
-    </div>`;
-
-    const occEmoji = window.OCC_EMOJI || {};
-    occList
-      .sort((a,b) => (b.date||'').localeCompare(a.date||''))
-      .forEach(o => {
-        const list = getOccTxs(o.id);
-        const { totalIn, totalOut, net } = calcOccTotals(list);
-        const em = occEmoji[o.type] || '🎁';
-        const txCount = list.length;
-        html += `<div class="v25-occ-card" onclick="openOccEvent('${o.id}')">
-          <div class="v25-occ-head">
-            <div style="flex:1;min-width:0">
-              <div class="v25-occ-name"><span>${em}</span><span>${esc(o.name||'بدون اسم')}</span></div>
-              <div class="v25-occ-meta">
-                <span class="v25-occ-pill">${esc(o.type||'مناسبة')}</span>
-                ${o.date ? `<span>${esc(o.date)}</span> · ` : ''}<span>${toArabicDigits(txCount)} حركة</span>
-                ${o.note ? ` · <span>${esc(o.note)}</span>` : ''}
-              </div>
-            </div>
-            <button onclick="event.stopPropagation();delOccasion('${o.id}')"
-              style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px 8px;flex-shrink:0">✕</button>
-          </div>
-          <div class="v25-occ-stats">
-            <div class="v25-occ-stat">
-              <div class="v25-occ-stat-lbl">📥 استلمت</div>
-              <div class="v25-occ-stat-val" style="color:var(--green)">${fmt(toBase(totalIn),0)} ${sym}</div>
-            </div>
-            <div class="v25-occ-stat">
-              <div class="v25-occ-stat-lbl">📤 دفعت</div>
-              <div class="v25-occ-stat-val" style="color:var(--red)">${fmt(toBase(totalOut),0)} ${sym}</div>
-            </div>
-            <div class="v25-occ-stat">
-              <div class="v25-occ-stat-lbl">الصافي</div>
-              <div class="v25-occ-stat-val" style="color:${net>=0?'var(--green)':'var(--red)'}">${net>=0?'+':''}${fmt(toBase(net),0)} ${sym}</div>
-            </div>
-          </div>
-          <div class="v25-occ-cta">📋 اضغط لإضافة / عرض الحركات ›</div>
-        </div>`;
-      });
-    el.innerHTML = html;
-  }
-
-  // ─────────────────────────────────────────────────────
-  // 5) OPEN EVENT DETAIL
-  // ─────────────────────────────────────────────────────
-  window.openOccEvent = function(occId){
-    injectEventModal();
-    window.__currentOccId = occId;
-    const occ = (window.occasions||[]).find(x => x.id === occId);
-    if (!occ) return;
-
-    const em = (window.OCC_EMOJI || {})[occ.type] || '🎁';
-    document.getElementById('occEvTitle').innerHTML = `${em} ${esc(occ.name||'مناسبة')}`;
-    const subParts = [];
-    if (occ.type) subParts.push(occ.type);
-    if (occ.date) subParts.push(occ.date);
-    if (occ.note) subParts.push(occ.note);
-    document.getElementById('occEvSub').textContent = subParts.join(' · ') || '—';
-
-    const dt = document.getElementById('occEvTxDate');
-    if (dt) dt.value = new Date().toISOString().split('T')[0];
-    // Reset the type selector to 'expense' as default
-    selectOccEvType('expense');
-
-    renderOccEventDetail();
-    document.getElementById('occEventModal').classList.add('open');
-  };
-
-  window.selectOccEvType = function(type){
-    const hidden = document.getElementById('occEvTxType');
-    if (hidden) hidden.value = type;
-    document.querySelectorAll('#occEventModal .v25-typetab').forEach(t => {
-      t.classList.toggle('active', t.dataset.type === type);
-    });
-  };
-
-  function renderOccEventDetail(){
-    const occId = window.__currentOccId;
-    if (!occId) return;
-    const occ = (window.occasions||[]).find(x => x.id === occId);
-    if (!occ) return;
-
-    const list = getOccTxs(occId).sort((a,b) =>
-      (b.date||'').localeCompare(a.date||'') || (b.time||'').localeCompare(a.time||'')
-    );
-    const { totalIn, totalOut, net } = calcOccTotals(list);
-    const sym = BASE_LABELS[baseCurrency].sym;
-
-    const stats = document.getElementById('occEvStats');
-    if (stats){
-      stats.innerHTML = `<div style="background:linear-gradient(135deg,rgba(168,85,247,.12),rgba(168,85,247,.02));border:1px solid rgba(168,85,247,.4);border-radius:14px;padding:12px;margin-bottom:6px">
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-          <div style="background:rgba(13,17,23,0.4);border-radius:10px;padding:10px;text-align:center">
-            <div style="font-size:10px;color:var(--green);font-weight:700">📥 استلمت</div>
-            <div style="font-size:16px;font-weight:900;color:var(--green);direction:ltr;margin-top:3px">${fmt(toBase(totalIn),0)} ${sym}</div>
-          </div>
-          <div style="background:rgba(13,17,23,0.4);border-radius:10px;padding:10px;text-align:center">
-            <div style="font-size:10px;color:var(--red);font-weight:700">📤 دفعت</div>
-            <div style="font-size:16px;font-weight:900;color:var(--red);direction:ltr;margin-top:3px">${fmt(toBase(totalOut),0)} ${sym}</div>
-          </div>
-          <div style="background:rgba(13,17,23,0.4);border-radius:10px;padding:10px;text-align:center">
-            <div style="font-size:10px;color:var(--muted);font-weight:700">الصافي</div>
-            <div style="font-size:16px;font-weight:900;direction:ltr;margin-top:3px;color:${net>=0?'var(--green)':'var(--red)'}">${net>=0?'+':''}${fmt(toBase(net),0)} ${sym}</div>
-          </div>
-        </div>
-      </div>`;
-    }
-
-    const listEl = document.getElementById('occEvTxList');
-    if (!listEl) return;
-    if (!list.length){
-      listEl.innerHTML = `<div class="v25-occ-empty"><div class="v25-occ-empty-ic">📋</div>لسه ما فيش حركات<br><span style="font-size:11px">ضيف أول حركة من تحت</span></div>`;
-      return;
-    }
-    listEl.innerHTML = list.map(t => {
-      const cls = t.type === 'income' ? 'income' : 'expense';
-      const sign = t.type === 'income' ? '+' : '-';
-      // Show clean name (strip the auto-prefix if present)
-      let displayName = t.name || '';
-      const prefixMatch = displayName.match(/^.{1,3}\s.+?:\s(.+)$/);
-      if (prefixMatch) displayName = prefixMatch[1];
-      return `<div class="v25-occ-tx-row ${cls}">
-        <div style="flex:1;min-width:0">
-          <div class="v25-occ-tx-name">${t.type==='income'?'📥':'📤'} ${esc(displayName)}</div>
-          <div class="v25-occ-tx-meta">${esc(t.date||'')}${t.note?' · '+esc(t.note):''}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-          <div class="v25-occ-tx-amt ${cls}">${sign}${fmt(t.amount,0)} ${SYM[t.currency]||t.currency}</div>
-          <button onclick="delOccEventTx('${t.id}')"
-            style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 6px">✕</button>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  // ─────────────────────────────────────────────────────
-  // 6) ADD / DELETE TX FOR EVENT
-  // ─────────────────────────────────────────────────────
-  window.saveOccEventTx = function(){
-    const occId = window.__currentOccId;
-    if (!occId) return;
-    const occ = (window.occasions||[]).find(x => x.id === occId);
-    if (!occ) return;
-
-    const type = (document.getElementById('occEvTxType').value || 'expense');
-    const name = (document.getElementById('occEvTxName').value || '').trim();
-    const amount = parseFloat(document.getElementById('occEvTxAmount').value);
-    const currency = document.getElementById('occEvTxCurrency').value;
-    const date = document.getElementById('occEvTxDate').value || new Date().toISOString().split('T')[0];
-    const note = (document.getElementById('occEvTxNote').value || '').trim();
-
-    if (!name) { showAlert('اكتب اسم الحركة', 'error'); return; }
-    if (!amount || amount <= 0) { showAlert('اكتب المبلغ', 'error'); return; }
-
-    const rate = currency === 'SAR' ? 1 : (currency === 'EGP' ? rates.EGP : rates[currency]);
-    const amountSAR = curToSAR(amount, currency);
-    const em = (window.OCC_EMOJI || {})[occ.type] || '🎁';
-
-    txs.unshift({
-      id: 'tx_occev_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
-      type,
-      name: `${em} ${occ.name||'مناسبة'}: ${name}`,
-      amount, currency, rate, amountSAR,
-      cat: 'مناسبات',
-      date,
-      time: new Date().toTimeString().slice(0,5),
-      note: note || occ.type || '',
-      account: (window.accounts||[])[0]?.id,
-      recurring: false,
-      occId
-    });
-    saveData();
-
-    // Reset inputs
-    ['occEvTxName','occEvTxAmount','occEvTxNote'].forEach(id => {
-      const el = document.getElementById(id); if (el) el.value = '';
-    });
-
-    renderOccEventDetail();
-    if (typeof window.renderOccasions === 'function') window.renderOccasions();
-    if (typeof renderAll === 'function') renderAll();
-    if (typeof updateMenuV17Counts === 'function') updateMenuV17Counts();
-    if (typeof showToast === 'function') showToast('✅ تمت إضافة الحركة', 'success');
-  };
-
-  window.delOccEventTx = function(txId){
-    if (!confirm('حذف هذه الحركة؟')) return;
-    window.txs = txs.filter(t => t.id !== txId);
-    saveData();
-    renderOccEventDetail();
-    if (typeof window.renderOccasions === 'function') window.renderOccasions();
-    if (typeof renderAll === 'function') renderAll();
-    if (typeof updateMenuV17Counts === 'function') updateMenuV17Counts();
-    if (typeof showToast === 'function') showToast('🗑️ تم الحذف', 'success');
-  };
-
-  // ─────────────────────────────────────────────────────
-  // 7) MOUNT
-  // ─────────────────────────────────────────────────────
-  injectStyles();
-  // Replace the legacy renderOccasions with v25 version
-  const _legacyRender = window.renderOccasions;
-  window.renderOccasions = function(){
-    try { renderOccasionsV25(); }
-    catch(e){ console.warn('v25 occasions render error', e); if(_legacyRender) _legacyRender(); }
-  };
-
-  // First render after a tick (so all data is in place)
-  setTimeout(() => {
-    try { if (document.getElementById('occasionsList')) renderOccasionsV25(); } catch(e){}
-  }, 300);
-
-  // Re-render whenever the occasions modal opens
-  document.addEventListener('click', (e) => {
-    const target = e.target.closest('[onclick*="occasionsModal"]');
-    if (target) setTimeout(() => { try { renderOccasionsV25(); } catch(_){} }, 60);
-  }, true);
-
-})();
-
-// ═══════════════════════════════════════════════════════════════
-// V25-PRO — CONTROL CENTER MONEY BADGES
-//   Show real money totals on each menu card (not just count)
-// ═══════════════════════════════════════════════════════════════
-(function v25MenuMoneyBadges(){
-  'use strict';
-
-  // Capture the original sub-text once per card so we can restore it when count is 0
-  function captureOriginalSubs(){
-    document.querySelectorAll('.v17-menu-card').forEach(card => {
-      if (card.dataset.v25SubBackup) return;
-      const sub = card.querySelector('.v17-sub');
-      if (sub) card.dataset.v25SubBackup = sub.textContent;
-    });
-  }
-
-  function setMoney(countKey, text, kind){
-    const badge = document.getElementById(countKey + '_v17');
-    if (!badge) return;
-    const card = badge.closest('.v17-menu-card');
-    if (!card) return;
-    let money = card.querySelector('.v17-money');
-    if (!money){
-      money = document.createElement('div');
-      money.className = 'v17-money';
-      const titleBlock = card.querySelector('.v17-title')?.parentElement;
-      if (titleBlock) titleBlock.appendChild(money);
-      else card.appendChild(money);
-    }
-    money.textContent = text;
-    money.className = 'v17-money' + (kind ? ' ' + kind : '');
-    money.style.display = '';
-  }
-
-  function clearMoney(countKey){
-    const badge = document.getElementById(countKey + '_v17');
-    if (!badge) return;
-    const card = badge.closest('.v17-menu-card');
-    if (!card) return;
-    const money = card.querySelector('.v17-money');
-    if (money) money.style.display = 'none';
-  }
-
-  function updateMoneyBadges(){
-    captureOriginalSubs();
-    try {
-      if (typeof BASE_LABELS === 'undefined') return;
-      const sym = BASE_LABELS[baseCurrency].sym;
-
-      // ── Occasions: net amount ──
-      const occList = window.occasions || [];
-      if (occList.length){
-        let occIn = 0, occOut = 0;
-        occList.forEach(o => {
-          (window.txs||[]).filter(t => t.occId === o.id).forEach(t => {
-            if (t.type === 'income')       occIn  += t.amountSAR || 0;
-            else if (t.type === 'expense') occOut += t.amountSAR || 0;
-          });
-        });
-        const occNet = occIn - occOut;
-        const txt = `صافي ${occNet>=0?'+':'-'}${fmt(toBase(Math.abs(occNet)),0)} ${sym}`;
-        setMoney('menuOccCount', txt, occNet>=0?'green':'red');
-      } else clearMoney('menuOccCount');
-
-      // ── Installments: total monthly ──
-      const installs = (window.installments||[]).filter(i => (i.paidMonths||0) < (i.months||0));
-      if (installs.length){
-        const monthly = installs.reduce((s, i) => {
-          const m = parseFloat(i.monthlyAmount||i.monthly||0) || 0;
-          return s + curToSAR(m, i.currency||'SAR');
-        }, 0);
-        if (monthly > 0) setMoney('menuInstCount', `${fmt(toBase(monthly),0)} ${sym}/شهر`, 'red');
-        else clearMoney('menuInstCount');
-      } else clearMoney('menuInstCount');
-
-      // ── Debts: net (lent vs borrowed) ──
-      const debts = (window.debts||[]).filter(d => !d.cleared);
-      if (debts.length){
-        let lent = 0, borrowed = 0;
-        debts.forEach(d => {
-          const sar = curToSAR(parseFloat(d.amount||0)||0, d.currency||'SAR');
-          if (d.type === 'lent') lent += sar; else borrowed += sar;
-        });
-        const net = lent - borrowed;
-        if (Math.abs(net) > 0.01){
-          const txt = net >= 0 ? `ليّا ${fmt(toBase(net),0)} ${sym}` : `عليّا ${fmt(toBase(-net),0)} ${sym}`;
-          setMoney('menuDebtCount', txt, net >= 0 ? 'green' : 'red');
-        } else clearMoney('menuDebtCount');
-      } else clearMoney('menuDebtCount');
-
-      // ── Goals: total saved ──
-      const goals = (window.goals||[]).filter(g => !g.achieved);
-      if (goals.length){
-        const saved = goals.reduce((s, g) => s + curToSAR(parseFloat(g.saved||0)||0, g.currency||'SAR'), 0);
-        if (saved > 0) setMoney('menuGoalCount', `${fmt(toBase(saved),0)} ${sym} موفّر`, 'green');
-        else clearMoney('menuGoalCount');
-      } else clearMoney('menuGoalCount');
-
-      // ── Vehicles: total spent ──
-      const vlogs = window.vehicleLogs || [];
-      if (vlogs.length){
-        const total = vlogs.reduce((s, l) => s + curToSAR(parseFloat(l.amount||0)||0, l.currency||'SAR'), 0);
-        if (total > 0) setMoney('menuVehCount', `${fmt(toBase(total),0)} ${sym} مصاريف`, 'red');
-        else clearMoney('menuVehCount');
-      } else clearMoney('menuVehCount');
-
-      // ── Weddings: total paid ──
-      const witems = window.weddingItems || [];
-      if (witems.length){
-        const total = witems
-          .filter(w => w.status !== 'planned')
-          .reduce((s, w) => s + curToSAR(parseFloat(w.amount||0)||0, w.currency||'SAR'), 0);
-        if (total > 0) setMoney('menuWedCount', `${fmt(toBase(total),0)} ${sym} مدفوع`, 'red');
-        else clearMoney('menuWedCount');
-      } else clearMoney('menuWedCount');
-
-      // ── Bills: this month total ──
-      const bills = window.bills || [];
-      if (bills.length){
-        const ym = new Date().toISOString().slice(0,7);
-        const monthTot = bills
-          .filter(b => (b.date||'').startsWith(ym))
-          .reduce((s, b) => s + curToSAR(parseFloat(b.amount||0)||0, b.currency||'SAR'), 0);
-        if (monthTot > 0) setMoney('menuBillCount', `${fmt(toBase(monthTot),0)} ${sym} هالشهر`, 'red');
-        else clearMoney('menuBillCount');
-      } else clearMoney('menuBillCount');
-
-      // ── Jameya: monthly commitment ──
-      const jamList = window.jameya || [];
-      if (jamList.length){
-        const tot = jamList.reduce((s, j) => s + curToSAR(parseFloat(j.monthlyAmount||0)||0, j.currency||'SAR'), 0);
-        if (tot > 0) setMoney('menuJamCount', `${fmt(toBase(tot),0)} ${sym}/شهر`, '');
-        else clearMoney('menuJamCount');
-      } else clearMoney('menuJamCount');
-
-      // ── Orders: pending total ──
-      const ords = window.orders || [];
-      if (ords.length){
-        const pending = ords.filter(o => o.status === 'pending');
-        if (pending.length){
-          const tot = pending.reduce((s, o) => s + curToSAR(parseFloat(o.amount||0)||0, o.currency||'SAR'), 0);
-          if (tot > 0) setMoney('menuOrdersCount', `${fmt(toBase(tot),0)} ${sym} متبقّي`, '');
-          else clearMoney('menuOrdersCount');
-        } else clearMoney('menuOrdersCount');
-      } else clearMoney('menuOrdersCount');
-
-    } catch(e){ console.warn('v25 menu money badges:', e); }
-  }
-
-  // Hook into the existing count updater
-  const _origUpdate = window.updateMenuV17Counts;
-  window.updateMenuV17Counts = function(){
-    if (_origUpdate) try { _origUpdate(); } catch(_){}
-    setTimeout(updateMoneyBadges, 50);
-  };
-
-  // Also refresh while the menu is open (live updates as user adds tx)
-  setInterval(() => {
-    const m = document.getElementById('menuModal');
-    if (m && m.classList.contains('open')) updateMoneyBadges();
-  }, 1500);
-
-  // First-load attempt
-  setTimeout(updateMoneyBadges, 600);
-  setTimeout(updateMoneyBadges, 1500);
-  setTimeout(updateMoneyBadges, 3000);
-})();
-
-// ═══════════════════════════════════════════════════════════════
-// V25-PRO — CONTROL CENTER HERO REFRESH
-//   Adds a money summary bar to the v22 hero card
-// ═══════════════════════════════════════════════════════════════
-(function v25MenuHeroRefresh(){
-  'use strict';
-
-  function refreshHeroBar(){
-    try {
-      const header = document.querySelector('.v22-menu-header');
-      if (!header) return;
-      let bar = header.querySelector('.v25-mh-bar');
-      if (!bar){
-        bar = document.createElement('div');
-        bar.className = 'v25-mh-bar';
-        header.appendChild(bar);
-      }
-      const sym = BASE_LABELS[baseCurrency].sym;
-      // Compute "this month" income/expense totals from all txs
-      const ym = new Date().toISOString().slice(0,7);
-      let inc = 0, exp = 0;
-      (window.txs||[]).forEach(t => {
-        if (!t.date || !t.date.startsWith(ym)) return;
-        if (t.isTransfer) return;
-        if (t.type === 'income')       inc += t.amountSAR || 0;
-        else if (t.type === 'expense') exp += t.amountSAR || 0;
-      });
-      const net = inc - exp;
-      bar.innerHTML = `
-        <div class="v25-mh-bar-item">
-          <div class="v25-mh-bar-lbl">📥 دخل الشهر</div>
-          <div class="v25-mh-bar-val" style="color:var(--green)">${fmt(toBase(inc),0)} ${sym}</div>
-        </div>
-        <div class="v25-mh-bar-item">
-          <div class="v25-mh-bar-lbl">📤 صرف الشهر</div>
-          <div class="v25-mh-bar-val" style="color:var(--red)">${fmt(toBase(exp),0)} ${sym}</div>
-        </div>
-        <div class="v25-mh-bar-item">
-          <div class="v25-mh-bar-lbl">صافي</div>
-          <div class="v25-mh-bar-val" style="color:${net>=0?'var(--green)':'var(--red)'}">${net>=0?'+':'-'}${fmt(toBase(Math.abs(net)),0)} ${sym}</div>
-        </div>
-      `;
-    } catch(e){ console.warn('v25 hero refresh:', e); }
-  }
-
-  setInterval(() => {
-    const m = document.getElementById('menuModal');
-    if (m && m.classList.contains('open')) refreshHeroBar();
-  }, 1500);
-
-  setTimeout(refreshHeroBar, 800);
-  setTimeout(refreshHeroBar, 2000);
-  setTimeout(refreshHeroBar, 3500);
 })();
 </script>
 
