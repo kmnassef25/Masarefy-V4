@@ -1647,6 +1647,15 @@ button, .menu-row, .tx-card {
       <div style="font-size:10px;color:var(--muted);margin-top:4px">الحركة هتترصد كمصروف/إيداع جوه المناسبة دي</div>
     </div>
 
+    <!-- LINK TO TRIP (V27) -->
+    <div class="form-row" id="fTripLinkRow" style="display:none">
+      <div class="form-lbl">🛫 اربط برحلة (اختياري)</div>
+      <select class="form-inp" id="fTripLink">
+        <option value="">— مفيش —</option>
+      </select>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">الحركة هتترصد كمصروف/إيداع جوه الرحلة دي</div>
+    </div>
+
     <!-- TAGS (#27) -->
     <div class="form-row">
       <div class="form-lbl">🏷️ tags (اختياري — اضغط enter لإضافة)</div>
@@ -2173,6 +2182,119 @@ button, .menu-row, .tx-card {
     <div style="display:flex;gap:8px">
       <button class="save-btn" style="flex:1" onclick="saveOccasionEdit()">💾 حفظ التعديل</button>
       <button onclick="document.getElementById('occEditModal').classList.remove('open')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ TRIPS MODAL (V27 — list + create) ═══════ -->
+<div class="overlay" id="tripsModal" onclick="closeIfOut(event,'tripsModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title">🛫 السفر والرحلات</div>
+    <p class="modal-hint">كل رحلة عبارة عن حاوية فيها كل مصاريفها — نشطة كانت أو سابقة</p>
+    <div id="tripsList"></div>
+    <div class="section-divider">
+      <div class="subsection-label">إنشاء رحلة جديدة</div>
+      <div class="form-row"><input class="form-inp" id="tripCountry" placeholder="الوجهة (مثال: مصر، تركيا)"/></div>
+      <div class="form-row"><input class="form-inp" id="tripName" placeholder="اسم الرحلة (اختياري — مثال: إجازة الصيف)"/></div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">📅 من</div><input class="form-inp" id="tripStart" type="date"/></div>
+        <div class="form-row"><div class="form-lbl">📅 إلى</div><input class="form-inp" id="tripEnd" type="date"/></div>
+      </div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">عملة الوجهة</div>
+          <select class="form-inp" id="tripCurrency">
+            <option value="EGP">🇪🇬 جنيه مصري</option>
+            <option value="SAR">🇸🇦 ريال سعودي</option>
+            <option value="USD">🇺🇸 دولار</option>
+            <option value="EUR">🇪🇺 يورو</option>
+            <option value="TRY">🇹🇷 ليرة تركية</option>
+            <option value="AED">🇦🇪 درهم إماراتي</option>
+          </select>
+        </div>
+        <div class="form-row"><div class="form-lbl">ميزانية يومية (اختياري)</div><input class="form-inp" id="tripDaily" type="number" placeholder="0" inputmode="decimal"/></div>
+      </div>
+      <div class="form-row"><input class="form-inp" id="tripNote" placeholder="ملاحظة (اختياري)"/></div>
+      <button class="save-btn" onclick="saveTrip()">💾 إنشاء الرحلة</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ TRIP DETAIL MODAL (V27) ═══════ -->
+<div class="overlay" id="tripDetailModal" onclick="closeIfOut(event,'tripDetailModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div id="tripDetailHead"></div>
+    <div id="tripDetailBody"></div>
+    <div class="section-divider" id="teFormSection">
+      <div class="subsection-label" id="teFormTitle">إضافة مصروف/إيداع داخل الرحلة</div>
+      <div class="form-row"><input class="form-inp" id="teName" placeholder="اسم الحركة (مثال: تذكرة، فندق، مطعم)"/></div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">المبلغ</div><input class="form-inp" id="teAmount" type="number" placeholder="0" inputmode="decimal"/></div>
+        <div class="form-row"><div class="form-lbl">العملة</div>
+          <select class="form-inp" id="teCurrency">
+            <option value="SAR">🇸🇦 ريال</option>
+            <option value="EGP">🇪🇬 جنيه</option>
+            <option value="USD">🇺🇸 دولار</option>
+            <option value="EUR">🇪🇺 يورو</option>
+            <option value="TRY">🇹🇷 ليرة</option>
+            <option value="AED">🇦🇪 درهم</option>
+          </select>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="form-row"><div class="form-lbl">📅 التاريخ</div><input class="form-inp" id="teDate" type="date"/></div>
+        <div class="form-row"><div class="form-lbl">النوع</div>
+          <select class="form-inp" id="teDirection">
+            <option value="out">📤 مصروف</option>
+            <option value="in">📥 إيداع</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row"><input class="form-inp" id="teNote" placeholder="ملاحظة (اختياري)"/></div>
+      <div style="display:flex;gap:8px">
+        <button class="save-btn" id="teSaveBtn" style="flex:1" onclick="saveTripEntry()">➕ إضافة الحركة</button>
+        <button id="teCancelBtn" onclick="cancelTripEntryEdit()" style="display:none;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700">❌ إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ TRIP EDIT MODAL (V27) ═══════ -->
+<div class="overlay" id="tripEditModal" onclick="closeIfOut(event,'tripEditModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title">✏️ تعديل الرحلة</div>
+    <p class="modal-hint">عدّل بيانات الرحلة — الحركات اللي جواها هتفضل زي ما هي</p>
+    <div class="form-row"><div class="form-lbl">الوجهة</div><input class="form-inp" id="tripEditCountry" placeholder="مثال: مصر"/></div>
+    <div class="form-row"><div class="form-lbl">اسم الرحلة (اختياري)</div><input class="form-inp" id="tripEditName" placeholder="مثال: إجازة الصيف"/></div>
+    <div class="two-col">
+      <div class="form-row"><div class="form-lbl">📅 من</div><input class="form-inp" id="tripEditStart" type="date"/></div>
+      <div class="form-row"><div class="form-lbl">📅 إلى</div><input class="form-inp" id="tripEditEnd" type="date"/></div>
+    </div>
+    <div class="two-col">
+      <div class="form-row"><div class="form-lbl">عملة الوجهة</div>
+        <select class="form-inp" id="tripEditCurrency">
+          <option value="EGP">🇪🇬 جنيه مصري</option>
+          <option value="SAR">🇸🇦 ريال سعودي</option>
+          <option value="USD">🇺🇸 دولار</option>
+          <option value="EUR">🇪🇺 يورو</option>
+          <option value="TRY">🇹🇷 ليرة تركية</option>
+          <option value="AED">🇦🇪 درهم إماراتي</option>
+        </select>
+      </div>
+      <div class="form-row"><div class="form-lbl">ميزانية يومية</div><input class="form-inp" id="tripEditDaily" type="number" placeholder="0" inputmode="decimal"/></div>
+    </div>
+    <div class="form-row"><div class="form-lbl">ملاحظة</div><input class="form-inp" id="tripEditNote" placeholder="اختياري"/></div>
+    <div class="form-row">
+      <label class="toggle-sw" style="display:flex;align-items:center;gap:8px;justify-content:space-between">
+        <span style="font-size:13px;font-weight:700">الرحلة منتهية / مؤرشفة</span>
+        <span style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="tripEditArchived"><span class="toggle-slider"></span></span>
+      </label>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="save-btn" style="flex:1" onclick="saveTripEdit()">💾 حفظ التعديل</button>
+      <button onclick="document.getElementById('tripEditModal').classList.remove('open')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700">إلغاء</button>
     </div>
   </div>
 </div>
@@ -6434,8 +6556,634 @@ function delOccasion(id) {
 })();
 
 // ═══════════════════════════════════════════════════════════════
-// DUAL SALARY TRACKING
+// V27: TRIPS — same model as OCCASIONS (containers + entries + tx sync)
 // ═══════════════════════════════════════════════════════════════
+
+var trips = JSON.parse(localStorage.getItem('msarifyi_trips') || '[]');
+function saveTrips() { localStorage.setItem('msarifyi_trips', JSON.stringify(trips)); }
+
+// ── One-time migration from old travelMode + travel_archive ──
+(function _migrateTrips() {
+  if (localStorage.getItem('msarifyi_trips_migrated') === '1') return;
+  try {
+    const cur = JSON.parse(localStorage.getItem('msarifyi_travel_mode') || 'null');
+    const arc = JSON.parse(localStorage.getItem('msarifyi_travel_archive') || '[]');
+    const all = [];
+    if (cur) all.push(cur);
+    arc.forEach(t => all.push(t));
+    all.forEach(t => {
+      if (!t || !t.country) return;
+      const id = 'trip_' + Math.random().toString(36).slice(2,11) + '_' + Date.now();
+      const trip = {
+        id,
+        country: t.country,
+        name: t.name || `رحلة ${t.country}`,
+        currency: (t.currency || 'USD').toUpperCase(),
+        dailyBudget: t.dailyBudget || 0,
+        days: t.days || 0,
+        startDate: t.startDate || new Date().toISOString().split('T')[0],
+        endDate: t.endDate || '',
+        note: t.note || '',
+        archived: !t.active,
+        entries: []
+      };
+      // Pull in any tx tagged with tripId === 'current' for the active trip
+      if (t.active) {
+        txs.forEach(tx => {
+          if (tx.tripId === 'current') {
+            const entryId = 'te_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+            trip.entries.push({
+              id: entryId,
+              name: tx.name || 'حركة',
+              amount: tx.amount,
+              currency: tx.currency,
+              direction: tx.type === 'income' ? 'in' : 'out',
+              date: tx.date || trip.startDate,
+              note: tx.note || ''
+            });
+            tx.tripId = id;
+            tx.tripEntryId = entryId;
+          }
+        });
+      }
+      trips.push(trip);
+    });
+    if (trips.length) { saveTrips(); saveData(); }
+    localStorage.setItem('msarifyi_trips_migrated', '1');
+  } catch(e) { console.warn('trips migration:', e); }
+})();
+
+// ── Helpers ──
+const TRIP_CUR_FLAG = { EGP:'🇪🇬', SAR:'🇸🇦', USD:'🇺🇸', EUR:'🇪🇺', TRY:'🇹🇷', AED:'🇦🇪' };
+
+function _tripTotals(t) {
+  let inSAR = 0, outSAR = 0, count = 0;
+  (t.entries || []).forEach(e => {
+    const sar = curToSAR(e.amount, e.currency);
+    if (e.direction === 'in') inSAR += sar; else outSAR += sar;
+    count++;
+  });
+  return { inSAR, outSAR, netSAR: inSAR - outSAR, count };
+}
+
+function _tripIsActive(t) {
+  if (t.archived) return false;
+  if (!t.endDate) return true; // open-ended
+  // active if today is on or before endDate
+  const today = new Date().toISOString().split('T')[0];
+  return today <= t.endDate;
+}
+
+function _tripDays(t) {
+  if (!t.startDate || !t.endDate) return t.days || 0;
+  const s = new Date(t.startDate), e = new Date(t.endDate);
+  return Math.max(1, Math.round((e - s) / 86400000) + 1);
+}
+
+// ── Track which trip is currently open + which entry is being edited ──
+var _currentTripId = null;
+var _editingTripEntryId = null;
+
+function _resetTripEntryForm() {
+  _editingTripEntryId = null;
+  ['teName','teAmount','teNote'].forEach(id => { const i = document.getElementById(id); if (i) i.value = ''; });
+  const dt = document.getElementById('teDate'); if (dt) dt.value = new Date().toISOString().split('T')[0];
+  const dir = document.getElementById('teDirection'); if (dir) dir.value = 'out';
+  // Pre-select trip's currency
+  const t = trips.find(x => x.id === _currentTripId);
+  const cur = document.getElementById('teCurrency');
+  if (cur && t) cur.value = t.currency || 'SAR';
+  const title = document.getElementById('teFormTitle'); if (title) title.textContent = 'إضافة مصروف/إيداع داخل الرحلة';
+  const btn = document.getElementById('teSaveBtn'); if (btn) btn.innerHTML = '➕ إضافة الحركة';
+  const cancel = document.getElementById('teCancelBtn'); if (cancel) cancel.style.display = 'none';
+  const section = document.getElementById('teFormSection');
+  if (section) { section.style.background = ''; section.style.borderRadius = ''; section.style.padding = ''; }
+}
+
+function startEditTripEntry(tripId, entryId) {
+  const t = trips.find(x => x.id === tripId); if (!t) return;
+  const e = (t.entries || []).find(x => x.id === entryId); if (!e) return;
+  _editingTripEntryId = entryId;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  set('teName', e.name || '');
+  set('teAmount', e.amount || '');
+  set('teCurrency', e.currency || t.currency || 'SAR');
+  set('teDate', e.date || new Date().toISOString().split('T')[0]);
+  set('teDirection', e.direction || 'out');
+  set('teNote', e.note || '');
+  const title = document.getElementById('teFormTitle'); if (title) title.textContent = '✏️ تعديل الحركة';
+  const btn = document.getElementById('teSaveBtn'); if (btn) btn.innerHTML = '💾 حفظ التعديل';
+  const cancel = document.getElementById('teCancelBtn'); if (cancel) cancel.style.display = '';
+  const section = document.getElementById('teFormSection');
+  if (section) { section.style.background = 'var(--card2)'; section.style.borderRadius = '12px'; section.style.padding = '12px'; }
+  setTimeout(() => {
+    const el = document.getElementById('teName');
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
+  }, 100);
+}
+
+function cancelTripEntryEdit() { _resetTripEntryForm(); }
+
+function renderTrips() {
+  const el = document.getElementById('tripsList');
+  if (!el) return;
+  // Set today as default for date inputs
+  const ts = document.getElementById('tripStart'); if (ts && !ts.value) ts.value = new Date().toISOString().split('T')[0];
+  if (!trips.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🛫</div>لا توجد رحلات<div style="font-size:11px;color:var(--muted);margin-top:6px">أنشئ رحلة جديدة وابدأ تسجل مصاريفها</div></div>`;
+    return;
+  }
+  const sym = BASE_LABELS[baseCurrency].sym;
+  // Overall totals across all trips
+  let totalIn = 0, totalOut = 0;
+  trips.forEach(t => { const x = _tripTotals(t); totalIn += x.inSAR; totalOut += x.outSAR; });
+  const totalNet = totalIn - totalOut;
+
+  let html = `<div style="display:flex;gap:6px;margin-bottom:12px">
+    <div style="flex:1;background:var(--green-dim);border:1px solid var(--green);border-radius:12px;padding:10px;text-align:center">
+      <div style="font-size:10px;color:var(--green);font-weight:700">📥 إجمالي إيداع</div>
+      <div style="font-size:14px;font-weight:900;color:var(--green);direction:ltr;margin-top:3px">${fmt(toBase(totalIn),0)} ${sym}</div>
+    </div>
+    <div style="flex:1;background:var(--red-dim);border:1px solid var(--red);border-radius:12px;padding:10px;text-align:center">
+      <div style="font-size:10px;color:var(--red);font-weight:700">📤 إجمالي صرف</div>
+      <div style="font-size:14px;font-weight:900;color:var(--red);direction:ltr;margin-top:3px">${fmt(toBase(totalOut),0)} ${sym}</div>
+    </div>
+    <div style="flex:1;background:var(--card2);border:1px solid ${totalNet>=0?'var(--green)':'var(--red)'};border-radius:12px;padding:10px;text-align:center">
+      <div style="font-size:10px;color:var(--muted);font-weight:700">صافي</div>
+      <div style="font-size:14px;font-weight:900;direction:ltr;margin-top:3px;color:${totalNet>=0?'var(--green)':'var(--red)'}">${totalNet>=0?'+':''}${fmt(toBase(totalNet),0)} ${sym}</div>
+    </div>
+  </div>`;
+
+  // Sort: active first (newest start first), then archived (most recent end first)
+  const sorted = [...trips].sort((a, b) => {
+    const aActive = _tripIsActive(a), bActive = _tripIsActive(b);
+    if (aActive !== bActive) return aActive ? -1 : 1;
+    return (b.startDate || '').localeCompare(a.startDate || '');
+  });
+
+  sorted.forEach(t => {
+    const x = _tripTotals(t);
+    const flag = TRIP_CUR_FLAG[t.currency] || '🛫';
+    const isActive = _tripIsActive(t);
+    const days = _tripDays(t);
+    const totalLocalSpent = (t.entries || []).filter(e=>e.direction==='out' && e.currency===t.currency).reduce((s,e)=>s+e.amount,0);
+    const budget = (t.dailyBudget || 0) * days;
+    const budgetPct = budget > 0 ? Math.min(100, Math.round(totalLocalSpent / budget * 100)) : 0;
+    const dateRange = t.endDate ? `${t.startDate} → ${t.endDate}` : t.startDate;
+    html += `<div onclick="openTripDetail('${t.id}')" style="background:var(--card);border-radius:12px;padding:12px;margin-bottom:10px;border:1px solid ${isActive?'var(--accent)':'var(--border)'};cursor:pointer;transition:transform .1s;${!isActive?'opacity:.85':''}" onmousedown="this.style.transform='scale(.98)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:800;font-size:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span style="font-size:18px">${flag}</span>
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.name || 'رحلة ' + t.country}</span>
+            ${isActive?'<span style="font-size:9px;background:var(--accent);color:#000;border-radius:6px;padding:1px 6px;font-weight:700">نشطة</span>':'<span style="font-size:9px;background:var(--card2);color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:1px 6px">انتهت</span>'}
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:3px">${t.country} · ${dateRange}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${x.count} ${x.count===1?'حركة':'حركات'} · ${days} يوم</div>
+        </div>
+        <div style="text-align:left;flex-shrink:0">
+          <div style="font-size:14px;font-weight:900;color:${x.netSAR>=0?'var(--green)':'var(--red)'};direction:ltr">${x.netSAR>=0?'+':''}${fmt(toBase(x.netSAR),0)} ${sym}</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px;direction:ltr">📥 ${fmt(toBase(x.inSAR),0)} · 📤 ${fmt(toBase(x.outSAR),0)}</div>
+        </div>
+      </div>
+      ${budget > 0 ? `<div style="margin-top:8px">
+        <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:${budgetPct}%;background:${budgetPct>=100?'var(--red)':budgetPct>=80?'var(--accent)':'var(--green)'}"></div></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px;direction:ltr">${fmt(totalLocalSpent,0)} / ${fmt(budget,0)} ${t.currency} (${budgetPct}%)</div>
+      </div>` : ''}
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+function openTripDetail(tripId) {
+  _currentTripId = tripId;
+  _resetTripEntryForm();
+  renderTripDetail();
+  document.getElementById('tripDetailModal').classList.add('open');
+}
+
+function renderTripDetail() {
+  const t = trips.find(x => x.id === _currentTripId);
+  const head = document.getElementById('tripDetailHead');
+  const body = document.getElementById('tripDetailBody');
+  if (!t || !head || !body) return;
+  const flag = TRIP_CUR_FLAG[t.currency] || '🛫';
+  const sym = BASE_LABELS[baseCurrency].sym;
+  const x = _tripTotals(t);
+  const netColor = x.netSAR >= 0 ? 'var(--green)' : 'var(--red)';
+  const isActive = _tripIsActive(t);
+  const days = _tripDays(t);
+  const totalLocalSpent = (t.entries || []).filter(e=>e.direction==='out' && e.currency===t.currency).reduce((s,e)=>s+e.amount,0);
+  const budget = (t.dailyBudget || 0) * days;
+  const budgetPct = budget > 0 ? Math.min(100, Math.round(totalLocalSpent / budget * 100)) : 0;
+  const dateRange = t.endDate ? `${t.startDate} → ${t.endDate}` : t.startDate;
+
+  head.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
+    <div style="flex:1;min-width:0">
+      <div class="modal-title" style="margin:0">${flag} ${t.name || 'رحلة ' + t.country}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">
+        ${t.country} · ${dateRange}
+        ${isActive?'<span style="font-size:9px;background:var(--accent);color:#000;border-radius:6px;padding:1px 6px;font-weight:700;margin-right:6px">نشطة</span>':'<span style="font-size:9px;background:var(--card2);color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:1px 6px;margin-right:6px">انتهت</span>'}
+      </div>
+      ${t.note?`<div style="font-size:11px;color:var(--muted);margin-top:2px">📝 ${t.note}</div>`:''}
+    </div>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <button onclick="openTripEdit('${t.id}')" title="تعديل الرحلة" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer">✏️</button>
+      <button onclick="delTrip('${t.id}')" title="حذف الرحلة" style="background:var(--red-dim);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer">🗑️</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;margin:10px 0 12px">
+    <div style="flex:1;background:var(--green-dim);border:1px solid var(--green);border-radius:10px;padding:8px;text-align:center">
+      <div style="font-size:9px;color:var(--green);font-weight:700">📥 إيداع</div>
+      <div style="font-size:13px;font-weight:900;color:var(--green);direction:ltr;margin-top:2px">${fmt(toBase(x.inSAR),0)} ${sym}</div>
+    </div>
+    <div style="flex:1;background:var(--red-dim);border:1px solid var(--red);border-radius:10px;padding:8px;text-align:center">
+      <div style="font-size:9px;color:var(--red);font-weight:700">📤 صرف</div>
+      <div style="font-size:13px;font-weight:900;color:var(--red);direction:ltr;margin-top:2px">${fmt(toBase(x.outSAR),0)} ${sym}</div>
+    </div>
+    <div style="flex:1;background:var(--card2);border:1px solid ${netColor};border-radius:10px;padding:8px;text-align:center">
+      <div style="font-size:9px;color:var(--muted);font-weight:700">صافي</div>
+      <div style="font-size:13px;font-weight:900;direction:ltr;margin-top:2px;color:${netColor}">${x.netSAR>=0?'+':''}${fmt(toBase(x.netSAR),0)} ${sym}</div>
+    </div>
+  </div>
+  ${budget > 0 ? `<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:12px">
+    <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:6px">💰 الميزانية (${t.dailyBudget} ${t.currency}/يوم × ${days} يوم)</div>
+    <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:${budgetPct}%;background:${budgetPct>=100?'var(--red)':budgetPct>=80?'var(--accent)':'var(--green)'}"></div></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px;direction:ltr">${fmt(totalLocalSpent,0)} / ${fmt(budget,0)} ${t.currency} (${budgetPct}%)</div>
+  </div>` : ''}`;
+
+  if (!t.entries || !t.entries.length) {
+    body.innerHTML = `<div class="empty" style="padding:20px"><div class="empty-icon">📋</div>لسه مفيش حركات<div style="font-size:11px;color:var(--muted);margin-top:6px">ابدأ ضيف حركة جديدة من تحت — أو من فورم الحركة الأساسي اربط أي مصروف بالرحلة</div></div>`;
+    return;
+  }
+  let html = `<div class="subsection-label" style="margin-top:4px">الحركات (${t.entries.length}) <span style="font-size:10px;color:var(--muted);font-weight:400">— اضغط على أي حركة للتعديل</span></div>`;
+  const sortedEntries = [...t.entries].sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  sortedEntries.forEach(e => {
+    const isIn = e.direction === 'in';
+    const isEditing = _editingTripEntryId === e.id;
+    html += `<div onclick="startEditTripEntry('${t.id}','${e.id}')" style="background:${isEditing?'var(--card2)':'var(--card)'};border-radius:10px;padding:10px;margin-bottom:8px;border:1px solid ${isEditing?'var(--accent)':'var(--border)'};display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;transition:transform .1s" onmousedown="this.style.transform='scale(.98)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px">
+          <span>${isIn?'📥':'📤'}</span>
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.name}</span>
+          ${isEditing?'<span style="font-size:10px;color:var(--accent);font-weight:600">✏️ يتم التعديل</span>':''}
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">${e.date || ''}${e.note?' · '+e.note:''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        <div style="color:${isIn?'var(--green)':'var(--red)'};direction:ltr;font-weight:700;font-size:13px">${isIn?'+':'-'}${fmt(e.amount,0)} ${SYM[e.currency]||e.currency}</div>
+        <button onclick="event.stopPropagation();delTripEntry('${t.id}','${e.id}')" title="حذف" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px 6px">✕</button>
+      </div>
+    </div>`;
+  });
+  body.innerHTML = html;
+}
+
+function saveTrip() {
+  const country = document.getElementById('tripCountry').value.trim();
+  const name = document.getElementById('tripName').value.trim();
+  const startDate = document.getElementById('tripStart').value || new Date().toISOString().split('T')[0];
+  const endDate = document.getElementById('tripEnd').value || '';
+  const currency = document.getElementById('tripCurrency').value;
+  const dailyBudget = parseFloat(document.getElementById('tripDaily').value) || 0;
+  const note = document.getElementById('tripNote').value.trim();
+  if (!country) { showAlert('اكتب وجهة الرحلة','error'); return; }
+  const id = 'trip_' + Date.now();
+  trips.unshift({
+    id,
+    country,
+    name: name || `رحلة ${country}`,
+    currency, dailyBudget,
+    startDate, endDate,
+    note,
+    archived: false,
+    entries: []
+  });
+  saveTrips();
+  ['tripCountry','tripName','tripEnd','tripDaily','tripNote'].forEach(i => { const el = document.getElementById(i); if (el) el.value=''; });
+  renderTrips();
+  if (typeof updateMenuCounts === 'function') updateMenuCounts();
+  if (typeof renderHome === 'function') renderHome();
+  if (typeof showToast === 'function') showToast('✅ تم إنشاء الرحلة — افتحها وضيف مصاريفها', 'success');
+  openTripDetail(id);
+}
+
+function openTripEdit(tripId) {
+  const t = trips.find(x => x.id === tripId); if (!t) return;
+  _currentTripId = tripId;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  set('tripEditCountry', t.country || '');
+  set('tripEditName', t.name || '');
+  set('tripEditStart', t.startDate || '');
+  set('tripEditEnd', t.endDate || '');
+  set('tripEditCurrency', t.currency || 'EGP');
+  set('tripEditDaily', t.dailyBudget || '');
+  set('tripEditNote', t.note || '');
+  const arch = document.getElementById('tripEditArchived'); if (arch) arch.checked = !!t.archived;
+  document.getElementById('tripEditModal').classList.add('open');
+}
+
+function saveTripEdit() {
+  const t = trips.find(x => x.id === _currentTripId);
+  if (!t) { showAlert('رحلة غير موجودة','error'); return; }
+  const country = document.getElementById('tripEditCountry').value.trim();
+  if (!country) { showAlert('اكتب وجهة الرحلة','error'); return; }
+  t.country = country;
+  t.name = document.getElementById('tripEditName').value.trim() || `رحلة ${country}`;
+  t.startDate = document.getElementById('tripEditStart').value || t.startDate;
+  t.endDate = document.getElementById('tripEditEnd').value || '';
+  t.currency = document.getElementById('tripEditCurrency').value;
+  t.dailyBudget = parseFloat(document.getElementById('tripEditDaily').value) || 0;
+  t.note = document.getElementById('tripEditNote').value.trim();
+  t.archived = !!document.getElementById('tripEditArchived').checked;
+  saveTrips();
+  // Update name in linked txs to keep them in sync
+  const flag = TRIP_CUR_FLAG[t.currency] || '🛫';
+  (t.entries || []).forEach(e => {
+    const tx = txs.find(x => x.tripId === t.id && x.tripEntryId === e.id);
+    if (tx) tx.name = `${flag} ${t.name}: ${e.name}`;
+  });
+  saveData();
+  document.getElementById('tripEditModal').classList.remove('open');
+  renderTripDetail();
+  renderTrips();
+  if (typeof renderAll === 'function') renderAll();
+  if (typeof renderHome === 'function') renderHome();
+  if (typeof updateMenuCounts === 'function') updateMenuCounts();
+  if (typeof showToast === 'function') showToast('✅ تم حفظ التعديل', 'success');
+}
+
+function saveTripEntry() {
+  const tripId = _currentTripId;
+  const t = trips.find(x => x.id === tripId);
+  if (!t) { showAlert('رحلة غير موجودة','error'); return; }
+  const name = document.getElementById('teName').value.trim();
+  const amount = parseFloat(document.getElementById('teAmount').value);
+  const currency = document.getElementById('teCurrency').value;
+  const date = document.getElementById('teDate').value || new Date().toISOString().split('T')[0];
+  const direction = document.getElementById('teDirection').value;
+  const note = document.getElementById('teNote').value.trim();
+  if (!name || !amount || !(amount > 0)) { showAlert('املأ الاسم والمبلغ','error'); return; }
+  if (!Array.isArray(t.entries)) t.entries = [];
+
+  const flag = TRIP_CUR_FLAG[t.currency] || '🛫';
+  const rate = currency === 'SAR' ? 1 : (rates && rates[currency] ? rates[currency] : 1);
+  const amountSAR = curToSAR(amount, currency);
+
+  if (_editingTripEntryId) {
+    const e = t.entries.find(x => x.id === _editingTripEntryId);
+    if (!e) { _editingTripEntryId = null; return; }
+    e.name = name; e.amount = amount; e.currency = currency;
+    e.direction = direction; e.date = date; e.note = note;
+    saveTrips();
+    const linked = txs.find(x => x.tripId === t.id && x.tripEntryId === e.id);
+    if (linked) {
+      linked.type = direction === 'in' ? 'income' : 'expense';
+      linked.name = `${flag} ${t.name}: ${name}`;
+      linked.amount = amount; linked.currency = currency;
+      linked.rate = rate; linked.amountSAR = amountSAR;
+      linked.date = date; linked.note = note || `سفر — ${t.country}`;
+    } else {
+      txs.unshift({
+        id: 'tx_trip_' + Date.now(),
+        type: direction === 'in' ? 'income' : 'expense',
+        name: `${flag} ${t.name}: ${name}`,
+        amount, currency, rate, amountSAR,
+        cat: 'سفر',
+        date, time: new Date().toTimeString().slice(0,5),
+        note: note || `سفر — ${t.country}`,
+        account: accounts[0]?.id,
+        recurring: false,
+        tripId: t.id, tripEntryId: e.id
+      });
+    }
+    saveData();
+    _resetTripEntryForm();
+    renderTripDetail(); renderTrips();
+    if (typeof renderAll === 'function') renderAll();
+    if (typeof renderHome === 'function') renderHome();
+    if (typeof updateMenuCounts === 'function') updateMenuCounts();
+    if (typeof showToast === 'function') showToast('✅ تم تعديل الحركة', 'success');
+    return;
+  }
+
+  const entryId = 'te_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  t.entries.unshift({ id: entryId, name, amount, currency, direction, date, note });
+  saveTrips();
+  txs.unshift({
+    id: 'tx_trip_' + Date.now(),
+    type: direction === 'in' ? 'income' : 'expense',
+    name: `${flag} ${t.name}: ${name}`,
+    amount, currency, rate, amountSAR,
+    cat: 'سفر',
+    date, time: new Date().toTimeString().slice(0,5),
+    note: note || `سفر — ${t.country}`,
+    account: accounts[0]?.id,
+    recurring: false,
+    tripId: t.id, tripEntryId: entryId
+  });
+  saveData();
+  _resetTripEntryForm();
+  renderTripDetail(); renderTrips();
+  if (typeof renderAll === 'function') renderAll();
+  if (typeof renderHome === 'function') renderHome();
+  if (typeof updateMenuCounts === 'function') updateMenuCounts();
+  if (typeof showToast === 'function') showToast('✅ تم إضافة الحركة', 'success');
+}
+
+function delTripEntry(tripId, entryId) {
+  if (!confirm('حذف الحركة؟')) return;
+  const t = trips.find(x => x.id === tripId); if (!t) return;
+  t.entries = (t.entries || []).filter(e => e.id !== entryId);
+  txs = txs.filter(tx => !(tx.tripId === tripId && tx.tripEntryId === entryId));
+  if (_editingTripEntryId === entryId) _resetTripEntryForm();
+  saveTrips(); saveData();
+  renderTripDetail(); renderTrips();
+  if (typeof renderAll === 'function') renderAll();
+  if (typeof renderHome === 'function') renderHome();
+  if (typeof updateMenuCounts === 'function') updateMenuCounts();
+}
+
+function delTrip(id) {
+  const t = trips.find(x => x.id === id);
+  const cnt = t && Array.isArray(t.entries) ? t.entries.length : 0;
+  if (!confirm(`حذف الرحلة${cnt?` و ${cnt} حركة جواها`:''}؟`)) return;
+  trips = trips.filter(x => x.id !== id);
+  txs = txs.filter(tx => tx.tripId !== id);
+  saveTrips(); saveData();
+  if (_currentTripId === id) {
+    _currentTripId = null;
+    document.getElementById('tripDetailModal').classList.remove('open');
+  }
+  renderTrips();
+  if (typeof renderAll === 'function') renderAll();
+  if (typeof renderHome === 'function') renderHome();
+  if (typeof updateMenuCounts === 'function') updateMenuCounts();
+}
+
+// ── V27: Two-way sync between regular tx form and TRIP entries ──
+(function setupTripLinkSync(){
+  const _origSaveTx = window.saveTx;
+  const _origDelTx = window.delTx;
+  if (typeof _origSaveTx !== 'function' || typeof _origDelTx !== 'function') {
+    console.warn('V27 trip sync: original saveTx/delTx not found, sync disabled');
+    return;
+  }
+
+  function syncTxToTrip(tx, prevTripId) {
+    if (!tx) return false;
+    const newTripId = tx.tripId || null;
+    if (newTripId) {
+      const t = trips.find(x => x.id === newTripId);
+      if (!t) return false;
+      if (!Array.isArray(t.entries)) t.entries = [];
+      if (prevTripId && prevTripId !== newTripId) {
+        const old = trips.find(x => x.id === prevTripId);
+        if (old && Array.isArray(old.entries) && tx.tripEntryId) {
+          old.entries = old.entries.filter(e => e.id !== tx.tripEntryId);
+        }
+      }
+      let entry = null;
+      if (tx.tripEntryId && newTripId === prevTripId) {
+        entry = t.entries.find(e => e.id === tx.tripEntryId);
+      }
+      if (!entry) {
+        const entryId = 'te_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+        entry = { id: entryId };
+        t.entries.unshift(entry);
+        tx.tripEntryId = entryId;
+      }
+      entry.name = tx.name;
+      entry.amount = tx.amount;
+      entry.currency = tx.currency;
+      entry.direction = (tx.type === 'income') ? 'in' : 'out';
+      entry.date = tx.date;
+      entry.note = tx.note || '';
+      return true;
+    }
+    if (prevTripId) {
+      const old = trips.find(x => x.id === prevTripId);
+      if (old && Array.isArray(old.entries) && tx.tripEntryId) {
+        old.entries = old.entries.filter(e => e.id !== tx.tripEntryId);
+      }
+      delete tx.tripEntryId;
+      return true;
+    }
+    return false;
+  }
+
+  // Replace the saveTx wrapper that the occasion sync already installed,
+  // but call through to it so both run.
+  const _wrappedSaveTx = window.saveTx;
+  window.saveTx = function() {
+    const isEditing = (typeof editingId !== 'undefined') && editingId && !editingIsSavings;
+    let prevTripId = null, prevTxId = null;
+    if (isEditing) {
+      const before = txs.find(t => t.id === editingId);
+      if (before) { prevTripId = before.tripId || null; prevTxId = before.id; }
+    }
+    const sel = document.getElementById('fTripLink');
+    const pickedTripId = (sel && (txType === 'income' || txType === 'expense')) ? (sel.value || '') : '';
+
+    const result = _wrappedSaveTx.apply(this, arguments);
+
+    if (txType === 'transfer' || txType === 'savings' || editingIsSavings) return result;
+
+    let tx = null;
+    if (isEditing && prevTxId) tx = txs.find(t => t.id === prevTxId) || txs[0];
+    else tx = txs[0];
+    if (!tx || tx.isTransfer) return result;
+
+    if (pickedTripId) tx.tripId = pickedTripId;
+    else delete tx.tripId;
+
+    const changed = syncTxToTrip(tx, prevTripId);
+    if (changed) {
+      saveTrips(); saveData();
+      if (typeof updateMenuCounts === 'function') updateMenuCounts();
+      if (typeof renderTrips === 'function') renderTrips();
+      if (typeof renderHome === 'function') renderHome();
+    }
+    return result;
+  };
+
+  const _wrappedDelTx = window.delTx;
+  window.delTx = function(id) {
+    const t = txs.find(x => x.id === id);
+    const linkedTripId = t && t.tripId ? t.tripId : null;
+    const linkedEntryId = t && t.tripEntryId ? t.tripEntryId : null;
+    const result = _wrappedDelTx.apply(this, arguments);
+    if (linkedTripId && linkedEntryId) {
+      const stillExists = txs.find(x => x.id === id);
+      if (!stillExists) {
+        const trip = trips.find(x => x.id === linkedTripId);
+        if (trip && Array.isArray(trip.entries)) {
+          const before = trip.entries.length;
+          trip.entries = trip.entries.filter(e => e.id !== linkedEntryId);
+          if (trip.entries.length !== before) {
+            saveTrips();
+            if (typeof updateMenuCounts === 'function') updateMenuCounts();
+            if (typeof renderTrips === 'function') renderTrips();
+            if (typeof renderHome === 'function') renderHome();
+          }
+        }
+      }
+    }
+    return result;
+  };
+})();
+
+// ── V27: Populate the trip picker in tx form (called from openModal/editTx/selType) ──
+function populateTripPicker(selectedTripId) {
+  const sel = document.getElementById('fTripLink');
+  const row = document.getElementById('fTripLinkRow');
+  if (!sel || !row) return;
+  if (txType === 'transfer' || txType === 'savings') {
+    row.style.display = 'none'; sel.value = ''; return;
+  }
+  // Show only active trips (and the currently selected one even if archived)
+  const candidates = trips.filter(t => _tripIsActive(t) || t.id === selectedTripId);
+  if (!candidates.length) { row.style.display = 'none'; sel.value = ''; return; }
+  candidates.sort((a,b) => (b.startDate||'').localeCompare(a.startDate||''));
+  let html = '<option value="">— مفيش —</option>';
+  candidates.forEach(t => {
+    const flag = TRIP_CUR_FLAG[t.currency] || '🛫';
+    const safeName = (t.name || `رحلة ${t.country}`).replace(/"/g,'&quot;');
+    html += `<option value="${t.id}">${flag} ${safeName}</option>`;
+  });
+  sel.innerHTML = html;
+  sel.value = selectedTripId || '';
+  row.style.display = '';
+}
+
+// Hook populateTripPicker into openModal / editTx / selType (already wrapped for occasions)
+(function _hookTripPicker(){
+  const _origOpenModal = window.openModal;
+  if (typeof _origOpenModal === 'function') {
+    window.openModal = function() {
+      _origOpenModal.apply(this, arguments);
+      try { populateTripPicker(null); } catch(e){}
+    };
+  }
+  const _origEditTx = window.editTx;
+  if (typeof _origEditTx === 'function') {
+    window.editTx = function(id) {
+      _origEditTx.apply(this, arguments);
+      const t = txs.find(x => x.id === id);
+      try { populateTripPicker(t && t.tripId ? t.tripId : null); } catch(e){}
+    };
+  }
+  const _origSelType = window.selType;
+  if (typeof _origSelType === 'function') {
+    window.selType = function(type) {
+      _origSelType.apply(this, arguments);
+      try {
+        const sel = document.getElementById('fTripLink');
+        populateTripPicker(sel ? sel.value : null);
+      } catch(e){}
+    };
+  }
+})();
 
 function renderDualSalary() {
   const el = document.getElementById('dualSalaryDisplay');
@@ -9250,39 +9998,40 @@ function endTravelMode() {
 function renderTravelCard() {
   const home = document.getElementById('homeContent');
   if (!home) return;
-  const t = getTravelMode();
-  let card = home.querySelector('.travel-card');
-  if (!t || !t.active) {
-    if (card) card.remove();
-    return;
-  }
-  // Compute spent
-  const today = new Date().toISOString().split('T')[0];
+  // Remove old card variants
+  home.querySelectorAll('.travel-card').forEach(c => c.remove());
+  // V27: pull active trips from the new system
+  if (typeof trips === 'undefined' || !Array.isArray(trips)) return;
+  const active = trips.filter(t => _tripIsActive(t));
+  if (!active.length) return;
+  // Show the most recently started active trip
+  active.sort((a,b) => (b.startDate||'').localeCompare(a.startDate||''));
+  const t = active[0];
+  const flag = TRIP_CUR_FLAG[t.currency] || '🛫';
+  const days = _tripDays(t);
   const startMs = new Date(t.startDate).getTime();
-  const daysElapsed = Math.max(1, Math.ceil((Date.now() - startMs) / 86400000));
-  const tripTxs = txs.filter(x => x.type === 'expense' && !x.isTransfer && x.tripId === 'current');
-  const spent = tripTxs.reduce((s, x) => s + (x.tripAmount || x.amount || 0), 0);
-  const dailyAvg = daysElapsed > 0 ? spent / daysElapsed : 0;
-  const remaining = t.totalBudget - spent;
-  const pct = t.totalBudget > 0 ? Math.min(100, Math.round(spent / t.totalBudget * 100)) : 0;
-
-  const html = `<div class="travel-card">
+  const elapsed = Math.max(1, Math.min(days, Math.ceil((Date.now() - startMs) / 86400000)));
+  const localSpent = (t.entries || []).filter(e => e.direction==='out' && e.currency===t.currency).reduce((s,e)=>s+e.amount,0);
+  const totalBudget = (t.dailyBudget || 0) * days;
+  const remaining = totalBudget - localSpent;
+  const dailyAvg = elapsed > 0 ? localSpent / elapsed : 0;
+  const pct = totalBudget > 0 ? Math.min(100, Math.round(localSpent / totalBudget * 100)) : 0;
+  const html = `<div class="travel-card" onclick="openTripDetail('${t.id}')" style="cursor:pointer">
     <div class="travel-header">
-      <div class="travel-title">✈️ رحلة ${esc(t.country)}</div>
-      <button class="travel-end" onclick="endTravelMode()">إنهاء</button>
+      <div class="travel-title">${flag} ${esc(t.name || 'رحلة ' + t.country)}</div>
+      <button class="travel-end" onclick="event.stopPropagation();openTripDetail('${t.id}')">تفاصيل ›</button>
     </div>
-    <div class="travel-stats">
-      <div class="travel-stat"><div class="ts-lbl">صرفت</div><div class="ts-val">${fmt(spent,0)} ${esc(t.currency)}</div></div>
+    ${totalBudget > 0 ? `<div class="travel-stats">
+      <div class="travel-stat"><div class="ts-lbl">صرفت</div><div class="ts-val">${fmt(localSpent,0)} ${esc(t.currency)}</div></div>
       <div class="travel-stat"><div class="ts-lbl">متبقي</div><div class="ts-val" style="color:${remaining>=0?'var(--green)':'var(--red)'}">${fmt(remaining,0)} ${esc(t.currency)}</div></div>
       <div class="travel-stat"><div class="ts-lbl">يومي</div><div class="ts-val">${fmt(dailyAvg,0)} / ${fmt(t.dailyBudget,0)}</div></div>
     </div>
     <div class="travel-progress">
       <div class="travel-bar"><div class="travel-fill" style="width:${pct}%;background:${pct>=100?'var(--red)':pct>=80?'var(--accent)':'var(--green)'}"></div></div>
-      <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:4px">يوم ${toArabicDigits(daysElapsed)} من ${toArabicDigits(t.days)}</div>
-    </div>
+      <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:4px">يوم ${toArabicDigits(elapsed)} من ${toArabicDigits(days)}</div>
+    </div>` : `<div style="font-size:11px;color:var(--muted);text-align:center;padding:6px 0">${(t.entries||[]).length} حركة · ${days} يوم — اضغط للتفاصيل</div>`}
   </div>`;
-  if (card) card.outerHTML = html;
-  else home.insertAdjacentHTML('afterbegin', html);
+  home.insertAdjacentHTML('afterbegin', html);
 }
 
 // ═══════════════ FEATURE: RAMADAN MODE ═══════════════
@@ -9659,13 +10408,9 @@ function renderRecurringHub() {
     };
 
     addRow('menuRowRecurringHub', '📅', 'المدفوعات الدورية', 'اشتراكات + فواتير + أقساط', openRecurringPaymentsHub);
-    addRow('menuRowTravel', '✈️', 'وضع السفر', 'تتبّع رحلتك بميزانية يومية', () => {
-      const t = getTravelMode();
-      if (t && t.active) {
-        if (confirm(`الرحلة لـ${t.country} شغالة. تنهيها؟`)) endTravelMode();
-      } else {
-        startTravelMode();
-      }
+    addRow('menuRowTravel', '🛫', 'السفر والرحلات', 'تتبّع كل مصاريف الرحلة في حاوية واحدة', () => {
+      if (typeof renderTrips === 'function') renderTrips();
+      document.getElementById('tripsModal').classList.add('open');
     });
     addRow('menuRowAlerts', '🔔', 'تنبيهات الأسعار', 'لما الذهب أو الدولار يوصل سعر معيّن', openPriceAlerts);
     addRow('menuRowHajj', '🕋', 'ميزانية الحج/العمرة', 'خطّط لرحلتك بالتفصيل', openHajjBudget);
