@@ -5398,6 +5398,58 @@ document.addEventListener('input', (e) => {
   }
 });
 
+// V27: Compute next-due date for an installment, accounting for lastPaidMonth.
+// Returns { date: Date, status: 'paid'|'today'|'upcoming'|'overdue'|'done', daysFromToday: number }
+function getInstNextDueInfo(inst, today) {
+  today = today || new Date();
+  const paid = inst.paidMonths || 0;
+  if (paid >= inst.totalMonths) {
+    return { date: null, status: 'done', daysFromToday: Infinity };
+  }
+  const curMonthKey = monthKey(today.getFullYear(), today.getMonth());
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  let due;
+  let status;
+  if (inst.lastPaidMonth === curMonthKey) {
+    // Already paid this month → next due is next month (even if paid early)
+    const ny = today.getMonth() === 11 ? today.getFullYear()+1 : today.getFullYear();
+    const nm = (today.getMonth()+1) % 12;
+    const daysInNext = new Date(ny, nm+1, 0).getDate();
+    const effDay = Math.min(inst.day || 1, daysInNext);
+    due = new Date(ny, nm, effDay);
+    status = 'paid';
+  } else {
+    // Not yet paid this month
+    const daysInThis = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
+    const effDay = Math.min(inst.day || 1, daysInThis);
+    due = new Date(today.getFullYear(), today.getMonth(), effDay);
+    if (due < startOfToday) status = 'overdue';
+    else if (due.getTime() === startOfToday.getTime()) status = 'today';
+    else status = 'upcoming';
+  }
+  const days = Math.round((due - startOfToday) / 86400000);
+  return { date: due, status, daysFromToday: days };
+}
+
+function _instStatusLabel(info, sym) {
+  if (info.status === 'done') return { text: '✓ خلصت', color: 'var(--green)', bg: 'var(--green-dim)' };
+  if (info.status === 'overdue') {
+    const d = Math.abs(info.daysFromToday);
+    return { text: `⚠️ متأخر ${d} يوم`, color: 'var(--red)', bg: 'var(--red-dim)' };
+  }
+  if (info.status === 'today') return { text: '🔔 النهاردة!', color: 'var(--accent)', bg: 'rgba(245,194,66,.15)' };
+  if (info.status === 'paid') {
+    const d = info.daysFromToday;
+    return { text: `✓ اتدفع — الجاي بعد ${d} يوم`, color: 'var(--green)', bg: 'var(--green-dim)' };
+  }
+  // upcoming
+  const d = info.daysFromToday;
+  if (d === 1) return { text: '⏰ بكرة', color: 'var(--red)', bg: 'var(--red-dim)' };
+  if (d <= 3) return { text: `⏰ بعد ${d} أيام`, color: 'var(--red)', bg: 'var(--red-dim)' };
+  if (d <= 7) return { text: `📅 بعد ${d} أيام`, color: 'var(--accent)', bg: 'rgba(245,194,66,.15)' };
+  return { text: `📅 بعد ${d} يوم`, color: 'var(--muted)', bg: 'var(--card2)' };
+}
+
 function renderInstallments() {
   const el = document.getElementById('installmentsList');
   if (!el) return;
@@ -5406,6 +5458,7 @@ function renderInstallments() {
     return;
   }
   const sym = BASE_LABELS[baseCurrency].sym;
+  const today = new Date();
 
   // ── Summary calculations ──
   const active = installments.filter(i => (i.paidMonths||0) < i.totalMonths);
@@ -5415,14 +5468,24 @@ function renderInstallments() {
   const totalOriginalSAR = installments.reduce((s,i) => s + curToSAR(i.totalAmount, i.currency), 0);
   const overallPct = totalOriginalSAR ? Math.round(totalPaidSAR / totalOriginalSAR * 100) : 0;
 
-  // Find next payment due
-  const today = new Date();
-  let nextDue = null;
-  active.forEach(i => {
-    let due = new Date(today.getFullYear(), today.getMonth(), i.day);
-    if (today.getDate() > i.day) due.setMonth(due.getMonth() + 1);
-    if (!nextDue || due < nextDue.date) nextDue = {name: i.name, date: due, amt: curToSAR(i.monthlyPayment, i.currency)};
+  // V27: build sorted list with due-info attached
+  // Order: overdue first (most overdue first) → today → upcoming (closest first) → paid this month → done
+  const STATUS_ORDER = { overdue: 0, today: 1, upcoming: 2, paid: 3, done: 4 };
+  const enriched = installments.map(inst => ({ inst, info: getInstNextDueInfo(inst, today) }));
+  enriched.sort((a, b) => {
+    const sa = STATUS_ORDER[a.info.status], sb = STATUS_ORDER[b.info.status];
+    if (sa !== sb) return sa - sb;
+    // Same status: closest due first (smallest days). For 'overdue' that means most negative first → most overdue first. Keep that — most overdue is the most urgent.
+    return a.info.daysFromToday - b.info.daysFromToday;
   });
+
+  // V27: "next payment due" = the most urgent active item (i.e., the first one in our sort)
+  let nextDue = null;
+  for (const e of enriched) {
+    if (e.info.status === 'done' || e.info.status === 'paid') continue;
+    nextDue = { name: e.inst.name, info: e.info, amt: curToSAR(e.inst.monthlyPayment, e.inst.currency) };
+    break;
+  }
 
   let html = `<div style="background:linear-gradient(135deg,rgba(248,81,73,.15),rgba(248,81,73,.05));border:1px solid var(--red);border-radius:14px;padding:16px;margin-bottom:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -5450,21 +5513,21 @@ function renderInstallments() {
   </div>`;
 
   if (nextDue) {
-    const days = Math.ceil((nextDue.date - today) / 86400000);
-    const dayLabel = days === 0 ? 'النهاردة!' : days === 1 ? 'بكرة' : `بعد ${days} يوم`;
+    const lbl = _instStatusLabel(nextDue.info, sym);
     html += `<div style="background:var(--accent);color:#000;border-radius:10px;padding:10px;margin-bottom:12px;font-size:12px;font-weight:700;text-align:center">
-      ⏰ القسط القادم: ${nextDue.name} (${fmt(toBase(nextDue.amt),0)} ${sym}) — ${dayLabel}
+      ⏰ القسط القادم: ${nextDue.name} (${fmt(toBase(nextDue.amt),0)} ${sym}) — ${lbl.text.replace(/^[^\s]+\s/,'')}
     </div>`;
   }
 
-  // Render each installment card
-  html += installments.map(inst => {
+  // Render each installment card (sorted)
+  html += enriched.map(({ inst, info }) => {
     const paid = inst.paidMonths || 0;
     const remaining = inst.totalMonths - paid;
     const pct = Math.min(Math.round(paid / inst.totalMonths * 100), 100);
     const monthlySAR = curToSAR(inst.monthlyPayment, inst.currency);
     const remainingSAR = monthlySAR * remaining;
     const isDone = paid >= inst.totalMonths;
+    const lbl = _instStatusLabel(info, sym);
     // Provider badge (V11)
     let providerBadge = '';
     if (inst.provider === 'tabby') providerBadge = '<span class="prov-badge prov-tabby">tabby</span>';
@@ -5472,19 +5535,23 @@ function renderInstallments() {
     else if (inst.provider === 'bank') providerBadge = '<span class="prov-badge prov-bank">🏦 بنك</span>';
     else if (inst.provider === 'dealer') providerBadge = '<span class="prov-badge prov-dealer">🏪 محل</span>';
     const emoji = inst.provider === 'tabby' ? '💚' : inst.provider === 'tamara' ? '🩷' : '💳';
-    return `<div class="feat-card" style="${isDone?'opacity:.6':''}">
+    const statusBadge = `<span style="display:inline-block;font-size:10px;font-weight:700;color:${lbl.color};background:${lbl.bg};border:1px solid ${lbl.color};border-radius:8px;padding:2px 8px;margin-top:4px">${lbl.text}</span>`;
+    // Show "ادفع" only if not done AND not already paid this month (otherwise the button is misleading)
+    const canPay = !isDone && info.status !== 'paid';
+    return `<div class="feat-card" style="${isDone?'opacity:.6':''}${info.status==='paid'?'opacity:.85;':''}">
       <div class="feat-card-top">
         <div class="feat-emoji">${emoji}</div>
         <div class="feat-info">
-          <div class="feat-name">${esc(inst.name)} ${providerBadge} ${isDone?'<span style="font-size:10px;color:var(--green)">✓ خلصت</span>':''}</div>
+          <div class="feat-name">${esc(inst.name)} ${providerBadge}</div>
           <div class="feat-sub">${inst.store ? '🛍️ ' + esc(inst.store) + ' · ' : ''}${paid} / ${inst.totalMonths} شهر · يوم ${inst.day} من كل شهر</div>
+          <div>${statusBadge}</div>
         </div>
         <div class="feat-amt" style="color:var(--red)">${fmt(toBase(monthlySAR), 0)} ${sym}/شهر</div>
       </div>
       <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:${pct}%;background:${isDone?'var(--green)':'var(--accent)'}"></div></div>
       <div class="budget-pct">${pct}% — متبقي ${fmt(toBase(remainingSAR), 0)} ${sym}${remaining>0?` (${remaining} قسط)`:''}</div>
       <div class="feat-actions">
-        ${!isDone?`<button class="feat-mini-btn success" onclick="payInstallmentNow('${inst.id}')">💰 ادفع قسط النهاردة</button>`:''}
+        ${canPay?`<button class="feat-mini-btn success" onclick="payInstallmentNow('${inst.id}')">💰 ادفع قسط النهاردة</button>`:''}
         <button class="feat-mini-btn" onclick="editInstallment('${inst.id}')" style="color:var(--accent);border-color:var(--accent)">✏️ تعديل</button>
         <button class="feat-mini-btn danger" onclick="delInstallment('${inst.id}')">🗑️ حذف</button>
       </div>
