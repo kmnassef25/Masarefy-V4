@@ -20847,7 +20847,113 @@ setTimeout(() => {
     `;
   }
 
-  // Wrap renderRecurringHub to inject our section
+  // Bulletproof approach: use MutationObserver to detect when the hub body
+  // is populated, then inject our section. This works regardless of how the
+  // original renderRecurringHub is called or wrapped elsewhere.
+  function injectCardsIntoHub() {
+    const el = document.getElementById('recurringHubBody');
+    if (!el) return false;
+    // If our section is already there, just refresh it
+    let existing = el.querySelector('.cc-hub-marker');
+    if (existing) {
+      existing.innerHTML = ccHubSection();
+      return true;
+    }
+    const wrap = document.createElement('div');
+    wrap.className = 'cc-hub-marker';
+    wrap.innerHTML = ccHubSection();
+    el.appendChild(wrap);
+    return true;
+  }
+
+  function setupHubWatcher() {
+    // Watch the document.body for when recurringHubModal is added or opened
+    const tryInject = () => {
+      const modal = document.getElementById('recurringHubModal');
+      if (modal && modal.classList.contains('open')) {
+        injectCardsIntoHub();
+      }
+    };
+
+    // 1) Wrap openRecurringPaymentsHub if it exists
+    if (typeof window.openRecurringPaymentsHub === 'function' && !window.openRecurringPaymentsHub.__ccPatched) {
+      const orig = window.openRecurringPaymentsHub;
+      window.openRecurringPaymentsHub = function() {
+        orig.apply(this, arguments);
+        // Inject after the hub renders (synchronously after open call)
+        setTimeout(injectCardsIntoHub, 0);
+        setTimeout(injectCardsIntoHub, 50);
+        setTimeout(injectCardsIntoHub, 200);
+      };
+      window.openRecurringPaymentsHub.__ccPatched = true;
+    }
+
+    // 2) Wrap renderRecurringHub as backup
+    if (typeof window.renderRecurringHub === 'function' && !window.renderRecurringHub.__ccPatched) {
+      const orig = window.renderRecurringHub;
+      window.renderRecurringHub = function() {
+        orig.apply(this, arguments);
+        setTimeout(injectCardsIntoHub, 0);
+      };
+      window.renderRecurringHub.__ccPatched = true;
+    }
+
+    // 3) Use MutationObserver as ultimate safety net — detect when modal becomes visible
+    if (!window.__ccHubObserver) {
+      const observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          if (m.type === 'attributes' && m.attributeName === 'class') {
+            const target = m.target;
+            if (target && target.id === 'recurringHubModal' && target.classList.contains('open')) {
+              setTimeout(injectCardsIntoHub, 50);
+            }
+          }
+          // Also detect when body becomes populated
+          if (m.type === 'childList' && m.target && m.target.id === 'recurringHubBody') {
+            setTimeout(injectCardsIntoHub, 0);
+          }
+        }
+      });
+      // Observe entire body for class changes on potential modal
+      observer.observe(document.body, {
+        attributes: true, attributeFilter: ['class'], subtree: true
+      });
+      // Also try to observe the body element when it's created
+      const hookBodyObserver = () => {
+        const body = document.getElementById('recurringHubBody');
+        if (body) {
+          observer.observe(body, { childList: true });
+          return true;
+        }
+        return false;
+      };
+      hookBodyObserver();
+      setTimeout(hookBodyObserver, 500);
+      setTimeout(hookBodyObserver, 2000);
+      window.__ccHubObserver = observer;
+    }
+
+    // 4) Also intercept ANY click that might open the hub
+    document.addEventListener('click', function(e) {
+      // Look for elements that might trigger hub opening
+      const target = e.target;
+      if (!target) return;
+      const onclick = target.getAttribute && target.getAttribute('onclick');
+      const parentClick = target.closest && target.closest('[onclick]');
+      const clickStr = onclick || (parentClick && parentClick.getAttribute('onclick')) || '';
+      if (clickStr.includes('openRecurringPaymentsHub') || clickStr.includes('recurringHubModal')) {
+        setTimeout(injectCardsIntoHub, 100);
+        setTimeout(injectCardsIntoHub, 400);
+      }
+    }, true);
+  }
+
+  // Run setup at multiple times to be safe
+  setupHubWatcher();
+  setTimeout(setupHubWatcher, 500);
+  setTimeout(setupHubWatcher, 2000);
+
+  // Legacy patch attempt (kept for fallback, but won't run if already patched)
   function patchHub() {
     if (typeof window.renderRecurringHub !== 'function') return;
     const orig = window.renderRecurringHub;
