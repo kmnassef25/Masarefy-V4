@@ -22567,5 +22567,986 @@ setTimeout(() => {
 
 </script>
 
+
+<!-- ═══════ V29: CLEAN CREDIT CARDS REBUILD (overrides V26/V27/V28) ═══════ -->
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// V29: CREDIT CARDS — CLEAN REBUILD
+//
+// Replaces all calculation and rendering from V26/V27/V28 with
+// a single coherent implementation. Storage stays the same.
+//
+// Calculations are based on transactions[] array on each card:
+//   {id, date(YYYY-MM-DD), name, amount, type, category, statementMonth, note}
+//   type ∈ {purchase, payment, fee, refund, plan_move}
+//
+//   purchase  : increases balance  (you spent money)
+//   payment   : decreases balance  (you paid the card)
+//   fee       : increases balance  (interest / rasoom / murabaha profit)
+//   refund    : decreases balance  (merchant refund or murabaha refund)
+//   plan_move : informational ONLY — does NOT affect balance
+//               (these are "Move To Payment Plan" rows that net to zero;
+//                the actual installment is tracked in installments[])
+//
+// Balance =  Σ(purchase) + Σ(fee) − Σ(payment) − Σ(refund)
+// Available = limit − balance
+// Utilization = balance / limit
+//
+// Statement period: a statement closes on `statementDay` of each month
+// and is due on `dueDay` of the NEXT month.
+// ═══════════════════════════════════════════════════════════════════
+(function(){
+  'use strict';
+  if (!window.creditCards) { console.warn('V29: cards storage not ready'); return; }
+
+  // ─── helpers ────────────────────────────────────────────
+  const CARDS = () => window.creditCards || [];
+  const fmt = (n, d=2) => (Number(n)||0).toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+  const fmt0 = (n) => fmt(n, 0);
+  const esc = (s) => String(s||'').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'})[c]);
+  const symFor = (cur) => cur === 'EGP' ? 'ج.م' : (cur === 'USD' ? '$' : (cur === 'EUR' ? '€' : 'ر.س'));
+  const today = () => new Date().toISOString().slice(0,10);
+  const toast = (msg, type='info') => {
+    if (window.showToast) window.showToast(msg, type);
+    else alert(msg);
+  };
+
+  // ─── CALCULATIONS (single source of truth) ──────────────
+  // Returns the financial summary of a card based on its transactions.
+  function calcCard(card) {
+    const txs = card.transactions || [];
+    let purchases = 0, fees = 0, payments = 0, refunds = 0;
+    for (const t of txs) {
+      const a = Math.abs(Number(t.amount)||0);
+      switch (t.type) {
+        case 'purchase': purchases += a; break;
+        case 'fee':      fees      += a; break;
+        case 'payment':  payments  += a; break;
+        case 'refund':   refunds   += a; break;
+        // plan_move and unknown types do NOT affect balance
+      }
+    }
+    const balance = purchases + fees - payments - refunds;
+    const limit = Number(card.limit) || 0;
+    const available = Math.max(0, limit - balance);
+    const utilization = limit > 0 ? Math.min(100, Math.max(0, (balance / limit) * 100)) : 0;
+    const minPct = Number(card.minPaymentPct) || 5;
+    const minDue = Math.max(0, balance) * (minPct / 100);
+    const profitRate = Number(card.profitRate) || 2.5; // 2.5% monthly Saudi standard
+    return {
+      balance, limit, available, utilization,
+      purchases, fees, payments, refunds,
+      minDue, profitRate, minPct,
+      txCount: txs.length
+    };
+  }
+
+  // Compute statement for a given period (statementMonth = "YYYY-MM" string,
+  // matching the month in which the statement CLOSES).
+  // Falls back to grouping by tx.date month if statementMonth not set on tx.
+  function calcStatement(card, periodKey) {
+    const txs = card.transactions || [];
+    let opening = 0, purchases = 0, fees = 0, payments = 0, refunds = 0;
+    const items = [];
+    // Sum everything from periods BEFORE this one as "opening" balance
+    // and items in THIS period as the period's flows.
+    const periodTxs = [];
+    for (const t of txs) {
+      const tkey = t.statementMonth || (t.date||'').slice(0,7);
+      const a = Math.abs(Number(t.amount)||0);
+      if (tkey < periodKey) {
+        // Contributes to opening
+        if (t.type === 'purchase') opening += a;
+        else if (t.type === 'fee') opening += a;
+        else if (t.type === 'payment') opening -= a;
+        else if (t.type === 'refund') opening -= a;
+      } else if (tkey === periodKey) {
+        if (t.type === 'purchase') purchases += a;
+        else if (t.type === 'fee') fees += a;
+        else if (t.type === 'payment') payments += a;
+        else if (t.type === 'refund') refunds += a;
+        periodTxs.push(t);
+      }
+    }
+    const closing = opening + purchases + fees - payments - refunds;
+    const minPct = Number(card.minPaymentPct) || 5;
+    const minDue = Math.max(0, closing) * (minPct / 100);
+    return {
+      periodKey, opening, purchases, fees, payments, refunds,
+      closing, minDue, items: periodTxs
+    };
+  }
+
+  // List of available statement periods (based on existing tx data)
+  function listPeriods(card) {
+    const set = new Set();
+    for (const t of (card.transactions||[])) {
+      const k = t.statementMonth || (t.date||'').slice(0,7);
+      if (k) set.add(k);
+    }
+    return [...set].sort().reverse(); // newest first
+  }
+
+  // ─── STORAGE HELPERS ────────────────────────────────────
+  function saveAll() {
+    if (typeof window.saveCreditCards === 'function') window.saveCreditCards();
+  }
+  function findCard(id) { return CARDS().find(c => c.id === id); }
+  function findTx(card, txId) { return (card.transactions||[]).find(t => t.id === txId); }
+
+  function newId(prefix='tx') {
+    return prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  }
+
+  // ─── BANK PRESETS (gradients) ───────────────────────────
+  const BANKS = {
+    snb:      { name:'البنك الأهلي السعودي', from:'#0ea45f', to:'#064e3b', short:'SNB' },
+    alrajhi:  { name:'مصرف الراجحي',          from:'#1e40af', to:'#1e3a8a', short:'الراجحي' },
+    riyad:    { name:'بنك الرياض',              from:'#1e3a8a', to:'#0f172a', short:'الرياض' },
+    sab:      { name:'ساب',                     from:'#dc2626', to:'#7f1d1d', short:'SAB' },
+    alinma:   { name:'الإنماء',                from:'#7c3aed', to:'#5b21b6', short:'الإنماء' },
+    albilad:  { name:'البلاد',                  from:'#0891b2', to:'#155e75', short:'البلاد' },
+    aljazira: { name:'الجزيرة',                from:'#0f766e', to:'#134e4a', short:'الجزيرة' },
+    anb:      { name:'العربي الوطني',          from:'#1d4ed8', to:'#1e3a8a', short:'ANB' },
+    bsf:      { name:'الفرنسي',                from:'#6366f1', to:'#4338ca', short:'BSF' },
+    stcpay:   { name:'STC Pay',                from:'#7c3aed', to:'#4c1d95', short:'STC' },
+    cib:      { name:'CIB',                    from:'#7c2d12', to:'#451a03', short:'CIB' },
+    nbe:      { name:'الأهلي المصري (NBE)',   from:'#15803d', to:'#14532d', short:'NBE' },
+    cae:      { name:'بنك مصر',                from:'#dc2626', to:'#7f1d1d', short:'مصر' },
+    qnb:      { name:'QNB',                    from:'#7e22ce', to:'#581c87', short:'QNB' },
+    other:    { name:'بنك آخر',                from:'#475569', to:'#1e293b', short:'BANK' }
+  };
+  const TX_TYPES = {
+    purchase: { label:'شراء',   icon:'🛒', color:'var(--red)',  sign:'+' },
+    payment:  { label:'سداد',   icon:'💵', color:'var(--green)', sign:'-' },
+    fee:      { label:'رسوم/فوائد', icon:'💸', color:'#f59e0b', sign:'+' },
+    refund:   { label:'استرداد', icon:'↩',  color:'var(--green)', sign:'-' },
+    plan_move:{ label:'تحويل لقسط', icon:'↔', color:'var(--muted)', sign:''  }
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // CARD LIST SCREEN — clean replacement
+  // ═══════════════════════════════════════════════════════════
+  window.renderCreditCards = function() {
+    const root = document.getElementById('creditCardsList');
+    if (!root) return;
+    const cards = CARDS();
+
+    if (cards.length === 0) {
+      root.innerHTML = `
+        <div style="background:var(--card2);border-radius:14px;padding:30px 20px;text-align:center;margin:14px 0">
+          <div style="font-size:48px;margin-bottom:10px">💎</div>
+          <div style="font-size:14px;font-weight:900;margin-bottom:6px">ما فيش بطاقات لسه</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+            ضيف بطاقة الائتمان بتاعتك<br>
+            عشان تتبع المشتريات والكشوف والأقساط
+          </div>
+          <button onclick="window.openAddCardModal()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:0;border-radius:10px;padding:12px 24px;font-weight:900;font-family:inherit;cursor:pointer">
+            ➕ إضافة بطاقة
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    // Compute totals
+    let totalBalance = 0, totalLimit = 0, totalMin = 0;
+    const sym = symFor((cards[0] && cards[0].currency) || 'SAR');
+    for (const c of cards) {
+      const r = calcCard(c);
+      totalBalance += r.balance;
+      totalLimit += r.limit;
+      totalMin += r.minDue;
+    }
+    const totalAvail = Math.max(0, totalLimit - totalBalance);
+
+    // Header summary
+    let html = `
+      <div style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border-radius:16px;padding:16px;margin:10px 0 14px">
+        <div style="font-size:11px;opacity:.85;letter-spacing:1.5px;font-weight:700">إجمالي البطاقات</div>
+        <div style="display:flex;justify-content:space-between;align-items:end;margin-top:4px">
+          <div>
+            <div style="font-size:11px;opacity:.85">المبلغ المستحق</div>
+            <div style="font-size:24px;font-weight:900;direction:ltr">${fmt(totalBalance)} <span style="font-size:13px;opacity:.85">${sym}</span></div>
+          </div>
+          <div style="text-align:left">
+            <div style="font-size:11px;opacity:.85">المتاح</div>
+            <div style="font-size:15px;font-weight:900;direction:ltr;color:#bef264">${fmt0(totalAvail)}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px;font-size:11px">
+          <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:5px 10px;flex:1;text-align:center">
+            <span style="opacity:.85">الحد الأدنى:</span> <b style="direction:ltr">${fmt(totalMin)}</b>
+          </div>
+          <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:5px 10px;flex:1;text-align:center">
+            <span style="opacity:.85">عدد البطاقات:</span> <b>${cards.length}</b>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Each card as a clean horizontal card
+    for (const card of cards) {
+      const r = calcCard(card);
+      const bank = BANKS[card.bankPreset] || BANKS.other;
+      const cardSym = symFor(card.currency);
+      const utilColor = r.utilization >= 90 ? '#ef4444' : (r.utilization >= 70 ? '#f59e0b' : '#10b981');
+      html += `
+        <div onclick="window.openCardDetail('${card.id}')" style="background:linear-gradient(135deg,${bank.from},${bank.to});color:#fff;border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer;position:relative;overflow:hidden">
+          <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:rgba(255,255,255,.08);border-radius:50%"></div>
+          <div style="position:relative;z-index:1">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px">
+              <div style="min-width:0;flex:1">
+                <div style="font-size:10px;opacity:.85;letter-spacing:1.5px;font-weight:700">${esc(bank.name)}</div>
+                <div style="font-size:14px;font-weight:900;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(card.name||'بطاقة')}</div>
+              </div>
+              <div style="text-align:left;flex-shrink:0">
+                <div style="font-size:10px;opacity:.85;font-weight:700">${(card.type||'visa').toUpperCase()}</div>
+                ${card.last4?`<div style="font-family:monospace;font-size:11px;margin-top:2px;opacity:.9">•••• ${card.last4}</div>`:''}
+              </div>
+            </div>
+            <div style="font-size:10px;opacity:.85">المستحق</div>
+            <div style="font-size:22px;font-weight:900;direction:ltr">${fmt(r.balance)} <span style="font-size:12px;opacity:.85">${cardSym}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;opacity:.95">
+              <span>الحد: <b style="direction:ltr">${fmt0(r.limit)}</b></span>
+              <span>المتاح: <b style="direction:ltr">${fmt0(r.available)}</b></span>
+              <span>الاستخدام: <b>${r.utilization.toFixed(0)}%</b></span>
+            </div>
+            <div style="background:rgba(255,255,255,.2);border-radius:8px;height:6px;margin-top:6px;overflow:hidden">
+              <div style="background:${utilColor};height:100%;width:${r.utilization}%;transition:width .3s"></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Add card button
+    html += `
+      <button onclick="window.openAddCardModal()" style="width:100%;background:var(--card2);border:1.5px dashed var(--border);color:var(--accent);border-radius:12px;padding:14px;font-weight:900;font-family:inherit;cursor:pointer;font-size:13px">
+        ➕ إضافة بطاقة جديدة
+      </button>
+    `;
+
+    root.innerHTML = html;
+    updateMenuBadge();
+  };
+
+  function updateMenuBadge() {
+    const badge = document.getElementById('menuCCCount_v17');
+    if (badge) {
+      const n = CARDS().length;
+      badge.textContent = String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+      badge.classList.toggle('zero', n === 0);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // CARD DETAIL SCREEN — bank statement style, single coherent view
+  // ═══════════════════════════════════════════════════════════
+  window.openCardDetail = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    let modal = document.getElementById('ccDetailModal');
+    if (modal) modal.classList.add('open');
+    renderCardDetail(cardId);
+  };
+
+  // State for current period view
+  const _detailState = {};
+
+  function renderCardDetail(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const root = document.getElementById('ccDetailContent');
+    if (!root) return;
+    const r = calcCard(card);
+    const bank = BANKS[card.bankPreset] || BANKS.other;
+    const cardSym = symFor(card.currency);
+    const utilColor = r.utilization >= 90 ? '#ef4444' : (r.utilization >= 70 ? '#f59e0b' : '#10b981');
+
+    // Current period (default to most recent or current month)
+    const periods = listPeriods(card);
+    if (!_detailState[cardId]) {
+      _detailState[cardId] = { period: periods[0] || today().slice(0,7), view: 'all' };
+    }
+    const state = _detailState[cardId];
+    if (!state.period) state.period = periods[0] || today().slice(0,7);
+
+    const stmt = calcStatement(card, state.period);
+
+    // Linked installments
+    let linkedInsts = [];
+    try {
+      if (Array.isArray(window.installments)) {
+        linkedInsts = window.installments.filter(i => i.linkedCardId === card.id && (Number(i.paidMonths)||0) < Number(i.totalMonths||0));
+      }
+    } catch(e) {}
+    const instMonthly = linkedInsts.reduce((s,i) => s + (Number(i.monthlyPayment)||0), 0);
+
+    // Decide which transactions to show based on view filter
+    let txsToShow;
+    if (state.view === 'period') {
+      txsToShow = stmt.items.slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
+    } else {
+      txsToShow = (card.transactions||[]).slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
+    }
+
+    root.innerHTML = `
+      <!-- Card visual at top -->
+      <div style="background:linear-gradient(135deg,${bank.from},${bank.to});color:#fff;border-radius:16px;padding:16px;margin-bottom:14px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:rgba(255,255,255,.1);border-radius:50%"></div>
+        <div style="position:relative;z-index:1">
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+            <div>
+              <div style="font-size:10px;opacity:.85;letter-spacing:1.5px;font-weight:700">${esc(bank.name)}</div>
+              <div style="font-size:15px;font-weight:900;margin-top:2px">${esc(card.name||'')}</div>
+            </div>
+            <div style="text-align:left">
+              <div style="font-size:10px;opacity:.85;font-weight:700">${(card.type||'visa').toUpperCase()}</div>
+              ${card.last4?`<div style="font-family:monospace;font-size:11px;margin-top:2px">•••• ${card.last4}</div>`:''}
+            </div>
+          </div>
+          <div style="font-size:11px;opacity:.85">المبلغ المستحق إجمالي</div>
+          <div style="font-size:26px;font-weight:900;direction:ltr">${fmt(r.balance)} <span style="font-size:13px;opacity:.85">${cardSym}</span></div>
+          <div style="display:flex;gap:10px;margin-top:8px;font-size:11px">
+            <div>الحد: <b style="direction:ltr">${fmt0(r.limit)}</b></div>
+            <div>المتاح: <b style="direction:ltr;color:#bef264">${fmt0(r.available)}</b></div>
+          </div>
+          <div style="background:rgba(255,255,255,.2);border-radius:8px;height:6px;margin-top:6px;overflow:hidden">
+            <div style="background:${utilColor};height:100%;width:${r.utilization}%"></div>
+          </div>
+          <div style="text-align:left;font-size:9px;opacity:.85;margin-top:2px">${r.utilization.toFixed(1)}% من الحد</div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px">
+        <button onclick="window.ccActionPurchase('${cardId}')" style="background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">🛒 مشترى</button>
+        <button onclick="window.ccActionPayment('${cardId}')" style="background:var(--card2);color:var(--green);border:1px solid var(--border);border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">💵 سداد</button>
+        <button onclick="window.openCardPdfImport('${cardId}')" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📄 رفع PDF</button>
+        <button onclick="window.openCardReport('${cardId}')" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📊 تقرير</button>
+      </div>
+
+      <!-- Statement period card (the statement view) -->
+      <div style="background:var(--card2);border-radius:14px;padding:14px;margin-bottom:14px">
+        <!-- Period selector -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <button onclick="window.ccPrevPeriod('${cardId}')" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px">›</button>
+          <div style="text-align:center">
+            <div style="font-size:10px;color:var(--muted);font-weight:700">كشف شهر</div>
+            <div style="font-size:14px;font-weight:900">${formatPeriodArabic(state.period)}</div>
+          </div>
+          <button onclick="window.ccNextPeriod('${cardId}')" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px">‹</button>
+        </div>
+
+        <!-- Statement breakdown -->
+        <div style="font-size:12px;display:grid;gap:6px;background:var(--card);padding:10px;border-radius:10px">
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:var(--muted)">الرصيد الافتتاحي</span>
+            <span style="direction:ltr;font-weight:700">${fmt(stmt.opening)}</span>
+          </div>
+          ${stmt.purchases > 0 ? `<div style="display:flex;justify-content:space-between"><span>+ مشتريات</span><span style="color:var(--red);direction:ltr;font-weight:700">${fmt(stmt.purchases)}</span></div>` : ''}
+          ${stmt.fees > 0 ? `<div style="display:flex;justify-content:space-between"><span>+ رسوم/فوائد</span><span style="color:#f59e0b;direction:ltr;font-weight:700">${fmt(stmt.fees)}</span></div>` : ''}
+          ${stmt.payments > 0 ? `<div style="display:flex;justify-content:space-between"><span>− مدفوعات</span><span style="color:var(--green);direction:ltr;font-weight:700">${fmt(stmt.payments)}</span></div>` : ''}
+          ${stmt.refunds > 0 ? `<div style="display:flex;justify-content:space-between"><span>− مردودات</span><span style="color:var(--green);direction:ltr;font-weight:700">${fmt(stmt.refunds)}</span></div>` : ''}
+          <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid var(--border);margin-top:2px">
+            <span style="font-weight:900">= رصيد الإقفال</span>
+            <span style="direction:ltr;font-weight:900;color:${stmt.closing>0?'var(--red)':'var(--green)'}">${fmt(stmt.closing)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding-top:4px">
+            <span style="color:#f59e0b;font-weight:700">الحد الأدنى (${r.minPct}%)</span>
+            <span style="color:#f59e0b;direction:ltr;font-weight:900">${fmt(stmt.minDue)}</span>
+          </div>
+        </div>
+
+        <!-- Profit warning -->
+        ${stmt.closing > 0 ? `
+          <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:10px;margin-top:10px;font-size:11px;line-height:1.6">
+            <div style="font-weight:900;color:#f59e0b">⚠ تنبيه:</div>
+            لو ما سدّدتش الرصيد كامل قبل تاريخ الاستحقاق، هتتحاسب على
+            <b style="color:#f59e0b">${fmt(stmt.closing * (r.profitRate/100))} ${cardSym}</b>
+            فوايد الشهر الجاي (${r.profitRate}% شهرياً).
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Linked installments -->
+      ${linkedInsts.length > 0 ? `
+        <div style="background:linear-gradient(135deg,#7c3aed15,#4f46e515);border:1px solid rgba(124,58,237,.3);border-radius:12px;padding:12px;margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-weight:900;color:#7c3aed;font-size:13px">📋 الأقساط النشطة (${linkedInsts.length})</div>
+            <div style="font-size:11px;color:#7c3aed;font-weight:900;direction:ltr">${fmt(instMonthly)} ${cardSym}/شهر</div>
+          </div>
+          ${linkedInsts.map(i => {
+            const paid = Number(i.paidMonths)||0;
+            const total = Number(i.totalMonths)||1;
+            const pct = (paid/total*100).toFixed(0);
+            return `
+              <div style="background:var(--card);border-radius:8px;padding:8px;margin-top:6px;font-size:12px">
+                <div style="display:flex;justify-content:space-between">
+                  <span style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;margin-left:8px">${esc(i.name)}</span>
+                  <span style="direction:ltr;font-weight:900;color:#f59e0b;flex-shrink:0">${fmt(Number(i.monthlyPayment)||0)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px">
+                  <span>${paid}/${total} شهر</span>
+                  <span>متبقي ${total-paid} قسط</span>
+                </div>
+                <div style="background:var(--card2);height:4px;border-radius:2px;margin-top:4px;overflow:hidden">
+                  <div style="background:#7c3aed;height:100%;width:${pct}%"></div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      ` : ''}
+
+      <!-- Transactions list -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-weight:900;font-size:13px">العمليات ${state.view==='period'?`(${stmt.items.length} في الشهر)`:`(${(card.transactions||[]).length} إجمالي)`}</div>
+        <div style="display:flex;gap:4px;background:var(--card2);border-radius:8px;padding:2px">
+          <button onclick="window.ccSwitchView('${cardId}','period')" style="background:${state.view==='period'?'var(--accent)':'transparent'};color:${state.view==='period'?'#000':'var(--text)'};border:0;border-radius:6px;padding:4px 10px;font-weight:700;font-size:10px;font-family:inherit;cursor:pointer">الشهر</button>
+          <button onclick="window.ccSwitchView('${cardId}','all')" style="background:${state.view==='all'?'var(--accent)':'transparent'};color:${state.view==='all'?'#000':'var(--text)'};border:0;border-radius:6px;padding:4px 10px;font-weight:700;font-size:10px;font-family:inherit;cursor:pointer">الكل</button>
+        </div>
+      </div>
+      <div style="background:var(--card2);border-radius:12px;overflow:hidden">
+        ${txsToShow.length === 0 ? `
+          <div style="text-align:center;padding:30px 20px;color:var(--muted)">
+            <div style="font-size:32px;margin-bottom:6px">📭</div>
+            <div style="font-size:12px">لا توجد عمليات</div>
+          </div>
+        ` : txsToShow.map((tx, idx) => {
+          const tt = TX_TYPES[tx.type] || TX_TYPES.purchase;
+          return `
+            <div style="padding:10px 12px;${idx>0?'border-top:1px solid var(--border);':''}font-size:12px">
+              <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:${tt.color}">
+                    <span>${tt.icon}</span>
+                    <span style="color:var(--muted);font-size:10px;font-weight:700">${tt.label}</span>
+                  </div>
+                  <div style="font-weight:700;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(tx.name||'-')}</div>
+                  <div style="display:flex;gap:8px;font-size:10px;color:var(--muted);margin-top:2px">
+                    <span>${tx.date||''}</span>
+                    ${tx.category?`<span>• ${esc(tx.category)}</span>`:''}
+                    ${tx.importedFromPdf?`<span style="color:#7c3aed">• PDF</span>`:''}
+                  </div>
+                </div>
+                <div style="text-align:left;flex-shrink:0">
+                  <div style="color:${tt.color};direction:ltr;font-weight:900;font-size:13px">${tt.sign}${fmt(Math.abs(Number(tx.amount)||0))}</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:4px;margin-top:6px">
+                <button onclick="event.stopPropagation();window.ccEditTx('${cardId}','${tx.id}')" style="flex:1;background:transparent;color:var(--accent);border:1px solid var(--border);border-radius:6px;padding:4px;font-size:10px;font-family:inherit;font-weight:700;cursor:pointer">✏️ تعديل</button>
+                <button onclick="event.stopPropagation();window.ccDeleteTx('${cardId}','${tx.id}')" style="flex:1;background:transparent;color:var(--red);border:1px solid var(--border);border-radius:6px;padding:4px;font-size:10px;font-family:inherit;font-weight:700;cursor:pointer">🗑 حذف</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <!-- Card actions footer -->
+      <div style="display:flex;gap:6px;margin-top:14px">
+        <button onclick="window.ccEditCard('${cardId}')" style="flex:1;background:var(--card2);color:var(--accent);border:1px solid var(--border);border-radius:10px;padding:10px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">⚙ تعديل البطاقة</button>
+        <button onclick="window.ccDeleteCard('${cardId}')" style="flex:1;background:var(--card2);color:var(--red);border:1px solid var(--border);border-radius:10px;padding:10px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">🗑 حذف البطاقة</button>
+      </div>
+    `;
+  }
+
+  function formatPeriodArabic(periodKey) {
+    if (!periodKey) return '—';
+    const [y, m] = periodKey.split('-');
+    const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+    return `${months[parseInt(m)-1] || m} ${y}`;
+  }
+
+  // Period navigation
+  window.ccPrevPeriod = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const periods = listPeriods(card);
+    const s = _detailState[cardId];
+    if (!s || periods.length === 0) return;
+    let idx = periods.indexOf(s.period);
+    if (idx === -1) idx = 0;
+    if (idx < periods.length - 1) s.period = periods[idx + 1];
+    renderCardDetail(cardId);
+  };
+  window.ccNextPeriod = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const periods = listPeriods(card);
+    const s = _detailState[cardId];
+    if (!s || periods.length === 0) return;
+    let idx = periods.indexOf(s.period);
+    if (idx === -1) idx = 0;
+    if (idx > 0) s.period = periods[idx - 1];
+    renderCardDetail(cardId);
+  };
+  window.ccSwitchView = function(cardId, view) {
+    const s = _detailState[cardId];
+    if (s) { s.view = view; renderCardDetail(cardId); }
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // PURCHASE / PAYMENT — clean modal flows
+  // ═══════════════════════════════════════════════════════════
+  function ensureSimpleModal() {
+    let m = document.getElementById('ccSimpleModal');
+    if (m) return m;
+    m = document.createElement('div');
+    m.className = 'overlay';
+    m.id = 'ccSimpleModal';
+    m.onclick = (e) => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = `
+      <div class="modal" style="max-width:480px">
+        <div class="modal-head">
+          <div class="modal-title" id="ccSimpleTitle">—</div>
+          <button class="close-x" onclick="document.getElementById('ccSimpleModal').classList.remove('open')">×</button>
+        </div>
+        <div class="modal-body" id="ccSimpleBody"></div>
+      </div>
+    `;
+    document.body.appendChild(m);
+    return m;
+  }
+
+  window.ccActionPurchase = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    ensureSimpleModal();
+    document.getElementById('ccSimpleTitle').textContent = '🛒 مشترى جديد';
+    const cardSym = symFor(card.currency);
+    document.getElementById('ccSimpleBody').innerHTML = `
+      <div style="display:grid;gap:10px">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">اسم المتجر / الوصف</label>
+          <input id="ccPurchName" class="inp" placeholder="مثلاً: امازون، نون، مطعم...">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">المبلغ (${cardSym})</label>
+          <input id="ccPurchAmount" class="inp" type="number" step="0.01" placeholder="0.00">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">الفئة</label>
+          <select id="ccPurchCat" class="inp">
+            <option value="مأكولات">🍔 مأكولات</option>
+            <option value="مشتريات">🛍 مشتريات</option>
+            <option value="سفر">✈ سفر</option>
+            <option value="ترفيه">🎮 ترفيه</option>
+            <option value="مواصلات">🚗 مواصلات</option>
+            <option value="فواتير">💡 فواتير</option>
+            <option value="صحة">💊 صحة</option>
+            <option value="تعليم">📚 تعليم</option>
+            <option value="أخرى" selected>📦 أخرى</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">التاريخ</label>
+          <input id="ccPurchDate" class="inp" type="date" value="${today()}">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">ملاحظات (اختياري)</label>
+          <input id="ccPurchNote" class="inp" placeholder="...">
+        </div>
+        <button class="save-btn" onclick="window.ccSavePurchase('${cardId}')" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);margin-top:6px">حفظ المشترى</button>
+      </div>
+    `;
+    document.getElementById('ccSimpleModal').classList.add('open');
+    setTimeout(() => document.getElementById('ccPurchName')?.focus(), 100);
+  };
+
+  window.ccSavePurchase = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const name = document.getElementById('ccPurchName').value.trim();
+    const amount = parseFloat(document.getElementById('ccPurchAmount').value);
+    const category = document.getElementById('ccPurchCat').value;
+    const date = document.getElementById('ccPurchDate').value;
+    const note = document.getElementById('ccPurchNote').value.trim();
+    if (!name) { toast('اكتب اسم المتجر', 'error'); return; }
+    if (isNaN(amount) || amount <= 0) { toast('مبلغ غير صحيح', 'error'); return; }
+    if (!date) { toast('اختر تاريخ', 'error'); return; }
+    if (!Array.isArray(card.transactions)) card.transactions = [];
+    card.transactions.push({
+      id: newId('cctx'),
+      date, time: '12:00', name, amount, category,
+      type: 'purchase', note,
+      statementMonth: date.slice(0,7),
+      createdAt: new Date().toISOString()
+    });
+    saveAll();
+    toast('✅ تم إضافة المشترى', 'success');
+    document.getElementById('ccSimpleModal').classList.remove('open');
+    renderCardDetail(cardId);
+  };
+
+  window.ccActionPayment = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const r = calcCard(card);
+    ensureSimpleModal();
+    document.getElementById('ccSimpleTitle').textContent = '💵 سداد';
+    const cardSym = symFor(card.currency);
+    document.getElementById('ccSimpleBody').innerHTML = `
+      <div style="background:linear-gradient(135deg,#10b98115,#05966915);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:10px;margin-bottom:10px;font-size:11px;line-height:1.7">
+        <div style="display:flex;justify-content:space-between"><span>المستحق حالياً:</span><b style="color:var(--red);direction:ltr">${fmt(r.balance)} ${cardSym}</b></div>
+        <div style="display:flex;justify-content:space-between"><span>الحد الأدنى:</span><b style="color:#f59e0b;direction:ltr">${fmt(r.minDue)} ${cardSym}</b></div>
+      </div>
+      <div style="display:grid;gap:10px">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">المبلغ (${cardSym})</label>
+          <input id="ccPayAmt" class="inp" type="number" step="0.01" placeholder="0.00">
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button onclick="document.getElementById('ccPayAmt').value=${r.minDue.toFixed(2)}" style="flex:1;background:var(--card2);color:#f59e0b;border:1px solid var(--border);border-radius:6px;padding:6px;font-size:10px;font-weight:700;font-family:inherit;cursor:pointer">الحد الأدنى</button>
+            <button onclick="document.getElementById('ccPayAmt').value=${(r.balance/2).toFixed(2)}" style="flex:1;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px;font-size:10px;font-weight:700;font-family:inherit;cursor:pointer">النص</button>
+            <button onclick="document.getElementById('ccPayAmt').value=${r.balance.toFixed(2)}" style="flex:1;background:var(--card2);color:var(--green);border:1px solid var(--border);border-radius:6px;padding:6px;font-size:10px;font-weight:700;font-family:inherit;cursor:pointer">الكامل</button>
+          </div>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">التاريخ</label>
+          <input id="ccPayDate" class="inp" type="date" value="${today()}">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">من حساب (اختياري)</label>
+          <input id="ccPayFrom" class="inp" placeholder="مثلاً: حساب الراتب">
+        </div>
+        <button class="save-btn" onclick="window.ccSavePayment('${cardId}')" style="background:linear-gradient(135deg,#10b981,#059669);margin-top:6px">حفظ السداد</button>
+      </div>
+    `;
+    document.getElementById('ccSimpleModal').classList.add('open');
+  };
+
+  window.ccSavePayment = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const amount = parseFloat(document.getElementById('ccPayAmt').value);
+    const date = document.getElementById('ccPayDate').value;
+    const from = document.getElementById('ccPayFrom').value.trim();
+    if (isNaN(amount) || amount <= 0) { toast('مبلغ غير صحيح', 'error'); return; }
+    if (!date) { toast('اختر تاريخ', 'error'); return; }
+    if (!Array.isArray(card.transactions)) card.transactions = [];
+    card.transactions.push({
+      id: newId('cctx'),
+      date, time: '12:00',
+      name: from ? `سداد من ${from}` : 'سداد',
+      amount, category: 'سداد',
+      type: 'payment', note: '',
+      statementMonth: date.slice(0,7),
+      createdAt: new Date().toISOString()
+    });
+    saveAll();
+    toast('✅ تم تسجيل السداد', 'success');
+    document.getElementById('ccSimpleModal').classList.remove('open');
+    renderCardDetail(cardId);
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // EDIT / DELETE TX
+  // ═══════════════════════════════════════════════════════════
+  window.ccEditTx = function(cardId, txId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const tx = findTx(card, txId);
+    if (!tx) return;
+    ensureSimpleModal();
+    document.getElementById('ccSimpleTitle').textContent = '✏️ تعديل العملية';
+    const cardSym = symFor(card.currency);
+    document.getElementById('ccSimpleBody').innerHTML = `
+      <div style="display:grid;gap:10px">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">النوع</label>
+          <select id="ccEditType" class="inp">
+            <option value="purchase" ${tx.type==='purchase'?'selected':''}>🛒 شراء</option>
+            <option value="payment" ${tx.type==='payment'?'selected':''}>💵 سداد</option>
+            <option value="fee" ${tx.type==='fee'?'selected':''}>💸 رسوم / فوائد</option>
+            <option value="refund" ${tx.type==='refund'?'selected':''}>↩ استرداد</option>
+            <option value="plan_move" ${tx.type==='plan_move'?'selected':''}>↔ تحويل لقسط (لا يؤثر)</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">الاسم / الوصف</label>
+          <input id="ccEditName" class="inp" value="${esc(tx.name||'')}">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">المبلغ (${cardSym})</label>
+          <input id="ccEditAmount" class="inp" type="number" step="0.01" value="${tx.amount||0}">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">التاريخ</label>
+          <input id="ccEditDate" class="inp" type="date" value="${tx.date||today()}">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">الفئة</label>
+          <input id="ccEditCat" class="inp" value="${esc(tx.category||'')}">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">ملاحظات</label>
+          <input id="ccEditNote" class="inp" value="${esc(tx.note||'')}">
+        </div>
+        <button class="save-btn" onclick="window.ccSaveEditTx('${cardId}','${txId}')" style="margin-top:6px">حفظ التعديل</button>
+      </div>
+    `;
+    document.getElementById('ccSimpleModal').classList.add('open');
+  };
+
+  window.ccSaveEditTx = function(cardId, txId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const tx = findTx(card, txId);
+    if (!tx) return;
+    const newType = document.getElementById('ccEditType').value;
+    const newName = document.getElementById('ccEditName').value.trim();
+    const newAmt = parseFloat(document.getElementById('ccEditAmount').value);
+    const newDate = document.getElementById('ccEditDate').value;
+    const newCat = document.getElementById('ccEditCat').value.trim();
+    const newNote = document.getElementById('ccEditNote').value.trim();
+    if (!newName) { toast('اكتب اسم العملية', 'error'); return; }
+    if (isNaN(newAmt) || newAmt <= 0) { toast('مبلغ غير صحيح', 'error'); return; }
+    if (!newDate) { toast('اختر تاريخ', 'error'); return; }
+    tx.type = newType;
+    tx.name = newName;
+    tx.amount = newAmt;
+    tx.date = newDate;
+    tx.category = newCat;
+    tx.note = newNote;
+    tx.statementMonth = newDate.slice(0,7);
+    tx.editedAt = new Date().toISOString();
+    saveAll();
+    toast('✅ تم التعديل', 'success');
+    document.getElementById('ccSimpleModal').classList.remove('open');
+    renderCardDetail(cardId);
+  };
+
+  window.ccDeleteTx = function(cardId, txId) {
+    if (!confirm('متأكد من حذف العملية؟')) return;
+    const card = findCard(cardId);
+    if (!card) return;
+    card.transactions = (card.transactions||[]).filter(t => t.id !== txId);
+    saveAll();
+    toast('✅ تم الحذف', 'success');
+    renderCardDetail(cardId);
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // EDIT / DELETE CARD
+  // ═══════════════════════════════════════════════════════════
+  window.ccEditCard = function(cardId) {
+    // Reuse the add modal if it exists; otherwise build inline
+    if (typeof window.openAddCardModal === 'function') {
+      window.openAddCardModal(cardId);
+    } else {
+      // Inline edit
+      const card = findCard(cardId);
+      if (!card) return;
+      ensureSimpleModal();
+      document.getElementById('ccSimpleTitle').textContent = '⚙ تعديل البطاقة';
+      document.getElementById('ccSimpleBody').innerHTML = `
+        <div style="display:grid;gap:10px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">اسم البطاقة</label>
+            <input id="ccCardName" class="inp" value="${esc(card.name||'')}">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">آخر 4 أرقام</label>
+            <input id="ccCardLast4" class="inp" value="${esc(card.last4||'')}" maxlength="4">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">الحد الائتماني</label>
+            <input id="ccCardLimit" class="inp" type="number" value="${card.limit||0}">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">نسبة الربح الشهرية (%)</label>
+            <input id="ccCardRate" class="inp" type="number" step="0.01" value="${card.profitRate||2.5}">
+          </div>
+          <button class="save-btn" onclick="window.ccSaveCardEdit('${cardId}')">حفظ</button>
+        </div>
+      `;
+      document.getElementById('ccSimpleModal').classList.add('open');
+    }
+  };
+
+  window.ccSaveCardEdit = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    card.name = document.getElementById('ccCardName').value.trim() || card.name;
+    card.last4 = document.getElementById('ccCardLast4').value.trim();
+    card.limit = parseFloat(document.getElementById('ccCardLimit').value) || card.limit;
+    card.profitRate = parseFloat(document.getElementById('ccCardRate').value) || 2.5;
+    saveAll();
+    toast('✅ تم التعديل', 'success');
+    document.getElementById('ccSimpleModal').classList.remove('open');
+    renderCardDetail(cardId);
+  };
+
+  window.ccDeleteCard = function(cardId) {
+    if (!confirm('متأكد من حذف البطاقة؟\nهذا سيمسح كل العمليات المرتبطة بها.')) return;
+    const idx = CARDS().findIndex(c => c.id === cardId);
+    if (idx === -1) return;
+    CARDS().splice(idx, 1);
+    saveAll();
+    toast('✅ تم حذف البطاقة', 'success');
+    document.getElementById('ccDetailModal')?.classList.remove('open');
+    window.renderCreditCards();
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // REPORT — clean simple version
+  // ═══════════════════════════════════════════════════════════
+  window.openCardReport = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const r = calcCard(card);
+    const cardSym = symFor(card.currency);
+    const bank = BANKS[card.bankPreset] || BANKS.other;
+
+    let m = document.getElementById('ccReportModal');
+    if (!m) {
+      m = document.createElement('div');
+      m.className = 'overlay';
+      m.id = 'ccReportModal';
+      m.onclick = (e) => { if (e.target === m) m.classList.remove('open'); };
+      m.innerHTML = `
+        <div class="modal" style="max-width:560px">
+          <div class="modal-head">
+            <div class="modal-title">📊 التقرير الكامل</div>
+            <button class="close-x" onclick="document.getElementById('ccReportModal').classList.remove('open')">×</button>
+          </div>
+          <div class="modal-body" id="ccReportBody"></div>
+        </div>
+      `;
+      document.body.appendChild(m);
+    }
+
+    // By category (purchases only)
+    const byCat = {};
+    for (const t of (card.transactions||[])) {
+      if (t.type !== 'purchase') continue;
+      const c = t.category || 'أخرى';
+      byCat[c] = (byCat[c] || 0) + (Number(t.amount)||0);
+    }
+    const catRows = Object.entries(byCat).sort((a,b) => b[1] - a[1]);
+
+    // By month (purchases only)
+    const byMonth = {};
+    for (const t of (card.transactions||[])) {
+      if (t.type !== 'purchase') continue;
+      const mk = (t.date||'').slice(0,7);
+      if (!mk) continue;
+      byMonth[mk] = (byMonth[mk] || 0) + (Number(t.amount)||0);
+    }
+    const monthRows = Object.entries(byMonth).sort((a,b) => a[0].localeCompare(b[0])).slice(-6);
+
+    const maxCat = Math.max(1, ...catRows.map(r => r[1]));
+    const maxMonth = Math.max(1, ...monthRows.map(r => r[1]));
+
+    document.getElementById('ccReportBody').innerHTML = `
+      <div style="background:linear-gradient(135deg,${bank.from},${bank.to});color:#fff;border-radius:14px;padding:14px;margin-bottom:14px">
+        <div style="font-size:14px;font-weight:900;margin-bottom:4px">${esc(card.name||'')}</div>
+        <div style="font-size:11px;opacity:.85">${card.last4?'•••• '+card.last4:''}</div>
+        <div style="font-size:22px;font-weight:900;margin-top:8px;direction:ltr">${fmt(r.balance)} ${cardSym}</div>
+        <div style="font-size:11px;opacity:.85">المستحق حالياً</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px">
+        <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-weight:700">إجمالي المشتريات</div>
+          <div style="color:var(--red);font-weight:900;font-size:14px;direction:ltr">${fmt(r.purchases)}</div>
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-weight:700">إجمالي المدفوعات</div>
+          <div style="color:var(--green);font-weight:900;font-size:14px;direction:ltr">${fmt(r.payments)}</div>
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-weight:700">إجمالي الرسوم</div>
+          <div style="color:#f59e0b;font-weight:900;font-size:14px;direction:ltr">${fmt(r.fees)}</div>
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-weight:700">عدد العمليات</div>
+          <div style="font-weight:900;font-size:14px">${r.txCount}</div>
+        </div>
+      </div>
+
+      ${catRows.length > 0 ? `
+        <div style="font-size:13px;font-weight:900;margin-bottom:8px;color:var(--accent)">📂 المشتريات حسب الفئة</div>
+        <div style="background:var(--card2);border-radius:10px;padding:10px;margin-bottom:14px">
+          ${catRows.map(([cat, amt]) => `
+            <div style="margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:2px">
+                <span>${esc(cat)}</span>
+                <span style="direction:ltr;color:var(--red)">-${fmt(amt)}</span>
+              </div>
+              <div style="background:var(--card);height:6px;border-radius:3px;overflow:hidden">
+                <div style="background:var(--red);height:100%;width:${(amt/maxCat*100).toFixed(0)}%"></div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      ${monthRows.length > 0 ? `
+        <div style="font-size:13px;font-weight:900;margin-bottom:8px;color:var(--accent)">📅 آخر ${monthRows.length} شهور</div>
+        <div style="background:var(--card2);border-radius:10px;padding:10px;margin-bottom:14px">
+          ${monthRows.map(([mk, amt]) => `
+            <div style="margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:2px">
+                <span>${formatPeriodArabic(mk)}</span>
+                <span style="direction:ltr;color:var(--red)">-${fmt(amt)}</span>
+              </div>
+              <div style="background:var(--card);height:6px;border-radius:3px;overflow:hidden">
+                <div style="background:linear-gradient(90deg,#0ea5e9,#7c3aed);height:100%;width:${(amt/maxMonth*100).toFixed(0)}%"></div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      <button onclick="window.ccExportReport('${cardId}')" style="width:100%;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:0;border-radius:10px;padding:12px;font-weight:900;font-family:inherit;cursor:pointer">📤 تصدير CSV</button>
+    `;
+    m.classList.add('open');
+  };
+
+  window.ccExportReport = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const txs = (card.transactions||[]).slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
+    let csv = `\uFEFFتاريخ,النوع,الاسم,الفئة,المبلغ,ملاحظات\n`;
+    for (const t of txs) {
+      const tt = TX_TYPES[t.type] || TX_TYPES.purchase;
+      const row = [
+        t.date || '',
+        tt.label,
+        (t.name||'').replace(/,/g,'؛'),
+        (t.category||'').replace(/,/g,'؛'),
+        (Number(t.amount)||0).toFixed(2),
+        (t.note||'').replace(/,/g,'؛').replace(/\n/g,' ')
+      ];
+      csv += row.join(',') + '\n';
+    }
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${card.name||'card'}_${today()}.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast('✅ تم تصدير CSV', 'success');
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // KILL the old V28 modal overrides for openCardDetail
+  // (the existing V28 had its own renderBeautifulCardDetail
+  //  but we already replaced openCardDetail above)
+  // ═══════════════════════════════════════════════════════════
+
+  // Force re-render on load
+  setTimeout(() => {
+    try { window.renderCreditCards(); } catch(e) {}
+    updateMenuBadge();
+  }, 500);
+
+  console.log('V29: clean credit cards rebuild loaded ✓');
+})();
+
+</script>
+
 </body>
 </html>
