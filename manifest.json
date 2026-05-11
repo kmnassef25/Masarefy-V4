@@ -28,6 +28,12 @@
       "short_name": "دخل",
       "url": "./?action=add-income",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "بطاقات الائتمان",
+      "short_name": "البطاقات",
+      "url": "./?action=open-cards",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
   ],
   "categories": ["finance", "productivity"]

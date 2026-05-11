@@ -1286,6 +1286,389 @@ button, .menu-row, .tx-card {
   -webkit-tap-highlight-color: rgba(88,166,255,0.15);
 }
 
+/* ═══════════════════════════════════════════════ */
+/* ═══════ V26: CREDIT CARDS TRACKER STYLES ═════ */
+/* ═══════════════════════════════════════════════ */
+.cc-card {
+  position: relative;
+  background: linear-gradient(135deg, var(--cc-grad-from, #1e40af), var(--cc-grad-to, #0f1d44));
+  color: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+  transition: transform 0.15s ease;
+}
+.cc-card:active { transform: scale(0.98); }
+.cc-card.over-limit { --cc-grad-from: #7f1d1d; --cc-grad-to: #450a0a; }
+.cc-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -30%;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 60%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.cc-card::after {
+  content: '';
+  position: absolute;
+  bottom: -40%;
+  left: -20%;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 60%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.cc-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 1;
+}
+.cc-card-bank {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+}
+.cc-card-bank-sub {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+.cc-card-type-logo {
+  font-size: 22px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -1px;
+  opacity: 0.95;
+}
+.cc-card-number {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  direction: ltr;
+  margin: 6px 0 14px;
+  font-family: 'Courier New', monospace;
+  position: relative;
+  z-index: 1;
+}
+.cc-card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  position: relative;
+  z-index: 1;
+}
+.cc-balance {
+  flex: 1;
+}
+.cc-balance-lbl {
+  font-size: 10px;
+  opacity: 0.75;
+  margin-bottom: 3px;
+  font-weight: 600;
+}
+.cc-balance-val {
+  font-size: 22px;
+  font-weight: 900;
+  direction: ltr;
+}
+.cc-limit-lbl {
+  font-size: 9px;
+  opacity: 0.7;
+  margin-top: 4px;
+  direction: ltr;
+}
+.cc-progress {
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 10px;
+  position: relative;
+  z-index: 1;
+}
+.cc-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #fcd34d, #f59e0b);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.cc-progress-fill.danger { background: linear-gradient(90deg, #ef4444, #b91c1c); }
+.cc-progress-fill.warn { background: linear-gradient(90deg, #f59e0b, #d97706); }
+.cc-progress-fill.safe { background: linear-gradient(90deg, #10b981, #059669); }
+
+.cc-actions-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  margin-bottom: 14px;
+}
+.cc-act-btn {
+  flex: 1;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 9px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Cairo', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cc-act-btn:active { transform: scale(0.95); }
+.cc-act-btn.primary { background: var(--accent); color: #000; border-color: var(--accent); }
+.cc-act-btn.success { background: var(--green-dim); color: var(--green); border-color: var(--green); }
+.cc-act-btn.danger { background: var(--red-dim); color: var(--red); border-color: var(--red); }
+
+.cc-alert {
+  background: rgba(248,81,73,0.12);
+  border: 1px solid var(--red);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: var(--red);
+  font-weight: 700;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cc-alert.warn {
+  background: rgba(240,180,41,0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.cc-alert.info {
+  background: rgba(88,166,255,0.12);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.cc-alert.success {
+  background: rgba(63,185,80,0.12);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.cc-stat-row {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+.cc-stat-box {
+  flex: 1;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 8px;
+  text-align: center;
+}
+.cc-stat-box.in { border-color: var(--green); }
+.cc-stat-box.out { border-color: var(--red); }
+.cc-stat-box.fee { border-color: var(--accent); }
+.cc-stat-lbl {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.cc-stat-box.in .cc-stat-lbl { color: var(--green); }
+.cc-stat-box.out .cc-stat-lbl { color: var(--red); }
+.cc-stat-box.fee .cc-stat-lbl { color: var(--accent); }
+.cc-stat-val {
+  font-size: 14px;
+  font-weight: 900;
+  direction: ltr;
+  color: var(--text);
+}
+
+.cc-stmt-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.cc-stmt-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--accent);
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cc-stmt-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.cc-stmt-line:last-child { border-bottom: none; }
+.cc-stmt-line.bold { font-weight: 900; }
+.cc-stmt-line.total {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 2px solid var(--accent);
+  font-weight: 900;
+  font-size: 14px;
+}
+.cc-stmt-line .val { direction: ltr; }
+.cc-stmt-line .val.out { color: var(--red); }
+.cc-stmt-line .val.in { color: var(--green); }
+.cc-stmt-line .val.fee { color: var(--accent); }
+
+.cc-tx-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.cc-tx-row:last-child { border-bottom: none; }
+.cc-tx-icon { font-size: 18px; flex-shrink: 0; }
+.cc-tx-info { flex: 1; min-width: 0; }
+.cc-tx-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cc-tx-meta {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+  direction: ltr;
+  text-align: right;
+}
+.cc-tx-amt {
+  font-size: 13px;
+  font-weight: 900;
+  direction: ltr;
+  flex-shrink: 0;
+}
+.cc-tx-amt.out { color: var(--red); }
+.cc-tx-amt.in { color: var(--green); }
+.cc-tx-amt.fee { color: var(--accent); }
+
+.cc-period-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+.cc-period-nav button {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+  padding: 4px 10px;
+}
+.cc-period-lbl {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--text);
+}
+.cc-pay-quick {
+  background: var(--card2);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Cairo', sans-serif;
+  cursor: pointer;
+  flex: 1;
+  min-width: 80px;
+}
+.cc-pay-quick:active { transform: scale(0.95); }
+
+.cc-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  background: var(--card2);
+  border-radius: 10px;
+  padding: 4px;
+  border: 1px solid var(--border);
+}
+.cc-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-family: 'Cairo', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cc-tab.active {
+  background: var(--accent);
+  color: #000;
+}
+
+.cc-empty {
+  text-align: center;
+  padding: 24px 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.cc-empty-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+
+.cc-summary-card {
+  background: linear-gradient(135deg, rgba(240,180,41,0.12), rgba(240,180,41,0.03));
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.cc-summary-title {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.cc-summary-val {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--text);
+  direction: ltr;
+}
+.cc-summary-meta {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
 </style>
 
 </head>
@@ -1853,6 +2236,11 @@ button, .menu-row, .tx-card {
       <div class="mt"><div class="mt-l">الأقساط</div><div class="mt-s" id="menuInstCount">--</div></div>
       <div class="mc">‹</div>
     </div>
+    <div class="menu-row" onclick="closeAndOpen('menuModal','creditCardsModal',renderCreditCards)">
+      <div class="mi">💎</div>
+      <div class="mt"><div class="mt-l">بطاقات الائتمان</div><div class="mt-s" id="menuCCCount">تتبع الفيزا والاستخدام والسداد</div></div>
+      <div class="mc">‹</div>
+    </div>
     <div class="menu-row" onclick="closeAndOpen('menuModal','jameyaModal',renderJameya)">
       <div class="mi">🤝</div>
       <div class="mt"><div class="mt-l">الجمعية</div><div class="mt-s" id="menuJamCount">--</div></div>
@@ -2044,6 +2432,268 @@ button, .menu-row, .tx-card {
         </select>
       </div>
       <button class="save-btn" onclick="saveInstallment()">💾 حفظ القسط</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- ═══════ V26: CREDIT CARDS TRACKER (بطاقات الائتمان) ═══════════ -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<!-- Main list modal -->
+<div class="overlay" id="creditCardsModal" onclick="closeIfOut(event,'creditCardsModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title">💎 بطاقات الائتمان</div>
+    <p class="modal-hint">تتبّع الفيزا والاستخدام الشهري والسداد — مع حساب الرسوم تلقائياً</p>
+    <div id="creditCardsList"></div>
+    <button class="save-btn" style="margin-top:10px" onclick="openAddCardModal()">➕ إضافة بطاقة جديدة</button>
+  </div>
+</div>
+
+<!-- Add / Edit card modal -->
+<div class="overlay" id="ccAddModal" onclick="closeIfOut(event,'ccAddModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title" id="ccAddTitle">💎 إضافة بطاقة ائتمانية</div>
+    <p class="modal-hint">سجّل معلومات البطاقة عشان نتابع كشف الحساب الشهري بالتفصيل</p>
+
+    <div class="form-row">
+      <div class="form-lbl">🏦 البنك</div>
+      <select class="form-inp" id="ccBank">
+        <option value="snb">🟢 الأهلي السعودي (SNB)</option>
+        <option value="alrajhi">🔵 الراجحي</option>
+        <option value="riyad">🟦 الرياض</option>
+        <option value="sab">🔴 ساب (SAB)</option>
+        <option value="alinma">🟣 الإنماء</option>
+        <option value="albilad">🟡 البلاد</option>
+        <option value="aljazira">💚 الجزيرة</option>
+        <option value="anb">🟥 العربي الوطني</option>
+        <option value="bsf">🔷 الفرنسي</option>
+        <option value="stcpay">💜 STC Pay</option>
+        <option value="cib">🟪 CIB (مصر)</option>
+        <option value="nbe">🟢 الأهلي المصري</option>
+        <option value="qnb">🔵 QNB</option>
+        <option value="cae">🔴 المصرف العربي</option>
+        <option value="other">💳 أخرى</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <div class="form-lbl">📛 اسم البطاقة</div>
+      <input class="form-inp" id="ccName" placeholder="مثال: فيزا الأهلي البلاتينية..."/>
+    </div>
+
+    <div class="two-col">
+      <div class="form-row">
+        <div class="form-lbl">💳 نوع البطاقة</div>
+        <select class="form-inp" id="ccType">
+          <option value="visa">Visa</option>
+          <option value="mastercard">Mastercard</option>
+          <option value="mada">مدى</option>
+          <option value="amex">American Express</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">🔢 آخر 4 أرقام</div>
+        <input class="form-inp" id="ccLast4" type="text" maxlength="4" inputmode="numeric" placeholder="1234" style="direction:ltr"/>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-lbl">💵 الحد الائتماني <span style="color:var(--muted);font-size:10px">(Credit Limit)</span></div>
+      <input class="form-inp" id="ccLimit" type="number" inputmode="decimal" placeholder="10000" style="direction:ltr"/>
+    </div>
+
+    <div class="form-row">
+      <div class="form-lbl">💱 العملة</div>
+      <select class="form-inp" id="ccCurrency">
+        <option value="SAR">🇸🇦 ريال</option>
+        <option value="EGP">🇪🇬 جنيه</option>
+        <option value="USD">🇺🇸 دولار</option>
+        <option value="EUR">🇪🇺 يورو</option>
+      </select>
+    </div>
+
+    <div class="two-col">
+      <div class="form-row">
+        <div class="form-lbl">📅 يوم إصدار الكشف</div>
+        <input class="form-inp" id="ccStmtDay" type="number" min="1" max="28" value="25" inputmode="numeric" placeholder="25"/>
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">📅 يوم استحقاق الدفع</div>
+        <input class="form-inp" id="ccDueDay" type="number" min="1" max="28" value="15" inputmode="numeric" placeholder="15"/>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="form-row">
+        <div class="form-lbl">📊 نسبة الرسوم الشهرية %</div>
+        <input class="form-inp" id="ccRate" type="number" step="0.01" value="2.5" inputmode="decimal" placeholder="2.5"/>
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">💰 الحد الأدنى للسداد %</div>
+        <input class="form-inp" id="ccMinPct" type="number" step="0.1" value="5" inputmode="decimal" placeholder="5"/>
+      </div>
+    </div>
+
+    <div class="form-row" style="background:rgba(240,180,41,0.08);border:1px solid var(--accent);border-radius:10px;padding:10px;margin-top:8px">
+      <div style="font-size:11px;color:var(--accent);font-weight:700;margin-bottom:4px">💡 ملاحظة عن الرسوم</div>
+      <div style="font-size:10px;color:var(--muted);line-height:1.6">في السعودية النسبة الشائعة لرسوم التمويل (Murabaha) هي <b>2.5% شهرياً</b> (يعني تقريباً 30% سنوياً). الرسوم بتتحسب فقط لو ما سددتش الكشف بالكامل قبل تاريخ الاستحقاق.</div>
+    </div>
+
+    <input type="hidden" id="ccEditId" value=""/>
+
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="save-btn" onclick="saveCreditCard()" style="flex:1">💾 حفظ البطاقة</button>
+      <button onclick="document.getElementById('ccAddModal').classList.remove('open')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700;font-family:'Cairo',sans-serif">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Card detail / statement modal -->
+<div class="overlay" id="ccDetailModal" onclick="closeIfOut(event,'ccDetailModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div id="ccDetailContent"></div>
+  </div>
+</div>
+
+<!-- Add purchase modal -->
+<div class="overlay" id="ccPurchaseModal" onclick="closeIfOut(event,'ccPurchaseModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title">🛍️ شراء جديد بالبطاقة</div>
+    <p class="modal-hint" id="ccPurchaseCardName">--</p>
+
+    <div class="form-row">
+      <div class="form-lbl">📛 اسم المتجر / المعاملة</div>
+      <input class="form-inp" id="ccPName" placeholder="مثال: نون، أمازون، STC..."/>
+    </div>
+
+    <div class="form-row">
+      <div class="form-lbl">💵 المبلغ</div>
+      <input class="form-inp" id="ccPAmount" type="number" inputmode="decimal" placeholder="0.00" style="direction:ltr"/>
+    </div>
+
+    <div class="form-row">
+      <div class="form-lbl">📂 الفئة</div>
+      <select class="form-inp" id="ccPCat">
+        <option value="تسوق">🛍️ تسوق</option>
+        <option value="أكل">🍽️ أكل ومطاعم</option>
+        <option value="بنزين">⛽ بنزين</option>
+        <option value="مواصلات">🚗 مواصلات</option>
+        <option value="فواتير">📄 فواتير</option>
+        <option value="ترفيه">🎬 ترفيه</option>
+        <option value="صحة">💊 صحة</option>
+        <option value="سفر">✈️ سفر</option>
+        <option value="إلكترونيات">📱 إلكترونيات</option>
+        <option value="أخرى">💸 أخرى</option>
+      </select>
+    </div>
+
+    <div class="two-col">
+      <div class="form-row">
+        <div class="form-lbl">📅 التاريخ</div>
+        <input class="form-inp" id="ccPDate" type="date" style="direction:ltr"/>
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">🕐 الوقت</div>
+        <input class="form-inp" id="ccPTime" type="time" style="direction:ltr"/>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-lbl">📝 ملاحظة (اختياري)</div>
+      <input class="form-inp" id="ccPNote" placeholder="تفاصيل إضافية..."/>
+    </div>
+
+    <div class="form-row" style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="ccPInstallment" onchange="document.getElementById('ccPInstRow').style.display=this.checked?'block':'none'"/>
+        <div>
+          <div style="font-size:12px;font-weight:700">📆 تقسيط على دفعات</div>
+          <div style="font-size:10px;color:var(--muted)">قسّمها على Tabby / Tamara أو على دفعات شهرية من البطاقة</div>
+        </div>
+      </label>
+      <div id="ccPInstRow" style="display:none;margin-top:10px">
+        <div class="two-col">
+          <div class="form-row">
+            <div class="form-lbl">موفّر التقسيط</div>
+            <select class="form-inp" id="ccPProvider">
+              <option value="bank">🏦 من البنك</option>
+              <option value="tabby">tabby</option>
+              <option value="tamara">tamara</option>
+              <option value="valu">فاليو</option>
+              <option value="postpay">Postpay</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-lbl">عدد الأقساط</div>
+            <select class="form-inp" id="ccPMonths">
+              <option value="3">3 أقساط</option>
+              <option value="4" selected>4 أقساط</option>
+              <option value="6">6 أقساط</option>
+              <option value="12">12 قسط</option>
+              <option value="24">24 قسط</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <input type="hidden" id="ccPCardId" value=""/>
+
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="save-btn" onclick="saveCardPurchase()" style="flex:1">💾 حفظ الشراء</button>
+      <button onclick="document.getElementById('ccPurchaseModal').classList.remove('open')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700;font-family:'Cairo',sans-serif">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment modal -->
+<div class="overlay" id="ccPaymentModal" onclick="closeIfOut(event,'ccPaymentModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title">💰 سداد البطاقة</div>
+    <p class="modal-hint" id="ccPayCardName">--</p>
+
+    <div id="ccPayInfo" style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px"></div>
+
+    <div class="form-row">
+      <div class="form-lbl">💵 مبلغ السداد</div>
+      <input class="form-inp" id="ccPayAmount" type="number" inputmode="decimal" placeholder="0.00" style="direction:ltr"/>
+    </div>
+
+    <div class="form-row">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button type="button" class="cc-pay-quick" onclick="ccQuickPay('min')">الحد الأدنى</button>
+        <button type="button" class="cc-pay-quick" onclick="ccQuickPay('full')">السداد الكامل</button>
+        <button type="button" class="cc-pay-quick" onclick="ccQuickPay('half')">نصف الرصيد</button>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="form-row">
+        <div class="form-lbl">📅 تاريخ السداد</div>
+        <input class="form-inp" id="ccPayDate" type="date" style="direction:ltr"/>
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">🏦 من حساب</div>
+        <select class="form-inp" id="ccPayAccount"></select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-lbl">📝 ملاحظة (اختياري)</div>
+      <input class="form-inp" id="ccPayNote" placeholder="مثال: سداد كامل قبل الاستحقاق..."/>
+    </div>
+
+    <input type="hidden" id="ccPayCardId" value=""/>
+
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="save-btn" onclick="saveCardPayment()" style="flex:1">💾 تأكيد السداد</button>
+      <button onclick="document.getElementById('ccPaymentModal').classList.remove('open')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700;font-family:'Cairo',sans-serif">إلغاء</button>
     </div>
   </div>
 </div>
@@ -4037,6 +4687,7 @@ function exportJSON() {
     occasions: typeof occasions !== 'undefined' ? occasions : [],
     bills: typeof bills !== 'undefined' ? bills : [],
     netWorthHistory: typeof netWorthHistory !== 'undefined' ? netWorthHistory : [],
+    creditCards: typeof creditCards !== 'undefined' ? creditCards : [],
     baseCurrency,
     theme: localStorage.getItem('msarifyi_theme') || 'dark',
     schemaVersion: 7,
@@ -14369,14 +15020,15 @@ setTimeout(() => {
         netWorthHistory: typeof netWorthHistory !== 'undefined' ? netWorthHistory : [],
         priceAlerts: typeof priceAlerts !== 'undefined' ? priceAlerts : [],
         flights: typeof flights !== 'undefined' ? flights : [],
+        creditCards: typeof creditCards !== 'undefined' ? creditCards : [],
         travelMode: localStorage.getItem('msarifyi_travel_mode') || null,
         ramadanMode: localStorage.getItem('msarifyi_ramadan_mode') || null,
         hajjBudget: typeof hajjBudget !== 'undefined' ? hajjBudget : null,
         goldHistory: safeGetLS('msarifyi_gold_history', []),
         baseCurrency,
         theme: localStorage.getItem('msarifyi_theme') || 'dark',
-        schemaVersion: 18,
-        version: 18,
+        schemaVersion: 26,
+        version: 26,
         exported: new Date().toISOString()
       };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
@@ -14412,9 +15064,15 @@ setTimeout(() => {
         if (data.carExpenses) { carExpenses = data.carExpenses; saveCarExpenses(); }
         if (data.weddings) { weddings = data.weddings; saveWeddings(); }
         if (data.weddingExpenses) { weddingExpenses = data.weddingExpenses; saveWeddingExpenses(); }
+        if (data.creditCards && typeof creditCards !== 'undefined') {
+          creditCards = data.creditCards;
+          window.creditCards = creditCards;
+          if (typeof saveCreditCards === 'function') saveCreditCards();
+        }
         setTimeout(() => {
           updateCarMenuCount();
           updateWeddingMenuCount();
+          if (typeof updateCardMenuCount === 'function') updateCardMenuCount();
         }, 600);
       } catch (err) {
         console.warn('V18 restore failed:', err);
@@ -18833,6 +19491,1236 @@ setTimeout(() => {
   style.textContent = css;
   document.head.appendChild(style);
 })();
+</script>
+
+
+<!-- ═══════ V26: CREDIT CARDS TRACKER MODULE ═══════ -->
+<script>
+
+// ═══════════════════════════════════════════════════════════════
+// V26: CREDIT CARDS TRACKER MODULE
+// Self-contained module for tracking credit cards, statements,
+// fees, and integration with installments
+// ═══════════════════════════════════════════════════════════════
+(function(){
+  'use strict';
+
+  // ── STORAGE ──
+  let creditCards = [];
+  try {
+    creditCards = JSON.parse(localStorage.getItem('msarifyi_credit_cards') || '[]');
+    if (!Array.isArray(creditCards)) creditCards = [];
+  } catch(e) { creditCards = []; }
+
+  function saveCreditCards() {
+    try { localStorage.setItem('msarifyi_credit_cards', JSON.stringify(creditCards)); }
+    catch(e) { console.warn('Failed to save credit cards', e); }
+  }
+
+  // Expose to global scope for backup/restore
+  window.creditCards = creditCards;
+  window.saveCreditCards = saveCreditCards;
+
+  // ── BANK PRESETS ──
+  // Color gradient pairs for card styling. Each bank gets its visual identity.
+  const BANK_PRESETS = {
+    snb:     { name: 'البنك الأهلي السعودي', gradFrom: '#0ea45f', gradTo: '#064e3b', emoji: '🟢', short: 'SNB' },
+    alrajhi: { name: 'مصرف الراجحي',          gradFrom: '#1e40af', gradTo: '#1e3a8a', emoji: '🔵', short: 'الراجحي' },
+    riyad:   { name: 'بنك الرياض',            gradFrom: '#1e3a8a', gradTo: '#0c1e4e', emoji: '🟦', short: 'الرياض' },
+    sab:     { name: 'بنك ساب (SAB)',         gradFrom: '#b91c1c', gradTo: '#7f1d1d', emoji: '🔴', short: 'SAB' },
+    alinma:  { name: 'مصرف الإنماء',          gradFrom: '#7e22ce', gradTo: '#581c87', emoji: '🟣', short: 'الإنماء' },
+    albilad: { name: 'بنك البلاد',            gradFrom: '#d97706', gradTo: '#92400e', emoji: '🟡', short: 'البلاد' },
+    aljazira:{ name: 'بنك الجزيرة',           gradFrom: '#059669', gradTo: '#064e3b', emoji: '💚', short: 'الجزيرة' },
+    anb:     { name: 'البنك العربي الوطني',   gradFrom: '#dc2626', gradTo: '#7f1d1d', emoji: '🟥', short: 'ANB' },
+    bsf:     { name: 'البنك السعودي الفرنسي', gradFrom: '#0369a1', gradTo: '#0c4a6e', emoji: '🔷', short: 'BSF' },
+    stcpay:  { name: 'STC Pay',               gradFrom: '#9333ea', gradTo: '#581c87', emoji: '💜', short: 'STC' },
+    cib:     { name: 'CIB البنك التجاري',     gradFrom: '#6d28d9', gradTo: '#4c1d95', emoji: '🟪', short: 'CIB' },
+    nbe:     { name: 'البنك الأهلي المصري',   gradFrom: '#15803d', gradTo: '#14532d', emoji: '🟢', short: 'NBE' },
+    qnb:     { name: 'بنك QNB',               gradFrom: '#1d4ed8', gradTo: '#1e3a8a', emoji: '🔵', short: 'QNB' },
+    cae:     { name: 'المصرف العربي',         gradFrom: '#991b1b', gradTo: '#450a0a', emoji: '🔴', short: 'CAE' },
+    other:   { name: 'بنك آخر',               gradFrom: '#475569', gradTo: '#1e293b', emoji: '💳', short: 'بطاقة' }
+  };
+
+  const CAT_EMOJI = {
+    'تسوق':'🛍️','أكل':'🍽️','بنزين':'⛽','مواصلات':'🚗',
+    'فواتير':'📄','ترفيه':'🎬','صحة':'💊','سفر':'✈️',
+    'إلكترونيات':'📱','أخرى':'💸'
+  };
+
+  // ─────────────────────────────────────────────────────
+  // PERIOD CALCULATIONS
+  // ─────────────────────────────────────────────────────
+  // A statement "period" is identified by the month the statement closes in.
+  // Format: 'YYYY-MM'
+  // Example: card with statementDay=25
+  //   - Transaction on Apr 30 → belongs to period '2026-05' (statement closes May 25)
+  //   - Transaction on May 10 → belongs to period '2026-05' (statement closes May 25)
+  //   - Transaction on May 26 → belongs to period '2026-06' (statement closes Jun 25)
+
+  function pad(n) { return String(n).padStart(2,'0'); }
+
+  function ymdToDate(y, m, d) {
+    return new Date(y, m, d);
+  }
+
+  function dateStr(d) {
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+
+  function parseDate(dStr) {
+    if (!dStr) return new Date();
+    const parts = String(dStr).split('-').map(n => parseInt(n));
+    if (parts.length < 3) return new Date();
+    return new Date(parts[0], parts[1]-1, parts[2]);
+  }
+
+  // Returns the period key 'YYYY-MM' a given transaction date belongs to
+  function periodKeyForDate(card, dStr) {
+    const d = parseDate(dStr);
+    const stmtDay = card.statementDay || 25;
+    let y = d.getFullYear(), m = d.getMonth();
+    if (d.getDate() > stmtDay) {
+      m++;
+      if (m > 11) { m = 0; y++; }
+    }
+    return `${y}-${pad(m+1)}`;
+  }
+
+  // Get period info {key, startDate, endDate, dueDate, label} for a given key
+  function periodInfo(card, key) {
+    const [y, m] = key.split('-').map(n => parseInt(n));
+    const stmtDay = card.statementDay || 25;
+    const dueDay = card.dueDay || 15;
+    const endDate = ymdToDate(y, m-1, Math.min(stmtDay, lastDayOfMonth(y, m-1)));
+    // Start = day after prev month's stmt day
+    let sY = y, sM = m-2;
+    if (sM < 0) { sM = 11; sY--; }
+    const startDate = ymdToDate(sY, sM, Math.min(stmtDay+1, lastDayOfMonth(sY, sM)));
+    // Due date = dueDay of the month AFTER the stmt close month
+    let dY = y, dM = m;
+    if (dM > 11) { dM = 0; dY++; }
+    const dueDate = ymdToDate(dY, dM, Math.min(dueDay, lastDayOfMonth(dY, dM)));
+    const monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+    return {
+      key, startDate, endDate, dueDate,
+      label: `كشف ${monthNames[m-1]} ${y}`,
+      monthLabel: monthNames[m-1]
+    };
+  }
+
+  function lastDayOfMonth(y, m) {
+    return new Date(y, m+1, 0).getDate();
+  }
+
+  // Get current active period (the one we're accumulating purchases into)
+  function currentPeriodKey(card, today) {
+    today = today || new Date();
+    return periodKeyForDate(card, dateStr(today));
+  }
+
+  // Get all period keys present in card's transactions, sorted desc (newest first)
+  function getAllPeriods(card) {
+    const set = new Set();
+    (card.transactions || []).forEach(t => {
+      set.add(periodKeyForDate(card, t.date));
+    });
+    // Always include current period
+    set.add(currentPeriodKey(card));
+    const arr = Array.from(set);
+    arr.sort((a, b) => b.localeCompare(a));
+    return arr;
+  }
+
+  // ─────────────────────────────────────────────────────
+  // STATEMENT CALCULATION
+  // ─────────────────────────────────────────────────────
+  // Builds the statement summary for a given period.
+  // Returns: { period, info, txs, opening, purchases, refunds, payments, fees, closing, minPayment, paidStatus }
+
+  function computeStatement(card, periodKey) {
+    const info = periodInfo(card, periodKey);
+    const all = card.transactions || [];
+
+    // Opening balance = closing balance of previous period
+    const prevKey = previousPeriodKey(periodKey);
+    let opening = 0;
+    if (hasAnyTxsBefore(card, info.startDate)) {
+      opening = computeClosing(card, prevKey);
+    }
+
+    // Transactions in this period
+    const txs = all.filter(t => periodKeyForDate(card, t.date) === periodKey)
+                   .sort((a, b) => (a.date + (a.time||'')).localeCompare(b.date + (b.time||'')));
+
+    let purchases = 0, refunds = 0, payments = 0, fees = 0;
+    txs.forEach(t => {
+      const amt = parseFloat(t.amount) || 0;
+      if (t.type === 'purchase') purchases += amt;
+      else if (t.type === 'refund') refunds += amt;
+      else if (t.type === 'payment') payments += amt;
+      else if (t.type === 'fee') fees += amt;
+    });
+
+    // Auto-calculate fees if not in full sufficient prior payment
+    // Fee rule: If previous period's closing balance > 0 AND wasn't paid in full by due date,
+    // then we apply rate% on the carried balance.
+    // But we don't auto-add — we calculate and show the recommendation.
+    // The user/system marks statement as paid which decides if fee should apply.
+    let suggestedFee = 0;
+    if (opening > 0) {
+      const prevPaid = (card.paidStatements || {})[prevKey];
+      const prevClosing = computeClosing(card, prevKey);
+      // If previous wasn't fully paid (paid amount < prev closing)
+      if (!prevPaid || (prevPaid.amount || 0) < prevClosing - 0.01) {
+        const carried = prevClosing - (prevPaid?.amount || 0);
+        suggestedFee = carried * ((card.interestRate || 2.5) / 100);
+      }
+    }
+
+    const closing = opening + purchases + fees - refunds - payments;
+    const minPayment = Math.max(closing * ((card.minPaymentPct || 5) / 100), Math.min(closing, 50));
+
+    const paidStatus = (card.paidStatements || {})[periodKey] || null;
+
+    return {
+      period: periodKey,
+      info,
+      txs,
+      opening,
+      purchases,
+      refunds,
+      payments,
+      fees,
+      suggestedFee,
+      closing,
+      minPayment,
+      paidStatus
+    };
+  }
+
+  function previousPeriodKey(key) {
+    const [y, m] = key.split('-').map(n => parseInt(n));
+    let pY = y, pM = m - 1;
+    if (pM < 1) { pM = 12; pY--; }
+    return `${pY}-${pad(pM)}`;
+  }
+
+  function hasAnyTxsBefore(card, date) {
+    return (card.transactions || []).some(t => parseDate(t.date) < date);
+  }
+
+  // Recursive but capped — for closing balance of a past period
+  function computeClosing(card, periodKey, depth) {
+    depth = depth || 0;
+    if (depth > 24) return 0; // safety
+    const all = card.transactions || [];
+    const txs = all.filter(t => periodKeyForDate(card, t.date) === periodKey);
+    if (txs.length === 0 && !hasAnyTxsBeforePeriod(card, periodKey)) return 0;
+
+    const prevKey = previousPeriodKey(periodKey);
+    let opening = hasAnyTxsBeforePeriod(card, periodKey) ? computeClosing(card, prevKey, depth+1) : 0;
+
+    let purchases = 0, refunds = 0, payments = 0, fees = 0;
+    txs.forEach(t => {
+      const amt = parseFloat(t.amount) || 0;
+      if (t.type === 'purchase') purchases += amt;
+      else if (t.type === 'refund') refunds += amt;
+      else if (t.type === 'payment') payments += amt;
+      else if (t.type === 'fee') fees += amt;
+    });
+
+    return opening + purchases + fees - refunds - payments;
+  }
+
+  function hasAnyTxsBeforePeriod(card, periodKey) {
+    const info = periodInfo(card, periodKey);
+    return hasAnyTxsBefore(card, info.startDate);
+  }
+
+  // Current outstanding balance (everything spent that hasn't been paid yet)
+  function currentBalance(card) {
+    const txs = card.transactions || [];
+    let bal = 0;
+    txs.forEach(t => {
+      const amt = parseFloat(t.amount) || 0;
+      if (t.type === 'purchase') bal += amt;
+      else if (t.type === 'fee') bal += amt;
+      else if (t.type === 'refund') bal -= amt;
+      else if (t.type === 'payment') bal -= amt;
+    });
+    return Math.max(bal, 0);
+  }
+
+  // Available credit
+  function availableCredit(card) {
+    return Math.max((card.creditLimit || 0) - currentBalance(card), 0);
+  }
+
+  function utilizationPct(card) {
+    if (!card.creditLimit) return 0;
+    return Math.min((currentBalance(card) / card.creditLimit) * 100, 100);
+  }
+
+  // ─────────────────────────────────────────────────────
+  // ALERTS / STATUS HELPERS
+  // ─────────────────────────────────────────────────────
+  function getCardAlerts(card) {
+    const alerts = [];
+    const today = new Date();
+    const util = utilizationPct(card);
+
+    // Over-limit
+    if (util >= 100) {
+      alerts.push({ type: 'danger', icon: '🚨', msg: `تخطّيت الحد الائتماني! استخدمت ${Math.round(util)}% من ${formatBaseAmount(card.creditLimit, card.currency)}` });
+    } else if (util >= 90) {
+      alerts.push({ type: 'danger', icon: '⚠️', msg: `استخدمت ${Math.round(util)}% من حدك الائتماني — قرّبت تخلّصه` });
+    } else if (util >= 75) {
+      alerts.push({ type: 'warn', icon: '⚠️', msg: `استخدمت ${Math.round(util)}% من حدك الائتماني` });
+    }
+
+    // Unpaid statements — find the most recent closed statement that's not paid
+    const periods = getAllPeriods(card);
+    const curKey = currentPeriodKey(card);
+    for (const pk of periods) {
+      if (pk === curKey) continue; // skip current
+      const stmt = computeStatement(card, pk);
+      if (stmt.closing <= 0.01) continue; // nothing to pay
+      const paid = stmt.paidStatus;
+      const paidAmt = paid?.amount || 0;
+      const remaining = stmt.closing - paidAmt;
+      if (remaining <= 0.01) continue; // fully paid
+
+      const daysToDue = Math.ceil((stmt.info.dueDate - today) / (1000*60*60*24));
+      if (daysToDue < 0) {
+        alerts.push({
+          type: 'danger',
+          icon: '🔴',
+          msg: `${stmt.info.label} متأخر ${Math.abs(daysToDue)} يوم — رسوم تأخير قد تُضاف`
+        });
+      } else if (daysToDue <= 3) {
+        alerts.push({
+          type: 'warn',
+          icon: '⏰',
+          msg: `${stmt.info.label} يستحق خلال ${daysToDue === 0 ? 'اليوم' : daysToDue + ' أيام'} (${formatBaseAmount(remaining, card.currency)})`
+        });
+      } else if (daysToDue <= 7) {
+        alerts.push({
+          type: 'info',
+          icon: '📅',
+          msg: `${stmt.info.label} يستحق خلال ${daysToDue} أيام`
+        });
+      }
+      break; // only show the oldest unpaid
+    }
+
+    return alerts;
+  }
+
+  // ─────────────────────────────────────────────────────
+  // FORMATTING HELPERS
+  // ─────────────────────────────────────────────────────
+  function formatBaseAmount(amount, currency) {
+    if (!currency) currency = 'SAR';
+    const sym = (typeof BASE_LABELS !== 'undefined' && BASE_LABELS[currency]) ? BASE_LABELS[currency].sym : '';
+    return `${(typeof fmt === 'function' ? fmt(amount, 0) : amount.toFixed(0))} ${sym}`.trim();
+  }
+
+  function getCardCurSym(card) {
+    const cur = card.currency || 'SAR';
+    return (typeof BASE_LABELS !== 'undefined' && BASE_LABELS[cur]) ? BASE_LABELS[cur].sym : cur;
+  }
+
+  function escHTML(s) {
+    return (typeof esc === 'function') ? esc(s) : String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // ─────────────────────────────────────────────────────
+  // CRUD: ADD / EDIT / DELETE CARDS
+  // ─────────────────────────────────────────────────────
+  window.openAddCardModal = function() {
+    document.getElementById('ccEditId').value = '';
+    document.getElementById('ccAddTitle').textContent = '💎 إضافة بطاقة ائتمانية';
+    document.getElementById('ccName').value = '';
+    document.getElementById('ccBank').value = 'snb';
+    document.getElementById('ccType').value = 'visa';
+    document.getElementById('ccLast4').value = '';
+    document.getElementById('ccLimit').value = '';
+    document.getElementById('ccCurrency').value = 'SAR';
+    document.getElementById('ccStmtDay').value = '25';
+    document.getElementById('ccDueDay').value = '15';
+    document.getElementById('ccRate').value = '2.5';
+    document.getElementById('ccMinPct').value = '5';
+    document.getElementById('ccAddModal').classList.add('open');
+  };
+
+  window.editCreditCard = function(id) {
+    const card = creditCards.find(c => c.id === id);
+    if (!card) return;
+    document.getElementById('ccEditId').value = id;
+    document.getElementById('ccAddTitle').textContent = '✏️ تعديل البطاقة';
+    document.getElementById('ccName').value = card.name || '';
+    document.getElementById('ccBank').value = card.bank || 'snb';
+    document.getElementById('ccType').value = card.cardType || 'visa';
+    document.getElementById('ccLast4').value = card.last4 || '';
+    document.getElementById('ccLimit').value = card.creditLimit || '';
+    document.getElementById('ccCurrency').value = card.currency || 'SAR';
+    document.getElementById('ccStmtDay').value = card.statementDay || 25;
+    document.getElementById('ccDueDay').value = card.dueDay || 15;
+    document.getElementById('ccRate').value = card.interestRate || 2.5;
+    document.getElementById('ccMinPct').value = card.minPaymentPct || 5;
+    document.getElementById('ccDetailModal').classList.remove('open');
+    document.getElementById('ccAddModal').classList.add('open');
+  };
+
+  window.saveCreditCard = function() {
+    const editId = document.getElementById('ccEditId').value;
+    const name = document.getElementById('ccName').value.trim();
+    const bank = document.getElementById('ccBank').value;
+    const cardType = document.getElementById('ccType').value;
+    const last4 = document.getElementById('ccLast4').value.trim().replace(/\D/g,'').slice(0,4);
+    const creditLimit = parseFloat(document.getElementById('ccLimit').value);
+    const currency = document.getElementById('ccCurrency').value;
+    const statementDay = Math.min(28, Math.max(1, parseInt(document.getElementById('ccStmtDay').value) || 25));
+    const dueDay = Math.min(28, Math.max(1, parseInt(document.getElementById('ccDueDay').value) || 15));
+    const interestRate = parseFloat(document.getElementById('ccRate').value) || 2.5;
+    const minPaymentPct = parseFloat(document.getElementById('ccMinPct').value) || 5;
+
+    if (!name) {
+      if (typeof showAlert === 'function') showAlert('من فضلك اكتب اسم البطاقة', 'error');
+      return;
+    }
+    if (!creditLimit || creditLimit <= 0) {
+      if (typeof showAlert === 'function') showAlert('الحد الائتماني لازم يكون أكبر من صفر', 'error');
+      return;
+    }
+
+    if (editId) {
+      const card = creditCards.find(c => c.id === editId);
+      if (card) {
+        Object.assign(card, { name, bank, cardType, last4, creditLimit, currency, statementDay, dueDay, interestRate, minPaymentPct });
+        saveCreditCards();
+        if (typeof showToast === 'function') showToast('✅ تم تحديث البطاقة', 'success');
+      }
+    } else {
+      creditCards.push({
+        id: 'cc_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+        name, bank, cardType, last4, creditLimit, currency,
+        statementDay, dueDay, interestRate, minPaymentPct,
+        transactions: [],
+        paidStatements: {},
+        createdAt: new Date().toISOString()
+      });
+      saveCreditCards();
+      if (typeof showToast === 'function') showToast('✅ تم إضافة البطاقة', 'success');
+    }
+
+    document.getElementById('ccAddModal').classList.remove('open');
+    renderCreditCards();
+    updateCardMenuCount();
+  };
+
+  window.deleteCreditCard = function(id) {
+    const card = creditCards.find(c => c.id === id);
+    if (!card) return;
+    const txCount = (card.transactions || []).length;
+    const msg = txCount > 0
+      ? `هل تريد حذف البطاقة "${card.name}" وكل بياناتها؟\n\n• ${txCount} معاملة\n• كل الكشوف والسجل\n\nالعملية دي ما تتراجعش.`
+      : `هل تريد حذف البطاقة "${card.name}"؟`;
+    if (!confirm(msg)) return;
+    creditCards = creditCards.filter(c => c.id !== id);
+    window.creditCards = creditCards;
+    saveCreditCards();
+    document.getElementById('ccDetailModal').classList.remove('open');
+    renderCreditCards();
+    updateCardMenuCount();
+    if (typeof showToast === 'function') showToast('🗑️ تم حذف البطاقة', 'info');
+  };
+
+  // ─────────────────────────────────────────────────────
+  // PURCHASE / PAYMENT FLOW
+  // ─────────────────────────────────────────────────────
+  window.openCardPurchaseModal = function(cardId) {
+    const card = creditCards.find(c => c.id === cardId);
+    if (!card) return;
+    document.getElementById('ccPCardId').value = cardId;
+    document.getElementById('ccPurchaseCardName').textContent = `${card.name} • ${card.last4 ? '••••' + card.last4 : ''}`;
+    document.getElementById('ccPName').value = '';
+    document.getElementById('ccPAmount').value = '';
+    document.getElementById('ccPCat').value = 'تسوق';
+    document.getElementById('ccPNote').value = '';
+    const today = new Date();
+    document.getElementById('ccPDate').value = dateStr(today);
+    document.getElementById('ccPTime').value = pad(today.getHours()) + ':' + pad(today.getMinutes());
+    document.getElementById('ccPInstallment').checked = false;
+    document.getElementById('ccPInstRow').style.display = 'none';
+    document.getElementById('ccDetailModal').classList.remove('open');
+    document.getElementById('ccPurchaseModal').classList.add('open');
+  };
+
+  window.saveCardPurchase = function() {
+    const cardId = document.getElementById('ccPCardId').value;
+    const card = creditCards.find(c => c.id === cardId);
+    if (!card) return;
+
+    const name = document.getElementById('ccPName').value.trim();
+    const amount = parseFloat(document.getElementById('ccPAmount').value);
+    const cat = document.getElementById('ccPCat').value;
+    const date = document.getElementById('ccPDate').value;
+    const time = document.getElementById('ccPTime').value || '12:00';
+    const note = document.getElementById('ccPNote').value.trim();
+    const isInstallment = document.getElementById('ccPInstallment').checked;
+    const provider = isInstallment ? document.getElementById('ccPProvider').value : '';
+    const months = isInstallment ? parseInt(document.getElementById('ccPMonths').value) : 0;
+
+    if (!name) {
+      if (typeof showAlert === 'function') showAlert('اكتب اسم المتجر/المعاملة', 'error');
+      return;
+    }
+    if (!amount || amount <= 0) {
+      if (typeof showAlert === 'function') showAlert('المبلغ لازم يكون أكبر من صفر', 'error');
+      return;
+    }
+    if (!date) {
+      if (typeof showAlert === 'function') showAlert('من فضلك اختر تاريخ', 'error');
+      return;
+    }
+
+    // Check limit warning
+    const newBal = currentBalance(card) + amount;
+    if (newBal > card.creditLimit) {
+      if (!confirm(`⚠️ هذا الشراء هيتجاوز الحد الائتماني!\n\nالحد: ${formatBaseAmount(card.creditLimit, card.currency)}\nبعد الشراء: ${formatBaseAmount(newBal, card.currency)}\nالزيادة: ${formatBaseAmount(newBal - card.creditLimit, card.currency)}\n\nهل تريد المتابعة؟`)) {
+        return;
+      }
+    }
+
+    const tx = {
+      id: 'cct_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      date, time, name, amount, cat, note,
+      type: 'purchase',
+      currency: card.currency,
+      createdAt: new Date().toISOString()
+    };
+
+    // Handle installment integration
+    if (isInstallment && months > 0 && typeof installments !== 'undefined') {
+      const instId = 'inst_cc_' + Date.now();
+      const monthlyAmt = amount / months;
+      installments.push({
+        id: instId,
+        name: `💳 ${name} (${card.name})`,
+        totalAmount: amount,
+        monthlyPayment: monthlyAmt,
+        totalMonths: months,
+        currency: card.currency,
+        day: card.dueDay || 15,
+        cat: cat,
+        paidMonths: 0,
+        startMonth: (typeof monthKey === 'function') ? monthKey(new Date().getFullYear(), new Date().getMonth()) : null,
+        lastPaidMonth: null,
+        provider: provider || 'bank',
+        store: name,
+        linkedCardId: card.id
+      });
+      if (typeof saveInstallments === 'function') saveInstallments();
+      tx.instId = instId;
+      tx.note = (tx.note ? tx.note + ' · ' : '') + `تقسيط ${months} شهور`;
+    }
+
+    card.transactions = card.transactions || [];
+    card.transactions.push(tx);
+    saveCreditCards();
+
+    document.getElementById('ccPurchaseModal').classList.remove('open');
+    if (typeof showToast === 'function') showToast(`✅ ${formatBaseAmount(amount, card.currency)} • ${name}`, 'success');
+    renderCreditCards();
+    updateCardMenuCount();
+    // Re-open detail if was previously viewing
+    if (window.__lastViewedCardId) openCardDetail(window.__lastViewedCardId);
+  };
+
+  // ─── PAYMENT ─────────────────────────────────────────
+  window.openCardPaymentModal = function(cardId) {
+    const card = creditCards.find(c => c.id === cardId);
+    if (!card) return;
+    document.getElementById('ccPayCardId').value = cardId;
+    document.getElementById('ccPayCardName').textContent = `${card.name} • ${card.last4 ? '••••' + card.last4 : ''}`;
+    document.getElementById('ccPayAmount').value = '';
+    document.getElementById('ccPayNote').value = '';
+    const today = new Date();
+    document.getElementById('ccPayDate').value = dateStr(today);
+
+    // Fill account select
+    const accSel = document.getElementById('ccPayAccount');
+    accSel.innerHTML = '';
+    if (typeof accounts !== 'undefined' && Array.isArray(accounts)) {
+      accounts.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.id;
+        opt.textContent = `${a.emoji || '🏦'} ${a.name}`;
+        accSel.appendChild(opt);
+      });
+    }
+    if (accSel.options.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'حساب افتراضي';
+      accSel.appendChild(opt);
+    }
+
+    // Compute summary for current statement
+    const curKey = currentPeriodKey(card);
+    const prevKey = previousPeriodKey(curKey);
+    const prevStmt = computeStatement(card, prevKey);
+    const bal = currentBalance(card);
+    const minPay = Math.max(bal * ((card.minPaymentPct || 5) / 100), Math.min(bal, 50));
+
+    const sym = getCardCurSym(card);
+    document.getElementById('ccPayInfo').innerHTML = `
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px">📊 ملخص البطاقة</div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin:6px 0">
+        <span>الرصيد الحالي:</span>
+        <span style="font-weight:900;color:var(--red);direction:ltr">${formatBaseAmount(bal, card.currency)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin:6px 0">
+        <span>الكشف السابق:</span>
+        <span style="font-weight:700;direction:ltr">${formatBaseAmount(prevStmt.closing, card.currency)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin:6px 0">
+        <span>الحد الأدنى:</span>
+        <span style="font-weight:700;color:var(--accent);direction:ltr">${formatBaseAmount(minPay, card.currency)}</span>
+      </div>
+    `;
+
+    window.__ccPaySummary = { bal, minPay, prevClosing: prevStmt.closing };
+    document.getElementById('ccDetailModal').classList.remove('open');
+    document.getElementById('ccPaymentModal').classList.add('open');
+  };
+
+  window.ccQuickPay = function(kind) {
+    const s = window.__ccPaySummary || {};
+    let v = 0;
+    if (kind === 'min') v = s.minPay || 0;
+    else if (kind === 'full') v = s.bal || 0;
+    else if (kind === 'half') v = (s.bal || 0) / 2;
+    document.getElementById('ccPayAmount').value = v.toFixed(2);
+  };
+
+  window.saveCardPayment = function() {
+    const cardId = document.getElementById('ccPayCardId').value;
+    const card = creditCards.find(c => c.id === cardId);
+    if (!card) return;
+    const amount = parseFloat(document.getElementById('ccPayAmount').value);
+    const date = document.getElementById('ccPayDate').value;
+    const note = document.getElementById('ccPayNote').value.trim();
+    const accId = document.getElementById('ccPayAccount').value;
+
+    if (!amount || amount <= 0) {
+      if (typeof showAlert === 'function') showAlert('من فضلك ادخل مبلغ صحيح', 'error');
+      return;
+    }
+    if (!date) {
+      if (typeof showAlert === 'function') showAlert('من فضلك اختر تاريخ السداد', 'error');
+      return;
+    }
+
+    // Add payment to card transactions
+    const tx = {
+      id: 'cct_pay_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      date, time: '12:00',
+      name: 'سداد البطاقة',
+      amount,
+      type: 'payment',
+      cat: 'سداد',
+      note: note || `سداد ${card.name}`,
+      currency: card.currency,
+      createdAt: new Date().toISOString()
+    };
+
+    card.transactions = card.transactions || [];
+    card.transactions.push(tx);
+
+    // Auto-mark statement(s) as paid based on amount
+    // Apply payment to oldest unpaid period first
+    const periods = getAllPeriods(card).slice().reverse(); // oldest first
+    let remaining = amount;
+    card.paidStatements = card.paidStatements || {};
+    const curKey = currentPeriodKey(card);
+    for (const pk of periods) {
+      if (pk === curKey) continue; // skip current open period
+      if (remaining <= 0) break;
+      const stmt = computeStatement(card, pk);
+      if (stmt.closing <= 0.01) continue;
+      const already = (card.paidStatements[pk]?.amount) || 0;
+      const need = stmt.closing - already;
+      if (need <= 0) continue;
+      const toApply = Math.min(need, remaining);
+      card.paidStatements[pk] = {
+        amount: already + toApply,
+        paidAt: new Date().toISOString(),
+        fullyPaid: (already + toApply) >= stmt.closing - 0.01
+      };
+      remaining -= toApply;
+    }
+
+    saveCreditCards();
+
+    // Create expense transaction in main app (so cashflow tracks it)
+    if (typeof txs !== 'undefined' && typeof saveData === 'function') {
+      const rate = card.currency === 'SAR' ? 1 : (typeof rates !== 'undefined' && rates[card.currency] ? (card.currency === 'EGP' ? rates.EGP : rates[card.currency]) : 1);
+      const amountSAR = (typeof curToSAR === 'function') ? curToSAR(amount, card.currency) : amount;
+      const expense = {
+        id: 'tx_ccpay_' + Date.now(),
+        type: 'expense',
+        name: `💳 سداد ${card.name}`,
+        amount,
+        currency: card.currency,
+        rate,
+        amountSAR,
+        cat: 'سداد بطاقة',
+        date,
+        time: '12:00',
+        note: note || `سداد ${card.name} ${card.last4 ? '(••••' + card.last4 + ')' : ''}`,
+        account: accId || (typeof accounts !== 'undefined' && accounts[0]?.id) || null,
+        recurring: false,
+        ccPaymentId: tx.id,
+        cardId: card.id
+      };
+      txs.unshift(expense);
+      saveData();
+      tx.linkedTxId = expense.id;
+      saveCreditCards();
+    }
+
+    document.getElementById('ccPaymentModal').classList.remove('open');
+    if (typeof showToast === 'function') showToast(`✅ تم سداد ${formatBaseAmount(amount, card.currency)}`, 'success');
+    if (typeof renderAll === 'function') renderAll();
+    renderCreditCards();
+    updateCardMenuCount();
+    if (window.__lastViewedCardId) openCardDetail(window.__lastViewedCardId);
+  };
+
+  // Delete a transaction from a card
+  window.deleteCardTx = function(cardId, txId) {
+    const card = creditCards.find(c => c.id === cardId);
+    if (!card) return;
+    const tx = (card.transactions || []).find(t => t.id === txId);
+    if (!tx) return;
+    if (!confirm(`حذف "${tx.name}"؟`)) return;
+    card.transactions = card.transactions.filter(t => t.id !== txId);
+
+    // If this payment had a linked main-app tx, remove that too
+    if (tx.type === 'payment' && tx.linkedTxId && typeof txs !== 'undefined') {
+      const idx = txs.findIndex(t => t.id === tx.linkedTxId);
+      if (idx !== -1) {
+        txs.splice(idx, 1);
+        if (typeof saveData === 'function') saveData();
+      }
+    }
+    // If purchase had a linked installment, remove it
+    if (tx.instId && typeof installments !== 'undefined') {
+      const idx = installments.findIndex(i => i.id === tx.instId);
+      if (idx !== -1) {
+        installments.splice(idx, 1);
+        if (typeof saveInstallments === 'function') saveInstallments();
+      }
+    }
+
+    saveCreditCards();
+    if (typeof showToast === 'function') showToast('🗑️ تم الحذف', 'info');
+    if (typeof renderAll === 'function') renderAll();
+    renderCreditCards();
+    if (window.__lastViewedCardId) openCardDetail(window.__lastViewedCardId);
+  };
+
+  // ─────────────────────────────────────────────────────
+  // RENDERING — MAIN LIST
+  // ─────────────────────────────────────────────────────
+  window.renderCreditCards = function() {
+    const el = document.getElementById('creditCardsList');
+    if (!el) return;
+
+    if (creditCards.length === 0) {
+      el.innerHTML = `
+        <div class="cc-empty">
+          <div class="cc-empty-icon">💎</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">مفيش بطاقات لسه</div>
+          <div>اضغط على "إضافة بطاقة" عشان تبدأ تتابع كشف حسابك الشهري والرسوم</div>
+        </div>`;
+      return;
+    }
+
+    // Summary across all cards (sum in SAR for display in base currency)
+    let totalBalanceSAR = 0, totalLimitSAR = 0;
+    creditCards.forEach(c => {
+      const bal = currentBalance(c);
+      const lim = c.creditLimit || 0;
+      totalBalanceSAR += (typeof curToSAR === 'function') ? curToSAR(bal, c.currency) : bal;
+      totalLimitSAR += (typeof curToSAR === 'function') ? curToSAR(lim, c.currency) : lim;
+    });
+    const overallUtil = totalLimitSAR ? Math.round((totalBalanceSAR/totalLimitSAR)*100) : 0;
+    const baseSym = (typeof BASE_LABELS !== 'undefined' && typeof baseCurrency !== 'undefined') ? BASE_LABELS[baseCurrency].sym : 'ر.س';
+    const toBaseFn = (typeof toBase === 'function') ? toBase : (x => x);
+
+    let html = `<div class="cc-summary-card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="cc-summary-title">💳 إجمالي الاستخدام</div>
+          <div class="cc-summary-val">${(typeof fmt === 'function' ? fmt(toBaseFn(totalBalanceSAR), 0) : totalBalanceSAR.toFixed(0))} ${baseSym}</div>
+          <div class="cc-summary-meta">من ${(typeof fmt === 'function' ? fmt(toBaseFn(totalLimitSAR), 0) : totalLimitSAR.toFixed(0))} ${baseSym} • ${creditCards.length} بطاقة</div>
+        </div>
+        <div style="text-align:left;direction:ltr">
+          <div style="font-size:32px;font-weight:900;color:${overallUtil >= 80 ? 'var(--red)' : overallUtil >= 50 ? 'var(--accent)' : 'var(--green)'}">${overallUtil}%</div>
+          <div style="font-size:10px;color:var(--muted)">معدل الاستخدام</div>
+        </div>
+      </div>
+    </div>`;
+
+    // Card cards
+    html += creditCards.map(card => renderCardVisual(card)).join('');
+
+    el.innerHTML = html;
+  };
+
+  function renderCardVisual(card) {
+    const preset = BANK_PRESETS[card.bank] || BANK_PRESETS.other;
+    const bal = currentBalance(card);
+    const util = utilizationPct(card);
+    const sym = getCardCurSym(card);
+    const alerts = getCardAlerts(card);
+    const isOver = util >= 100;
+
+    const typeLogo = card.cardType === 'visa' ? 'VISA' :
+                     card.cardType === 'mastercard' ? '●●' :
+                     card.cardType === 'mada' ? 'مدى' :
+                     card.cardType === 'amex' ? 'AMEX' : 'CARD';
+
+    const progClass = util >= 90 ? 'danger' : util >= 70 ? 'warn' : 'safe';
+    const last4Display = card.last4 ? '•••• •••• •••• ' + card.last4 : '•••• •••• •••• ••••';
+
+    const alertsHTML = alerts.slice(0, 1).map(a =>
+      `<div class="cc-alert ${a.type}">${a.icon} ${escHTML(a.msg)}</div>`
+    ).join('');
+
+    return `
+    <div>
+      <div class="cc-card ${isOver ? 'over-limit' : ''}" style="--cc-grad-from:${preset.gradFrom};--cc-grad-to:${preset.gradTo}" onclick="openCardDetail('${card.id}')">
+        <div class="cc-card-head">
+          <div>
+            <div class="cc-card-bank">${escHTML(card.name || preset.name)}</div>
+            <div class="cc-card-bank-sub">${preset.emoji} ${escHTML(preset.short)}</div>
+          </div>
+          <div class="cc-card-type-logo">${typeLogo}</div>
+        </div>
+        <div class="cc-card-number">${last4Display}</div>
+        <div class="cc-card-bottom">
+          <div class="cc-balance">
+            <div class="cc-balance-lbl">الرصيد المستخدم</div>
+            <div class="cc-balance-val">${(typeof fmt === 'function' ? fmt(bal, 2) : bal.toFixed(2))} ${sym}</div>
+            <div class="cc-limit-lbl">من ${(typeof fmt === 'function' ? fmt(card.creditLimit, 0) : card.creditLimit)} ${sym}</div>
+          </div>
+          <div style="text-align:left">
+            <div style="font-size:22px;font-weight:900">${Math.round(util)}%</div>
+          </div>
+        </div>
+        <div class="cc-progress">
+          <div class="cc-progress-fill ${progClass}" style="width:${util}%"></div>
+        </div>
+      </div>
+      ${alertsHTML}
+      <div class="cc-actions-row">
+        <button class="cc-act-btn" onclick="event.stopPropagation();openCardPurchaseModal('${card.id}')">🛍️ شراء</button>
+        <button class="cc-act-btn success" onclick="event.stopPropagation();openCardPaymentModal('${card.id}')">💰 سداد</button>
+        <button class="cc-act-btn primary" onclick="event.stopPropagation();openCardDetail('${card.id}')">📊 الكشف</button>
+      </div>
+    </div>`;
+  }
+
+  // ─────────────────────────────────────────────────────
+  // RENDERING — CARD DETAIL / STATEMENT VIEW
+  // ─────────────────────────────────────────────────────
+  let __currentDetailPeriod = null;
+
+  window.openCardDetail = function(cardId, periodKey) {
+    const card = creditCards.find(c => c.id === cardId);
+    if (!card) return;
+    window.__lastViewedCardId = cardId;
+
+    const periods = getAllPeriods(card);
+    if (!periodKey || !periods.includes(periodKey)) {
+      periodKey = currentPeriodKey(card);
+    }
+    __currentDetailPeriod = periodKey;
+
+    const el = document.getElementById('ccDetailContent');
+    el.innerHTML = renderCardDetailHTML(card, periodKey);
+    document.getElementById('ccDetailModal').classList.add('open');
+  };
+
+  function renderCardDetailHTML(card, periodKey) {
+    const preset = BANK_PRESETS[card.bank] || BANK_PRESETS.other;
+    const periods = getAllPeriods(card);
+    const stmt = computeStatement(card, periodKey);
+    const sym = getCardCurSym(card);
+    const bal = currentBalance(card);
+    const util = utilizationPct(card);
+    const isCurrent = periodKey === currentPeriodKey(card);
+
+    const idx = periods.indexOf(periodKey);
+    const canPrev = idx < periods.length - 1;
+    const canNext = idx > 0;
+    const prevKey = canPrev ? periods[idx + 1] : null;
+    const nextKey = canNext ? periods[idx - 1] : null;
+
+    // Format dates
+    const fmtDate = (d) => {
+      if (!d) return '--';
+      return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+    };
+
+    const today = new Date();
+    const daysToDue = Math.ceil((stmt.info.dueDate - today) / (1000*60*60*24));
+    const paidInfo = stmt.paidStatus;
+    const paidAmt = paidInfo?.amount || 0;
+    const remaining = Math.max(stmt.closing - paidAmt, 0);
+    const isPaid = remaining <= 0.01;
+
+    let statusBadge = '';
+    if (stmt.closing <= 0.01) {
+      statusBadge = `<span style="display:inline-block;padding:3px 10px;border-radius:8px;background:var(--card2);color:var(--muted);font-size:10px;font-weight:700">لا يوجد رصيد</span>`;
+    } else if (isPaid) {
+      statusBadge = `<span style="display:inline-block;padding:3px 10px;border-radius:8px;background:var(--green-dim);color:var(--green);font-size:10px;font-weight:700">✅ مدفوع بالكامل</span>`;
+    } else if (isCurrent) {
+      statusBadge = `<span style="display:inline-block;padding:3px 10px;border-radius:8px;background:var(--blue-dim, rgba(88,166,255,0.15));color:var(--blue);font-size:10px;font-weight:700;border:1px solid var(--blue)">📂 الفترة الجارية</span>`;
+    } else if (daysToDue < 0) {
+      statusBadge = `<span style="display:inline-block;padding:3px 10px;border-radius:8px;background:var(--red-dim);color:var(--red);font-size:10px;font-weight:700">⚠️ متأخر ${Math.abs(daysToDue)} يوم</span>`;
+    } else if (daysToDue <= 7) {
+      statusBadge = `<span style="display:inline-block;padding:3px 10px;border-radius:8px;background:rgba(240,180,41,0.15);color:var(--accent);font-size:10px;font-weight:700">⏰ يستحق خلال ${daysToDue} يوم</span>`;
+    } else {
+      statusBadge = `<span style="display:inline-block;padding:3px 10px;border-radius:8px;background:var(--card2);color:var(--muted);font-size:10px;font-weight:700">يستحق خلال ${daysToDue} يوم</span>`;
+    }
+
+    let html = `
+      <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+
+      <!-- Mini card header -->
+      <div class="cc-card" style="--cc-grad-from:${preset.gradFrom};--cc-grad-to:${preset.gradTo};margin-bottom:14px;cursor:default">
+        <div class="cc-card-head">
+          <div>
+            <div class="cc-card-bank">${escHTML(card.name)}</div>
+            <div class="cc-card-bank-sub">${preset.emoji} ${escHTML(preset.short)} ${card.last4 ? '• ••••' + card.last4 : ''}</div>
+          </div>
+          <div class="cc-card-type-logo">${card.cardType === 'visa' ? 'VISA' : card.cardType === 'mastercard' ? '●●' : card.cardType === 'mada' ? 'مدى' : card.cardType === 'amex' ? 'AMEX' : 'CARD'}</div>
+        </div>
+        <div class="cc-card-bottom">
+          <div class="cc-balance">
+            <div class="cc-balance-lbl">الرصيد الإجمالي المستخدم</div>
+            <div class="cc-balance-val">${(typeof fmt === 'function' ? fmt(bal, 2) : bal.toFixed(2))} ${sym}</div>
+            <div class="cc-limit-lbl">المتاح: ${(typeof fmt === 'function' ? fmt(availableCredit(card), 0) : availableCredit(card))} ${sym} من ${(typeof fmt === 'function' ? fmt(card.creditLimit, 0) : card.creditLimit)} ${sym}</div>
+          </div>
+          <div style="text-align:left">
+            <div style="font-size:22px;font-weight:900">${Math.round(util)}%</div>
+          </div>
+        </div>
+        <div class="cc-progress">
+          <div class="cc-progress-fill ${util >= 90 ? 'danger' : util >= 70 ? 'warn' : 'safe'}" style="width:${util}%"></div>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="cc-actions-row" style="margin-bottom:14px">
+        <button class="cc-act-btn" onclick="openCardPurchaseModal('${card.id}')">🛍️ شراء جديد</button>
+        <button class="cc-act-btn success" onclick="openCardPaymentModal('${card.id}')">💰 سداد</button>
+        <button class="cc-act-btn" onclick="editCreditCard('${card.id}')">✏️ تعديل</button>
+      </div>
+
+      <!-- Period navigator -->
+      <div class="cc-period-nav">
+        <button ${canNext ? `onclick="openCardDetail('${card.id}','${nextKey}')"` : 'disabled style="opacity:.3"'}>‹</button>
+        <div class="cc-period-lbl">${stmt.info.label}</div>
+        <button ${canPrev ? `onclick="openCardDetail('${card.id}','${prevKey}')"` : 'disabled style="opacity:.3"'}>›</button>
+      </div>
+
+      <!-- Status badge -->
+      <div style="text-align:center;margin-bottom:14px">${statusBadge}</div>
+
+      <!-- Statement period info -->
+      <div class="cc-stmt-section">
+        <div class="cc-stmt-title">📋 معلومات الكشف</div>
+        <div class="cc-stmt-line">
+          <span>فترة الكشف</span>
+          <span class="val">${fmtDate(stmt.info.startDate)} - ${fmtDate(stmt.info.endDate)}</span>
+        </div>
+        <div class="cc-stmt-line">
+          <span>تاريخ الاستحقاق</span>
+          <span class="val">${fmtDate(stmt.info.dueDate)}</span>
+        </div>
+        ${!isCurrent ? `
+        <div class="cc-stmt-line">
+          <span>الحد الأدنى للسداد</span>
+          <span class="val fee">${formatBaseAmount(stmt.minPayment, card.currency)}</span>
+        </div>` : ''}
+      </div>
+
+      <!-- Statement summary (statement-style) -->
+      <div class="cc-stmt-section">
+        <div class="cc-stmt-title">💰 ملخص الحساب</div>
+        <div class="cc-stmt-line">
+          <span>الرصيد الافتتاحي</span>
+          <span class="val">${formatBaseAmount(stmt.opening, card.currency)}</span>
+        </div>
+        <div class="cc-stmt-line">
+          <span>+ المشتريات (${stmt.txs.filter(t=>t.type==='purchase').length})</span>
+          <span class="val out">${formatBaseAmount(stmt.purchases, card.currency)}</span>
+        </div>
+        ${stmt.refunds > 0 ? `
+        <div class="cc-stmt-line">
+          <span>- المرتجعات</span>
+          <span class="val in">${formatBaseAmount(stmt.refunds, card.currency)}</span>
+        </div>` : ''}
+        <div class="cc-stmt-line">
+          <span>- المدفوعات</span>
+          <span class="val in">${formatBaseAmount(stmt.payments, card.currency)}</span>
+        </div>
+        ${stmt.fees > 0 ? `
+        <div class="cc-stmt-line">
+          <span>+ الرسوم والتمويل</span>
+          <span class="val fee">${formatBaseAmount(stmt.fees, card.currency)}</span>
+        </div>` : ''}
+        ${stmt.suggestedFee > 0 && !isCurrent ? `
+        <div class="cc-stmt-line" style="color:var(--accent)">
+          <span>💡 رسوم متوقعة (${card.interestRate}%)</span>
+          <span class="val fee">${formatBaseAmount(stmt.suggestedFee, card.currency)}</span>
+        </div>` : ''}
+        <div class="cc-stmt-line total">
+          <span>الرصيد الختامي</span>
+          <span class="val ${stmt.closing > 0 ? 'out' : ''}">${formatBaseAmount(stmt.closing, card.currency)}</span>
+        </div>
+        ${paidAmt > 0 ? `
+        <div class="cc-stmt-line" style="color:var(--green)">
+          <span>✓ مدفوع</span>
+          <span class="val in">${formatBaseAmount(paidAmt, card.currency)}</span>
+        </div>
+        ${remaining > 0.01 ? `
+        <div class="cc-stmt-line total" style="border-top-color:var(--red);color:var(--red)">
+          <span>المتبقي للسداد</span>
+          <span class="val">${formatBaseAmount(remaining, card.currency)}</span>
+        </div>` : ''}` : ''}
+      </div>
+
+      ${stmt.suggestedFee > 0 && !isCurrent && remaining > 0.01 ? `
+      <div class="cc-alert warn" style="margin-bottom:14px">
+        💡 لو ما سددتش قبل تاريخ الاستحقاق ${fmtDate(stmt.info.dueDate)}، هتُضاف رسوم تمويل تقديرية ${formatBaseAmount(stmt.suggestedFee, card.currency)} (${card.interestRate}% شهرياً على المبلغ المُرحَّل).
+      </div>` : ''}
+
+      <!-- Transactions list -->
+      <div class="cc-stmt-section">
+        <div class="cc-stmt-title">📜 العمليات (${stmt.txs.length})</div>
+        ${stmt.txs.length === 0 ? `
+          <div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">
+            مفيش عمليات في الفترة دي
+          </div>
+        ` : stmt.txs.slice().reverse().map(t => renderTxRow(card, t)).join('')}
+      </div>
+
+      ${isCurrent ? `
+      <div class="cc-alert info" style="margin-bottom:14px">
+        ℹ️ الفترة الجارية مازالت مفتوحة — هتقفل في ${fmtDate(stmt.info.endDate)} وتاريخ السداد ${fmtDate(stmt.info.dueDate)}
+      </div>` : ''}
+
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="cc-act-btn danger" onclick="deleteCreditCard('${card.id}')">🗑️ حذف البطاقة</button>
+      </div>
+    `;
+
+    return html;
+  }
+
+  function renderTxRow(card, t) {
+    const emoji = t.type === 'payment' ? '💰' :
+                  t.type === 'refund' ? '↩️' :
+                  t.type === 'fee' ? '⚠️' :
+                  (CAT_EMOJI[t.cat] || '🛍️');
+    const cls = t.type === 'payment' || t.type === 'refund' ? 'in' :
+                t.type === 'fee' ? 'fee' : 'out';
+    const sign = t.type === 'payment' || t.type === 'refund' ? '-' : '+';
+    const sym = getCardCurSym(card);
+    const amtFmt = (typeof fmt === 'function' ? fmt(t.amount, 2) : t.amount.toFixed(2));
+    const d = parseDate(t.date);
+    const dateStr = `${pad(d.getDate())}/${pad(d.getMonth()+1)}`;
+
+    return `
+      <div class="cc-tx-row" onclick="if(confirm('حذف ${escHTML(t.name).replace(/'/g,'\\\\\'')}؟ ')) deleteCardTx('${card.id}','${t.id}')">
+        <div class="cc-tx-icon">${emoji}</div>
+        <div class="cc-tx-info">
+          <div class="cc-tx-name">${escHTML(t.name)}</div>
+          <div class="cc-tx-meta">${dateStr} ${t.time ? '• ' + t.time : ''} ${t.cat ? '• ' + escHTML(t.cat) : ''}${t.instId ? ' • 📆 مقسّط' : ''}</div>
+        </div>
+        <div class="cc-tx-amt ${cls}">${sign}${amtFmt} ${sym}</div>
+      </div>
+    `;
+  }
+
+  // ─────────────────────────────────────────────────────
+  // MENU COUNT
+  // ─────────────────────────────────────────────────────
+  function updateCardMenuCount() {
+    const el = document.getElementById('menuCCCount');
+    if (!el) return;
+    if (creditCards.length === 0) {
+      el.textContent = 'تتبع الفيزا والاستخدام والسداد';
+      return;
+    }
+    let totalSAR = 0;
+    let limitSAR = 0;
+    let anyAlert = false;
+    creditCards.forEach(c => {
+      const b = currentBalance(c);
+      const l = c.creditLimit || 0;
+      totalSAR += (typeof curToSAR === 'function') ? curToSAR(b, c.currency) : b;
+      limitSAR += (typeof curToSAR === 'function') ? curToSAR(l, c.currency) : l;
+      if (getCardAlerts(c).some(a => a.type === 'danger')) anyAlert = true;
+    });
+    const util = limitSAR ? Math.round((totalSAR/limitSAR)*100) : 0;
+    const sym = (typeof BASE_LABELS !== 'undefined' && typeof baseCurrency !== 'undefined') ? BASE_LABELS[baseCurrency].sym : '';
+    const baseAmt = (typeof toBase === 'function') ? toBase(totalSAR) : totalSAR;
+    const baseStr = (typeof fmt === 'function') ? fmt(baseAmt, 0) : baseAmt.toFixed(0);
+    el.textContent = `${baseStr} ${sym} • ${util}% • ${creditCards.length} بطاقة${anyAlert ? ' ⚠️' : ''}`;
+    if (anyAlert) {
+      el.style.color = 'var(--red)';
+      el.style.fontWeight = '700';
+    } else {
+      el.style.color = '';
+      el.style.fontWeight = '';
+    }
+  }
+
+  // Hook into existing updateMenuCounts
+  const _origUpdateCounts = window.updateMenuCounts;
+  window.updateMenuCounts = function() {
+    if (_origUpdateCounts) _origUpdateCounts();
+    updateCardMenuCount();
+  };
+
+  // Also expose so external callers can invoke
+  window.updateCardMenuCount = updateCardMenuCount;
+
+  // ─────────────────────────────────────────────────────
+  // HOME SCREEN INTEGRATION — show alert on home if any card has issues
+  // ─────────────────────────────────────────────────────
+  function renderCardsHomeAlert() {
+    if (creditCards.length === 0) return null;
+    const danger = [];
+    const warn = [];
+    creditCards.forEach(c => {
+      getCardAlerts(c).forEach(a => {
+        const item = { ...a, cardId: c.id, cardName: c.name };
+        if (a.type === 'danger') danger.push(item);
+        else if (a.type === 'warn') warn.push(item);
+      });
+    });
+    if (danger.length === 0 && warn.length === 0) return null;
+    const top = danger[0] || warn[0];
+    const html = `
+      <div class="cc-alert ${top.type}" style="cursor:pointer;margin:8px 0" onclick="document.getElementById('menuModal')?.classList.remove('open');setTimeout(()=>{document.getElementById('creditCardsModal').classList.add('open');renderCreditCards();},150)">
+        💎 <b>${escHTML(top.cardName)}:</b> ${escHTML(top.msg)}
+      </div>
+    `;
+    return html;
+  }
+  window.renderCardsHomeAlert = renderCardsHomeAlert;
+
+  // Hook into home rendering — add to renderHome if available
+  function injectHomeAlert() {
+    const homeContent = document.getElementById('homeContent');
+    if (!homeContent) return;
+    // Check if already injected
+    if (homeContent.dataset.ccAlertInjected === '1') return;
+    const alertHTML = renderCardsHomeAlert();
+    if (!alertHTML) return;
+    // Insert at top of home
+    const wrap = document.createElement('div');
+    wrap.innerHTML = alertHTML;
+    wrap.dataset.ccHomeAlert = '1';
+    // Remove any previous one
+    homeContent.querySelectorAll('[data-cc-home-alert]').forEach(n => n.remove());
+    homeContent.insertBefore(wrap.firstElementChild ? wrap : wrap, homeContent.firstChild);
+  }
+
+  // Re-inject after render
+  const _origRenderHome = window.renderHome;
+  if (typeof _origRenderHome === 'function') {
+    window.renderHome = function() {
+      const r = _origRenderHome.apply(this, arguments);
+      try { injectHomeAlert(); } catch(e) { console.warn('CC home alert inject failed', e); }
+      return r;
+    };
+  }
+
+  // ─────────────────────────────────────────────────────
+  // BACKUP / RESTORE INTEGRATION
+  // ─────────────────────────────────────────────────────
+  // Hook into restoreBackup to also restore credit cards
+  const _origRestoreBackup = window.restoreBackup;
+  if (typeof _origRestoreBackup === 'function') {
+    window.restoreBackup = function(event) {
+      // Try to peek at the file before calling original
+      const file = event.target.files && event.target.files[0];
+      if (file) {
+        // Clone the event so we can read first
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = JSON.parse(e.target.result);
+            if (data.creditCards && Array.isArray(data.creditCards)) {
+              creditCards = data.creditCards;
+              window.creditCards = creditCards;
+              saveCreditCards();
+            }
+          } catch(err) { /* silent */ }
+          // After our restore, the regular restore will handle the rest via the original event
+          // But the event.target.files was already consumed by our reader — so we need to call the
+          // original handler with the same data
+        };
+        reader.readAsText(file);
+      }
+      return _origRestoreBackup.apply(this, arguments);
+    };
+  }
+
+  // ─────────────────────────────────────────────────────
+  // INIT
+  // ─────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    updateCardMenuCount();
+    // Defer to ensure other modules are ready
+    setTimeout(() => {
+      try { injectHomeAlert(); } catch(e) {}
+    }, 500);
+  });
+
+  // Periodic refresh of alerts (every 60s)
+  setInterval(() => {
+    try {
+      updateCardMenuCount();
+      injectHomeAlert();
+    } catch(e) {}
+  }, 60000);
+
+  // Handle PWA shortcut for opening cards
+  document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'open-cards') {
+      setTimeout(() => {
+        const modal = document.getElementById('creditCardsModal');
+        if (modal) { modal.classList.add('open'); renderCreditCards(); }
+      }, 600);
+    }
+  });
+
+})();
+
 </script>
 
 </body>
