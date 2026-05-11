@@ -21655,52 +21655,19 @@ setTimeout(() => {
   };
 
   // ─────────────────────────────────────────────────────
-  // 6) PATCH CARD DETAIL VIEW TO ADD BUTTONS (Edit/Delete/Report/PDF)
+  // 6) PATCH CARD DETAIL VIEW — DISABLED in V29 (V29 handles detail view directly)
   // ─────────────────────────────────────────────────────
   function patchCardDetail() {
-    if (typeof window.openCardDetail !== 'function') return;
-    const orig = window.openCardDetail;
-    if (orig.__v27Patched) return;
-    window.openCardDetail = function(cardId) {
-      orig.call(this, cardId);
-      // After detail renders, inject our action buttons
-      setTimeout(() => injectDetailActions(cardId), 100);
-    };
-    window.openCardDetail.__v27Patched = true;
+    // V29 superseded this - intentional no-op
+    return;
   }
 
   function injectDetailActions(cardId) {
-    const container = document.getElementById('ccDetailContent');
-    if (!container) return;
-    // Add action bar at top if not present
-    if (!container.querySelector('.cc-v27-actions')) {
-      const bar = document.createElement('div');
-      bar.className = 'cc-v27-actions';
-      bar.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px;padding:0 4px';
-      bar.innerHTML = `
-        <button onclick="window.openCardPdfImport('${cardId}')" style="flex:1;min-width:120px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:0;border-radius:10px;padding:10px 8px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📄 استيراد PDF</button>
-        <button onclick="window.openCardReport('${cardId}')" style="flex:1;min-width:120px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:0;border-radius:10px;padding:10px 8px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📊 التقرير الكامل</button>
-      `;
-      container.insertBefore(bar, container.firstChild);
-    }
-    // Add edit/delete buttons to each transaction row
-    container.querySelectorAll('.cc-tx-row').forEach(row => {
-      if (row.querySelector('.cc-tx-actions-v27')) return;
-      const txId = row.dataset.txId || row.getAttribute('data-tx-id');
-      if (!txId) return;
-      const acts = document.createElement('div');
-      acts.className = 'cc-tx-actions-v27';
-      acts.style.cssText = 'display:flex;gap:4px;margin-top:6px';
-      acts.innerHTML = `
-        <button onclick="event.stopPropagation();window.editCardTransaction('${cardId}','${txId}')" style="flex:1;background:var(--card2);color:var(--accent);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer">✏️ تعديل</button>
-        <button onclick="event.stopPropagation();window.deleteCardTransactionConfirm('${cardId}','${txId}')" style="flex:1;background:var(--card2);color:var(--red);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer">🗑 حذف</button>
-      `;
-      row.appendChild(acts);
-    });
+    // V29 superseded this - intentional no-op
+    return;
   }
 
-  setTimeout(patchCardDetail, 500);
-  setTimeout(patchCardDetail, 2000);
+  // V29 supersedes - no setTimeout calls
 
   console.log('V27: Credit cards enhancements loaded ✓');
 })();
@@ -22545,27 +22512,17 @@ setTimeout(() => {
     `;
   }
 
-  // Override openCardDetail to use beautiful version
-  if (typeof window.openCardDetail === 'function') {
-    const origOpenDetail = window.openCardDetail;
-    window.openCardDetail = function(cardId) {
-      // Ensure modal is open
-      const modal = document.getElementById('ccDetailModal');
-      if (modal) modal.classList.add('open');
-      // Render our beautiful version
-      try {
-        renderBeautifulCardDetail(cardId);
-      } catch(e) {
-        console.warn('Beautiful detail failed, fallback:', e);
-        origOpenDetail.call(this, cardId);
-      }
-    };
-  }
+  // Override openCardDetail to use beautiful version — DISABLED in V29
+  // V29 owns the detail view rendering. Leave V28's renderBeautifulCardDetail
+  // function defined but don't wrap openCardDetail; V29 will provide it.
+  // (intentionally no override here)
 
   console.log('V28: Enhanced PDF parser + beautiful UI loaded ✓');
 })();
 
 </script>
+
+
 
 
 <!-- ═══════ V29: CLEAN CREDIT CARDS REBUILD (overrides V26/V27/V28) ═══════ -->
@@ -22611,6 +22568,29 @@ setTimeout(() => {
     else alert(msg);
   };
 
+  // Normalize a period key to YYYY-MM format.
+  // Handles: "2025-09", "SEPTEMBER 2025", "Sep 2025", null/undefined
+  const MONTH_NAMES = {
+    JANUARY:'01',FEBRUARY:'02',MARCH:'03',APRIL:'04',MAY:'05',JUNE:'06',
+    JULY:'07',AUGUST:'08',SEPTEMBER:'09',OCTOBER:'10',NOVEMBER:'11',DECEMBER:'12',
+    JAN:'01',FEB:'02',MAR:'03',APR:'04',JUN:'06',JUL:'07',AUG:'08',SEP:'09',OCT:'10',NOV:'11',DEC:'12'
+  };
+  function normalizePeriodKey(raw, fallbackDate) {
+    const fallback = (fallbackDate || '').slice(0,7);
+    if (!raw) return fallback;
+    const s = String(raw).trim();
+    if (/^\d{4}-\d{2}$/.test(s)) return s;
+    // "MONTH YYYY" or "MONTH, YYYY"
+    const m = s.match(/^([A-Za-z]+),?\s+(\d{4})$/);
+    if (m) {
+      const mo = MONTH_NAMES[m[1].toUpperCase()];
+      if (mo) return `${m[2]}-${mo}`;
+    }
+    // "YYYY-MM-DD" → take YYYY-MM
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s.slice(0,7);
+    return fallback;
+  }
+
   // ─── CALCULATIONS (single source of truth) ──────────────
   // Returns the financial summary of a card based on its transactions.
   function calcCard(card) {
@@ -22647,20 +22627,17 @@ setTimeout(() => {
   function calcStatement(card, periodKey) {
     const txs = card.transactions || [];
     let opening = 0, purchases = 0, fees = 0, payments = 0, refunds = 0;
-    const items = [];
-    // Sum everything from periods BEFORE this one as "opening" balance
-    // and items in THIS period as the period's flows.
     const periodTxs = [];
+    const target = normalizePeriodKey(periodKey);
     for (const t of txs) {
-      const tkey = t.statementMonth || (t.date||'').slice(0,7);
+      const tkey = normalizePeriodKey(t.statementMonth, t.date);
       const a = Math.abs(Number(t.amount)||0);
-      if (tkey < periodKey) {
-        // Contributes to opening
+      if (tkey < target) {
         if (t.type === 'purchase') opening += a;
         else if (t.type === 'fee') opening += a;
         else if (t.type === 'payment') opening -= a;
         else if (t.type === 'refund') opening -= a;
-      } else if (tkey === periodKey) {
+      } else if (tkey === target) {
         if (t.type === 'purchase') purchases += a;
         else if (t.type === 'fee') fees += a;
         else if (t.type === 'payment') payments += a;
@@ -22672,7 +22649,7 @@ setTimeout(() => {
     const minPct = Number(card.minPaymentPct) || 5;
     const minDue = Math.max(0, closing) * (minPct / 100);
     return {
-      periodKey, opening, purchases, fees, payments, refunds,
+      periodKey: target, opening, purchases, fees, payments, refunds,
       closing, minDue, items: periodTxs
     };
   }
@@ -22681,7 +22658,7 @@ setTimeout(() => {
   function listPeriods(card) {
     const set = new Set();
     for (const t of (card.transactions||[])) {
-      const k = t.statementMonth || (t.date||'').slice(0,7);
+      const k = normalizePeriodKey(t.statementMonth, t.date);
       if (k) set.add(k);
     }
     return [...set].sort().reverse(); // newest first
@@ -22859,6 +22836,9 @@ setTimeout(() => {
     if (!card) return;
     const root = document.getElementById('ccDetailContent');
     if (!root) return;
+    // Clean any V27 injections that might be hanging around
+    document.querySelectorAll('.cc-v27-actions, .cc-tx-actions-v27').forEach(el => el.remove());
+
     const r = calcCard(card);
     const bank = BANKS[card.bankPreset] || BANKS.other;
     const cardSym = symFor(card.currency);
@@ -23053,8 +23033,9 @@ setTimeout(() => {
   }
 
   function formatPeriodArabic(periodKey) {
-    if (!periodKey) return '—';
-    const [y, m] = periodKey.split('-');
+    const normalized = normalizePeriodKey(periodKey);
+    if (!normalized || !/^\d{4}-\d{2}$/.test(normalized)) return '—';
+    const [y, m] = normalized.split('-');
     const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
     return `${months[parseInt(m)-1] || m} ${y}`;
   }
@@ -23532,15 +23513,74 @@ setTimeout(() => {
   };
 
   // ═══════════════════════════════════════════════════════════
-  // KILL the old V28 modal overrides for openCardDetail
-  // (the existing V28 had its own renderBeautifulCardDetail
-  //  but we already replaced openCardDetail above)
+  // LOCKOUT V27/V28 INTERFERENCE
+  // V27 has setTimeout(patchCardDetail, 500/2000) that re-wraps
+  // openCardDetail and injects extra buttons. We prevent that.
   // ═══════════════════════════════════════════════════════════
+  function lockoutOldVersions() {
+    // 1) Mark openCardDetail as "already patched" so V27 skips re-wrapping
+    if (window.openCardDetail) {
+      window.openCardDetail.__v27Patched = true;
+      window.openCardDetail.__ccPatched = true;
+      window.openCardDetail.__v28Patched = true;
+      window.openCardDetail.__v29 = true;
+    }
+    // 2) Neutralize V27's injectDetailActions if it exists
+    if (typeof window.injectDetailActions === 'function') {
+      window.injectDetailActions = function(){};
+    }
+    // 3) Neutralize V28's renderBeautifulCardDetail
+    if (typeof window.renderBeautifulCardDetail === 'function') {
+      window.renderBeautifulCardDetail = function(cardId){ renderCardDetail(cardId); };
+    }
+    // 4) Remove any stale "v27 action bars" already injected
+    document.querySelectorAll('.cc-v27-actions, .cc-tx-actions-v27').forEach(el => el.remove());
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ONE-TIME DATA MIGRATION
+  // Normalize statementMonth on existing transactions so old
+  // imports from V28 (with "SEPTEMBER 2025" format) work correctly.
+  // ═══════════════════════════════════════════════════════════
+  function migrateData() {
+    let changed = false;
+    for (const card of CARDS()) {
+      if (!Array.isArray(card.transactions)) continue;
+      for (const tx of card.transactions) {
+        const norm = normalizePeriodKey(tx.statementMonth, tx.date);
+        if (norm && tx.statementMonth !== norm) {
+          tx.statementMonth = norm;
+          changed = true;
+        }
+      }
+      // Also ensure plan_move tx types are recognized; some may be old
+      // mis-typed entries — leave them alone but log
+    }
+    if (changed) {
+      saveAll();
+      console.log('V29: migrated old statementMonth values to YYYY-MM format');
+    }
+  }
+
+  // Run lockout + migration immediately and a few more times to catch
+  // late-running V27 setTimeouts
+  lockoutOldVersions();
+  migrateData();
+  setTimeout(lockoutOldVersions, 100);
+  setTimeout(lockoutOldVersions, 600);   // after V27's 500ms patch
+  setTimeout(lockoutOldVersions, 2100);  // after V27's 2000ms patch
+  setTimeout(lockoutOldVersions, 5500);  // after V27's 5000ms patch
+
+  // Also clean injected v27 elements whenever the detail re-renders
+  const _origRenderDetail = renderCardDetail;
+  // Wrap to also re-run lockout after each render
+  // (use shadow var since renderCardDetail is internal to IIFE)
 
   // Force re-render on load
   setTimeout(() => {
     try { window.renderCreditCards(); } catch(e) {}
     updateMenuBadge();
+    lockoutOldVersions();
   }, 500);
 
   console.log('V29: clean credit cards rebuild loaded ✓');
