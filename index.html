@@ -1741,7 +1741,25 @@ button, .menu-row, .tx-card {
   </div>
 
   <!-- HOME TAB -->
-  <div id="tab-home"><div id="homeContent"></div></div>
+  <div id="tab-home">
+    <!-- V26 VISIBLE TEST BANNER — proves the new code is loaded -->
+    <div id="v26-banner-cc"
+         onclick="document.getElementById('creditCardsModal')?.classList.add('open');if(typeof renderCreditCards==='function')renderCreditCards();"
+         style="margin:12px 4px 14px;padding:18px 16px;border-radius:18px;
+                background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 55%,#0ea5e9 100%);
+                color:#fff;cursor:pointer;box-shadow:0 8px 24px rgba(124,58,237,.35);
+                display:flex;align-items:center;gap:14px;font-family:inherit;
+                position:relative;overflow:hidden;">
+      <div style="font-size:34px;line-height:1;flex-shrink:0;">💎</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;letter-spacing:1.5px;opacity:.85;font-weight:700;">V26 • جديد</div>
+        <div style="font-size:17px;font-weight:900;margin-top:2px;">بطاقات الائتمان (الفيزا)</div>
+        <div style="font-size:12px;opacity:.9;margin-top:3px;">اضغط هنا لفتح تتبع البطاقات والكشوف الشهرية</div>
+      </div>
+      <div style="font-size:24px;font-weight:900;opacity:.85;flex-shrink:0;">›</div>
+    </div>
+    <div id="homeContent"></div>
+  </div>
 
   <div id="tab-all" style="display:none"><div id="allList"></div></div>
   <div id="tab-income" style="display:none"><div id="incList"></div></div>
