@@ -21707,5 +21707,865 @@ setTimeout(() => {
 
 </script>
 
+
+
+
+<!-- ═══════ V28: PDF PARSER + BEAUTIFUL UI ═══════ -->
+<script>
+// ═══════════════════════════════════════════════════════════════
+// V28: ENHANCED PDF PARSER (Al Rajhi specialized) + IMPROVED CARD UI
+// - Position-aware PDF text extraction
+// - Al Rajhi specific extractor (most common Saudi format)
+// - Auto-create installments from Tasaheel program
+// - Bank statement-style card detail view
+// - Improved report layout
+// ═══════════════════════════════════════════════════════════════
+(function(){
+  'use strict';
+
+  if (!window.creditCards) { console.warn('V28: cards not ready'); return; }
+
+  // ─────────────────────────────────────────────────────
+  // POSITION-AWARE PDF EXTRACTION
+  // Returns array of "rows" where each row is array of
+  // text items sorted left-to-right with x positions
+  // ─────────────────────────────────────────────────────
+  async function extractPDFRows(file) {
+    if (!window.pdfjsLib) throw new Error('PDF library not loaded');
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const pages = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      // Group items by y-coordinate (allow ±2 tolerance)
+      const yBuckets = {};
+      for (const item of content.items) {
+        if (!item.str || !item.str.trim()) continue;
+        const y = Math.round(item.transform[5] / 3) * 3; // round to nearest 3
+        if (!yBuckets[y]) yBuckets[y] = [];
+        yBuckets[y].push({
+          x: item.transform[4],
+          y: item.transform[5],
+          text: item.str,
+          width: item.width || 0
+        });
+      }
+      // Sort y's descending (top to bottom on page)
+      const sortedYs = Object.keys(yBuckets).map(Number).sort((a,b) => b - a);
+      const rows = [];
+      for (const y of sortedYs) {
+        const items = yBuckets[y].sort((a,b) => a.x - b.x);
+        const ltrText = items.map(it => it.text).join(' ').replace(/\s+/g, ' ').trim();
+        rows.push({ y, items, text: ltrText });
+      }
+      pages.push(rows);
+    }
+    return pages;
+  }
+
+  // Normalize digits (Arabic/Persian → Western)
+  function normDigits(s) {
+    if (!s) return s;
+    return String(s)
+      .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
+      .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d).toString());
+  }
+
+  // Parse a number string (handles 1,234.56 / ١٬٢٣٤٫٥٦ / negative)
+  function parseNum(s) {
+    if (s == null) return NaN;
+    let cleaned = normDigits(String(s)).replace(/[,\s]/g, '').replace(/[^\d.\-]/g, '');
+    return parseFloat(cleaned);
+  }
+
+  // Parse date in various formats — returns YYYY-MM-DD or null
+  function parseDate(s) {
+    if (!s) return null;
+    s = normDigits(s).trim();
+    // DD/MM/YY or DD/MM/YYYY
+    let m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (m) {
+      let d = parseInt(m[1]), mo = parseInt(m[2]), y = parseInt(m[3]);
+      if (y < 100) y += 2000;
+      if (d > 0 && d <= 31 && mo > 0 && mo <= 12 && y > 2000 && y < 2100) {
+        return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      }
+    }
+    // DD-MM-YYYY
+    m = s.match(/(\d{1,2})-(\d{1,2})-(\d{4})/);
+    if (m) {
+      let d = parseInt(m[1]), mo = parseInt(m[2]), y = parseInt(m[3]);
+      if (d > 0 && d <= 31 && mo > 0 && mo <= 12) {
+        return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      }
+    }
+    // YYYY-MM-DD
+    m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) {
+      let y = parseInt(m[1]), mo = parseInt(m[2]), d = parseInt(m[3]);
+      if (d > 0 && d <= 31 && mo > 0 && mo <= 12 && y > 2000 && y < 2100) {
+        return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      }
+    }
+    return null;
+  }
+
+  // ─────────────────────────────────────────────────────
+  // AL RAJHI PARSER
+  // Extracts summary + transactions + installments
+  // ─────────────────────────────────────────────────────
+  function parseAlRajhi(pages) {
+    const all = [].concat(...pages); // flat array of rows
+    const allText = all.map(r => r.text).join('\n');
+    const isAlRajhi = /alrajhi|al rajhi|الراجحي/i.test(allText);
+
+    const result = {
+      bank: isAlRajhi ? 'alrajhi' : 'other',
+      currency: 'SAR',
+      summary: {},
+      transactions: [],
+      installments: [],
+      rawHeader: ''
+    };
+
+    // ─── Extract summary fields ───
+    // Statement month
+    const monthMatch = allText.match(/(JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER),?\s*(\d{4})/i);
+    if (monthMatch) result.summary.statementMonth = `${monthMatch[1]} ${monthMatch[2]}`;
+
+    // Customer name
+    const nameMatch = allText.match(/([A-Z][A-Z]+\s+[A-Z][A-Z]+(?:\s+[A-Z][A-Z]+)?)\s+Customer Name/);
+    if (nameMatch) result.summary.customerName = nameMatch[1].trim();
+
+    // Card number
+    const cardMatch = allText.match(/(\d{4})\s+(\d{2}X{2})\s+(X{4})\s+(\d{4})/);
+    if (cardMatch) {
+      result.summary.cardNumber = `${cardMatch[1]} ${cardMatch[2]} ${cardMatch[3]} ${cardMatch[4]}`;
+      result.summary.last4 = cardMatch[4];
+    }
+
+    // Card details row — pattern: "SADAD Cash Credit CardNumber CardName"
+    // Example: "113381252 5,250 17,500 4455 20XX XXXX 7890 Visa Signature Credit"
+    const cardDetailRow = all.find(r => /\d{4}\s+\d{2}XX\s+XXXX\s+\d{4}/.test(r.text) || /^\d{6,9}\s+[\d,]+\s+[\d,]+/.test(r.text));
+    if (cardDetailRow) {
+      const nums = [...cardDetailRow.text.matchAll(/([\d,]+(?:\.\d+)?)/g)].map(m => parseNum(m[1])).filter(n => !isNaN(n));
+      // Expected: [sadadAcc, cashLimit, creditLimit, ...cardNumberParts]
+      if (nums.length >= 3) {
+        if (nums[0] > 1000000) result.summary.sadadAcc = nums[0];
+        if (nums[1] > 100 && nums[1] < 100000) result.summary.cashLimit = nums[1];
+        if (nums[2] > 100 && nums[2] < 1000000) result.summary.creditLimit = nums[2];
+      }
+    }
+
+    // Card name — "Visa Signature Credit" pattern at end of details row
+    const cardNameMatch = allText.match(/(Visa Signature|Visa Platinum|Visa Infinite|Mastercard\s+\w+|Mada\s+\w+)[^\n]*?(Credit|Card)?/i);
+    if (cardNameMatch) result.summary.cardType = cardNameMatch[0].trim();
+
+    // Due date / min / total — pattern: "25/10/2025 234.12 387.62"
+    const dueRow = all.find(r => /\d{1,2}\/\d{1,2}\/\d{4}\s+[\d,\.]+\s+[\d,\.]+/.test(r.text) && !/SAR/.test(r.text));
+    if (dueRow) {
+      const dm = dueRow.text.match(/(\d{1,2}\/\d{1,2}\/\d{4})\s+([\d,\.]+)\s+([\d,\.]+)/);
+      if (dm) {
+        result.summary.dueDate = parseDate(dm[1]);
+        result.summary.minAmount = parseNum(dm[2]);
+        result.summary.totalAmountDue = parseNum(dm[3]);
+      }
+    }
+
+    // Card Balance Details — labels row then values row
+    // Labels: "Fees + Profit + Total Spend + Opening Balance"
+    // Values: "21.98 8.13 1,043.48 0.00"
+    const balLabelIdx = all.findIndex(r => /Fees \+ Profit \+ Total Spend \+ Opening Balance/i.test(r.text));
+    if (balLabelIdx >= 0 && balLabelIdx + 1 < all.length) {
+      const vals = [...all[balLabelIdx+1].text.matchAll(/([\d,]+\.\d+|\d+\.\d+)/g)].map(m => parseNum(m[1]));
+      if (vals.length >= 4) {
+        result.summary.fees = vals[0];
+        result.summary.profit = vals[1];
+        result.summary.totalSpend = vals[2];
+        result.summary.openingBalance = vals[3];
+      }
+    }
+    // Closing row labels: "Closing Balance = Other Credits - Total Payments -"
+    const closeLabelIdx = all.findIndex(r => /Closing Balance.*Other Credits.*Total Payments/i.test(r.text));
+    if (closeLabelIdx >= 0 && closeLabelIdx + 1 < all.length) {
+      const vals = [...all[closeLabelIdx+1].text.matchAll(/([\d,]+\.\d+|\d+\.\d+)/g)].map(m => parseNum(m[1]));
+      if (vals.length >= 3) {
+        result.summary.closingBalance = vals[0];
+        result.summary.otherCredits = vals[1];
+        result.summary.totalPayments = vals[2];
+      }
+    }
+
+    // Other Details — Total Credits / Total Debits / Carried Forward
+    const otherLabelIdx = all.findIndex(r => /Total Credits.*Total Debits.*Carried Forward/i.test(r.text));
+    if (otherLabelIdx >= 0 && otherLabelIdx + 1 < all.length) {
+      const vals = [...all[otherLabelIdx+1].text.matchAll(/([\d,]+\.\d+|\d+\.\d+)/g)].map(m => parseNum(m[1]));
+      if (vals.length >= 3) {
+        result.summary.totalCredits = vals[0];
+        result.summary.totalDebits = vals[1];
+        result.summary.carriedForward = vals[2];
+      }
+    }
+
+    // ─── Extract transactions ───
+    // Al Rajhi format: each transaction spans 2-3 rows:
+    //   Row N:   "Description text"            (e.g. "Trip.com" or "Move To Payment Plan (CR)")
+    //   Row N-1: "Billing OtherFees txAmount SAR PostingDate TxDate"  ← the data row
+    //   Row N-2: "Riyadh" (or other city, optional)
+    // Strategy: find rows that contain "SAR" + date (data rows), then pull description
+    // from the row immediately above (and possibly two above for multi-line desc).
+    let inTxSection = false;
+    for (let i = 0; i < all.length; i++) {
+      const txt = all[i].text;
+      if (/Transaction Details|تفاصيل العمليات/i.test(txt)) { inTxSection = true; continue; }
+      if (/Tasaheel Program|تفاصيل برنامج|Definitions|Important Notice/i.test(txt)) { inTxSection = false; continue; }
+      if (!inTxSection) continue;
+
+      // A "data row" has: a date in DD/MM/YY AND "SAR" AND numeric amount
+      const dateMatches = [...txt.matchAll(/(\d{1,2}\/\d{1,2}\/\d{2,4})/g)];
+      const sarMatch = txt.match(/([\d,\.]+)\s*SAR/i);
+      if (dateMatches.length < 1 || !sarMatch) continue;
+
+      // Skip header rows
+      if (/Transaction Description|Billing Amount|Other fees|Posting Date|Transaction Date/i.test(txt)) continue;
+
+      // Parse all numbers from the data row
+      const numbers = [];
+      let nm;
+      const numRe = /([\d,]+\.\d{2})/g;
+      while ((nm = numRe.exec(txt)) !== null) {
+        const n = parseNum(nm[1]);
+        if (!isNaN(n) && n > 0) numbers.push(n);
+      }
+      if (numbers.length === 0) continue;
+
+      const isCR = /\bCR\b/.test(txt);
+
+      // Pull description from row(s) above (i-1) and continuation from row below (i+1)
+      // In the all[] array sorted top-to-bottom:
+      //   all[i-1] = row ABOVE data row (the description)
+      //   all[i+1] = row BELOW data row (city or date continuation)
+      let descParts = [];
+      if (i > 0) {
+        const prev1 = all[i-1].text.trim();
+        if (prev1 && !/^(Riyadh|Jeddah|Dammam|Cairo|Mecca|Madinah)$/i.test(prev1) && !/^\d/.test(prev1) && prev1.length > 1
+            && !/Transaction Details|Posting Date|Transaction Description|Billing Amount|Other fees/i.test(prev1)) {
+          descParts.push(prev1);
+        }
+      }
+      // Look at row below for continuation (e.g. "- 25 September 25")
+      let continuation = '';
+      let city = '';
+      if (i + 1 < all.length) {
+        const next1 = all[i+1].text.trim();
+        if (/^(Riyadh|Jeddah|Dammam|Mecca|Madinah|Khobar|Cairo)$/i.test(next1)) {
+          city = next1;
+        } else if (next1 && next1.length > 1 && next1.length < 60
+                   && !/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(next1)
+                   && (/^[-#]|Instalment|January|February|March|April|May|June|July|August|September|October|November|December/i.test(next1))) {
+          continuation = next1;
+        }
+      }
+      if (descParts.length === 0) continue;
+      let desc = descParts.join(' ').replace(/\s+/g, ' ').trim();
+      if (continuation) desc += ' ' + continuation;
+      if (desc.length > 80) desc = desc.substring(0, 80);
+
+      // Transaction date: in our pattern, the row has "... PostingDate TxDate" at the end
+      // For Al Rajhi LTR ordering, the rightmost date is the transaction date
+      // dateMatches are in order of appearance left-to-right, so last one = transaction date
+      const txDate = parseDate(dateMatches[dateMatches.length-1][1]) || parseDate(dateMatches[0][1]);
+      if (!txDate) continue;
+
+      // Amount: the value with SAR suffix is the transaction amount (in the middle column)
+      let amount = parseNum(sarMatch[1]);
+
+      // Determine type
+      let type = 'purchase';
+      if (isCR) type = 'payment';
+      if (/Refund/i.test(desc)) type = 'refund';
+      if (/Murabaha Profit/i.test(desc)) type = 'fee';
+      if (/Move To Payment Plan/i.test(desc)) type = isCR ? 'plan_credit' : 'plan_debit';
+      if (/Payment received|سداد|دفع/i.test(desc)) type = 'payment';
+
+      result.transactions.push({
+        date: txDate,
+        amount: Math.abs(amount),
+        description: desc + (city ? ` — ${city}` : ''),
+        type,
+        raw: txt.substring(0, 150)
+      });
+    }
+
+    // Dedupe transactions
+    const seen = new Set();
+    result.transactions = result.transactions.filter(t => {
+      const key = `${t.date}|${t.amount.toFixed(2)}|${t.description.substring(0,30)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // ─── Extract Tasaheel installments ───
+    let inInstSection = false;
+    for (let i = 0; i < all.length; i++) {
+      const txt = all[i].text;
+      if (/Tasaheel Program Details|تفاصيل برنامج تساهيل/i.test(txt)) {
+        inInstSection = true; continue;
+      }
+      if (/Definitions|التعريفات|Important Notice/i.test(txt)) inInstSection = false;
+      if (!inInstSection) continue;
+
+      // Installment row has: serial, date, merchant, txAmount, monthly, fee, total, remainingCount, remainingAmount
+      const dateMatch = txt.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})/);
+      const numbers = [];
+      let nm;
+      const numRe = /([\d,]+\.\d{2})/g;
+      while ((nm = numRe.exec(txt)) !== null) {
+        const n = parseNum(nm[1]);
+        if (!isNaN(n) && n > 0) numbers.push(n);
+      }
+      // Look for integer (remaining months count) - small integer
+      const intMatch = txt.match(/\s(\d{1,2})\s/);
+      // Look for serial (6-digit number)
+      const serialMatch = txt.match(/\b(\d{6})\b/);
+
+      if (!dateMatch || numbers.length < 4) continue;
+
+      const merchantMatch = txt.match(/(Trip\.com|Tabby|Tamara|valu|Postpay|[A-Z][A-Za-z]+\.[a-z]+)/);
+      if (!merchantMatch) continue;
+
+      result.installments.push({
+        serial: serialMatch ? serialMatch[1] : null,
+        date: parseDate(dateMatch[1]),
+        merchant: merchantMatch[1],
+        txAmount: numbers[0],
+        monthlyAmount: numbers[1],
+        monthlyFee: numbers[2],
+        totalMonthly: numbers[3],
+        remainingMonths: intMatch ? parseInt(intMatch[1]) : null,
+        remainingAmount: numbers[4] || null,
+        raw: txt.substring(0, 200)
+      });
+    }
+
+    return result;
+  }
+
+  // Expose parser globally so the import modal can use it
+  window.parseAlRajhiPdf = async function(file) {
+    const pages = await extractPDFRows(file);
+    return parseAlRajhi(pages);
+  };
+
+  // ─────────────────────────────────────────────────────
+  // REPLACE PDF IMPORT MODAL with smarter version
+  // ─────────────────────────────────────────────────────
+  function ensureBetterPdfModal() {
+    let m = document.getElementById('ccPdfImportModalV2');
+    if (m) return m;
+    m = document.createElement('div');
+    m.className = 'overlay';
+    m.id = 'ccPdfImportModalV2';
+    m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = `
+      <div class="modal" style="max-width:600px;max-height:94vh;display:flex;flex-direction:column">
+        <div class="modal-head" style="flex-shrink:0">
+          <div class="modal-title">📄 استيراد كشف PDF</div>
+          <button class="close-x" onclick="document.getElementById('ccPdfImportModalV2').classList.remove('open')">×</button>
+        </div>
+        <div class="modal-body" style="overflow-y:auto;flex:1" id="ccPdfV2Body"></div>
+      </div>
+    `;
+    document.body.appendChild(m);
+    return m;
+  }
+
+  // Step 1: pick a file
+  function renderStep1(cardId) {
+    const cards = window.creditCards || [];
+    const body = document.getElementById('ccPdfV2Body');
+    body.innerHTML = `
+      <div style="background:linear-gradient(135deg,#7c3aed20,#4f46e520);border:1px solid #7c3aed40;border-radius:12px;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.7">
+        <b>📌 ازاي بيشتغل:</b><br>
+        • نزّل كشف البطاقة PDF من تطبيق البنك (الراجحي / SNB / غيرهم)<br>
+        • البرنامج يقرأ الكشف ويستخرج: <b>الرصيد المستحق، الحد الأدنى، تاريخ الاستحقاق، كل العمليات، والأقساط (تساهيل)</b><br>
+        • تراجع وتعدل وتختار قبل ما يحفظ
+      </div>
+      <label class="lab" style="display:block;margin-bottom:6px;font-weight:900">اختر البطاقة:</label>
+      <select id="ccPdfV2Card" class="inp" style="margin-bottom:14px">
+        ${cards.map(c => `<option value="${c.id}" ${cardId===c.id?'selected':''}>${esc(c.name||c.bankName||'بطاقة')} ${c.last4?'•'+c.last4:''}</option>`).join('')}
+      </select>
+      <input type="file" id="ccPdfV2File" accept="application/pdf,.pdf" style="display:none" onchange="window._ccPdfV2Pick(event)">
+      <button class="save-btn" onclick="document.getElementById('ccPdfV2File').click()" style="width:100%;background:linear-gradient(135deg,#7c3aed,#4f46e5);font-size:14px;padding:14px">
+        📂 اختر ملف PDF
+      </button>
+      <div id="ccPdfV2Status" style="text-align:center;color:var(--muted);font-size:12px;margin-top:14px"></div>
+    `;
+  }
+
+  function esc(s) { return String(s||'').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'})[c]); }
+
+  let _v2Parsed = null;
+  let _v2CardId = null;
+
+  window._ccPdfV2Pick = async function(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    const statusEl = document.getElementById('ccPdfV2Status');
+    statusEl.innerHTML = '<div style="display:inline-block;padding:10px"><div style="font-size:24px">⏳</div><div>جاري تحليل الكشف...</div></div>';
+    _v2CardId = document.getElementById('ccPdfV2Card').value;
+    try {
+      const result = await window.parseAlRajhiPdf(file);
+      _v2Parsed = result;
+      renderStep2(result);
+    } catch(e) {
+      console.error('PDF parse:', e);
+      statusEl.innerHTML = `<span style="color:var(--red)">❌ فشل: ${e.message}</span>`;
+    }
+  };
+
+  function fmt(n, d=2) {
+    return (Number(n)||0).toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+  }
+
+  function renderStep2(result) {
+    const body = document.getElementById('ccPdfV2Body');
+    const s = result.summary || {};
+    const txs = result.transactions || [];
+    const insts = result.installments || [];
+    const bankName = result.bank === 'alrajhi' ? 'مصرف الراجحي' :
+                     result.bank === 'snb' ? 'البنك الأهلي السعودي' : 'بنك آخر';
+
+    const purchases = txs.filter(t => t.type === 'purchase');
+    const payments = txs.filter(t => t.type === 'payment');
+    const fees = txs.filter(t => t.type === 'fee');
+
+    body.innerHTML = `
+      <!-- Statement summary card -->
+      <div style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border-radius:14px;padding:14px;margin-bottom:14px;font-family:inherit">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div>
+            <div style="font-size:11px;opacity:.85;letter-spacing:1px">${bankName}</div>
+            <div style="font-size:14px;font-weight:900;margin-top:2px">${s.statementMonth||'كشف حساب'}</div>
+            ${s.cardNumber?`<div style="font-family:monospace;font-size:11px;margin-top:4px;opacity:.9">${s.cardNumber}</div>`:''}
+          </div>
+          <div style="text-align:left">
+            <div style="font-size:9px;opacity:.85">إجمالي المستحق</div>
+            <div style="font-size:18px;font-weight:900;direction:ltr">${fmt(s.totalAmountDue||0)} <span style="font-size:11px">SAR</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats grid -->
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px">
+        ${s.dueDate ? `<div style="background:var(--card2);border-radius:10px;padding:8px;text-align:center"><div style="font-size:10px;color:var(--muted);font-weight:700">تاريخ الاستحقاق</div><div style="font-weight:900;font-size:13px;color:#f59e0b">${s.dueDate}</div></div>`:''}
+        ${s.minAmount ? `<div style="background:var(--card2);border-radius:10px;padding:8px;text-align:center"><div style="font-size:10px;color:var(--muted);font-weight:700">الحد الأدنى</div><div style="font-weight:900;font-size:13px;direction:ltr">${fmt(s.minAmount)}</div></div>`:''}
+        ${s.creditLimit ? `<div style="background:var(--card2);border-radius:10px;padding:8px;text-align:center"><div style="font-size:10px;color:var(--muted);font-weight:700">الحد الائتماني</div><div style="font-weight:900;font-size:13px;direction:ltr">${fmt(s.creditLimit,0)}</div></div>`:''}
+        ${s.cashLimit ? `<div style="background:var(--card2);border-radius:10px;padding:8px;text-align:center"><div style="font-size:10px;color:var(--muted);font-weight:700">حد السحب النقدي</div><div style="font-weight:900;font-size:13px;direction:ltr">${fmt(s.cashLimit,0)}</div></div>`:''}
+      </div>
+
+      <!-- Balance breakdown -->
+      ${(s.totalSpend!=null||s.fees!=null||s.profit!=null) ? `
+        <div style="background:var(--card2);border-radius:10px;padding:12px;margin-bottom:14px">
+          <div style="font-weight:900;color:var(--accent);font-size:13px;margin-bottom:8px">تفاصيل الرصيد</div>
+          <div style="font-size:12px;display:grid;gap:4px">
+            ${s.openingBalance!=null?`<div style="display:flex;justify-content:space-between"><span>الرصيد الافتتاحي</span><span style="direction:ltr;font-weight:700">${fmt(s.openingBalance)}</span></div>`:''}
+            ${s.totalSpend!=null?`<div style="display:flex;justify-content:space-between"><span>+ إجمالي الاستخدام</span><span style="color:var(--red);direction:ltr;font-weight:700">${fmt(s.totalSpend)}</span></div>`:''}
+            ${s.profit!=null?`<div style="display:flex;justify-content:space-between"><span>+ هامش الربح</span><span style="color:#f59e0b;direction:ltr;font-weight:700">${fmt(s.profit)}</span></div>`:''}
+            ${s.fees!=null?`<div style="display:flex;justify-content:space-between"><span>+ الرسوم</span><span style="color:#f59e0b;direction:ltr;font-weight:700">${fmt(s.fees)}</span></div>`:''}
+            ${s.otherCredits!=null?`<div style="display:flex;justify-content:space-between"><span>− مدفوعات أخرى</span><span style="color:var(--green);direction:ltr;font-weight:700">${fmt(s.otherCredits)}</span></div>`:''}
+            ${s.totalPayments!=null?`<div style="display:flex;justify-content:space-between"><span>− إجمالي السداد</span><span style="color:var(--green);direction:ltr;font-weight:700">${fmt(s.totalPayments)}</span></div>`:''}
+            ${s.closingBalance!=null?`<div style="display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid var(--border);margin-top:4px"><span style="font-weight:900">= رصيد إقفال الشهر</span><span style="direction:ltr;font-weight:900;color:var(--red)">${fmt(s.closingBalance)}</span></div>`:''}
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- Transactions to import -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-weight:900;font-size:13px">العمليات (${txs.length})</div>
+        <div style="display:flex;gap:6px">
+          <button onclick="window._ccPdfV2Toggle(true)" style="background:var(--card2);border:1px solid var(--border);color:var(--accent);border-radius:6px;padding:3px 8px;font-size:10px;font-family:inherit;font-weight:700;cursor:pointer">✓ الكل</button>
+          <button onclick="window._ccPdfV2Toggle(false)" style="background:var(--card2);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 8px;font-size:10px;font-family:inherit;font-weight:700;cursor:pointer">✗ مفيش</button>
+        </div>
+      </div>
+      <div style="background:var(--card2);border-radius:10px;padding:4px;margin-bottom:14px;max-height:300px;overflow-y:auto">
+        ${txs.length === 0 ? '<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">⚠ لم يتم استخراج عمليات</div>' :
+          txs.map((tx, idx) => {
+            const typeColor = tx.type==='payment'?'var(--green)':(tx.type==='fee'?'#f59e0b':(tx.type==='refund'?'var(--green)':'var(--red)'));
+            const typeLabel = tx.type==='payment'?'سداد':(tx.type==='fee'?'مرابحة':(tx.type==='refund'?'استرداد':(tx.type==='plan_credit'?'تحويل قسط ↘':(tx.type==='plan_debit'?'تحويل قسط ↗':'شراء'))));
+            const typeIcon = tx.type==='payment'?'💵':(tx.type==='fee'?'💸':(tx.type==='refund'?'↩':(tx.type==='plan_credit'||tx.type==='plan_debit'?'↔':'🛒')));
+            // Skip "Move To Payment Plan" rows from default selection (they're internal moves)
+            const defaultChecked = (tx.type !== 'plan_credit' && tx.type !== 'plan_debit') ? 'checked' : '';
+            return `
+            <div style="display:flex;align-items:start;gap:8px;padding:8px;border-bottom:1px solid var(--border);font-size:12px">
+              <input type="checkbox" class="ccPdfV2Tx" data-idx="${idx}" ${defaultChecked} style="width:18px;height:18px;flex-shrink:0;margin-top:2px">
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:2px">
+                  <span style="font-weight:900;font-size:11px;color:${typeColor}">${typeIcon} ${typeLabel}</span>
+                  <span style="font-size:10px;color:var(--muted)">${tx.date}</span>
+                </div>
+                <input type="text" class="ccPdfV2Desc" data-idx="${idx}" value="${esc(tx.description)}" style="width:100%;background:transparent;border:none;color:var(--text);font-family:inherit;font-size:12px;padding:0;font-weight:700">
+                <div style="text-align:left;color:${typeColor};direction:ltr;font-weight:900;font-size:13px;margin-top:2px">${tx.type==='payment'||tx.type==='refund'?'+':''}${fmt(tx.amount)} SAR</div>
+              </div>
+            </div>
+          `;}).join('')
+        }
+      </div>
+
+      <!-- Installments (Tasaheel) -->
+      ${insts.length > 0 ? `
+        <div style="font-weight:900;font-size:13px;margin-bottom:8px;color:#7c3aed">📋 برنامج تساهيل (الأقساط) — ${insts.length}</div>
+        <div style="background:var(--card2);border-radius:10px;padding:4px;margin-bottom:14px">
+          ${insts.map((inst, idx) => `
+            <div style="padding:8px;border-bottom:1px solid var(--border);font-size:11px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                  <input type="checkbox" class="ccPdfV2Inst" data-idx="${idx}" checked style="width:16px;height:16px">
+                  <span style="font-weight:900;color:#7c3aed">📋 ${esc(inst.merchant)} ${inst.serial?'#'+inst.serial:''}</span>
+                </label>
+                <span style="color:var(--muted)">${inst.date||''}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px;font-size:10px;color:var(--muted);padding-right:22px">
+                <div>المبلغ الأصلي: <b style="color:var(--text);direction:ltr">${fmt(inst.txAmount)}</b></div>
+                <div>القسط الشهري: <b style="color:var(--text);direction:ltr">${fmt(inst.monthlyAmount)} + ${fmt(inst.monthlyFee)}</b></div>
+                <div>إجمالي شهري: <b style="color:#f59e0b;direction:ltr">${fmt(inst.totalMonthly)}</b></div>
+                <div>المتبقي: <b style="color:var(--red)">${inst.remainingMonths||'-'} شهر</b></div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      <!-- Action buttons -->
+      <div style="display:flex;gap:8px;position:sticky;bottom:0;background:var(--card);padding:8px 0">
+        <button onclick="window._ccPdfV2Back()" style="flex:1;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:12px;font-weight:900;font-family:inherit;cursor:pointer">↩ رجوع</button>
+        <button onclick="window._ccPdfV2Apply()" style="flex:2;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:0;border-radius:10px;padding:12px;font-weight:900;font-family:inherit;cursor:pointer">✅ استيراد إلى البطاقة</button>
+      </div>
+    `;
+  }
+
+  window._ccPdfV2Toggle = function(checked) {
+    document.querySelectorAll('.ccPdfV2Tx').forEach(cb => cb.checked = checked);
+  };
+
+  window._ccPdfV2Back = function() {
+    renderStep1(_v2CardId);
+  };
+
+  window._ccPdfV2Apply = function() {
+    if (!_v2Parsed) return;
+    const card = (window.creditCards||[]).find(c => c.id === _v2CardId);
+    if (!card) { alert('بطاقة غير موجودة'); return; }
+    if (!Array.isArray(card.transactions)) card.transactions = [];
+
+    // Update card summary if we got it
+    const s = _v2Parsed.summary;
+    if (s.creditLimit && (!card.limit || card.limit === 0)) card.limit = s.creditLimit;
+    if (s.last4 && !card.last4) card.last4 = s.last4;
+    if (s.dueDate) {
+      try {
+        const d = new Date(s.dueDate);
+        card.dueDay = d.getDate();
+      } catch(e) {}
+    }
+
+    // Import selected transactions
+    let txAdded = 0;
+    document.querySelectorAll('.ccPdfV2Tx').forEach(cb => {
+      if (!cb.checked) return;
+      const idx = parseInt(cb.dataset.idx);
+      const tx = _v2Parsed.transactions[idx];
+      if (!tx) return;
+      const descInput = document.querySelector(`.ccPdfV2Desc[data-idx="${idx}"]`);
+      const desc = descInput ? descInput.value : tx.description;
+
+      // Determine internal type for our system
+      let txType = 'purchase';
+      let category = 'أخرى';
+      if (tx.type === 'payment') { txType = 'payment'; category = 'سداد'; }
+      else if (tx.type === 'fee') { txType = 'fee'; category = 'فايدة/رسوم'; }
+      else if (tx.type === 'refund') { txType = 'refund'; category = 'استرداد'; }
+      else if (tx.type === 'plan_credit' || tx.type === 'plan_debit') { txType = 'plan_move'; category = 'تحويل لقسط'; }
+
+      // Dedupe: skip if same date+amount+description already exists
+      const exists = card.transactions.find(t =>
+        t.date === tx.date &&
+        Math.abs(t.amount - tx.amount) < 0.01 &&
+        (t.name||'').substring(0,20) === desc.substring(0,20)
+      );
+      if (exists) return;
+
+      card.transactions.push({
+        id: 'cctx_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
+        date: tx.date,
+        time: '12:00',
+        name: desc,
+        amount: tx.amount,
+        category,
+        type: txType,
+        note: 'مستورد من كشف PDF',
+        importedFromPdf: true,
+        statementMonth: s.statementMonth || null,
+        createdAt: new Date().toISOString()
+      });
+      txAdded++;
+    });
+
+    // Import selected installments
+    let instAdded = 0;
+    if (typeof installments !== 'undefined' && Array.isArray(installments)) {
+      document.querySelectorAll('.ccPdfV2Inst').forEach(cb => {
+        if (!cb.checked) return;
+        const idx = parseInt(cb.dataset.idx);
+        const inst = _v2Parsed.installments[idx];
+        if (!inst) return;
+        // Check if installment already imported
+        const exists = installments.find(i =>
+          i.tasaheelSerial === inst.serial ||
+          (i.name === inst.merchant && i.totalAmount === inst.txAmount && i.linkedCardId === _v2CardId)
+        );
+        if (exists) return;
+        const totalMonths = (inst.remainingMonths || 0) + Math.ceil((inst.txAmount - inst.remainingAmount) / inst.monthlyAmount) || 6;
+        installments.push({
+          id: 'inst_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
+          name: inst.merchant + ' (تساهيل)',
+          provider: 'bank',
+          totalAmount: inst.txAmount,
+          monthlyPayment: inst.totalMonthly,
+          totalMonths: totalMonths,
+          paidMonths: totalMonths - (inst.remainingMonths || totalMonths),
+          startDate: inst.date,
+          currency: 'SAR',
+          category: 'بطاقة ائتمان',
+          note: `Tasaheel #${inst.serial||''} — رسوم شهرية: ${fmt(inst.monthlyFee)}`,
+          linkedCardId: _v2CardId,
+          tasaheelSerial: inst.serial,
+          createdAt: new Date().toISOString()
+        });
+        instAdded++;
+      });
+      if (typeof saveInstallments === 'function') saveInstallments();
+    }
+
+    if (typeof window.saveCreditCards === 'function') window.saveCreditCards();
+
+    const msg = `✅ تم: ${txAdded} عملية${instAdded?'، '+instAdded+' قسط':''}`;
+    if (window.showToast) window.showToast(msg, 'success');
+    else alert(msg);
+
+    document.getElementById('ccPdfImportModalV2').classList.remove('open');
+    _v2Parsed = null;
+
+    // Refresh views
+    if (typeof window.openCardDetail === 'function') window.openCardDetail(_v2CardId);
+    if (typeof window.renderInstallments === 'function') window.renderInstallments();
+  };
+
+  // Override the existing openCardPdfImport
+  window.openCardPdfImport = function(cardId) {
+    ensureBetterPdfModal();
+    _v2CardId = cardId;
+    _v2Parsed = null;
+    renderStep1(cardId);
+    document.getElementById('ccPdfImportModalV2').classList.add('open');
+  };
+
+  // ─────────────────────────────────────────────────────
+  // BEAUTIFY CARD DETAIL — bank statement style
+  // ─────────────────────────────────────────────────────
+  function renderBeautifulCardDetail(cardId) {
+    const card = (window.creditCards||[]).find(c => c.id === cardId);
+    if (!card) return;
+    const container = document.getElementById('ccDetailContent');
+    if (!container) return;
+
+    const txs = (card.transactions||[]).slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
+    const purchases = txs.filter(t => t.type === 'purchase' || !t.type || t.type === '');
+    const payments = txs.filter(t => t.type === 'payment' || t.type === 'refund');
+    const totalPurchases = purchases.reduce((s,t) => s + (t.amount||0), 0);
+    const totalPayments = payments.reduce((s,t) => s + (t.amount||0), 0);
+    const balance = totalPurchases - totalPayments;
+    const limit = card.limit || 0;
+    const available = limit - balance;
+    const util = limit > 0 ? (balance / limit * 100) : 0;
+    const sym = card.currency === 'EGP' ? 'ج.م' : (card.currency === 'USD' ? '$' : 'SAR');
+
+    // Linked installments
+    let linkedInsts = [];
+    if (typeof installments !== 'undefined' && Array.isArray(installments)) {
+      linkedInsts = installments.filter(i => i.linkedCardId === card.id && (i.paidMonths||0) < i.totalMonths);
+    }
+    const totalInstMonthly = linkedInsts.reduce((s,i) => s + (i.monthlyPayment||0), 0);
+
+    // Group transactions by month
+    const byMonth = {};
+    for (const tx of txs) {
+      const mk = (tx.date || '').slice(0,7);
+      if (!byMonth[mk]) byMonth[mk] = [];
+      byMonth[mk].push(tx);
+    }
+    const sortedMonths = Object.keys(byMonth).sort().reverse();
+
+    const utilColor = util >= 90 ? '#ef4444' : (util >= 70 ? '#f59e0b' : '#10b981');
+
+    container.innerHTML = `
+      <!-- Statement-style header -->
+      <div style="background:linear-gradient(135deg,${card.gradFrom||'#7c3aed'} 0%,${card.gradTo||'#4f46e5'} 100%);color:#fff;border-radius:18px;padding:18px;margin-bottom:14px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;background:rgba(255,255,255,.1);border-radius:50%"></div>
+        <div style="position:absolute;bottom:-30px;left:-30px;width:140px;height:140px;background:rgba(255,255,255,.05);border-radius:50%"></div>
+        <div style="position:relative;z-index:1">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:14px">
+            <div>
+              <div style="font-size:11px;opacity:.85;letter-spacing:1.5px;font-weight:700">${esc(card.bankName||'BANK')}</div>
+              <div style="font-size:16px;font-weight:900;margin-top:2px">${esc(card.name||'')}</div>
+            </div>
+            <div style="font-size:11px;opacity:.85;text-align:left">
+              ${(card.type||'visa').toUpperCase()}
+              ${card.last4?`<div style="font-family:monospace;margin-top:2px">•••• ${card.last4}</div>`:''}
+            </div>
+          </div>
+          <div style="font-size:11px;opacity:.85">المبلغ المستحق</div>
+          <div style="font-size:28px;font-weight:900;direction:ltr">${fmt(balance)} <span style="font-size:14px;opacity:.85">${sym}</span></div>
+          <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:11px">
+            <div><span style="opacity:.85">الحد:</span> <b style="direction:ltr">${fmt(limit,0)}</b></div>
+            <div><span style="opacity:.85">المتاح:</span> <b style="direction:ltr;color:#bef264">${fmt(available,0)}</b></div>
+          </div>
+          <div style="background:rgba(255,255,255,.15);border-radius:10px;height:8px;margin-top:8px;overflow:hidden">
+            <div style="background:${utilColor};height:100%;width:${Math.min(util,100)}%;transition:width .3s"></div>
+          </div>
+          <div style="text-align:left;font-size:10px;opacity:.9;margin-top:2px;direction:ltr">${util.toFixed(1)}%</div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px">
+        <button onclick="window.openCardPdfImport('${card.id}')" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📄 رفع كشف PDF</button>
+        <button onclick="window.openCardReport('${card.id}')" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📊 التقرير الكامل</button>
+        <button onclick="if(typeof openCardPurchaseModal==='function')openCardPurchaseModal('${card.id}')" style="background:var(--card2);color:var(--accent);border:1px solid var(--border);border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">➕ مشترى جديد</button>
+        <button onclick="if(typeof openCardPaymentModal==='function')openCardPaymentModal('${card.id}')" style="background:var(--card2);color:var(--green);border:1px solid var(--border);border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">💵 سداد</button>
+      </div>
+
+      <!-- Quick stats -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px">
+        <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-weight:700">المشتريات</div>
+          <div style="color:var(--red);font-weight:900;font-size:13px;direction:ltr">${fmt(totalPurchases,0)}</div>
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-weight:700">المدفوع</div>
+          <div style="color:var(--green);font-weight:900;font-size:13px;direction:ltr">${fmt(totalPayments,0)}</div>
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-weight:700">العمليات</div>
+          <div style="color:var(--text);font-weight:900;font-size:13px">${txs.length}</div>
+        </div>
+      </div>
+
+      <!-- Linked installments -->
+      ${linkedInsts.length > 0 ? `
+        <div style="background:linear-gradient(135deg,#7c3aed15,#4f46e515);border:1px solid #7c3aed40;border-radius:12px;padding:12px;margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-weight:900;color:#7c3aed;font-size:13px">📋 الأقساط النشطة (${linkedInsts.length})</div>
+            <div style="font-size:11px;color:#7c3aed;font-weight:900;direction:ltr">${fmt(totalInstMonthly)} ${sym}/شهر</div>
+          </div>
+          ${linkedInsts.map(i => `
+            <div style="background:var(--card);border-radius:8px;padding:8px;margin-top:6px;font-size:12px">
+              <div style="display:flex;justify-content:space-between">
+                <span style="font-weight:700">${esc(i.name)}</span>
+                <span style="direction:ltr;font-weight:900;color:#f59e0b">${fmt(i.monthlyPayment)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px">
+                <span>${i.paidMonths||0}/${i.totalMonths} شهر</span>
+                <span>متبقي ${i.totalMonths - (i.paidMonths||0)} قسط</span>
+              </div>
+              <div style="background:var(--card2);height:4px;border-radius:2px;margin-top:4px;overflow:hidden">
+                <div style="background:#7c3aed;height:100%;width:${((i.paidMonths||0)/i.totalMonths*100).toFixed(1)}%"></div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      <!-- Transactions grouped by month -->
+      ${txs.length === 0 ? `
+        <div style="background:var(--card2);border-radius:12px;padding:30px 20px;text-align:center;color:var(--muted)">
+          <div style="font-size:36px;margin-bottom:8px">📭</div>
+          <div style="font-size:13px">لا توجد عمليات بعد</div>
+          <div style="font-size:11px;margin-top:6px;opacity:.7">ارفع كشف PDF أو أضف عملية يدوياً</div>
+        </div>
+      ` : sortedMonths.map(mk => {
+        const monthTxs = byMonth[mk];
+        const monthSpend = monthTxs.filter(t => t.type !== 'payment' && t.type !== 'refund').reduce((s,t) => s + (t.amount||0), 0);
+        const monthPaid = monthTxs.filter(t => t.type === 'payment' || t.type === 'refund').reduce((s,t) => s + (t.amount||0), 0);
+        return `
+          <div style="margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 4px;font-size:12px">
+              <div style="font-weight:900;color:var(--accent)">📅 ${mk}</div>
+              <div style="direction:ltr;display:flex;gap:8px;font-weight:700">
+                ${monthSpend>0?`<span style="color:var(--red)">-${fmt(monthSpend,0)}</span>`:''}
+                ${monthPaid>0?`<span style="color:var(--green)">+${fmt(monthPaid,0)}</span>`:''}
+              </div>
+            </div>
+            <div style="background:var(--card2);border-radius:10px;overflow:hidden">
+              ${monthTxs.map((tx, idx) => {
+                const isPaid = tx.type === 'payment' || tx.type === 'refund';
+                const isFee = tx.type === 'fee';
+                const isPlanMove = tx.type === 'plan_move' || tx.type === 'plan_credit' || tx.type === 'plan_debit';
+                const color = isPaid?'var(--green)':(isFee?'#f59e0b':(isPlanMove?'var(--muted)':'var(--red)'));
+                const icon = isPaid?'💵':(isFee?'💸':(isPlanMove?'↔':'🛒'));
+                const sign = isPaid?'+':(isPlanMove?'':'-');
+                return `
+                <div class="cc-tx-row" data-tx-id="${tx.id}" style="padding:10px 12px;${idx>0?'border-top:1px solid var(--border);':''}font-size:12px">
+                  <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
+                    <div style="flex:1;min-width:0">
+                      <div style="display:flex;align-items:center;gap:6px;font-weight:700">
+                        <span>${icon}</span>
+                        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(tx.name||'')}</span>
+                      </div>
+                      <div style="display:flex;gap:8px;font-size:10px;color:var(--muted);margin-top:2px">
+                        <span>${tx.date}</span>
+                        ${tx.category?`<span>• ${esc(tx.category)}</span>`:''}
+                        ${tx.importedFromPdf?`<span style="color:#7c3aed">• PDF</span>`:''}
+                      </div>
+                    </div>
+                    <div style="color:${color};direction:ltr;font-weight:900;flex-shrink:0">${sign}${fmt(tx.amount)}</div>
+                  </div>
+                  <div style="display:flex;gap:4px;margin-top:6px">
+                    <button onclick="event.stopPropagation();window.editCardTransaction('${card.id}','${tx.id}')" style="flex:1;background:transparent;color:var(--accent);border:1px solid var(--border);border-radius:6px;padding:3px;font-size:10px;font-family:inherit;font-weight:700;cursor:pointer">✏️ تعديل</button>
+                    <button onclick="event.stopPropagation();window.deleteCardTransactionConfirm('${card.id}','${tx.id}')" style="flex:1;background:transparent;color:var(--red);border:1px solid var(--border);border-radius:6px;padding:3px;font-size:10px;font-family:inherit;font-weight:700;cursor:pointer">🗑 حذف</button>
+                  </div>
+                </div>
+              `;}).join('')}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    `;
+  }
+
+  // Override openCardDetail to use beautiful version
+  if (typeof window.openCardDetail === 'function') {
+    const origOpenDetail = window.openCardDetail;
+    window.openCardDetail = function(cardId) {
+      // Ensure modal is open
+      const modal = document.getElementById('ccDetailModal');
+      if (modal) modal.classList.add('open');
+      // Render our beautiful version
+      try {
+        renderBeautifulCardDetail(cardId);
+      } catch(e) {
+        console.warn('Beautiful detail failed, fallback:', e);
+        origOpenDetail.call(this, cardId);
+      }
+    };
+  }
+
+  console.log('V28: Enhanced PDF parser + beautiful UI loaded ✓');
+})();
+
+</script>
+
 </body>
 </html>
