@@ -2236,11 +2236,6 @@ button, .menu-row, .tx-card {
       <div class="mt"><div class="mt-l">الأقساط</div><div class="mt-s" id="menuInstCount">--</div></div>
       <div class="mc">‹</div>
     </div>
-    <div class="menu-row" onclick="closeAndOpen('menuModal','creditCardsModal',renderCreditCards)">
-      <div class="mi">💎</div>
-      <div class="mt"><div class="mt-l">بطاقات الائتمان</div><div class="mt-s" id="menuCCCount">تتبع الفيزا والاستخدام والسداد</div></div>
-      <div class="mc">‹</div>
-    </div>
     <div class="menu-row" onclick="closeAndOpen('menuModal','jameyaModal',renderJameya)">
       <div class="mi">🤝</div>
       <div class="mt"><div class="mt-l">الجمعية</div><div class="mt-s" id="menuJamCount">--</div></div>
@@ -20739,6 +20734,120 @@ setTimeout(() => {
   if (!window.creditCards || typeof window.renderCreditCards !== 'function') {
     console.warn('V27: Credit cards module not loaded; skipping enhancements.');
     return;
+  }
+
+  // ─────────────────────────────────────────────────────
+  // 0) V17 MENU (مركز التحكم) — INJECT CREDIT CARDS CARD
+  //    The actual control center the user sees. It's built from
+  //    MENU_STRUCTURE inside an IIFE so we can't modify the const directly.
+  //    Instead, we inject our card into the DOM after rebuildMenu() runs,
+  //    and re-inject whenever the menu is rebuilt.
+  // ─────────────────────────────────────────────────────
+  function injectCardsIntoV17Menu() {
+    // Find the commitments section grid
+    const grid = document.querySelector('.v17-menu-grid[data-section-grid="commitments"]');
+    if (!grid) return false;
+    // If already injected, just update the count
+    let existing = grid.querySelector('.v17-menu-card[data-cc-card="1"]');
+    if (existing) {
+      updateCCBadge();
+      return true;
+    }
+    // Build the new card following the same structure as other v17 cards
+    const card = document.createElement('div');
+    card.className = 'v17-menu-card';
+    card.setAttribute('data-cat', 'commitments');
+    card.setAttribute('data-cc-card', '1');
+    card.setAttribute('data-search', 'بطاقات الائتمان الفيزا visa credit card');
+    card.setAttribute('onclick', "closeAndOpen('menuModal','creditCardsModal',renderCreditCards)");
+    card.innerHTML = `
+      <div class="v17-icon">
+        <span>💎</span>
+        <span class="v17-badge zero" id="menuCCCount_v17">٠</span>
+      </div>
+      <div>
+        <div class="v17-title">بطاقات الائتمان</div>
+        <div class="v17-sub">تتبع الفيزا والكشوف</div>
+      </div>
+    `;
+    grid.appendChild(card);
+    updateCCBadge();
+    return true;
+  }
+
+  function updateCCBadge() {
+    const badge = document.getElementById('menuCCCount_v17');
+    if (!badge) return;
+    const count = (window.creditCards || []).length;
+    badge.textContent = toArabicDigits(count);
+    badge.classList.toggle('zero', count === 0);
+  }
+
+  function toArabicDigits(n) {
+    return String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+  }
+
+  // Try injecting at multiple times to catch all init scenarios
+  function tryInjectV17() {
+    if (injectCardsIntoV17Menu()) return true;
+    return false;
+  }
+
+  // Attempt immediately and at progressively later times
+  setTimeout(tryInjectV17, 50);
+  setTimeout(tryInjectV17, 300);
+  setTimeout(tryInjectV17, 800);
+  setTimeout(tryInjectV17, 1500);
+  setTimeout(tryInjectV17, 3000);
+  setTimeout(tryInjectV17, 5000);
+
+  // Re-inject whenever menu modal is opened (in case it got rebuilt)
+  document.addEventListener('click', function(e) {
+    const target = e.target;
+    if (!target) return;
+    const txt = (target.textContent || '');
+    const onclick = (target.getAttribute && target.getAttribute('onclick')) || '';
+    const parentClick = target.closest && target.closest('[onclick]');
+    const clickStr = onclick || (parentClick && parentClick.getAttribute('onclick')) || '';
+    if (clickStr.includes('menuModal')) {
+      setTimeout(tryInjectV17, 50);
+      setTimeout(tryInjectV17, 200);
+      setTimeout(tryInjectV17, 500);
+    }
+  }, true);
+
+  // MutationObserver as ultimate safety net — watches for menu rebuild
+  try {
+    const menuModal = document.getElementById('menuModal');
+    if (menuModal && !window.__ccV17Observer) {
+      const observer = new MutationObserver(() => {
+        setTimeout(tryInjectV17, 50);
+      });
+      observer.observe(menuModal, { childList: true, subtree: true });
+      window.__ccV17Observer = observer;
+    } else if (!window.__ccV17DocObserver) {
+      // Watch the body for menuModal being created/modified
+      const docObserver = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          if (m.target && (m.target.id === 'menuModal' || (m.target.closest && m.target.closest('#menuModal')))) {
+            setTimeout(tryInjectV17, 50);
+            break;
+          }
+        }
+      });
+      docObserver.observe(document.body, { childList: true, subtree: true });
+      window.__ccV17DocObserver = docObserver;
+    }
+  } catch(e) { console.warn('V27 menu observer:', e); }
+
+  // Update badge whenever cards change
+  if (typeof window.saveCreditCards === 'function' && !window.saveCreditCards.__v27BadgePatched) {
+    const origSave = window.saveCreditCards;
+    window.saveCreditCards = function() {
+      origSave.apply(this, arguments);
+      setTimeout(updateCCBadge, 50);
+    };
+    window.saveCreditCards.__v27BadgePatched = true;
   }
 
   // ─────────────────────────────────────────────────────
