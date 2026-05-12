@@ -1171,6 +1171,63 @@ select.form-inp{padding-left:8px;}
 }
 .stat-cur{font-size:10px;font-weight:700;color:var(--muted);margin-right:2px}
 
+/* ═══ MODERN DASHBOARD UI V30.2 ═══ */
+.dashboard-wrapper {
+    padding: 20px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.net-worth-card {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 28px;
+    padding: 30px 20px;
+    text-align: center;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+}
+.net-worth-label {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-bottom: 10px;
+    display: block;
+}
+.net-worth-amount {
+    color: #ffffff;
+    font-size: 36px;
+    font-weight: 800;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+.stats-grid-v2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.stat-box {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 22px;
+    padding: 20px 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.stat-box .stat-icon-v2 {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+.inc-icon { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+.exp-icon { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.stat-box .stat-label-v2 { color: #94a3b8; font-size: 12px; margin-bottom: 5px; }
+.stat-box .stat-value-v2 { color: #f8fafc; font-size: 18px; font-weight: 700; }
+
 /* 14. V14: Mini stats bar (today/week/avg) */
 .mini-stats{
   display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
@@ -3700,33 +3757,6 @@ function renderHome() {
     `;
   }
 
-  html += `<div class="hero-card">
-    <div class="hero-bg-orb"></div>
-    <div class="hero-greet-line">
-      <span class="hero-emoji">${mood}</span>
-      <span class="hero-greet-text">${greet}</span>
-    </div>
-    <div class="hero-saved-block">
-      <div class="hero-saved-label">${savedThisMonth >= 0 ? 'وفّرت الشهر ده' : 'صرفت زيادة'}</div>
-      <div class="hero-saved-amount" style="color:${moodColor}">
-        ${savedThisMonth >= 0 ? '+' : '-'}${fmt(toBase(Math.abs(savedThisMonth)), 0)}
-        <span class="hero-saved-cur">${sym}</span>
-      </div>
-      ${monthInc > 0 ? `<div class="hero-rate">معدل الادخار <b style="color:${moodColor}">${savingsRate}%</b></div>` : ''}
-    </div>
-    <div class="hero-progress-wrap">
-      <div class="hero-progress-track">
-        <div class="hero-progress-fill" style="width:${monthProgress}%"></div>
-        <div class="hero-progress-marker" style="right:${monthProgress}%"></div>
-      </div>
-      <div class="hero-progress-labels">
-        <span>📅 يوم ${toArabicDigits(dayOfMonth)}</span>
-        <span>${onTrack?'✓ ماشي صح':overspending?'⚠️ بتنفق بسرعة':'─'}</span>
-        <span>${toArabicDigits(daysInMonth)} يوم</span>
-      </div>
-    </div>
-  </div>`;
-
   // Compute trend indicators (V13 — show comparison instead of just numbers)
   const dailyAvg = monthExp / Math.max(1, today.getDate()); // avg per day this month
   const weekAvg = weekExp / 7;
@@ -3734,39 +3764,76 @@ function renderHome() {
   const weekTrendArrow = weekAvg > dailyAvg * 1.1 ? '↑' : weekAvg < dailyAvg * 0.9 ? '↓' : '→';
   const todayArrow = todayVsAvg > 10 ? '↑' : todayVsAvg < -10 ? '↓' : '→';
 
-  html += `
-  <div class="stats-grid">
-    <div class="stat-tile stat-income">
-      <div class="stat-icon">📥</div>
-      <div class="stat-content">
-        <div class="stat-label">دخل الشهر</div>
-        <div class="stat-value">${fmt(toBase(monthInc), 0)} <span class="stat-cur">${sym}</span></div>
-      </div>
-    </div>
-    <div class="stat-tile stat-expense">
-      <div class="stat-icon">📤</div>
-      <div class="stat-content">
-        <div class="stat-label">مصروف الشهر</div>
-        <div class="stat-value">${fmt(toBase(monthExp), 0)} <span class="stat-cur">${sym}</span></div>
-      </div>
-    </div>
-  </div>
+  // Compute totals needed for net worth (scoped to renderHome)
+  const _rh_incSAR = txs.filter(t=>t.type==='income' && !t.isTransfer).reduce((s,t)=>s+t.amountSAR,0);
+  const _rh_expSAR = txs.filter(t=>t.type==='expense' && !t.isTransfer).reduce((s,t)=>s+t.amountSAR,0);
+  const _rh_savSAR = savings.reduce((s,t)=>s+t.amountSAR,0);
+  const _rh_debtSAR = (typeof debts !== 'undefined' ? debts : []).filter(d=>!d.paid && d.type==='borrowed').reduce((s,d)=>s+(d.amountSAR||0),0);
+  const totalNetWorth = (_rh_incSAR - _rh_expSAR) + _rh_savSAR - _rh_debtSAR;
 
-  <div class="mini-stats">
-    <div class="mini-stat">
-      <div class="ms-label">📅 النهارده</div>
-      <div class="ms-value">${fmt(toBase(todayExp), 0)}</div>
-      ${todayExp > 0 ? `<div class="ms-trend ${todayArrow==='↑'?'up':todayArrow==='↓'?'down':'flat'}">${todayArrow} ${Math.abs(todayVsAvg)}%</div>` : '<div class="ms-trend flat">─</div>'}
+  html += `
+  <div class="dashboard-wrapper">
+    <div class="hero-card">
+      <div class="hero-bg-orb"></div>
+      <div class="hero-greet-line">
+        <span class="hero-emoji">${mood}</span>
+        <span class="hero-greet-text">${greet}</span>
+      </div>
+      <div class="hero-saved-block">
+        <div class="hero-saved-label">${savedThisMonth >= 0 ? 'وفّرت الشهر ده' : 'صرفت زيادة'}</div>
+        <div class="hero-saved-amount" style="color:${moodColor}">
+          ${savedThisMonth >= 0 ? '+' : '-'}${fmt(toBase(Math.abs(savedThisMonth)), 0)}
+          <span class="hero-saved-cur">${sym}</span>
+        </div>
+        ${monthInc > 0 ? `<div class="hero-rate">معدل الادخار <b style="color:${moodColor}">${savingsRate}%</b></div>` : ''}
+      </div>
+      <div class="hero-progress-wrap">
+        <div class="hero-progress-track">
+          <div class="hero-progress-fill" style="width:${monthProgress}%"></div>
+          <div class="hero-progress-marker" style="right:${monthProgress}%"></div>
+        </div>
+        <div class="hero-progress-labels">
+          <span>📅 يوم ${toArabicDigits(dayOfMonth)}</span>
+          <span>${onTrack?'✓ ماشي صح':overspending?'⚠️ بتنفق بسرعة':'─'}</span>
+          <span>${toArabicDigits(daysInMonth)} يوم</span>
+        </div>
+      </div>
     </div>
-    <div class="mini-stat">
-      <div class="ms-label">📊 الأسبوع</div>
-      <div class="ms-value">${fmt(toBase(weekExp), 0)}</div>
-      <div class="ms-trend">~${fmt(toBase(weekAvg), 0)}/يوم</div>
+
+    <div class="net-worth-card">
+      <span class="net-worth-label">صافي الثروة الحالي</span>
+      <div class="net-worth-amount" id="totalNetWorthDisplay">${fmt(toBase(totalNetWorth), 0)} ${sym}</div>
     </div>
-    <div class="mini-stat">
-      <div class="ms-label">📈 معدل يومي</div>
-      <div class="ms-value">${fmt(toBase(dailyAvg), 0)}</div>
-      <div class="ms-trend">آخر ${toArabicDigits(dayOfMonth)} يوم</div>
+
+    <div class="stats-grid-v2">
+      <div class="stat-box">
+        <div class="stat-icon-v2 inc-icon">▲</div>
+        <span class="stat-label-v2">الدخل الشهري</span>
+        <div class="stat-value-v2" id="monthlyIncomeDisplay">${fmt(toBase(monthInc), 0)} <span style="font-size:12px;opacity:.7">${sym}</span></div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-icon-v2 exp-icon">▼</div>
+        <span class="stat-label-v2">المصروفات</span>
+        <div class="stat-value-v2" id="monthlyExpenseDisplay">${fmt(toBase(monthExp), 0)} <span style="font-size:12px;opacity:.7">${sym}</span></div>
+      </div>
+    </div>
+
+    <div class="mini-stats">
+      <div class="mini-stat">
+        <div class="ms-label">📅 النهارده</div>
+        <div class="ms-value">${fmt(toBase(todayExp), 0)}</div>
+        ${todayExp > 0 ? `<div class="ms-trend ${todayArrow==='↑'?'up':todayArrow==='↓'?'down':'flat'}">${todayArrow} ${Math.abs(todayVsAvg)}%</div>` : '<div class="ms-trend flat">─</div>'}
+      </div>
+      <div class="mini-stat">
+        <div class="ms-label">📊 الأسبوع</div>
+        <div class="ms-value">${fmt(toBase(weekExp), 0)}</div>
+        <div class="ms-trend">~${fmt(toBase(weekAvg), 0)}/يوم</div>
+      </div>
+      <div class="mini-stat">
+        <div class="ms-label">📈 معدل يومي</div>
+        <div class="ms-value">${fmt(toBase(dailyAvg), 0)}</div>
+        <div class="ms-trend">آخر ${toArabicDigits(dayOfMonth)} يوم</div>
+      </div>
     </div>
   </div>`;
 
