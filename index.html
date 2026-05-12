@@ -3764,7 +3764,12 @@ function renderHome() {
   const weekTrendArrow = weekAvg > dailyAvg * 1.1 ? '↑' : weekAvg < dailyAvg * 0.9 ? '↓' : '→';
   const todayArrow = todayVsAvg > 10 ? '↑' : todayVsAvg < -10 ? '↓' : '→';
 
-  const totalNetWorth = (incSAR - expSAR) + savSAR - debtSAR;
+  // Compute totals needed for net worth (scoped to renderHome)
+  const _rh_incSAR = txs.filter(t=>t.type==='income' && !t.isTransfer).reduce((s,t)=>s+t.amountSAR,0);
+  const _rh_expSAR = txs.filter(t=>t.type==='expense' && !t.isTransfer).reduce((s,t)=>s+t.amountSAR,0);
+  const _rh_savSAR = savings.reduce((s,t)=>s+t.amountSAR,0);
+  const _rh_debtSAR = (typeof debts !== 'undefined' ? debts : []).filter(d=>!d.paid && d.type==='borrowed').reduce((s,d)=>s+(d.amountSAR||0),0);
+  const totalNetWorth = (_rh_incSAR - _rh_expSAR) + _rh_savSAR - _rh_debtSAR;
 
   html += `
   <div class="dashboard-wrapper">
@@ -3812,23 +3817,23 @@ function renderHome() {
         <div class="stat-value-v2" id="monthlyExpenseDisplay">${fmt(toBase(monthExp), 0)} <span style="font-size:12px;opacity:.7">${sym}</span></div>
       </div>
     </div>
-  </div>
 
-  <div class="mini-stats">
-    <div class="mini-stat">
-      <div class="ms-label">📅 النهارده</div>
-      <div class="ms-value">${fmt(toBase(todayExp), 0)}</div>
-      ${todayExp > 0 ? `<div class="ms-trend ${todayArrow==='↑'?'up':todayArrow==='↓'?'down':'flat'}">${todayArrow} ${Math.abs(todayVsAvg)}%</div>` : '<div class="ms-trend flat">─</div>'}
-    </div>
-    <div class="mini-stat">
-      <div class="ms-label">📊 الأسبوع</div>
-      <div class="ms-value">${fmt(toBase(weekExp), 0)}</div>
-      <div class="ms-trend">~${fmt(toBase(weekAvg), 0)}/يوم</div>
-    </div>
-    <div class="mini-stat">
-      <div class="ms-label">📈 معدل يومي</div>
-      <div class="ms-value">${fmt(toBase(dailyAvg), 0)}</div>
-      <div class="ms-trend">آخر ${toArabicDigits(dayOfMonth)} يوم</div>
+    <div class="mini-stats">
+      <div class="mini-stat">
+        <div class="ms-label">📅 النهارده</div>
+        <div class="ms-value">${fmt(toBase(todayExp), 0)}</div>
+        ${todayExp > 0 ? `<div class="ms-trend ${todayArrow==='↑'?'up':todayArrow==='↓'?'down':'flat'}">${todayArrow} ${Math.abs(todayVsAvg)}%</div>` : '<div class="ms-trend flat">─</div>'}
+      </div>
+      <div class="mini-stat">
+        <div class="ms-label">📊 الأسبوع</div>
+        <div class="ms-value">${fmt(toBase(weekExp), 0)}</div>
+        <div class="ms-trend">~${fmt(toBase(weekAvg), 0)}/يوم</div>
+      </div>
+      <div class="mini-stat">
+        <div class="ms-label">📈 معدل يومي</div>
+        <div class="ms-value">${fmt(toBase(dailyAvg), 0)}</div>
+        <div class="ms-trend">آخر ${toArabicDigits(dayOfMonth)} يوم</div>
+      </div>
     </div>
   </div>`;
 
