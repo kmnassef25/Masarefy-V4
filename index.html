@@ -93,7 +93,7 @@ html{height:100%;height:100dvh;}
 body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;max-width:430px;margin:0 auto;height:100%;height:100dvh;overflow:hidden;}
 
 /* ── HEADER ── */
-.header{background:linear-gradient(160deg,#1a2332,#0d1117);border-bottom:1px solid var(--border);padding:calc(14px + env(safe-area-inset-top, 0px)) 16px 0;flex-shrink:0;}
+.header{background:linear-gradient(160deg,#1a2332,#0d1117);border-bottom:1px solid var(--border);padding:14px 16px 0;flex-shrink:0;}
 .header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
 .app-name{font-size:21px;font-weight:900;color:var(--accent);}
 .live-time{text-align:left;direction:ltr;}
@@ -309,7 +309,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);displ
 /* ── MODAL ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s;}
 .overlay.open{opacity:1;pointer-events:all;}
-.sheet{background:var(--card);border-radius:24px 24px 0 0;border-top:1px solid var(--border);padding:calc(16px + env(safe-area-inset-top, 0px)) 16px 30px;width:100%;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,0,.67,0);max-height:94vh;overflow-y:auto;}
+.sheet{background:var(--card);border-radius:24px 24px 0 0;border-top:1px solid var(--border);padding:16px 16px 30px;width:100%;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,0,.67,0);max-height:94vh;overflow-y:auto;}
 .overlay.open .sheet{transform:translateY(0);}
 .handle{width:60px;height:5px;background:var(--border);border-radius:4px;margin:0 auto 14px;cursor:pointer;padding:14px 30px;background-clip:content-box;box-sizing:content-box;position:relative;-webkit-tap-highlight-color:rgba(248,81,73,0.3);touch-action:manipulation;}
 .section-divider{border-top:1px solid var(--border);padding-top:14px;margin-top:14px;}
@@ -1011,7 +1011,7 @@ select.form-inp{padding-left:8px;}
 .tx-note{font-size:10.5px;margin-top:2px;color:var(--muted);line-height:1.4}
 
 /* 5. Compact header — tighter spacing */
-.header{padding:calc(8px + env(safe-area-inset-top, 0px)) 14px 10px}
+.header{padding:8px 14px 10px}
 .live-time .dte{font-size:9.5px;line-height:1.3}
 .live-time .dte-hijri{font-size:9.5px;line-height:1.3;margin-top:0}
 .app-name{font-size:15px;font-weight:900;letter-spacing:-0.3px}
@@ -1745,10 +1745,6 @@ button, .menu-row, .tx-card {
 
 <!-- HEADER -->
 <div class="header">
-  <div id="headerGreetBar" style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px">
-    <span id="headerGreetEmoji">😊</span>
-    <span id="headerGreetText">مرحباً</span>
-  </div>
   <div class="header-top">
     <div class="app-name">💵 مصاريفي</div>
     <div style="display:flex;gap:8px;align-items:center">
@@ -3631,31 +3627,6 @@ function renderHome() {
 
   let html = '';
 
-  // ── HERO CARD FIRST (always at the top) ──
-  html += `
-  <div class="hero-card" style="margin-bottom:14px">
-    <div class="hero-bg-orb"></div>
-    <div class="hero-saved-block">
-      <div class="hero-saved-label">${savedThisMonth >= 0 ? 'وفّرت الشهر ده' : 'صرفت زيادة'}</div>
-      <div class="hero-saved-amount" style="color:${moodColor}">
-        ${savedThisMonth >= 0 ? '+' : '-'}${fmt(toBase(Math.abs(savedThisMonth)), 0)}
-        <span class="hero-saved-cur">${sym}</span>
-      </div>
-      ${monthInc > 0 ? `<div class="hero-rate">معدل الادخار <b style="color:${moodColor}">${savingsRate}%</b></div>` : ''}
-    </div>
-    <div class="hero-progress-wrap">
-      <div class="hero-progress-track">
-        <div class="hero-progress-fill" style="width:${monthProgress}%"></div>
-        <div class="hero-progress-marker" style="right:${monthProgress}%"></div>
-      </div>
-      <div class="hero-progress-labels">
-        <span>📅 يوم ${toArabicDigits(dayOfMonth)}</span>
-        <span>${onTrack?'✓ ماشي صح':overspending?'⚠️ بتنفق بسرعة':'─'}</span>
-        <span>${toArabicDigits(daysInMonth)} يوم</span>
-      </div>
-    </div>
-  </div>`;
-
   // ═══════ CASH-FLOW FORECAST (Safe-to-Spend) ═══════
   // Compute total cash across all accounts (in base currency)
   // IMPORTANT: account balance = sum of (income - expense) of all txs assigned to that account,
@@ -3793,15 +3764,37 @@ function renderHome() {
   const weekTrendArrow = weekAvg > dailyAvg * 1.1 ? '↑' : weekAvg < dailyAvg * 0.9 ? '↓' : '→';
   const todayArrow = todayVsAvg > 10 ? '↑' : todayVsAvg < -10 ? '↓' : '→';
 
-  // Compute totals needed for net worth (scoped to renderHome)
-  const _rh_incSAR = txs.filter(t=>t.type==='income' && !t.isTransfer).reduce((s,t)=>s+t.amountSAR,0);
-  const _rh_expSAR = txs.filter(t=>t.type==='expense' && !t.isTransfer).reduce((s,t)=>s+t.amountSAR,0);
-  const _rh_savSAR = savings.reduce((s,t)=>s+t.amountSAR,0);
-  const _rh_debtSAR = (typeof debts !== 'undefined' ? debts : []).filter(d=>!d.paid && d.type==='borrowed').reduce((s,d)=>s+(d.amountSAR||0),0);
-  const totalNetWorth = (_rh_incSAR - _rh_expSAR) + _rh_savSAR - _rh_debtSAR;
+  const totalNetWorth = (incSAR - expSAR) + savSAR - debtSAR;
 
   html += `
   <div class="dashboard-wrapper">
+    <div class="hero-card">
+      <div class="hero-bg-orb"></div>
+      <div class="hero-greet-line">
+        <span class="hero-emoji">${mood}</span>
+        <span class="hero-greet-text">${greet}</span>
+      </div>
+      <div class="hero-saved-block">
+        <div class="hero-saved-label">${savedThisMonth >= 0 ? 'وفّرت الشهر ده' : 'صرفت زيادة'}</div>
+        <div class="hero-saved-amount" style="color:${moodColor}">
+          ${savedThisMonth >= 0 ? '+' : '-'}${fmt(toBase(Math.abs(savedThisMonth)), 0)}
+          <span class="hero-saved-cur">${sym}</span>
+        </div>
+        ${monthInc > 0 ? `<div class="hero-rate">معدل الادخار <b style="color:${moodColor}">${savingsRate}%</b></div>` : ''}
+      </div>
+      <div class="hero-progress-wrap">
+        <div class="hero-progress-track">
+          <div class="hero-progress-fill" style="width:${monthProgress}%"></div>
+          <div class="hero-progress-marker" style="right:${monthProgress}%"></div>
+        </div>
+        <div class="hero-progress-labels">
+          <span>📅 يوم ${toArabicDigits(dayOfMonth)}</span>
+          <span>${onTrack?'✓ ماشي صح':overspending?'⚠️ بتنفق بسرعة':'─'}</span>
+          <span>${toArabicDigits(daysInMonth)} يوم</span>
+        </div>
+      </div>
+    </div>
+
     <div class="net-worth-card">
       <span class="net-worth-label">صافي الثروة الحالي</span>
       <div class="net-worth-amount" id="totalNetWorthDisplay">${fmt(toBase(totalNetWorth), 0)} ${sym}</div>
@@ -3819,23 +3812,23 @@ function renderHome() {
         <div class="stat-value-v2" id="monthlyExpenseDisplay">${fmt(toBase(monthExp), 0)} <span style="font-size:12px;opacity:.7">${sym}</span></div>
       </div>
     </div>
+  </div>
 
-    <div class="mini-stats">
-      <div class="mini-stat">
-        <div class="ms-label">📅 النهارده</div>
-        <div class="ms-value">${fmt(toBase(todayExp), 0)}</div>
-        ${todayExp > 0 ? `<div class="ms-trend ${todayArrow==='↑'?'up':todayArrow==='↓'?'down':'flat'}">${todayArrow} ${Math.abs(todayVsAvg)}%</div>` : '<div class="ms-trend flat">─</div>'}
-      </div>
-      <div class="mini-stat">
-        <div class="ms-label">📊 الأسبوع</div>
-        <div class="ms-value">${fmt(toBase(weekExp), 0)}</div>
-        <div class="ms-trend">~${fmt(toBase(weekAvg), 0)}/يوم</div>
-      </div>
-      <div class="mini-stat">
-        <div class="ms-label">📈 معدل يومي</div>
-        <div class="ms-value">${fmt(toBase(dailyAvg), 0)}</div>
-        <div class="ms-trend">آخر ${toArabicDigits(dayOfMonth)} يوم</div>
-      </div>
+  <div class="mini-stats">
+    <div class="mini-stat">
+      <div class="ms-label">📅 النهارده</div>
+      <div class="ms-value">${fmt(toBase(todayExp), 0)}</div>
+      ${todayExp > 0 ? `<div class="ms-trend ${todayArrow==='↑'?'up':todayArrow==='↓'?'down':'flat'}">${todayArrow} ${Math.abs(todayVsAvg)}%</div>` : '<div class="ms-trend flat">─</div>'}
+    </div>
+    <div class="mini-stat">
+      <div class="ms-label">📊 الأسبوع</div>
+      <div class="ms-value">${fmt(toBase(weekExp), 0)}</div>
+      <div class="ms-trend">~${fmt(toBase(weekAvg), 0)}/يوم</div>
+    </div>
+    <div class="mini-stat">
+      <div class="ms-label">📈 معدل يومي</div>
+      <div class="ms-value">${fmt(toBase(dailyAvg), 0)}</div>
+      <div class="ms-trend">آخر ${toArabicDigits(dayOfMonth)} يوم</div>
     </div>
   </div>`;
 
@@ -3987,16 +3980,6 @@ function renderHome() {
   }
 
   el.innerHTML = html;
-
-  // Update header greeting bar
-  const greetBar = document.getElementById('headerGreetBar');
-  if (greetBar) {
-    const emojiEl = document.getElementById('headerGreetEmoji');
-    const textEl = document.getElementById('headerGreetText');
-    if (emojiEl) emojiEl.textContent = mood;
-    if (textEl) textEl.textContent = greet;
-    greetBar.style.display = 'flex';
-  }
 }
 
 function updateSummary() {
@@ -15728,12 +15711,10 @@ setTimeout(() => {
       padding: 0;
     }
     .v19-close-btn {
-      position: sticky;
-      top: calc(12px + env(safe-area-inset-top, 0px));
+      position: absolute;
+      top: 12px;
       left: 12px;
       z-index: 50;
-      margin-bottom: -38px;
-      float: left;
     }
     .v19-close-btn:active, .v22-close-x:active {
       transform: scale(0.92);
@@ -15743,13 +15724,6 @@ setTimeout(() => {
     }
     /* Avoid duplicate close on settings-sheet which already has its own */
     .settings-sheet .v19-close-btn { display: none; }
-
-    /* SAFE AREA FIX: ensure close buttons are always reachable below status bar */
-    .sheet .v19-close-btn,
-    .sheet .v22-close-x,
-    .sheet .v20-close-btn {
-      margin-top: env(safe-area-inset-top, 0px);
-    }
 
     /* Generous touch zone around the handle */
     .v19-handle-zone {
