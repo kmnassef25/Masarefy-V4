@@ -3572,12 +3572,17 @@ function renderHome() {
 
   // ═══════ CASH-FLOW FORECAST (Safe-to-Spend) ═══════
   // Compute total cash across all accounts (in base currency)
+  // IMPORTANT: account balance = sum of (income - expense) of all txs assigned to that account,
+  // NOT acc.balance (which is just the initial seed).
   let totalCashBase = 0;
   try {
     for (const acc of (accounts || [])) {
       if (acc.archived) continue;
-      const accCur = acc.currency || 'SAR';
-      const balSAR = curToSAR(Number(acc.balance) || 0, accCur);
+      // Compute actual balance from transactions
+      const accTxs = txs.filter(t => t.account === acc.id);
+      const inc = accTxs.filter(t => t.type === 'income').reduce((s, t) => s + (t.amountSAR || 0), 0);
+      const exp = accTxs.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amountSAR || 0), 0);
+      const balSAR = inc - exp;
       totalCashBase += toBase(balSAR);
     }
   } catch(e) {}
@@ -3616,6 +3621,16 @@ function renderHome() {
       }
     }
   } catch(e) {}
+
+  // ═══════ TRUE NET WORTH ═══════
+  // True Net Worth = Cash − Credit Card Debt
+  // (we don't subtract upcoming installments here because they'll be paid
+  //  from cash over time, so they reduce future cash but the cash itself
+  //  is still "yours" right now)
+  const trueNetWorth = totalCashBase - cardDuesBase;
+
+  // Expose globally for other functions
+  window.calculateTrueNetWorth = function() { return trueNetWorth; };
 
   const totalCommitmentsBase = upcomingInstallmentsBase + cardDuesBase;
   const safeToSpendBase = totalCashBase - totalCommitmentsBase;
@@ -3662,6 +3677,24 @@ function renderHome() {
               <div style="font-weight:900;direction:ltr;margin-top:2px;color:${cardDuesBase > 0 ? '#fca5a5' : 'inherit'}">${fmt(totalCommitmentsBase, 0)}</div>
             </div>
           </div>
+          ${cardDuesBase > 0 ? `
+            <!-- TRUE NET WORTH breakdown -->
+            <div style="margin-top:10px;background:rgba(0,0,0,.2);border-radius:10px;padding:8px 10px;border:1px solid rgba(255,255,255,.08)">
+              <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
+                <div>
+                  <div style="font-size:9px;opacity:.7;font-weight:700">💎 الثروة الحقيقية (كاش − دين فيزا)</div>
+                  <div style="font-size:9px;opacity:.5;margin-top:1px">(True Net Worth)</div>
+                </div>
+                <div style="font-weight:900;direction:ltr;font-size:14px;color:${trueNetWorth >= 0 ? '#bef264' : '#fca5a5'}">
+                  ${fmt(trueNetWorth, 0)} ${sym}
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:9px;opacity:.75;margin-top:4px">
+                <span>كاش: <b style="direction:ltr">${fmt(totalCashBase, 0)}</b></span>
+                <span style="color:#fca5a5">دين فيزا: <b style="direction:ltr">-${fmt(cardDuesBase, 0)}</b></span>
+              </div>
+            </div>
+          ` : ''}
         </div>
       </div>
     `;
@@ -20171,14 +20204,31 @@ setTimeout(() => {
     const today = new Date();
     document.getElementById('ccPayDate').value = dateStr(today);
 
-    // Fill account select
+    // Fill account select with current balances shown
     const accSel = document.getElementById('ccPayAccount');
     accSel.innerHTML = '';
     if (typeof accounts !== 'undefined' && Array.isArray(accounts)) {
       accounts.forEach(a => {
+        if (a.archived) return;
         const opt = document.createElement('option');
         opt.value = a.id;
-        opt.textContent = `${a.emoji || '🏦'} ${a.name}`;
+        // Compute actual balance from transactions (same way as renderAccounts)
+        let accBalance = 0;
+        try {
+          if (typeof txs !== 'undefined' && Array.isArray(txs)) {
+            const accTxs = txs.filter(t => t.account === a.id);
+            const inc = accTxs.filter(t => t.type === 'income').reduce((s, t) => s + (t.amountSAR || 0), 0);
+            const exp = accTxs.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amountSAR || 0), 0);
+            accBalance = inc - exp;
+            // Show in account's currency (or base if not set)
+            if (a.currency && a.currency !== 'SAR' && typeof sarToCur === 'function') {
+              accBalance = sarToCur(accBalance, a.currency);
+            }
+          }
+        } catch(e) {}
+        const balStr = accBalance.toLocaleString('en-US', {maximumFractionDigits:0});
+        const symStr = a.currency === 'EGP' ? 'ج.م' : (a.currency === 'USD' ? '$' : (a.currency === 'EUR' ? '€' : 'ر.س'));
+        opt.textContent = `${a.emoji || '🏦'} ${a.name} — ${balStr} ${symStr}`;
         accSel.appendChild(opt);
       });
     }
