@@ -3568,7 +3568,106 @@ function renderHome() {
   const mood = savingsRate >= 30 ? '🤩' : savingsRate >= 15 ? '😊' : savingsRate >= 0 ? '🙂' : savingsRate >= -10 ? '😐' : '😟';
   const moodColor = savingsRate >= 15 ? 'var(--green)' : savingsRate >= 0 ? 'var(--accent)' : 'var(--red)';
 
-  let html = `<div class="hero-card">
+  let html = '';
+
+  // ═══════ CASH-FLOW FORECAST (Safe-to-Spend) ═══════
+  // Compute total cash across all accounts (in base currency)
+  let totalCashBase = 0;
+  try {
+    for (const acc of (accounts || [])) {
+      if (acc.archived) continue;
+      const accCur = acc.currency || 'SAR';
+      const balSAR = curToSAR(Number(acc.balance) || 0, accCur);
+      totalCashBase += toBase(balSAR);
+    }
+  } catch(e) {}
+
+  // Compute upcoming installment commitments (this month, unpaid)
+  let upcomingInstallmentsBase = 0;
+  try {
+    for (const inst of (installments || [])) {
+      const paid = Number(inst.paidMonths) || 0;
+      const total = Number(inst.totalMonths) || 0;
+      if (paid >= total) continue;
+      const monthly = Number(inst.monthlyPayment) || Number(inst.monthlyAmount) || 0;
+      if (!monthly) continue;
+      const instCur = inst.currency || 'SAR';
+      upcomingInstallmentsBase += toBase(curToSAR(monthly, instCur));
+    }
+  } catch(e) {}
+
+  // Compute outstanding credit card dues (in base currency)
+  let cardDuesBase = 0;
+  try {
+    for (const card of (window.creditCards || [])) {
+      // Sum balance same way as calcCard
+      let purchases = 0, fees = 0, payments = 0, refunds = 0;
+      for (const t of (card.transactions || [])) {
+        const a = Math.abs(Number(t.amount) || 0);
+        if (t.type === 'purchase') purchases += a;
+        else if (t.type === 'fee') fees += a;
+        else if (t.type === 'payment') payments += a;
+        else if (t.type === 'refund') refunds += a;
+      }
+      const bal = purchases + fees - payments - refunds;
+      if (bal > 0) {
+        const cardCur = card.currency || 'SAR';
+        cardDuesBase += toBase(curToSAR(bal, cardCur));
+      }
+    }
+  } catch(e) {}
+
+  const totalCommitmentsBase = upcomingInstallmentsBase + cardDuesBase;
+  const safeToSpendBase = totalCashBase - totalCommitmentsBase;
+  const isSafe = safeToSpendBase >= 500;
+  const isWarning = safeToSpendBase > 0 && safeToSpendBase < 500;
+  const isDanger = safeToSpendBase <= 0;
+  const safeColor = isDanger ? '#ef4444' : (isWarning ? '#f59e0b' : '#10b981');
+  const safeBgFrom = isDanger ? '#7f1d1d' : (isWarning ? '#78350f' : '#064e3b');
+  const safeBgTo = isDanger ? '#450a0a' : (isWarning ? '#451a03' : '#022c22');
+  const statusLabel = isDanger ? '⚠️ انتبه — صرفك زاد عن مدخولك'
+                     : isWarning ? '⚠ انتبه لمصاريفك'
+                     : '✅ وضع مالي مستقر';
+
+  // Only show forecast if user has at least one account/card/installment
+  const showForecast = (accounts && accounts.length > 0) &&
+                       ((window.creditCards && window.creditCards.length > 0) ||
+                        (installments && installments.length > 0));
+
+  if (showForecast) {
+    html += `
+      <div onclick="document.getElementById('recurringHubModal')?.classList.add('open');if(typeof renderRecurringHub==='function')renderRecurringHub()"
+           style="background:linear-gradient(135deg,${safeBgFrom},${safeBgTo});color:#fff;border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.08)">
+        <div style="position:absolute;top:-40px;left:-40px;width:140px;height:140px;background:rgba(255,255,255,.05);border-radius:50%"></div>
+        <div style="position:relative;z-index:1">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+            <div>
+              <div style="font-size:11px;opacity:.9;font-weight:700;letter-spacing:.5px">💼 المبلغ الحر المتاح للصرف</div>
+              <div style="font-size:9px;opacity:.65;margin-top:2px">(Safe-to-Spend)</div>
+            </div>
+            <div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:4px 10px;font-size:10px;font-weight:700;flex-shrink:0">
+              ${statusLabel}
+            </div>
+          </div>
+          <div style="font-size:26px;font-weight:900;direction:ltr;color:${safeColor === '#10b981' ? '#bef264' : safeColor === '#f59e0b' ? '#fef08a' : '#fca5a5'}">
+            ${fmt(safeToSpendBase, 0)} <span style="font-size:13px;opacity:.85">${sym}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;font-size:11px">
+            <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:6px 10px">
+              <div style="font-size:9px;opacity:.85;font-weight:700">💰 إجمالي السيولة</div>
+              <div style="font-weight:900;direction:ltr;margin-top:2px">${fmt(totalCashBase, 0)}</div>
+            </div>
+            <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:6px 10px">
+              <div style="font-size:9px;opacity:.85;font-weight:700">📋 التزامات قادمة</div>
+              <div style="font-weight:900;direction:ltr;margin-top:2px;color:${cardDuesBase > 0 ? '#fca5a5' : 'inherit'}">${fmt(totalCommitmentsBase, 0)}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  html += `<div class="hero-card">
     <div class="hero-bg-orb"></div>
     <div class="hero-greet-line">
       <span class="hero-emoji">${mood}</span>
@@ -23119,11 +23218,17 @@ setTimeout(() => {
       `}
 
       <!-- Action buttons -->
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:10px">
         <button onclick="window.ccActionPurchase('${cardId}')" style="background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">🛒 مشترى</button>
         <button onclick="window.ccActionPayment('${cardId}')" style="background:var(--card2);color:var(--green);border:1px solid var(--border);border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">💵 سداد</button>
         <button onclick="window.openCardPdfImport('${cardId}')" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📄 رفع PDF</button>
         <button onclick="window.openCardReport('${cardId}')" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📊 تقرير</button>
+      </div>
+
+      <!-- Signature/Pro buttons: bank-balance adjustment + rewards -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+        <button onclick="window.ccAdjustSignature('${cardId}')" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:0;border-radius:10px;padding:10px;font-weight:900;font-family:inherit;font-size:11px;cursor:pointer">⚖️ تسوية مع البنك</button>
+        <button onclick="window.ccCalcCashback('${cardId}')" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:0;border-radius:10px;padding:10px;font-weight:900;font-family:inherit;font-size:11px;cursor:pointer">💎 النقاط/الكاش باك</button>
       </div>
 
       <!-- Statement period card (the statement view) -->
@@ -23417,6 +23522,200 @@ setTimeout(() => {
     toast('✅ رجع للحساب التلقائي', 'success');
     document.getElementById('ccSimpleModal').classList.remove('open');
     renderCardDetail(cardId);
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // SIGNATURE / PRO HELPERS
+  // 1) Adjust balance to match exact bank app (handles FX margin,
+  //    sneaky fees, etc.)
+  // 2) Calculate rewards points / cashback estimate
+  // ═══════════════════════════════════════════════════════════
+
+  window.ccAdjustSignature = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const r = calcCard(card);
+    const cardSym = symFor(card.currency);
+    ensureSimpleModal();
+    document.getElementById('ccSimpleTitle').textContent = '⚖️ تسوية الرصيد مع البنك';
+    document.getElementById('ccSimpleBody').innerHTML = `
+      <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:10px;margin-bottom:12px;font-size:11px;line-height:1.7">
+        <div style="font-weight:900;color:#f59e0b;margin-bottom:4px">⚖️ تسوية مع البنك</div>
+        <div style="color:var(--text)">
+          لو الرصيد في تطبيق البنك مختلف عن اللي في "مصاريفي"، اكتب الرقم الحقيقي
+          والبرنامج هيضيف عملية تسوية تلقائية لسد الفرق (رسوم تدبير عملة، رسوم خفية، إلخ).
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-lbl">📱 الرصيد الحالي في "مصاريفي"</div>
+        <input class="form-inp" value="${fmt(r.balance)} ${cardSym}" readonly style="direction:ltr;background:var(--card2);color:var(--muted)">
+      </div>
+
+      <div class="form-row">
+        <div class="form-lbl">🏦 الرصيد في تطبيق البنك بالظبط</div>
+        <input id="ccAdjBankBal" class="form-inp" type="number" step="0.01" inputmode="decimal" placeholder="مثال: ${fmt(r.balance)}" style="direction:ltr">
+        <div style="font-size:10px;color:var(--muted);margin-top:6px">اكتب الرقم اللي ظاهر في تطبيق البنك الآن</div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-lbl">📝 سبب الفرق (اختياري)</div>
+        <input id="ccAdjReason" class="form-inp" placeholder="مثال: رسوم تدبير عملة، اشتراك سنوي...">
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="save-btn" onclick="window.ccApplyAdjust('${cardId}')" style="flex:1;background:linear-gradient(135deg,#f59e0b,#d97706)">⚖️ ضبط الرصيد</button>
+        <button onclick="document.getElementById('ccSimpleModal').classList.remove('open')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700;font-family:'Cairo',sans-serif">إلغاء</button>
+      </div>
+    `;
+    document.getElementById('ccSimpleModal').classList.add('open');
+    setTimeout(() => document.getElementById('ccAdjBankBal')?.focus(), 100);
+  };
+
+  window.ccApplyAdjust = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const r = calcCard(card);
+    const v = document.getElementById('ccAdjBankBal').value.trim();
+    if (!v) { toast('اكتب الرصيد من البنك', 'error'); return; }
+    const bankBal = parseFloat(v);
+    if (isNaN(bankBal) || bankBal < 0) { toast('قيمة غير صحيحة', 'error'); return; }
+    const reason = document.getElementById('ccAdjReason').value.trim();
+    const diff = bankBal - r.balance;
+    if (Math.abs(diff) < 0.01) {
+      toast('الرصيد متطابق بالفعل ✅', 'success');
+      document.getElementById('ccSimpleModal').classList.remove('open');
+      return;
+    }
+    const todayStr = new Date().toISOString().slice(0,10);
+    const adjTx = {
+      id: 'adj_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+      date: todayStr,
+      time: '12:00',
+      name: reason || (diff > 0 ? 'تسوية: فروق بنكية (رسوم/تدبير)' : 'تسوية: تعديل رصيد (مرتجع/خصم)'),
+      amount: Math.abs(diff),
+      type: diff > 0 ? 'fee' : 'refund',  // fee adds to balance, refund removes
+      category: 'تسوية',
+      cat: 'تسوية',
+      note: 'تسوية تلقائية مع البنك',
+      statementMonth: todayStr.slice(0,7),
+      adjustment: true,
+      createdAt: new Date().toISOString()
+    };
+    if (!Array.isArray(card.transactions)) card.transactions = [];
+    card.transactions.push(adjTx);
+    saveAll();
+    toast(`✅ تم ضبط الرصيد (${diff > 0 ? '+' : ''}${diff.toFixed(2)})`, 'success');
+    document.getElementById('ccSimpleModal').classList.remove('open');
+    renderCardDetail(cardId);
+  };
+
+  // ─── Rewards / Cashback estimator ────────────────────
+  // Different cards have different earning rates. We expose configurable
+  // rate stored on card.rewardRate (points per currency unit) and
+  // card.rewardType ('points' | 'cashback_pct').
+  window.ccCalcCashback = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const cardSym = symFor(card.currency);
+    const r = calcCard(card);
+
+    // Default to "points" with 5 points/SAR (Al Rajhi Signature default)
+    const rewardType = card.rewardType || 'points';
+    const rewardRate = Number(card.rewardRate) || (rewardType === 'cashback_pct' ? 1 : 5);
+
+    let totalPoints = 0, totalCashback = 0;
+    // Period-based: this month and lifetime
+    const thisMonthKey = new Date().toISOString().slice(0,7);
+    let monthSpend = 0, lifetimeSpend = 0;
+    for (const t of (card.transactions||[])) {
+      if (t.type !== 'purchase') continue;
+      // Skip adjustment transactions from rewards calc
+      if (t.adjustment || t.category === 'تسوية') continue;
+      const a = Math.abs(Number(t.amount)||0);
+      lifetimeSpend += a;
+      const tkey = normalizePeriodKey(t.statementMonth, t.date);
+      if (tkey === thisMonthKey) monthSpend += a;
+    }
+    if (rewardType === 'points') {
+      totalPoints = lifetimeSpend * rewardRate;
+    } else {
+      totalCashback = lifetimeSpend * (rewardRate / 100);
+    }
+    const thisMonthPoints = monthSpend * rewardRate;
+    const thisMonthCashback = monthSpend * (rewardRate / 100);
+
+    ensureSimpleModal();
+    document.getElementById('ccSimpleTitle').textContent = '💎 النقاط والكاش باك';
+    document.getElementById('ccSimpleBody').innerHTML = `
+      <div style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:14px;padding:14px;margin-bottom:14px">
+        <div style="font-size:11px;opacity:.9;font-weight:700;letter-spacing:1px">${rewardType === 'points' ? '💎 إجمالي النقاط المتوقعة' : '💰 إجمالي الكاش باك'}</div>
+        <div style="font-size:26px;font-weight:900;margin-top:4px;direction:ltr">
+          ${rewardType === 'points' ? fmt(totalPoints, 0) + ' نقطة' : fmt(totalCashback) + ' ' + cardSym}
+        </div>
+        <div style="font-size:11px;opacity:.85;margin-top:6px">
+          مقابل إنفاق <b style="direction:ltr">${fmt(lifetimeSpend)} ${cardSym}</b>
+        </div>
+      </div>
+
+      <div style="background:var(--card2);border-radius:10px;padding:10px;margin-bottom:12px;font-size:12px;line-height:1.9">
+        <div style="font-weight:900;color:var(--accent);margin-bottom:6px">📅 هذا الشهر</div>
+        <div style="display:flex;justify-content:space-between">
+          <span>الإنفاق:</span>
+          <b style="direction:ltr">${fmt(monthSpend)} ${cardSym}</b>
+        </div>
+        <div style="display:flex;justify-content:space-between;color:var(--green)">
+          <span>${rewardType === 'points' ? 'النقاط المكتسبة:' : 'الكاش باك:'}</span>
+          <b style="direction:ltr">${rewardType === 'points' ? fmt(thisMonthPoints, 0) + ' نقطة' : fmt(thisMonthCashback) + ' ' + cardSym}</b>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-lbl">🎁 نوع المكافأة</div>
+        <select id="ccRewardType" class="form-inp">
+          <option value="points" ${rewardType==='points'?'selected':''}>💎 نقاط (Points)</option>
+          <option value="cashback_pct" ${rewardType==='cashback_pct'?'selected':''}>💰 كاش باك (%)</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-lbl">📊 المعدّل <span style="font-weight:400;color:var(--muted);font-size:10px" id="ccRewardRateHint">(نقاط لكل ${cardSym})</span></div>
+        <input id="ccRewardRate" class="form-inp" type="number" step="0.01" inputmode="decimal" value="${rewardRate}" style="direction:ltr">
+        <div style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.6">
+          الراجحي سيجنتشر: <b>5 نقاط/ريال</b> • Visa Infinite: <b>3 نقاط/ريال</b> • كاش باك: <b>1-2%</b>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="save-btn" onclick="window.ccSaveRewardRate('${cardId}')" style="flex:1;background:linear-gradient(135deg,#10b981,#059669)">💾 حفظ وإعادة حساب</button>
+        <button onclick="document.getElementById('ccSimpleModal').classList.remove('open')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700;font-family:'Cairo',sans-serif">إغلاق</button>
+      </div>
+    `;
+    // Live-update hint when type changes
+    setTimeout(() => {
+      const typeSel = document.getElementById('ccRewardType');
+      const hint = document.getElementById('ccRewardRateHint');
+      if (typeSel && hint) {
+        typeSel.addEventListener('change', () => {
+          hint.textContent = typeSel.value === 'points' ? `(نقاط لكل ${cardSym})` : '(نسبة % من الإنفاق)';
+        });
+      }
+    }, 50);
+    document.getElementById('ccSimpleModal').classList.add('open');
+  };
+
+  window.ccSaveRewardRate = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const t = document.getElementById('ccRewardType').value;
+    const v = parseFloat(document.getElementById('ccRewardRate').value);
+    if (isNaN(v) || v < 0) { toast('قيمة غير صحيحة', 'error'); return; }
+    card.rewardType = t;
+    card.rewardRate = v;
+    saveAll();
+    toast('✅ تم الحفظ', 'success');
+    // Reopen to show updated calculation
+    window.ccCalcCashback(cardId);
   };
 
   // ═══════════════════════════════════════════════════════════
