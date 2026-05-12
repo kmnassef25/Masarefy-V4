@@ -319,6 +319,12 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);displ
 .handle::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:100%;cursor:pointer;}
 .handle::before{content:'اضغط للإغلاق ↓';position:absolute;top:100%;left:50%;transform:translateX(-50%);font-size:10px;color:var(--muted);white-space:nowrap;margin-top:2px;opacity:.7;font-weight:700;pointer-events:none;}
 .modal-title{font-size:15px;font-weight:900;margin-bottom:14px;text-align:center;}
+/* V29 dynamic-modal helper classes (used by PDF import, report, edit) */
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.modal-head .modal-title{margin-bottom:0;text-align:right;flex:1;}
+.modal-body{padding-top:4px;}
+.close-x{background:var(--card2);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;flex-shrink:0;font-family:inherit;}
+.close-x:active{background:var(--accent);color:#000;}
 
 /* ── SETTINGS MODAL ── */
 .settings-sheet{background:var(--card);border-radius:24px 24px 0 0;border-top:1px solid var(--border);padding:16px 16px 30px;width:100%;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,0,.67,0);max-height:90vh;overflow-y:auto;position:relative;}
@@ -20012,7 +20018,10 @@ setTimeout(() => {
       date, time, name, amount, cat, note,
       type: 'purchase',
       currency: card.currency,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      // V29 aliases — both naming schemes used so all renderers work
+      category: cat,
+      statementMonth: (date || '').slice(0,7)
     };
 
     // Handle installment integration
@@ -20049,7 +20058,7 @@ setTimeout(() => {
     renderCreditCards();
     updateCardMenuCount();
     // Re-open detail if was previously viewing
-    if (window.__lastViewedCardId) openCardDetail(window.__lastViewedCardId);
+    if (window.__lastViewedCardId && typeof openCardDetail === 'function') openCardDetail(window.__lastViewedCardId);
   };
 
   // ─── PAYMENT ─────────────────────────────────────────
@@ -20147,7 +20156,10 @@ setTimeout(() => {
       cat: 'سداد',
       note: note || `سداد ${card.name}`,
       currency: card.currency,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      // V29 aliases
+      category: 'سداد',
+      statementMonth: (date || '').slice(0,7)
     };
 
     card.transactions = card.transactions || [];
@@ -21320,7 +21332,7 @@ setTimeout(() => {
     m.id = 'ccPdfImportModal';
     m.setAttribute('onclick', "closeIfOut(event,'ccPdfImportModal')");
     m.innerHTML = `
-      <div class="modal" style="max-width:520px">
+      <div class="sheet" style="max-width:520px;margin:0 auto">
         <div class="modal-head">
           <div class="modal-title">📄 رفع كشف حساب PDF</div>
           <button class="close-x" onclick="document.getElementById('ccPdfImportModal').classList.remove('open')">×</button>
@@ -21550,7 +21562,7 @@ setTimeout(() => {
       m.id = 'ccReportModal';
       m.setAttribute('onclick', "closeIfOut(event,'ccReportModal')");
       m.innerHTML = `
-        <div class="modal" style="max-width:600px">
+        <div class="sheet" style="max-width:600px;margin:0 auto">
           <div class="modal-head">
             <div class="modal-title">📊 تقرير كامل</div>
             <button class="close-x" onclick="document.getElementById('ccReportModal').classList.remove('open')">×</button>
@@ -22054,7 +22066,7 @@ setTimeout(() => {
     m.id = 'ccPdfImportModalV2';
     m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
     m.innerHTML = `
-      <div class="modal" style="max-width:600px;max-height:94vh;display:flex;flex-direction:column">
+      <div class="sheet" style="max-width:600px;max-height:94vh;display:flex;flex-direction:column;margin:0 auto">
         <div class="modal-head" style="flex-shrink:0">
           <div class="modal-title">📄 استيراد كشف PDF</div>
           <button class="close-x" onclick="document.getElementById('ccPdfImportModalV2').classList.remove('open')">×</button>
@@ -22842,6 +22854,7 @@ setTimeout(() => {
   window.openCardDetail = function(cardId) {
     const card = findCard(cardId);
     if (!card) return;
+    window.__lastViewedCardId = cardId;
     let modal = document.getElementById('ccDetailModal');
     if (modal) modal.classList.add('open');
     renderCardDetail(cardId);
@@ -23096,14 +23109,14 @@ setTimeout(() => {
     m = document.createElement('div');
     m.className = 'overlay';
     m.id = 'ccSimpleModal';
+    // Higher z-index than other overlays so it appears on top
+    m.style.zIndex = '300';
     m.onclick = (e) => { if (e.target === m) m.classList.remove('open'); };
     m.innerHTML = `
-      <div class="modal" style="max-width:480px">
-        <div class="modal-head">
-          <div class="modal-title" id="ccSimpleTitle">—</div>
-          <button class="close-x" onclick="document.getElementById('ccSimpleModal').classList.remove('open')">×</button>
-        </div>
-        <div class="modal-body" id="ccSimpleBody"></div>
+      <div class="sheet">
+        <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+        <div class="modal-title" id="ccSimpleTitle">—</div>
+        <div id="ccSimpleBody"></div>
       </div>
     `;
     document.body.appendChild(m);
@@ -23111,133 +23124,34 @@ setTimeout(() => {
   }
 
   window.ccActionPurchase = function(cardId) {
-    const card = findCard(cardId);
-    if (!card) return;
-    ensureSimpleModal();
-    document.getElementById('ccSimpleTitle').textContent = '🛒 مشترى جديد';
-    const cardSym = symFor(card.currency);
-    document.getElementById('ccSimpleBody').innerHTML = `
-      <div style="display:grid;gap:10px">
-        <div>
-          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">اسم المتجر / الوصف</label>
-          <input id="ccPurchName" class="inp" placeholder="مثلاً: امازون، نون، مطعم...">
-        </div>
-        <div>
-          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">المبلغ (${cardSym})</label>
-          <input id="ccPurchAmount" class="inp" type="number" step="0.01" placeholder="0.00">
-        </div>
-        <div>
-          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">الفئة</label>
-          <select id="ccPurchCat" class="inp">
-            <option value="مأكولات">🍔 مأكولات</option>
-            <option value="مشتريات">🛍 مشتريات</option>
-            <option value="سفر">✈ سفر</option>
-            <option value="ترفيه">🎮 ترفيه</option>
-            <option value="مواصلات">🚗 مواصلات</option>
-            <option value="فواتير">💡 فواتير</option>
-            <option value="صحة">💊 صحة</option>
-            <option value="تعليم">📚 تعليم</option>
-            <option value="أخرى" selected>📦 أخرى</option>
-          </select>
-        </div>
-        <div>
-          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">التاريخ</label>
-          <input id="ccPurchDate" class="inp" type="date" value="${today()}">
-        </div>
-        <div>
-          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">ملاحظات (اختياري)</label>
-          <input id="ccPurchNote" class="inp" placeholder="...">
-        </div>
-        <button class="save-btn" onclick="window.ccSavePurchase('${cardId}')" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);margin-top:6px">حفظ المشترى</button>
-      </div>
-    `;
-    document.getElementById('ccSimpleModal').classList.add('open');
-    setTimeout(() => document.getElementById('ccPurchName')?.focus(), 100);
+    // Use the V26 proper modal (already styled with overlay backdrop)
+    if (typeof window.openCardPurchaseModal === 'function') {
+      window.openCardPurchaseModal(cardId);
+      // Remember which card we came from so we can re-render its detail after save
+      window.__lastViewedCardId = cardId;
+      return;
+    }
+    // No fallback — V26 modal should always exist
+    toast('شاشة الشراء غير متاحة', 'error');
   };
 
+  // (Keep ccSavePurchase as a no-op alias so any old references don't break)
   window.ccSavePurchase = function(cardId) {
-    const card = findCard(cardId);
-    if (!card) return;
-    const name = document.getElementById('ccPurchName').value.trim();
-    const amount = parseFloat(document.getElementById('ccPurchAmount').value);
-    const category = document.getElementById('ccPurchCat').value;
-    const date = document.getElementById('ccPurchDate').value;
-    const note = document.getElementById('ccPurchNote').value.trim();
-    if (!name) { toast('اكتب اسم المتجر', 'error'); return; }
-    if (isNaN(amount) || amount <= 0) { toast('مبلغ غير صحيح', 'error'); return; }
-    if (!date) { toast('اختر تاريخ', 'error'); return; }
-    if (!Array.isArray(card.transactions)) card.transactions = [];
-    card.transactions.push({
-      id: newId('cctx'),
-      date, time: '12:00', name, amount, category,
-      type: 'purchase', note,
-      statementMonth: date.slice(0,7),
-      createdAt: new Date().toISOString()
-    });
-    saveAll();
-    toast('✅ تم إضافة المشترى', 'success');
-    document.getElementById('ccSimpleModal').classList.remove('open');
-    renderCardDetail(cardId);
+    if (typeof window.saveCardPurchase === 'function') return window.saveCardPurchase();
   };
 
   window.ccActionPayment = function(cardId) {
-    const card = findCard(cardId);
-    if (!card) return;
-    const r = calcCard(card);
-    ensureSimpleModal();
-    document.getElementById('ccSimpleTitle').textContent = '💵 سداد';
-    const cardSym = symFor(card.currency);
-    document.getElementById('ccSimpleBody').innerHTML = `
-      <div style="background:linear-gradient(135deg,#10b98115,#05966915);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:10px;margin-bottom:10px;font-size:11px;line-height:1.7">
-        <div style="display:flex;justify-content:space-between"><span>المستحق حالياً:</span><b style="color:var(--red);direction:ltr">${fmt(r.balance)} ${cardSym}</b></div>
-        <div style="display:flex;justify-content:space-between"><span>الحد الأدنى:</span><b style="color:#f59e0b;direction:ltr">${fmt(r.minDue)} ${cardSym}</b></div>
-      </div>
-      <div style="display:grid;gap:10px">
-        <div>
-          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">المبلغ (${cardSym})</label>
-          <input id="ccPayAmt" class="inp" type="number" step="0.01" placeholder="0.00">
-          <div style="display:flex;gap:6px;margin-top:6px">
-            <button onclick="document.getElementById('ccPayAmt').value=${r.minDue.toFixed(2)}" style="flex:1;background:var(--card2);color:#f59e0b;border:1px solid var(--border);border-radius:6px;padding:6px;font-size:10px;font-weight:700;font-family:inherit;cursor:pointer">الحد الأدنى</button>
-            <button onclick="document.getElementById('ccPayAmt').value=${(r.balance/2).toFixed(2)}" style="flex:1;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px;font-size:10px;font-weight:700;font-family:inherit;cursor:pointer">النص</button>
-            <button onclick="document.getElementById('ccPayAmt').value=${r.balance.toFixed(2)}" style="flex:1;background:var(--card2);color:var(--green);border:1px solid var(--border);border-radius:6px;padding:6px;font-size:10px;font-weight:700;font-family:inherit;cursor:pointer">الكامل</button>
-          </div>
-        </div>
-        <div>
-          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">التاريخ</label>
-          <input id="ccPayDate" class="inp" type="date" value="${today()}">
-        </div>
-        <div>
-          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">من حساب (اختياري)</label>
-          <input id="ccPayFrom" class="inp" placeholder="مثلاً: حساب الراتب">
-        </div>
-        <button class="save-btn" onclick="window.ccSavePayment('${cardId}')" style="background:linear-gradient(135deg,#10b981,#059669);margin-top:6px">حفظ السداد</button>
-      </div>
-    `;
-    document.getElementById('ccSimpleModal').classList.add('open');
+    // Use the V26 proper modal (already styled with overlay backdrop)
+    if (typeof window.openCardPaymentModal === 'function') {
+      window.openCardPaymentModal(cardId);
+      window.__lastViewedCardId = cardId;
+      return;
+    }
+    toast('شاشة السداد غير متاحة', 'error');
   };
 
   window.ccSavePayment = function(cardId) {
-    const card = findCard(cardId);
-    if (!card) return;
-    const amount = parseFloat(document.getElementById('ccPayAmt').value);
-    const date = document.getElementById('ccPayDate').value;
-    const from = document.getElementById('ccPayFrom').value.trim();
-    if (isNaN(amount) || amount <= 0) { toast('مبلغ غير صحيح', 'error'); return; }
-    if (!date) { toast('اختر تاريخ', 'error'); return; }
-    if (!Array.isArray(card.transactions)) card.transactions = [];
-    card.transactions.push({
-      id: newId('cctx'),
-      date, time: '12:00',
-      name: from ? `سداد من ${from}` : 'سداد',
-      amount, category: 'سداد',
-      type: 'payment', note: '',
-      statementMonth: date.slice(0,7),
-      createdAt: new Date().toISOString()
-    });
-    saveAll();
-    toast('✅ تم تسجيل السداد', 'success');
-    document.getElementById('ccSimpleModal').classList.remove('open');
-    renderCardDetail(cardId);
+    if (typeof window.saveCardPayment === 'function') return window.saveCardPayment();
   };
 
   // ═══════════════════════════════════════════════════════════
@@ -23251,39 +23165,43 @@ setTimeout(() => {
     ensureSimpleModal();
     document.getElementById('ccSimpleTitle').textContent = '✏️ تعديل العملية';
     const cardSym = symFor(card.currency);
+    // Use the same form classes as the rest of the app so it looks consistent
     document.getElementById('ccSimpleBody').innerHTML = `
-      <div style="display:grid;gap:10px">
-        <div>
-          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">النوع</label>
-          <select id="ccEditType" class="inp">
-            <option value="purchase" ${tx.type==='purchase'?'selected':''}>🛒 شراء</option>
-            <option value="payment" ${tx.type==='payment'?'selected':''}>💵 سداد</option>
-            <option value="fee" ${tx.type==='fee'?'selected':''}>💸 رسوم / فوائد</option>
-            <option value="refund" ${tx.type==='refund'?'selected':''}>↩ استرداد</option>
-            <option value="plan_move" ${tx.type==='plan_move'?'selected':''}>↔ تحويل لقسط (لا يؤثر)</option>
-          </select>
+      <div class="form-row">
+        <div class="form-lbl">🏷️ نوع العملية</div>
+        <select id="ccEditType" class="form-inp">
+          <option value="purchase" ${tx.type==='purchase'?'selected':''}>🛒 شراء</option>
+          <option value="payment" ${tx.type==='payment'?'selected':''}>💵 سداد</option>
+          <option value="fee" ${tx.type==='fee'?'selected':''}>💸 رسوم / فوائد</option>
+          <option value="refund" ${tx.type==='refund'?'selected':''}>↩ استرداد</option>
+          <option value="plan_move" ${tx.type==='plan_move'?'selected':''}>↔ تحويل لقسط (لا يؤثر على الرصيد)</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">📛 الاسم / الوصف</div>
+        <input id="ccEditName" class="form-inp" value="${esc(tx.name||'')}" placeholder="مثال: نون، أمازون...">
+      </div>
+      <div class="two-col">
+        <div class="form-row">
+          <div class="form-lbl">💵 المبلغ (${cardSym})</div>
+          <input id="ccEditAmount" class="form-inp" type="number" step="0.01" value="${tx.amount||0}" style="direction:ltr">
         </div>
-        <div>
-          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">الاسم / الوصف</label>
-          <input id="ccEditName" class="inp" value="${esc(tx.name||'')}">
+        <div class="form-row">
+          <div class="form-lbl">📅 التاريخ</div>
+          <input id="ccEditDate" class="form-inp" type="date" value="${tx.date||today()}" style="direction:ltr">
         </div>
-        <div>
-          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">المبلغ (${cardSym})</label>
-          <input id="ccEditAmount" class="inp" type="number" step="0.01" value="${tx.amount||0}">
-        </div>
-        <div>
-          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">التاريخ</label>
-          <input id="ccEditDate" class="inp" type="date" value="${tx.date||today()}">
-        </div>
-        <div>
-          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">الفئة</label>
-          <input id="ccEditCat" class="inp" value="${esc(tx.category||'')}">
-        </div>
-        <div>
-          <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">ملاحظات</label>
-          <input id="ccEditNote" class="inp" value="${esc(tx.note||'')}">
-        </div>
-        <button class="save-btn" onclick="window.ccSaveEditTx('${cardId}','${txId}')" style="margin-top:6px">حفظ التعديل</button>
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">📂 الفئة</div>
+        <input id="ccEditCat" class="form-inp" value="${esc(tx.category||tx.cat||'')}" placeholder="مثال: مأكولات، تسوق...">
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">📝 ملاحظات (اختياري)</div>
+        <input id="ccEditNote" class="form-inp" value="${esc(tx.note||'')}" placeholder="...">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="save-btn" onclick="window.ccSaveEditTx('${cardId}','${txId}')" style="flex:1">💾 حفظ التعديل</button>
+        <button onclick="document.getElementById('ccSimpleModal').classList.remove('open')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700;font-family:'Cairo',sans-serif">إلغاء</button>
       </div>
     `;
     document.getElementById('ccSimpleModal').classList.add('open');
@@ -23307,7 +23225,9 @@ setTimeout(() => {
     tx.name = newName;
     tx.amount = newAmt;
     tx.date = newDate;
+    // Write BOTH naming conventions
     tx.category = newCat;
+    tx.cat = newCat;
     tx.note = newNote;
     tx.statementMonth = newDate.slice(0,7);
     tx.editedAt = new Date().toISOString();
@@ -23411,7 +23331,7 @@ setTimeout(() => {
       m.id = 'ccReportModal';
       m.onclick = (e) => { if (e.target === m) m.classList.remove('open'); };
       m.innerHTML = `
-        <div class="modal" style="max-width:560px">
+        <div class="sheet" style="max-width:560px;margin:0 auto">
           <div class="modal-head">
             <div class="modal-title">📊 التقرير الكامل</div>
             <button class="close-x" onclick="document.getElementById('ccReportModal').classList.remove('open')">×</button>
