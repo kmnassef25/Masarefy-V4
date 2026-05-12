@@ -22652,6 +22652,105 @@ setTimeout(() => {
     };
   }
 
+  // ─── COMPREHENSIVE PAYMENT-DUE CALCULATION ────────────
+  // Mirrors how the bank actually computes the minimum payment:
+  //   minimumDue = (5% × current closing balance)
+  //              + monthly installments (Tasaheel + linked installments)
+  //              + any past-due (unpaid carry-forward from prior periods)
+  //              + late fees (if any)
+  //
+  // Also computes:
+  //   - currentStmt: the latest statement period
+  //   - pastDue: amount that should already have been paid but wasn't
+  //   - dueDate: next payment deadline (statement close + due-day offset)
+  //   - daysUntilDue: countdown
+  //   - totalOutstanding: full balance owed if customer wants to pay everything
+  function calcPaymentDue(card) {
+    const r = calcCard(card);
+    const periods = listPeriods(card);
+    const currentPeriodKey = periods[0] || (new Date().toISOString().slice(0,7));
+
+    // Current statement (closing balance for the latest period)
+    const currentStmt = calcStatement(card, currentPeriodKey);
+
+    // Past-due: anything from periods BEFORE the current one that hasn't been paid
+    // We approximate by: sum of closings for previous periods minus payments made after them
+    // Simpler approach: if r.balance > currentStmt.closing, the difference is carry-forward
+    const pastDue = Math.max(0, r.balance - currentStmt.closing);
+
+    // Active installments linked to this card (Tasaheel + other)
+    let linkedInsts = [];
+    let installmentsMonthly = 0;
+    try {
+      if (Array.isArray(window.installments)) {
+        linkedInsts = window.installments.filter(i =>
+          i.linkedCardId === card.id &&
+          (Number(i.paidMonths)||0) < Number(i.totalMonths||0)
+        );
+        for (const i of linkedInsts) {
+          installmentsMonthly += Number(i.monthlyPayment) || 0;
+        }
+      }
+    } catch(e) {}
+
+    // 5% of current closing balance (excluding the installments since those are added separately)
+    const minPct = r.minPct;
+    const fivePctOfCurrent = Math.max(0, currentStmt.closing - installmentsMonthly) * (minPct / 100);
+
+    // Compute auto minimum due
+    const autoMinDue = pastDue + fivePctOfCurrent + installmentsMonthly;
+
+    // Allow manual override stored on the card (`card.manualMinDue`)
+    const manualOverride = (typeof card.manualMinDue === 'number' && card.manualMinDue > 0)
+      ? card.manualMinDue : null;
+    const minimumDue = manualOverride !== null ? manualOverride : autoMinDue;
+
+    // Due date: statement closes on `stmtDay` (or `statementDay`), payment due
+    // `dueDay` of the FOLLOWING month. Example: stmtDay=25, dueDay=15 →
+    // statement closes Sep 25, payment due Oct 15 (but Al Rajhi uses 25th of next month).
+    // Read both naming conventions
+    const stmtDay = Number(card.stmtDay || card.statementDay) || 25;
+    const dueDay = Number(card.dueDay) || 25;
+    const now = new Date();
+    const todayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    // Construct due date for current period
+    // currentPeriodKey is the month the statement closes; due date = dueDay of next month
+    let dueDateObj = null;
+    let daysUntilDue = null;
+    try {
+      if (/^\d{4}-\d{2}$/.test(currentPeriodKey)) {
+        const [yy, mm] = currentPeriodKey.split('-').map(Number);
+        // Try dueDay in same month if dueDay > stmtDay, else next month
+        let dueYear = yy, dueMonth = mm; // 1-indexed
+        if (dueDay <= stmtDay) {
+          dueMonth = mm + 1;
+          if (dueMonth > 12) { dueMonth = 1; dueYear++; }
+        }
+        dueDateObj = new Date(dueYear, dueMonth - 1, dueDay);
+        daysUntilDue = Math.ceil((dueDateObj.getTime() - todayMs) / (24*60*60*1000));
+      }
+    } catch(e) {}
+
+    return {
+      totalOutstanding: r.balance,
+      pastDue,
+      currentClosing: currentStmt.closing,
+      fivePctOfCurrent,
+      installmentsMonthly,
+      installmentsCount: linkedInsts.length,
+      autoMinDue,
+      manualMinDue: manualOverride,
+      minimumDue,
+      dueDate: dueDateObj ? dueDateObj.toISOString().slice(0,10) : null,
+      dueDateText: dueDateObj
+        ? `${dueDateObj.getDate()}/${dueDateObj.getMonth()+1}/${dueDateObj.getFullYear()}`
+        : '—',
+      daysUntilDue,
+      stmtDay, dueDay,
+      currentPeriodKey
+    };
+  }
+
   // Compute statement for a given period (statementMonth = "YYYY-MM" string,
   // matching the month in which the statement CLOSES).
   // Falls back to grouping by tx.date month if statementMonth not set on tx.
@@ -22885,6 +22984,7 @@ setTimeout(() => {
     if (!state.period) state.period = periods[0] || today().slice(0,7);
 
     const stmt = calcStatement(card, state.period);
+    const pd = calcPaymentDue(card);  // V29.4: comprehensive payment-due calculation
 
     // Linked installments
     let linkedInsts = [];
@@ -22930,6 +23030,93 @@ setTimeout(() => {
           <div style="text-align:left;font-size:9px;opacity:.85;margin-top:2px">${r.utilization.toFixed(1)}% من الحد</div>
         </div>
       </div>
+
+      <!-- ═══════ PAYMENT DUE CARD (V29.4) ═══════ -->
+      ${pd.totalOutstanding > 0 ? `
+        <div style="background:linear-gradient(135deg,#f59e0b 0%,#dc2626 100%);color:#fff;border-radius:16px;padding:16px;margin-bottom:14px;position:relative;overflow:hidden">
+          <div style="position:absolute;top:-40px;left:-40px;width:140px;height:140px;background:rgba(255,255,255,.08);border-radius:50%"></div>
+          <div style="position:relative;z-index:1">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px">
+              <div>
+                <div style="font-size:11px;opacity:.9;font-weight:700;letter-spacing:1px">💰 الواجب سداده</div>
+                ${pd.dueDate ? `
+                  <div style="font-size:11px;margin-top:3px;opacity:.95">
+                    ⏰ آخر موعد: <b>${pd.dueDateText}</b>
+                  </div>
+                ` : ''}
+              </div>
+              ${pd.daysUntilDue !== null ? `
+                <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:6px 10px;text-align:center;flex-shrink:0">
+                  ${pd.daysUntilDue < 0 ? `
+                    <div style="font-size:9px;opacity:.9;font-weight:700">⚠ متأخر</div>
+                    <div style="font-size:14px;font-weight:900">${Math.abs(pd.daysUntilDue)} يوم</div>
+                  ` : pd.daysUntilDue === 0 ? `
+                    <div style="font-size:9px;opacity:.9;font-weight:700">🔥 اليوم!</div>
+                    <div style="font-size:14px;font-weight:900">آخر يوم</div>
+                  ` : `
+                    <div style="font-size:9px;opacity:.9;font-weight:700">متبقي</div>
+                    <div style="font-size:14px;font-weight:900">${pd.daysUntilDue} يوم</div>
+                  `}
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Breakdown -->
+            <div style="background:rgba(255,255,255,.12);border-radius:10px;padding:10px;margin-bottom:10px;font-size:11px;line-height:1.9">
+              ${pd.pastDue > 0 ? `
+                <div style="display:flex;justify-content:space-between;color:#fef08a">
+                  <span>⚠ متأخرات شهور سابقة:</span>
+                  <b style="direction:ltr">${fmt(pd.pastDue)}</b>
+                </div>
+              ` : ''}
+              <div style="display:flex;justify-content:space-between">
+                <span>كشف الشهر الحالي:</span>
+                <b style="direction:ltr">${fmt(pd.currentClosing)}</b>
+              </div>
+              ${pd.installmentsCount > 0 ? `
+                <div style="display:flex;justify-content:space-between">
+                  <span>📋 أقساط تساهيل (${pd.installmentsCount}):</span>
+                  <b style="direction:ltr">${fmt(pd.installmentsMonthly)}</b>
+                </div>
+              ` : ''}
+              <div style="display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,.2);padding-top:6px;margin-top:4px">
+                <span>5% من الكشف الحالي:</span>
+                <b style="direction:ltr">${fmt(pd.fivePctOfCurrent)}</b>
+              </div>
+            </div>
+
+            <!-- Minimum due (highlighted) -->
+            <div style="background:rgba(255,255,255,.2);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <div>
+                <div style="font-size:10px;opacity:.9;font-weight:700">الحد الأدنى للسداد</div>
+                ${pd.manualMinDue !== null ? `<div style="font-size:9px;opacity:.85">(يدوي)</div>` : ''}
+              </div>
+              <div style="text-align:left">
+                <div style="font-size:18px;font-weight:900;direction:ltr">${fmt(pd.minimumDue)} <span style="font-size:11px">${cardSym}</span></div>
+              </div>
+            </div>
+
+            <!-- Total outstanding -->
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px">
+              <span style="font-size:11px;opacity:.95;font-weight:700">📊 الإجمالي للسداد كامل:</span>
+              <span style="font-size:14px;font-weight:900;direction:ltr">${fmt(pd.totalOutstanding)} ${cardSym}</span>
+            </div>
+
+            <!-- Quick action: edit min due manually -->
+            <div style="display:flex;gap:6px;margin-top:10px">
+              <button onclick="window.ccPayMinNow('${cardId}')" style="flex:2;background:#fff;color:#dc2626;border:0;border-radius:8px;padding:8px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">💵 سداد الحد الأدنى</button>
+              <button onclick="window.ccEditMinDue('${cardId}')" style="flex:1;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:8px;font-weight:700;font-family:inherit;font-size:11px;cursor:pointer">✏️ تعديل</button>
+            </div>
+          </div>
+        </div>
+      ` : `
+        <!-- No outstanding balance -->
+        <div style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:16px;padding:16px;margin-bottom:14px;text-align:center">
+          <div style="font-size:32px;margin-bottom:4px">✅</div>
+          <div style="font-size:14px;font-weight:900">مفيش مديونيات على البطاقة</div>
+          <div style="font-size:11px;opacity:.85;margin-top:2px">رصيدك صفر، كل حاجة مسددة</div>
+        </div>
+      `}
 
       <!-- Action buttons -->
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px">
@@ -23152,6 +23339,84 @@ setTimeout(() => {
 
   window.ccSavePayment = function(cardId) {
     if (typeof window.saveCardPayment === 'function') return window.saveCardPayment();
+  };
+
+  // ─── Quick: pay the minimum due immediately ──────────
+  window.ccPayMinNow = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const pd = calcPaymentDue(card);
+    if (pd.minimumDue <= 0) { toast('مفيش حد أدنى مطلوب', 'info'); return; }
+    // Open the V26 payment modal pre-filled with minimum due
+    if (typeof window.openCardPaymentModal === 'function') {
+      window.__lastViewedCardId = cardId;
+      window.openCardPaymentModal(cardId);
+      // Pre-fill the amount field
+      setTimeout(() => {
+        const amtEl = document.getElementById('ccPayAmount');
+        if (amtEl) amtEl.value = pd.minimumDue.toFixed(2);
+      }, 100);
+    }
+  };
+
+  // ─── Manually override the minimum-due value ─────────
+  window.ccEditMinDue = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const pd = calcPaymentDue(card);
+    const cardSym = symFor(card.currency);
+    ensureSimpleModal();
+    document.getElementById('ccSimpleTitle').textContent = '✏️ تعديل الحد الأدنى';
+    document.getElementById('ccSimpleBody').innerHTML = `
+      <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);border-radius:10px;padding:10px;margin-bottom:12px;font-size:11px;line-height:1.7">
+        <div style="font-weight:900;color:#3b82f6;margin-bottom:4px">ℹ معلومات الحساب التلقائي:</div>
+        <div style="display:flex;justify-content:space-between"><span>5% من كشف الشهر:</span><b style="direction:ltr">${fmt(pd.fivePctOfCurrent)} ${cardSym}</b></div>
+        <div style="display:flex;justify-content:space-between"><span>أقساط تساهيل:</span><b style="direction:ltr">${fmt(pd.installmentsMonthly)} ${cardSym}</b></div>
+        ${pd.pastDue > 0 ? `<div style="display:flex;justify-content:space-between;color:#f59e0b"><span>متأخرات سابقة:</span><b style="direction:ltr">${fmt(pd.pastDue)} ${cardSym}</b></div>` : ''}
+        <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:4px;margin-top:4px;font-weight:900"><span>الحساب التلقائي:</span><b style="direction:ltr;color:var(--accent)">${fmt(pd.autoMinDue)} ${cardSym}</b></div>
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">💰 الحد الأدنى من البنك (${cardSym})</div>
+        <input id="ccManualMinDue" class="form-inp" type="number" step="0.01" inputmode="decimal" value="${pd.manualMinDue !== null ? pd.manualMinDue : ''}" placeholder="مثال: ${pd.autoMinDue.toFixed(2)}" style="direction:ltr">
+        <div style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.6">
+          اكتب الرقم اللي البنك بيطلبه من كشفك مباشرة (لو مختلف عن الحساب التلقائي).<br>
+          خليها فارغة لو عايز البرنامج يحسب أوتوماتيك.
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="save-btn" onclick="window.ccSaveMinDue('${cardId}')" style="flex:1">💾 حفظ</button>
+        <button onclick="window.ccClearMinDue('${cardId}')" style="background:var(--card2);border:1px solid var(--border);color:var(--accent);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700;font-family:'Cairo',sans-serif">🔄 رجع تلقائي</button>
+        <button onclick="document.getElementById('ccSimpleModal').classList.remove('open')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700;font-family:'Cairo',sans-serif">إلغاء</button>
+      </div>
+    `;
+    document.getElementById('ccSimpleModal').classList.add('open');
+  };
+
+  window.ccSaveMinDue = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const v = document.getElementById('ccManualMinDue').value.trim();
+    if (!v) {
+      delete card.manualMinDue;
+    } else {
+      const n = parseFloat(v);
+      if (isNaN(n) || n < 0) { toast('قيمة غير صحيحة', 'error'); return; }
+      card.manualMinDue = n;
+    }
+    saveAll();
+    toast('✅ تم الحفظ', 'success');
+    document.getElementById('ccSimpleModal').classList.remove('open');
+    renderCardDetail(cardId);
+  };
+
+  window.ccClearMinDue = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    delete card.manualMinDue;
+    saveAll();
+    toast('✅ رجع للحساب التلقائي', 'success');
+    document.getElementById('ccSimpleModal').classList.remove('open');
+    renderCardDetail(cardId);
   };
 
   // ═══════════════════════════════════════════════════════════
