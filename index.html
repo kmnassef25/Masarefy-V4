@@ -24215,13 +24215,16 @@ setTimeout(() => {
 
 <script>
 /* ═══════════════════════════════════════════════════════
-   CUSTOM FIXES — مصاريفي V4 (الحل الجذري)
+   CUSTOM FIXES V5 — مصاريفي
+   • منع الخصم المزدوج عند الشراء بالفيزا (الشراء = البطاقة بس)
+   • زر تراجع/Undo لكل سداد قسط
+   • زر تراجع/Undo لكل سداد فيزا
    ═══════════════════════════════════════════════════════ */
-(function customFixes() {
+(function customFixesV5() {
 
-  // ══════════════════════════════════════════
-  // ١. hero-card دائماً أول الصفحة
-  // ══════════════════════════════════════════
+  // ══════════════════════════════════════════════════════
+  // 1. تثبيت كارت Hero أعلى الشاشة الرئيسية
+  // ══════════════════════════════════════════════════════
   function pinHeroCardToTop() {
     const home = document.getElementById('homeContent');
     if (!home) return;
@@ -24237,9 +24240,10 @@ setTimeout(() => {
   const _homeEl = document.getElementById('homeContent');
   if (_homeEl) homeObs.observe(_homeEl, { childList: true });
 
-  // ══════════════════════════════════════════
-  // ٢. بطاقات الفيزا في picker الحركات
-  // ══════════════════════════════════════════
+  // ══════════════════════════════════════════════════════
+  // 2. ضم بطاقات الفيزا لـ picker اختيار الحساب
+  // (مرة واحدة عند فتح الفورم بدل setInterval)
+  // ══════════════════════════════════════════════════════
   function syncCCToPicker() {
     const picker = document.getElementById('v23TxAccountPicker');
     const sel    = document.getElementById('fAccount');
@@ -24275,50 +24279,50 @@ setTimeout(() => {
       }
     });
   }
-  setInterval(syncCCToPicker, 600);
+  // Sync مرة واحدة فقط لما الفورم يتفتح (بدل interval متعب الموارد)
+  document.addEventListener('click', e => {
+    const t = e.target;
+    if (!t) return;
+    const onclick = (t.getAttribute && t.getAttribute('onclick')) || '';
+    const parentClick = t.closest && t.closest('[onclick]');
+    const clickStr = onclick || (parentClick && parentClick.getAttribute('onclick')) || '';
+    if (clickStr.includes('openAddModal') || clickStr.includes('txModal') || /إضافة|اضافه/.test(t.textContent||'')) {
+      setTimeout(syncCCToPicker, 100);
+      setTimeout(syncCCToPicker, 400);
+    }
+  }, true);
 
-  // ══════════════════════════════════════════
-  // ٣. الحل الجذري: اعتراض saveTx قبل إضافة txs
+  // ══════════════════════════════════════════════════════
+  // 3. منع الخصم المزدوج عند الشراء بالفيزا
   //
-  // الطريقة: نعيد كتابة جزء txs.unshift في saveTx
-  // لو account يبدأ بـ cc_ → لا نضيفها في txs
-  // نضيفها في card.transactions بدلاً منها
-  // ══════════════════════════════════════════
-
+  // الفكرة: لما المستخدم يختار حساب يبدأ بـ cc_ في فورم
+  // إضافة الحركة، نمنع إضافتها في txs (عشان متخصمش من
+  // الجاري)، ونضيفها بدلاً من ذلك في card.transactions
+  // فقط (عشان ترصد كدين على البطاقة).
+  // ══════════════════════════════════════════════════════
   function waitAndPatch(tries) {
     tries = tries || 0;
-    if (tries > 60) { console.warn('customFixes: timeout waiting for saveTx'); return; }
+    if (tries > 60) return;
     if (typeof window.saveTx !== 'function') {
       return setTimeout(() => waitAndPatch(tries + 1), 100);
     }
 
     const _origSaveTx = window.saveTx;
-
     window.saveTx = function() {
-      // اقرأ الـ account قبل الاستدعاء (لأن saveTx ستغلق المودال وتمسح الفورم)
       const accountVal = (document.getElementById('fAccount') || {}).value || '';
       const isCC = accountVal && String(accountVal).startsWith('cc_');
-
       if (!isCC) {
-        // دفع عادي — اتركه يشتغل طبيعي
         return _origSaveTx.apply(this, arguments);
       }
 
-      // ── دفع من فيزا ──
-      // نشغّل saveTx الأصلية لكن نمنعها من الحفظ في txs
-      // الحيلة: نستبدل txs.unshift مؤقتاً بدالة تلتقط الـ tx وتحوّله لفيزا
-
+      // عملية على الفيزا — اعترض txs.unshift لمنع إضافة tx للجاري
       let capturedTx = null;
-      const _realUnshift = Array.prototype.unshift;
-
-      // نعترض unshift على مصفوفة txs تحديداً
       if (typeof txs !== 'undefined') {
         const _origUnshift = txs.unshift.bind(txs);
         txs.unshift = function(tx) {
           if (tx && String(tx.account || '').startsWith('cc_')) {
-            // التقط الـ tx بدل إضافته
             capturedTx = tx;
-            return txs.length; // نرجع length بدون إضافة
+            return txs.length; // لا تضيفها في الجاري
           }
           return _origUnshift(tx);
         };
@@ -24331,7 +24335,7 @@ setTimeout(() => {
         txs.unshift = Array.prototype.unshift.bind(txs);
       }
 
-      // أضف الـ tx في سجل الفيزا
+      // أضف العملية في سجل الفيزا فقط
       if (capturedTx && window.creditCards) {
         const card = window.creditCards.find(c => c.id === capturedTx.account);
         if (card) {
@@ -24343,6 +24347,7 @@ setTimeout(() => {
             name:           capturedTx.name,
             amount:         capturedTx.amount,
             category:       capturedTx.cat,
+            cat:            capturedTx.cat,
             type:           capturedTx.type === 'income' ? 'payment' : 'purchase',
             note:           capturedTx.note || '',
             currency:       capturedTx.currency,
@@ -24356,10 +24361,9 @@ setTimeout(() => {
       return result;
     };
 
-    // ── حذف من الفيزا لو المعاملة اتحذفت ──
+    // حذف العملية من سجل الفيزا لو اتحذفت من الواجهة
     const _origDelTx = window.delTx;
     window.delTx = function(id) {
-      // ابحث في سجلات كل الفيزا
       if (window.creditCards) {
         let found = false;
         window.creditCards.forEach(card => {
@@ -24373,12 +24377,102 @@ setTimeout(() => {
       return _origDelTx.apply(this, arguments);
     };
 
-    console.log('✅ customFixes V4: CC isolation active');
+    console.log('✅ Fix #3 active: CC purchases are isolated from cash accounts');
   }
-
   waitAndPatch();
 
-  // تحديث أولي
+  // ══════════════════════════════════════════════════════
+  // 4. زر "تراجع" لسداد القسط
+  //   • لما تضغط "ادفع قسط النهاردة" بالغلط، تقدر ترجع
+  //   • بيحذف الـ tx من المصاريف + يرجع paidMonths
+  // ══════════════════════════════════════════════════════
+  window.undoInstallmentPayment = function(instId) {
+    const inst = (typeof installments !== 'undefined' ? installments : []).find(i => i.id === instId);
+    if (!inst) return;
+    if ((inst.paidMonths || 0) <= 0) {
+      if (typeof showAlert === 'function') showAlert('مفيش قسط مدفوع للتراجع عنه', 'warning');
+      return;
+    }
+    if (!confirm(`🔄 تراجع عن آخر سداد قسط؟\n\n${inst.name}\n${inst.paidMonths}/${inst.totalMonths} مدفوع\n\nهيرجع القسط من "مدفوع" لـ "مستحق" والمبلغ هيرجع لرصيدك.`)) return;
+
+    // إزالة آخر tx مرتبطة بالقسط من المصاريف
+    if (typeof txs !== 'undefined') {
+      // نلاقي آخر سداد مسجل (الأحدث)
+      const instTxs = txs.filter(t => t.instId === instId).sort((a,b) =>
+        (b.date + ' ' + (b.time||'')).localeCompare(a.date + ' ' + (a.time||''))
+      );
+      if (instTxs.length > 0) {
+        const lastTx = instTxs[0];
+        const idx = txs.findIndex(t => t.id === lastTx.id);
+        if (idx >= 0) {
+          txs.splice(idx, 1);
+        }
+      }
+    }
+
+    // إنقاص paidMonths
+    inst.paidMonths = Math.max(0, (inst.paidMonths || 0) - 1);
+    inst.lastPaidMonth = null; // اسمح بإعادة السداد في نفس الشهر
+
+    if (typeof saveData === 'function') saveData();
+    if (typeof saveInstallments === 'function') saveInstallments();
+    if (typeof renderInstallments === 'function') renderInstallments();
+    if (typeof renderAll === 'function') renderAll();
+    if (typeof showToast === 'function') showToast('🔄 تم التراجع عن السداد', 'success');
+  };
+
+  // أضف زر "تراجع" لكل قسط في الشاشة (بـ DOM injection)
+  function injectUndoButtons() {
+    if (typeof installments === 'undefined') return;
+    document.querySelectorAll('.feat-card').forEach(cardEl => {
+      // ابحث عن أي زر يستدعي payInstallmentNow أو editInstallment لتحديد القسط
+      const editBtn = cardEl.querySelector('button[onclick*="editInstallment"]');
+      if (!editBtn) return;
+      const m = editBtn.getAttribute('onclick').match(/editInstallment\('([^']+)'\)/);
+      if (!m) return;
+      const instId = m[1];
+      const inst = installments.find(i => i.id === instId);
+      if (!inst || (inst.paidMonths || 0) <= 0) return;
+      // تحقق إذا الزر موجود بالفعل
+      const actionsBar = cardEl.querySelector('.feat-actions');
+      if (!actionsBar || actionsBar.querySelector('.undo-inst-btn')) return;
+      const undoBtn = document.createElement('button');
+      undoBtn.className = 'feat-mini-btn undo-inst-btn';
+      undoBtn.style.cssText = 'color:#f59e0b;border-color:#f59e0b';
+      undoBtn.innerHTML = '🔄 تراجع';
+      undoBtn.onclick = () => window.undoInstallmentPayment(instId);
+      // أدخل قبل زر الحذف
+      const delBtn = actionsBar.querySelector('button[onclick*="delInstallment"]');
+      if (delBtn) actionsBar.insertBefore(undoBtn, delBtn);
+      else actionsBar.appendChild(undoBtn);
+    });
+  }
+  // Watch the installments list for changes
+  const _instObs = new MutationObserver(() => {
+    clearTimeout(_instObs._t);
+    _instObs._t = setTimeout(injectUndoButtons, 60);
+  });
+  function observeInstallments() {
+    const list = document.getElementById('installmentsList') ||
+                 document.getElementById('instList') ||
+                 document.querySelector('#installmentsModal .modal-body') ||
+                 document.querySelector('#installmentsModal');
+    if (list) _instObs.observe(list, { childList: true, subtree: true });
+    else setTimeout(observeInstallments, 500);
+  }
+  observeInstallments();
+
+  // ══════════════════════════════════════════════════════
+  // 5. زر "تراجع" لسداد الفيزا
+  //   • زر الحذف الموجود لكل عملية سداد على البطاقة
+  //   • لما تحذف عملية type='payment' من البطاقة بترجع
+  //     الفلوس للحساب الجاري (يتم بفضل الـ linkedTxId)
+  // ══════════════════════════════════════════════════════
+  // الكود الأصلي V26 deleteCardTx بالفعل بيحذف tx المربوطة من txs
+  // وبيرجع الفلوس. مفيش حاجة محتاجة تتعدل، بس بالتأكيد على إن
+  // الزر متاح في كل عملية على البطاقة (V29 renderCardDetail بيعمل ده)
+
+  // تحديث الـ home مرة بعد التحميل
   setTimeout(() => {
     if (typeof window.renderHome === 'function') window.renderHome();
   }, 1200);
