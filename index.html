@@ -24215,15 +24215,13 @@ setTimeout(() => {
 
 <script>
 /* ═══════════════════════════════════════════════════════
-   CUSTOM FIXES — مصاريفي V2
-   الإصلاح الجذري: المعاملات المربوطة بالفيزا لا تُخصم
-   من الحسابات العادية (الكاش) — تُسجَّل في الفيزا فقط
+   CUSTOM FIXES — مصاريفي V4 (الحل الجذري)
    ═══════════════════════════════════════════════════════ */
 (function customFixes() {
 
-  // ─────────────────────────────────────────
-  // إصلاح ١: hero-card دائماً في أعلى الصفحة
-  // ─────────────────────────────────────────
+  // ══════════════════════════════════════════
+  // ١. hero-card دائماً أول الصفحة
+  // ══════════════════════════════════════════
   function pinHeroCardToTop() {
     const home = document.getElementById('homeContent');
     if (!home) return;
@@ -24236,200 +24234,154 @@ setTimeout(() => {
     clearTimeout(homeObs._t);
     homeObs._t = setTimeout(pinHeroCardToTop, 80);
   });
-  const homeEl = document.getElementById('homeContent');
-  if (homeEl) homeObs.observe(homeEl, { childList: true, subtree: false });
+  const _homeEl = document.getElementById('homeContent');
+  if (_homeEl) homeObs.observe(_homeEl, { childList: true });
 
-  // ─────────────────────────────────────────
-  // إصلاح ٢: بطاقات الفيزا في picker الحركات
-  // ─────────────────────────────────────────
+  // ══════════════════════════════════════════
+  // ٢. بطاقات الفيزا في picker الحركات
+  // ══════════════════════════════════════════
   function syncCCToPicker() {
     const picker = document.getElementById('v23TxAccountPicker');
     const sel    = document.getElementById('fAccount');
     if (!picker || !sel || !window.creditCards || !window.creditCards.length) return;
-
     window.creditCards.forEach(c => {
       const btnId = 'v23-cc-btn-' + c.id;
       if (!document.getElementById(btnId)) {
         const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.id   = btnId;
+        btn.type = 'button'; btn.id = btnId;
         btn.className = 'v23-tx-acc-cell' + (sel.value === c.id ? ' sel' : '');
         btn.innerHTML =
-          '<div class="v23-tx-acc-logo" style="background:#1e3a8a;color:#fff;' +
-          'display:flex;align-items:center;justify-content:center;font-size:18px">💳</div>' +
+          '<div class="v23-tx-acc-logo" style="background:#1e3a8a;color:#fff;display:flex;' +
+          'align-items:center;justify-content:center;font-size:18px">💳</div>' +
           '<div class="v23-tx-acc-name">' + (c.name || 'فيزا') + '</div>';
-
         btn.addEventListener('click', () => {
           sel.value = c.id;
           sel.dispatchEvent(new Event('change'));
-          picker.querySelectorAll('.v23-tx-acc-cell').forEach(b => {
-            b.classList.remove('sel');
-            b.style.cssText = '';
-          });
+          picker.querySelectorAll('.v23-tx-acc-cell').forEach(b => { b.classList.remove('sel'); b.style.cssText = ''; });
           btn.classList.add('sel');
           btn.style.cssText = 'border-color:#1e3a8a;background:rgba(30,58,138,0.12);border-width:2px';
         });
-
         const addBtn = picker.querySelector('.add');
-        if (addBtn) picker.insertBefore(btn, addBtn);
-        else picker.appendChild(btn);
-
+        if (addBtn) picker.insertBefore(btn, addBtn); else picker.appendChild(btn);
         if (!sel.querySelector('option[value="' + c.id + '"]')) {
           const opt = document.createElement('option');
-          opt.value       = c.id;
-          opt.textContent = '💳 ' + (c.name || 'فيزا');
+          opt.value = c.id; opt.textContent = '💳 ' + (c.name || 'فيزا');
           sel.appendChild(opt);
         }
       } else {
         const btn = document.getElementById(btnId);
-        if (sel.value === c.id) {
-          btn.classList.add('sel');
-          btn.style.cssText = 'border-color:#1e3a8a;background:rgba(30,58,138,0.12);border-width:2px';
-        } else {
-          btn.classList.remove('sel');
-          btn.style.cssText = '';
-        }
+        if (sel.value === c.id) { btn.classList.add('sel'); btn.style.cssText = 'border-color:#1e3a8a;background:rgba(30,58,138,0.12);border-width:2px'; }
+        else { btn.classList.remove('sel'); btn.style.cssText = ''; }
       }
     });
   }
   setInterval(syncCCToPicker, 600);
 
-  // ─────────────────────────────────────────
-  // إصلاح ٣ (الجذري): منع الازدواجية في الحسابات
+  // ══════════════════════════════════════════
+  // ٣. الحل الجذري: اعتراض saveTx قبل إضافة txs
   //
-  // المشكلة: المعاملة المربوطة بـ cc_ تدخل في:
-  //   - monthExp / monthInc (الكلي)
-  //   - سجل الفيزا
-  //   = تُحسب مرتين
-  //
-  // الحل: نضيف isCcTx:true على المعاملة لما تتحفظ،
-  // ثم نعترض renderHome ونستثني isCcTx من الحسابات،
-  // ونستثنيها من totalCashBase في Safe-to-Spend
-  // ─────────────────────────────────────────
-  function waitForFunctions(cb, tries) {
+  // الطريقة: نعيد كتابة جزء txs.unshift في saveTx
+  // لو account يبدأ بـ cc_ → لا نضيفها في txs
+  // نضيفها في card.transactions بدلاً منها
+  // ══════════════════════════════════════════
+
+  function waitAndPatch(tries) {
     tries = tries || 0;
-    if (tries > 40) return;
-    if (typeof window.saveTx === 'function' && typeof window.delTx === 'function' && typeof window.renderHome === 'function') {
-      cb();
-    } else {
-      setTimeout(() => waitForFunctions(cb, tries + 1), 100);
+    if (tries > 60) { console.warn('customFixes: timeout waiting for saveTx'); return; }
+    if (typeof window.saveTx !== 'function') {
+      return setTimeout(() => waitAndPatch(tries + 1), 100);
     }
-  }
 
-  function patchAll() {
+    const _origSaveTx = window.saveTx;
 
-    // ── 3A: saveTx — علامة isCcTx + تسجيل في سجل الفيزا ──
-    const _origSave = window.saveTx;
     window.saveTx = function() {
-      const isEditing  = (typeof editingId !== 'undefined') && editingId && !(typeof editingIsSavings !== 'undefined' && editingIsSavings);
-      const editedId   = isEditing ? editingId : null;
-      const chosenAcct = (document.getElementById('fAccount') || {}).value || '';
-      const isCC       = chosenAcct && String(chosenAcct).startsWith('cc_');
+      // اقرأ الـ account قبل الاستدعاء (لأن saveTx ستغلق المودال وتمسح الفورم)
+      const accountVal = (document.getElementById('fAccount') || {}).value || '';
+      const isCC = accountVal && String(accountVal).startsWith('cc_');
 
-      // الفيزا القديمة للمعاملة المعدّلة
-      let oldCcId = null;
-      if (editedId) {
-        const old = txs.find(t => t.id === editedId);
-        if (old && old.isCcTx) oldCcId = old.account;
+      if (!isCC) {
+        // دفع عادي — اتركه يشتغل طبيعي
+        return _origSaveTx.apply(this, arguments);
       }
 
-      const result = _origSave.apply(this, arguments);
+      // ── دفع من فيزا ──
+      // نشغّل saveTx الأصلية لكن نمنعها من الحفظ في txs
+      // الحيلة: نستبدل txs.unshift مؤقتاً بدالة تلتقط الـ tx وتحوّله لفيزا
 
-      // تحديد الـ TX المحفوظ
-      let newTx = editedId ? txs.find(t => t.id === editedId) : null;
-      if (!newTx) newTx = txs[0];
-      if (!newTx) return result;
+      let capturedTx = null;
+      const _realUnshift = Array.prototype.unshift;
 
-      // إذا تغيّرت من فيزا قديمة → احذف من سجلها
-      if (oldCcId && window.creditCards) {
-        const oldCard = window.creditCards.find(c => c.id === oldCcId);
-        if (oldCard && oldCard.transactions) {
-          oldCard.transactions = oldCard.transactions.filter(t => t.id !== newTx.id);
-          if (window.saveCreditCards) window.saveCreditCards();
-        }
+      // نعترض unshift على مصفوفة txs تحديداً
+      if (typeof txs !== 'undefined') {
+        const _origUnshift = txs.unshift.bind(txs);
+        txs.unshift = function(tx) {
+          if (tx && String(tx.account || '').startsWith('cc_')) {
+            // التقط الـ tx بدل إضافته
+            capturedTx = tx;
+            return txs.length; // نرجع length بدون إضافة
+          }
+          return _origUnshift(tx);
+        };
       }
 
-      // لو المعاملة على فيزا
-      const txAcct = newTx.account || chosenAcct;
-      if (txAcct && String(txAcct).startsWith('cc_')) {
-        // علامة مهمة — تمنع احتسابها كـ كاش عادي
-        newTx.isCcTx = true;
-        if (window.saveData) window.saveData();
+      const result = _origSaveTx.apply(this, arguments);
 
-        // تسجيل في سجل الفيزا
-        const card = (window.creditCards || []).find(c => c.id === txAcct);
+      // استعادة unshift الأصلية
+      if (typeof txs !== 'undefined') {
+        txs.unshift = Array.prototype.unshift.bind(txs);
+      }
+
+      // أضف الـ tx في سجل الفيزا
+      if (capturedTx && window.creditCards) {
+        const card = window.creditCards.find(c => c.id === capturedTx.account);
         if (card) {
-          card.transactions = (card.transactions || []).filter(t => t.id !== newTx.id);
+          card.transactions = (card.transactions || []).filter(t => t.id !== capturedTx.id);
           card.transactions.push({
-            id:             newTx.id,
-            date:           newTx.date,
-            time:           newTx.time || '12:00',
-            name:           newTx.name,
-            amount:         newTx.amount,
-            category:       newTx.cat,
-            type:           newTx.type === 'income'  ? 'payment'  :
-                            newTx.type === 'expense' ? 'purchase' : 'plan_move',
-            note:           newTx.note,
-            currency:       newTx.currency,
-            statementMonth: (newTx.date || '').slice(0, 7),
+            id:             capturedTx.id,
+            date:           capturedTx.date,
+            time:           capturedTx.time || '12:00',
+            name:           capturedTx.name,
+            amount:         capturedTx.amount,
+            category:       capturedTx.cat,
+            type:           capturedTx.type === 'income' ? 'payment' : 'purchase',
+            note:           capturedTx.note || '',
+            currency:       capturedTx.currency,
+            statementMonth: (capturedTx.date || '').slice(0, 7),
             createdAt:      new Date().toISOString()
           });
           if (window.saveCreditCards) window.saveCreditCards();
         }
-      } else {
-        // لو نُقلت من فيزا → حساب عادي، ازل العلامة
-        if (newTx.isCcTx) {
-          delete newTx.isCcTx;
-          if (window.saveData) window.saveData();
-        }
       }
 
       return result;
     };
 
-    // ── 3B: delTx — حذف متزامن من سجل الفيزا ──
-    const _origDel = window.delTx;
+    // ── حذف من الفيزا لو المعاملة اتحذفت ──
+    const _origDelTx = window.delTx;
     window.delTx = function(id) {
-      const t    = (typeof txs !== 'undefined') ? txs.find(x => x.id === id) : null;
-      const ccId = t && t.isCcTx ? t.account : null;
-
-      const result = _origDel.apply(this, arguments);
-
-      if (ccId && window.creditCards) {
-        const card = window.creditCards.find(c => c.id === ccId);
-        if (card && card.transactions) {
+      // ابحث في سجلات كل الفيزا
+      if (window.creditCards) {
+        let found = false;
+        window.creditCards.forEach(card => {
+          if (!card.transactions) return;
           const before = card.transactions.length;
-          card.transactions = card.transactions.filter(ct => ct.id !== id);
-          if (card.transactions.length !== before && window.saveCreditCards) {
-            window.saveCreditCards();
-          }
-        }
+          card.transactions = card.transactions.filter(t => t.id !== id);
+          if (card.transactions.length !== before) found = true;
+        });
+        if (found && window.saveCreditCards) window.saveCreditCards();
       }
-      return result;
+      return _origDelTx.apply(this, arguments);
     };
 
-    // ── 3C: renderHome — استثناء isCcTx من الحسابات الكلية ──
-    // المشكلة: monthExp تشمل txs الفيزا → نظهر أرقاماً مضخّمة
-    // الحل: نعترض renderHome ونستبدل txs مؤقتاً بنسخة مصفّاة
-    const _origRender = window.renderHome;
-    window.renderHome = function() {
-      const _realTxs = txs; // حفظ المصفوفة الأصلية
-      // نستثني معاملات الفيزا من العرض الكلي
-      txs = _realTxs.filter(t => !t.isCcTx);
-      try {
-        _origRender.apply(this, arguments);
-      } finally {
-        txs = _realTxs; // نستعيد الأصلية دائماً حتى لو صار خطأ
-      }
-    };
+    console.log('✅ customFixes V4: CC isolation active');
   }
 
-  waitForFunctions(patchAll);
+  waitAndPatch();
 
   // تحديث أولي
   setTimeout(() => {
     if (typeof window.renderHome === 'function') window.renderHome();
-  }, 1300);
+  }, 1200);
 
 })();
 </script>
