@@ -2372,6 +2372,17 @@ button, .menu-row, .tx-card {
   </div>
 </div>
 
+<!-- ═══════ ACCOUNT PICKER SHEET (for payments) ═══════ -->
+<div class="overlay" id="payFromModal" onclick="closeIfOut(event,'payFromModal')">
+  <div class="sheet" style="max-height:80vh">
+    <div class="handle" onclick="document.getElementById('payFromModal').classList.remove('open')"></div>
+    <div class="modal-title" id="payFromTitle">💳 ادفع من؟</div>
+    <p class="modal-hint" id="payFromHint">اختار الحساب اللي هتدفع منه</p>
+    <div id="payFromList" style="display:flex;flex-direction:column;gap:10px;margin-top:4px;padding-bottom:8px"></div>
+    <button onclick="document.getElementById('payFromModal').classList.remove('open')" style="width:100%;margin-top:8px;padding:13px;background:var(--card2);border:1.5px solid var(--border);border-radius:14px;color:var(--muted);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer">إلغاء</button>
+  </div>
+</div>
+
 <!-- ═══════ SEASON THEME SHEET ═══════ -->
 <div class="overlay" id="seasonModal" onclick="closeIfOut(event,'seasonModal')">
   <div class="sheet">
@@ -4837,6 +4848,32 @@ function saveTx() {
     if(editingId&&editingIsSavings) savings=savings.filter(t=>t.id!==editingId);
     savings.unshift(txObj);
     saveSavings();
+  } else if(account && String(account).startsWith('cc_')) {
+    // ── بطاقة ائتمان: سجّل في card.transactions فقط — لا تخصم من الجاري ──
+    if(editingId&&!editingIsSavings) txs=txs.filter(t=>t.id!==editingId);
+    const _ccCard = (window.creditCards||[]).find(c=>c.id===account);
+    if(_ccCard){
+      _ccCard.transactions = (_ccCard.transactions||[]).filter(t=>t.id!==txObj.id);
+      _ccCard.transactions.push({
+        id:        txObj.id,
+        date:      txObj.date,
+        time:      txObj.time||'12:00',
+        name:      txObj.name,
+        amount:    txObj.amount,
+        category:  txObj.cat,
+        cat:       txObj.cat,
+        type:      txObj.type==='income'?'payment':'purchase',
+        note:      txObj.note||'',
+        currency:  txObj.currency,
+        statementMonth:(txObj.date||'').slice(0,7),
+        createdAt: new Date().toISOString()
+      });
+      if(window.saveCreditCards) window.saveCreditCards();
+    } else {
+      // البطاقة مش موجودة — ارجع للسلوك الافتراضي
+      txs.unshift(txObj);
+      saveData();
+    }
   } else {
     if(editingId&&!editingIsSavings) txs=txs.filter(t=>t.id!==editingId);
     txs.unshift(txObj);
@@ -6574,6 +6611,114 @@ function delInstallment(id) {
   updateMenuCounts();
 }
 
+// ══════════════════════════════════════════════════════════════
+// showPayFromPicker — bottom sheet لاختيار الحساب قبل أي دفعة
+// callback(accountId) يُستدعى بعد اختيار المستخدم
+// ══════════════════════════════════════════════════════════════
+function showPayFromPicker(title, hint, callback) {
+  const modal  = document.getElementById('payFromModal');
+  const listEl = document.getElementById('payFromList');
+  const titleEl= document.getElementById('payFromTitle');
+  const hintEl = document.getElementById('payFromHint');
+  if (!modal || !listEl) { callback(accounts[0]?.id); return; }
+
+  titleEl.textContent = title || '💳 ادفع من؟';
+  hintEl.textContent  = hint  || 'اختار الحساب اللي هتدفع منه';
+
+  let html = '';
+
+  // ── الحسابات العادية ──
+  (accounts || []).forEach(acc => {
+    const accTxs = (txs || []).filter(t => t.account === acc.id);
+    const inc = accTxs.filter(t=>t.type==='income').reduce((s,t)=>s+(t.amountSAR||0),0);
+    const exp = accTxs.filter(t=>t.type==='expense').reduce((s,t)=>s+(t.amountSAR||0),0);
+    const bal = toBase ? toBase(inc-exp) : (inc-exp);
+    const sym = typeof BASE_LABELS !== 'undefined' ? BASE_LABELS[baseCurrency]?.sym || 'ر.س' : 'ر.س';
+    const balColor = bal >= 0 ? 'var(--green)' : 'var(--red)';
+    const balStr = (bal>=0?'+':'') + (typeof fmt==='function'?fmt(bal,0):bal.toFixed(0));
+    html += `<button onclick="window.__payFromCb&&window.__payFromCb('${acc.id}');document.getElementById('payFromModal').classList.remove('open')"
+      style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card2);border:1.5px solid var(--border);border-radius:14px;width:100%;cursor:pointer;font-family:inherit;text-align:right;transition:border-color .2s"
+      onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <span style="font-size:22px">${acc.emoji||'💼'}</span>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700;color:var(--text)">${acc.name}</div>
+        <div style="font-size:11px;color:${balColor};font-weight:600">${balStr} ${sym}</div>
+      </div>
+      <span style="color:var(--muted);font-size:18px">›</span>
+    </button>`;
+  });
+
+  // ── بطاقات الائتمان ──
+  (window.creditCards || []).forEach(card => {
+    let purchases=0,fees=0,payments=0,refunds=0;
+    (card.transactions||[]).forEach(t=>{
+      const a=Math.abs(Number(t.amount)||0);
+      if(t.type==='purchase')purchases+=a;
+      else if(t.type==='fee')fees+=a;
+      else if(t.type==='payment')payments+=a;
+      else if(t.type==='refund')refunds+=a;
+    });
+    const used = purchases+fees-payments-refunds;
+    const limit = Number(card.limit)||0;
+    const avail = limit - used;
+    const sym = card.currency||'SAR';
+    html += `<button onclick="window.__payFromCb&&window.__payFromCb('cc_${card.id}');document.getElementById('payFromModal').classList.remove('open')"
+      style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:linear-gradient(135deg,rgba(248,81,73,.08),rgba(248,81,73,.03));border:1.5px solid rgba(248,81,73,.25);border-radius:14px;width:100%;cursor:pointer;font-family:inherit;text-align:right;transition:border-color .2s"
+      onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='rgba(248,81,73,.25)'">
+      <span style="font-size:22px">💳</span>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700;color:var(--text)">${card.name}</div>
+        <div style="font-size:11px;color:var(--muted);font-weight:600">متاح: <span style="color:${avail>0?'var(--green)':'var(--red)'}">${(typeof fmt==='function'?fmt(avail,0):avail.toFixed(0))} ${sym}</span></div>
+      </div>
+      <span style="color:var(--muted);font-size:18px">›</span>
+    </button>`;
+  });
+
+  listEl.innerHTML = html || '<div style="color:var(--muted);text-align:center;padding:20px">مفيش حسابات مضافة</div>';
+  window.__payFromCb = callback;
+  modal.classList.add('open');
+}
+
+// ── helper: نفّذ دفعة من حساب معين (account أو cc_cardId) ──
+function executePayment({ txId, type, name, amount, currency, rate, amountSAR, cat, date, time, note, instId, jamId, billId }) {
+  return function(accountId) {
+    const isCC = accountId && String(accountId).startsWith('cc_');
+    const realAccId = isCC ? accountId.replace(/^cc_/, '') : accountId;
+
+    const txObj = {
+      id: txId || ('tx_pay_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)),
+      type: type || 'expense',
+      name, amount, currency, rate: rate||1, amountSAR, cat: cat||'أخرى',
+      date, time, note: note||'',
+      account: isCC ? accountId : accountId,
+      recurring: false,
+      instId: instId||undefined,
+      jamId:  jamId||undefined,
+      billId: billId||undefined
+    };
+
+    if (isCC) {
+      // سجّل في البطاقة فقط
+      const card = (window.creditCards||[]).find(c => c.id === realAccId);
+      if (card) {
+        card.transactions = (card.transactions||[]).filter(t => t.id !== txObj.id);
+        card.transactions.push({
+          id: txObj.id, date, time: time||'12:00', name,
+          amount, category: cat, cat,
+          type: 'purchase',
+          note: note||'', currency,
+          statementMonth: (date||'').slice(0,7),
+          createdAt: new Date().toISOString()
+        });
+        if (window.saveCreditCards) window.saveCreditCards();
+      }
+    } else {
+      txs.unshift(txObj);
+      saveData();
+    }
+  };
+}
+
 function payInstallmentNow(id) {
   const inst = installments.find(i => i.id === id);
   if (!inst) return;
@@ -6583,26 +6728,32 @@ function payInstallmentNow(id) {
   const t = today.toTimeString().slice(0,5);
   const rate = inst.currency === 'SAR' ? 1 : (inst.currency === 'EGP' ? rates.EGP : rates[inst.currency]);
   const amountSAR = curToSAR(inst.monthlyPayment, inst.currency);
-  txs.unshift({
-    id: 'tx_inst_' + Date.now(),
-    type: 'expense',
-    name: `💳 ${inst.name} (قسط ${inst.paidMonths+1}/${inst.totalMonths})`,
-    amount: inst.monthlyPayment,
-    currency: inst.currency,
-    rate,
-    amountSAR,
-    cat: inst.cat,
-    date: d, time: t,
-    note: 'قسط شهري تلقائي',
-    account: accounts[0]?.id,
-    recurring: false,
-    instId: inst.id
-  });
-  inst.paidMonths++;
-  inst.lastPaidMonth = monthKey(today.getFullYear(), today.getMonth());
-  saveData(); saveInstallments();
-  renderInstallments(); renderAll();
-  if (typeof showToast === 'function') showToast(`💳 تم دفع قسط ${inst.name}`, 'success');
+  const txName = `💳 ${inst.name} (قسط ${inst.paidMonths+1}/${inst.totalMonths})`;
+
+  showPayFromPicker(
+    `💳 دفع قسط — ${inst.name}`,
+    `${inst.monthlyPayment} ${inst.currency} • القسط ${inst.paidMonths+1} من ${inst.totalMonths}`,
+    function(accountId) {
+      const doSave = executePayment({
+        txId: 'tx_inst_' + Date.now(),
+        type: 'expense',
+        name: txName,
+        amount: inst.monthlyPayment,
+        currency: inst.currency,
+        rate, amountSAR,
+        cat: inst.cat,
+        date: d, time: t,
+        note: 'قسط شهري',
+        instId: inst.id
+      });
+      doSave(accountId);
+      inst.paidMonths++;
+      inst.lastPaidMonth = monthKey(today.getFullYear(), today.getMonth());
+      saveInstallments();
+      renderInstallments(); renderAll();
+      if (typeof showToast === 'function') showToast(`✅ تم دفع قسط ${inst.name}`, 'success');
+    }
+  );
 }
 
 // Auto-deduct installments due this month
@@ -6785,24 +6936,34 @@ function claimJameya(id) {
   const total = j.monthlyAmount * j.totalMembers;
   const rate = j.currency === 'SAR' ? 1 : (j.currency === 'EGP' ? rates.EGP : rates[j.currency]);
   const amountSAR = curToSAR(total, j.currency);
-  txs.unshift({
-    id: 'tx_jam_' + Date.now(),
-    type: 'income',
-    name: `🤝 ${j.name} (قبض الجمعية)`,
-    amount: total,
-    currency: j.currency, rate, amountSAR,
-    cat: 'حوافز',
-    date: today.toISOString().split('T')[0],
-    time: today.toTimeString().slice(0,5),
-    note: `دور رقم ${j.myTurn} في الجمعية`,
-    account: accounts[0]?.id,
-    recurring: false,
-    jamId: j.id
-  });
-  j.received = true;
-  saveData(); saveJameyaData();
-  renderJameya(); renderAll();
-  if (typeof showToast === 'function') showToast(`🎉 مبروك! قبضت ${fmt(total)} ${SYM[j.currency]}`, 'success');
+
+  showPayFromPicker(
+    `🤝 قبض الجمعية — ${j.name}`,
+    `هتتضاف لأي حساب؟ (${fmt(total,0)} ${j.currency})`,
+    function(accountId) {
+      const isCC = accountId && String(accountId).startsWith('cc_');
+      if (!isCC) {
+        txs.unshift({
+          id: 'tx_jam_' + Date.now(),
+          type: 'income',
+          name: `🤝 ${j.name} (قبض الجمعية)`,
+          amount: total,
+          currency: j.currency, rate, amountSAR,
+          cat: 'حوافز',
+          date: today.toISOString().split('T')[0],
+          time: today.toTimeString().slice(0,5),
+          note: `دور رقم ${j.myTurn} في الجمعية`,
+          account: accountId,
+          recurring: false, jamId: j.id
+        });
+        saveData();
+      }
+      j.received = true;
+      saveJameyaData();
+      renderJameya(); renderAll();
+      if (typeof showToast === 'function') showToast(`🎉 مبروك! قبضت ${fmt(total)} ${SYM[j.currency]}`, 'success');
+    }
+  );
 }
 
 // Auto-deduct monthly jameya contribution
@@ -13074,21 +13235,35 @@ setTimeout(() => {
     const t = txs.find(x => x.id === editingId);
     if (!t) { showAlert('الحركة مش موجودة', 'error'); return; }
 
+    // أغلق modal التعديل أولاً، ثم افتح picker الحساب
+    if (typeof closeModal === 'function') closeModal();
+    document.getElementById('modal').classList.remove('open');
+
+    // اسأل: من أي حساب؟
+    setTimeout(() => {
+      showPayFromPicker(
+        '💳 ادفع من أي حساب؟',
+        `${t.name} — ${t.amount} ${t.currency}`,
+        function(chosenAccount) {
+          _doConvertTxTo(targetType, t, chosenAccount);
+        }
+      );
+    }, 200);
+  };
+
+  function _doConvertTxTo(targetType, t, chosenAccount) {
     // Save pending conversion state
     window.__pendingConversion = {
-      origTxId: editingId,
+      origTxId: t.id,
       origType: t.type,
       origAmount: t.amount,
       origCurrency: t.currency,
       origDate: t.date,
       origName: t.name,
       origNote: t.note || '',
-      targetType
+      targetType,
+      chosenAccount: chosenAccount || accounts[0]?.id
     };
-
-    // Close current edit modal
-    if (typeof closeModal === 'function') closeModal();
-    document.getElementById('modal').classList.remove('open');
 
     // Open the appropriate modal with prefilled data
     setTimeout(() => {
@@ -13153,7 +13328,7 @@ setTimeout(() => {
         }, 250);
       }
     }, 280);
-  };
+  }
 
   // ── Hook into save functions to remove the original tx after conversion ──
   function consumeConversion() {
@@ -17827,8 +18002,15 @@ setTimeout(() => {
       <div class="v23-section-title">💼 محافظك</div>
       <div id="v23AccountsList"></div>
 
-      <!-- ADD NEW BUTTON -->
-      <button class="v23-add-btn" onclick="v23OpenBankPicker()">
+      <!-- CREDIT CARDS SECTION -->
+      <div class="v23-section-title" id="v23CCSectionTitle" style="margin-top:18px">💳 بطاقات الائتمان</div>
+      <div id="v23CCList"></div>
+      <button class="v23-add-btn" id="v23AddCCBtn" style="background:linear-gradient(135deg,rgba(248,81,73,.15),rgba(248,81,73,.08));border-color:rgba(248,81,73,.3);color:var(--red)" onclick="document.getElementById('creditCardsModal').classList.add('open');if(typeof renderCreditCards==='function')renderCreditCards()">
+        ＋ إضافة بطاقة ائتمانية
+      </button>
+
+      <!-- ADD NEW WALLET BUTTON -->
+      <button class="v23-add-btn" onclick="v23OpenBankPicker()" style="margin-top:10px">
         ＋ إضافة محفظة جديدة
       </button>
     `);
@@ -17934,6 +18116,89 @@ setTimeout(() => {
         <div class="v23-wallet-footer">${lastTxStr}</div>
       </div>`;
     }).join('');
+
+    // ── بطاقات الائتمان ──
+    const ccList = document.getElementById('v23CCList');
+    const ccSection = document.getElementById('v23CCSectionTitle');
+    const ccAddBtn = document.getElementById('v23AddCCBtn');
+    if (ccList) {
+      const cards = window.creditCards || [];
+      if (cards.length === 0) {
+        ccList.innerHTML = `<div style="text-align:center;padding:16px 0;color:var(--muted);font-size:12px">لا توجد بطاقات ائتمانية — اضغط زر الإضافة أدناه</div>`;
+      } else {
+        ccList.innerHTML = cards.map(card => {
+          let purchases=0, fees=0, payments=0, refunds=0;
+          (card.transactions||[]).forEach(t => {
+            const a = Math.abs(Number(t.amount)||0);
+            if (t.type==='purchase') purchases+=a;
+            else if (t.type==='fee') fees+=a;
+            else if (t.type==='payment') payments+=a;
+            else if (t.type==='refund') refunds+=a;
+          });
+          const used = purchases + fees - payments - refunds;
+          const limit = Number(card.limit)||0;
+          const avail = limit - used;
+          const utilPct = limit > 0 ? Math.min(100, Math.round(used/limit*100)) : 0;
+          const utilColor = utilPct > 80 ? 'var(--red)' : utilPct > 50 ? '#f59e0b' : 'var(--green)';
+          const csym = card.currency || 'SAR';
+          const lastTx = (card.transactions||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0];
+          const lastTxStr = lastTx ? `آخر حركة: ${lastTx.date||''}` : 'لا توجد حركات بعد';
+
+          return `<div class="v23-wallet-card" style="--brand-color:#e53e3e;background:linear-gradient(135deg,rgba(248,81,73,.12),rgba(248,81,73,.04));border:1px solid rgba(248,81,73,.2)"
+            onclick="if(typeof renderCreditCards==='function'){document.getElementById('creditCardsModal').classList.add('open');renderCreditCards();}" style="cursor:pointer">
+            <div class="v23-wallet-header">
+              <div class="v23-wallet-logo" style="background:linear-gradient(135deg,#e53e3e,#c53030);color:#fff;font-size:18px">💳</div>
+              <div class="v23-wallet-info">
+                <div class="v23-wallet-name">${esc(card.name)}</div>
+                <div class="v23-wallet-bank" style="color:var(--muted)">${card.lastFour ? `•••• ${card.lastFour}` : 'بطاقة ائتمانية'}</div>
+              </div>
+              <div class="v23-wallet-actions">
+                <button class="v23-mini-btn" onclick="event.stopPropagation();document.getElementById('creditCardsModal').classList.add('open');if(typeof renderCreditCards==='function')renderCreditCards()" title="تفاصيل">👁</button>
+              </div>
+            </div>
+            <div class="v23-wallet-balance">
+              <div class="v23-wallet-bal-label">المستخدم</div>
+              <div class="v23-wallet-bal-amount" style="color:${used>0?'var(--red)':'var(--green)'};direction:ltr">
+                ${fmt(used,0)} <span class="v23-wallet-bal-sym">${csym}</span>
+              </div>
+            </div>
+            <div style="margin:0 0 10px;padding:0 2px">
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:4px">
+                <span>الاستخدام ${utilPct}%</span>
+                <span style="direction:ltr">متاح: ${fmt(avail,0)} ${csym}</span>
+              </div>
+              <div style="height:5px;background:var(--card2);border-radius:3px;overflow:hidden">
+                <div style="height:100%;width:${utilPct}%;background:${utilColor};border-radius:3px;transition:width .4s"></div>
+              </div>
+            </div>
+            <div class="v23-wallet-stats">
+              <div class="v23-wallet-stat">
+                <span class="v23-stat-icon" style="color:var(--red)">↓</span>
+                <div>
+                  <div class="v23-stat-val" style="direction:ltr">${fmt(purchases,0)} ${csym}</div>
+                  <div class="v23-stat-lbl">مشتريات</div>
+                </div>
+              </div>
+              <div class="v23-wallet-stat">
+                <span class="v23-stat-icon" style="color:var(--green)">↑</span>
+                <div>
+                  <div class="v23-stat-val" style="direction:ltr">${fmt(payments,0)} ${csym}</div>
+                  <div class="v23-stat-lbl">مدفوع</div>
+                </div>
+              </div>
+              <div class="v23-wallet-stat">
+                <span class="v23-stat-icon" style="color:var(--blue)">🏦</span>
+                <div>
+                  <div class="v23-stat-val" style="direction:ltr">${fmt(limit,0)} ${csym}</div>
+                  <div class="v23-stat-lbl">الحد</div>
+                </div>
+              </div>
+            </div>
+            <div class="v23-wallet-footer">${lastTxStr}</div>
+          </div>`;
+        }).join('');
+      }
+    }
   };
 
   // ─────────────────────────────────────────────────────────────
@@ -18134,22 +18399,60 @@ setTimeout(() => {
     if (!picker || !sel || typeof accounts === 'undefined') return;
 
     const currentVal = sel.value;
-    picker.innerHTML = accounts.map(a => {
+
+    // ── الحسابات العادية ──
+    let html = accounts.map(a => {
       const bank = getBankInfo(a);
       const isSel = a.id === currentVal;
       return `<button type="button" class="v23-tx-acc-cell ${isSel ? 'sel' : ''}" data-acc-id="${esc(a.id)}" onclick="v23SelectTxAccount('${esc(a.id)}')" style="${isSel ? '--bc:' + bank.color : ''}">
         <div class="v23-tx-acc-logo">${bank.logo}</div>
         <div class="v23-tx-acc-name">${esc(a.name)}</div>
       </button>`;
-    }).join('') + `<button type="button" class="v23-tx-acc-cell add" onclick="document.getElementById('accountsModal').classList.add('open');renderAccounts()" title="إضافة محفظة">
+    }).join('');
+
+    // ── بطاقات الائتمان (cc_ prefix) ──
+    (window.creditCards || []).forEach(c => {
+      const ccId = 'cc_' + c.id;
+      const isSel = ccId === currentVal;
+
+      // أضف option في الـ select لو مش موجودة
+      if (!sel.querySelector(`option[value="${ccId}"]`)) {
+        const opt = document.createElement('option');
+        opt.value = ccId;
+        opt.textContent = '💳 ' + (c.name || 'بطاقة');
+        sel.appendChild(opt);
+      }
+
+      html += `<button type="button" class="v23-tx-acc-cell ${isSel ? 'sel' : ''}" data-acc-id="${ccId}"
+        onclick="v23SelectTxAccount('${ccId}')"
+        style="${isSel ? 'border-color:#e53e3e;background:rgba(229,62,62,0.12);border-width:2px' : ''}">
+        <div class="v23-tx-acc-logo" style="background:linear-gradient(135deg,#b91c1c,#e53e3e);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">💳</div>
+        <div class="v23-tx-acc-name" style="font-size:9px">${esc(c.name || 'بطاقة')}</div>
+      </button>`;
+    });
+
+    // ── زر إضافة ──
+    html += `<button type="button" class="v23-tx-acc-cell add" onclick="document.getElementById('accountsModal').classList.add('open');renderAccounts()" title="إضافة محفظة">
       <div class="v23-tx-acc-add">＋</div>
       <div class="v23-tx-acc-name">إضافة</div>
     </button>`;
+
+    picker.innerHTML = html;
   }
 
   window.v23SelectTxAccount = function(accId) {
     const sel = document.getElementById('fAccount');
     if (!sel) return;
+    // تأكد إن option موجودة للبطاقة
+    if (accId.startsWith('cc_') && !sel.querySelector(`option[value="${accId}"]`)) {
+      const card = (window.creditCards||[]).find(c => 'cc_' + c.id === accId);
+      if (card) {
+        const opt = document.createElement('option');
+        opt.value = accId;
+        opt.textContent = '💳 ' + card.name;
+        sel.appendChild(opt);
+      }
+    }
     sel.value = accId;
     sel.dispatchEvent(new Event('change'));
     refreshTxAccountPicker();
@@ -21091,6 +21394,8 @@ setTimeout(() => {
     window.saveCreditCards = function() {
       origSave.apply(this, arguments);
       setTimeout(updateCCBadge, 50);
+      // حدّث picker الفورم لما البطاقات تتغير
+      if (typeof refreshTxAccountPicker === 'function') setTimeout(refreshTxAccountPicker, 100);
     };
     window.saveCreditCards.__v27BadgePatched = true;
   }
@@ -24242,127 +24547,22 @@ setTimeout(() => {
 
   // ══════════════════════════════════════════════════════
   // 2. ضم بطاقات الفيزا لـ picker اختيار الحساب
-  // (مرة واحدة عند فتح الفورم بدل setInterval)
   // ══════════════════════════════════════════════════════
-  function syncCCToPicker() {
-    const picker = document.getElementById('v23TxAccountPicker');
-    const sel    = document.getElementById('fAccount');
-    if (!picker || !sel || !window.creditCards || !window.creditCards.length) return;
-    window.creditCards.forEach(c => {
-      const btnId = 'v23-cc-btn-' + c.id;
-      if (!document.getElementById(btnId)) {
-        const btn = document.createElement('button');
-        btn.type = 'button'; btn.id = btnId;
-        btn.className = 'v23-tx-acc-cell' + (sel.value === c.id ? ' sel' : '');
-        btn.innerHTML =
-          '<div class="v23-tx-acc-logo" style="background:#1e3a8a;color:#fff;display:flex;' +
-          'align-items:center;justify-content:center;font-size:18px">💳</div>' +
-          '<div class="v23-tx-acc-name">' + (c.name || 'فيزا') + '</div>';
-        btn.addEventListener('click', () => {
-          sel.value = c.id;
-          sel.dispatchEvent(new Event('change'));
-          picker.querySelectorAll('.v23-tx-acc-cell').forEach(b => { b.classList.remove('sel'); b.style.cssText = ''; });
-          btn.classList.add('sel');
-          btn.style.cssText = 'border-color:#1e3a8a;background:rgba(30,58,138,0.12);border-width:2px';
-        });
-        const addBtn = picker.querySelector('.add');
-        if (addBtn) picker.insertBefore(btn, addBtn); else picker.appendChild(btn);
-        if (!sel.querySelector('option[value="' + c.id + '"]')) {
-          const opt = document.createElement('option');
-          opt.value = c.id; opt.textContent = '💳 ' + (c.name || 'فيزا');
-          sel.appendChild(opt);
-        }
-      } else {
-        const btn = document.getElementById(btnId);
-        if (sel.value === c.id) { btn.classList.add('sel'); btn.style.cssText = 'border-color:#1e3a8a;background:rgba(30,58,138,0.12);border-width:2px'; }
-        else { btn.classList.remove('sel'); btn.style.cssText = ''; }
-      }
-    });
-  }
-  // Sync مرة واحدة فقط لما الفورم يتفتح (بدل interval متعب الموارد)
-  document.addEventListener('click', e => {
-    const t = e.target;
-    if (!t) return;
-    const onclick = (t.getAttribute && t.getAttribute('onclick')) || '';
-    const parentClick = t.closest && t.closest('[onclick]');
-    const clickStr = onclick || (parentClick && parentClick.getAttribute('onclick')) || '';
-    if (clickStr.includes('openAddModal') || clickStr.includes('txModal') || /إضافة|اضافه/.test(t.textContent||'')) {
-      setTimeout(syncCCToPicker, 100);
-      setTimeout(syncCCToPicker, 400);
-    }
-  }, true);
+  // البطاقات الائتمانية بتظهر في refreshTxAccountPicker مباشرة
+  // ══════════════════════════════════════════════════════
+  // (syncCCToPicker القديم اتحذف — البطاقات بتتضاف بـ cc_ prefix في refreshTxAccountPicker)
 
   // ══════════════════════════════════════════════════════
   // 3. منع الخصم المزدوج عند الشراء بالفيزا
-  //
-  // الفكرة: لما المستخدم يختار حساب يبدأ بـ cc_ في فورم
-  // إضافة الحركة، نمنع إضافتها في txs (عشان متخصمش من
-  // الجاري)، ونضيفها بدلاً من ذلك في card.transactions
-  // فقط (عشان ترصد كدين على البطاقة).
+  // ✅ تم الإصلاح مباشرة في دالة saveTx الأصلية —
+  //    لما الحساب cc_ يتسجل في card.transactions فقط
+  //    ولا يُضاف لـ txs أو يخصم من الرصيد الجاري.
   // ══════════════════════════════════════════════════════
-  function waitAndPatch(tries) {
-    tries = tries || 0;
-    if (tries > 60) return;
-    if (typeof window.saveTx !== 'function') {
-      return setTimeout(() => waitAndPatch(tries + 1), 100);
-    }
 
-    const _origSaveTx = window.saveTx;
-    window.saveTx = function() {
-      const accountVal = (document.getElementById('fAccount') || {}).value || '';
-      const isCC = accountVal && String(accountVal).startsWith('cc_');
-      if (!isCC) {
-        return _origSaveTx.apply(this, arguments);
-      }
-
-      // عملية على الفيزا — اعترض txs.unshift لمنع إضافة tx للجاري
-      let capturedTx = null;
-      if (typeof txs !== 'undefined') {
-        const _origUnshift = txs.unshift.bind(txs);
-        txs.unshift = function(tx) {
-          if (tx && String(tx.account || '').startsWith('cc_')) {
-            capturedTx = tx;
-            return txs.length; // لا تضيفها في الجاري
-          }
-          return _origUnshift(tx);
-        };
-      }
-
-      const result = _origSaveTx.apply(this, arguments);
-
-      // استعادة unshift الأصلية
-      if (typeof txs !== 'undefined') {
-        txs.unshift = Array.prototype.unshift.bind(txs);
-      }
-
-      // أضف العملية في سجل الفيزا فقط
-      if (capturedTx && window.creditCards) {
-        const card = window.creditCards.find(c => c.id === capturedTx.account);
-        if (card) {
-          card.transactions = (card.transactions || []).filter(t => t.id !== capturedTx.id);
-          card.transactions.push({
-            id:             capturedTx.id,
-            date:           capturedTx.date,
-            time:           capturedTx.time || '12:00',
-            name:           capturedTx.name,
-            amount:         capturedTx.amount,
-            category:       capturedTx.cat,
-            cat:            capturedTx.cat,
-            type:           capturedTx.type === 'income' ? 'payment' : 'purchase',
-            note:           capturedTx.note || '',
-            currency:       capturedTx.currency,
-            statementMonth: (capturedTx.date || '').slice(0, 7),
-            createdAt:      new Date().toISOString()
-          });
-          if (window.saveCreditCards) window.saveCreditCards();
-        }
-      }
-
-      return result;
-    };
-
-    // حذف العملية من سجل الفيزا لو اتحذفت من الواجهة
+  // حذف العملية من سجل الفيزا لو اتحذفت من الواجهة
+  (function patchDelTxForCC() {
     const _origDelTx = window.delTx;
+    if (typeof _origDelTx !== 'function') return;
     window.delTx = function(id) {
       if (window.creditCards) {
         let found = false;
@@ -24376,10 +24576,8 @@ setTimeout(() => {
       }
       return _origDelTx.apply(this, arguments);
     };
-
-    console.log('✅ Fix #3 active: CC purchases are isolated from cash accounts');
-  }
-  waitAndPatch();
+    console.log('✅ Fix #3 active: CC purchases handled natively in saveTx');
+  })();
 
   // ══════════════════════════════════════════════════════
   // 4. زر "تراجع" لسداد القسط
