@@ -24213,5 +24213,156 @@ setTimeout(() => {
 
 </script>
 
+<script>
+(function customFixes() {
+    // 1. إصلاح وترتيب الصفحة الرئيسية لتكون بطاقة "صباح الخير / وفرت" في الأعلى دائمًا
+    if (typeof window.reorganizeHome === 'function') {
+        const _origReorg = window.reorganizeHome;
+        window.reorganizeHome = function() {
+            const home = document.getElementById('homeContent');
+            if (home) {
+                const wrapper = home.querySelector('.dashboard-wrapper');
+                if (wrapper) {
+                    while(wrapper.firstChild) {
+                        home.insertBefore(wrapper.firstChild, wrapper);
+                    }
+                    wrapper.remove();
+                }
+                const hero = home.querySelector('.hero-card');
+                if (hero) hero.dataset.v21Group = '00-hero-always-top';
+            }
+            _origReorg.apply(this, arguments);
+            const hero2 = home?.querySelector('.hero-card');
+            if (hero2) {
+                home.insertBefore(hero2, home.firstChild);
+            }
+        };
+    }
+
+    // 2. إضافة بطاقات الائتمان (الفيزا) كخيار داخل "المحافظ" عند إضافة حركة
+    setInterval(() => {
+        const picker = document.getElementById('v23TxAccountPicker');
+        const sel = document.getElementById('fAccount');
+        if (!picker || !sel || !window.creditCards) return;
+
+        window.creditCards.forEach(c => {
+            const btnId = 'v23-cc-btn-' + c.id;
+            if (!document.getElementById(btnId)) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.id = btnId;
+                btn.className = 'v23-tx-acc-cell ' + (sel.value === c.id ? 'sel' : '');
+                btn.innerHTML = '<div class="v23-tx-acc-logo" style="background:#1e3a8a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px">💳</div><div class="v23-tx-acc-name">' + (c.name || 'فيزا') + '</div>';
+                
+                btn.onclick = () => {
+                    sel.value = c.id;
+                    sel.dispatchEvent(new Event('change'));
+                    picker.querySelectorAll('.v23-tx-acc-cell').forEach(b => {
+                        b.classList.remove('sel');
+                        b.style.borderColor = '';
+                        b.style.background = '';
+                        b.style.borderWidth = '';
+                    });
+                    btn.classList.add('sel');
+                    btn.style.cssText = '--bc:#1e3a8a;border-color:#1e3a8a;background:rgba(30,58,138,0.12);border-width:2px;';
+                };
+                
+                const addBtn = picker.querySelector('.add');
+                if (addBtn) picker.insertBefore(btn, addBtn);
+                else picker.appendChild(btn);
+
+                if (!sel.querySelector('option[value="' + c.id + '"]')) {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = '💳 ' + (c.name || 'فيزا');
+                    sel.appendChild(opt);
+                }
+            } else {
+                const btn = document.getElementById(btnId);
+                if (sel.value === c.id) {
+                    btn.classList.add('sel');
+                    btn.style.cssText = '--bc:#1e3a8a;border-color:#1e3a8a;background:rgba(30,58,138,0.12);border-width:2px;';
+                } else {
+                    btn.classList.remove('sel');
+                    btn.style.cssText = '';
+                }
+            }
+        });
+    }, 500);
+
+    // 3. خصم الفاتورة أو المصروف من رصيد بطاقة الائتمان تلقائياً
+    if (typeof window.saveTx === 'function') {
+        const _origSaveTx = window.saveTx;
+        window.saveTx = function() {
+            let oldCcId = null;
+            let isEditing = (typeof editingId !== 'undefined' && editingId && !editingIsSavings);
+            if (isEditing) {
+                const oldTx = txs.find(t => t.id === editingId);
+                if (oldTx && oldTx.account && oldTx.account.startsWith('cc_')) {
+                    oldCcId = oldTx.account;
+                }
+            }
+
+            _origSaveTx.apply(this, arguments);
+
+            const newTx = txs[0];
+            if (!newTx) return;
+
+            if (oldCcId && window.creditCards) {
+                const oldCard = window.creditCards.find(c => c.id === oldCcId);
+                if (oldCard && oldCard.transactions) {
+                    oldCard.transactions = oldCard.transactions.filter(t => t.id !== newTx.id);
+                    if (window.saveCreditCards) window.saveCreditCards();
+                }
+            }
+
+            if (newTx.account && newTx.account.startsWith('cc_') && window.creditCards) {
+                const card = window.creditCards.find(c => c.id === newTx.account);
+                if (card) {
+                    card.transactions = card.transactions || [];
+                    card.transactions = card.transactions.filter(t => t.id !== newTx.id);
+                    card.transactions.push({
+                        id: newTx.id,
+                        date: newTx.date,
+                        time: newTx.time || '12:00',
+                        name: newTx.name,
+                        amount: newTx.amount,
+                        category: newTx.cat,
+                        type: newTx.type === 'income' ? 'payment' : (newTx.type === 'expense' ? 'purchase' : 'plan_move'),
+                        note: newTx.note,
+                        currency: newTx.currency,
+                        statementMonth: (newTx.date || '').slice(0,7),
+                        createdAt: new Date().toISOString()
+                    });
+                    if (window.saveCreditCards) window.saveCreditCards();
+                }
+            }
+        };
+    }
+
+    // 4. حذف العملية من سجل الفيزا إذا تم حذفها من الرئيسية
+    if (typeof window.delTx === 'function') {
+        const _origDelTx = window.delTx;
+        window.delTx = function(id) {
+            const t = txs.find(x => x.id === id);
+            if (t && t.account && t.account.startsWith('cc_') && window.creditCards) {
+                const card = window.creditCards.find(c => c.id === t.account);
+                if (card && card.transactions) {
+                    card.transactions = card.transactions.filter(ctx => ctx.id !== id);
+                    if (window.saveCreditCards) window.saveCreditCards();
+                }
+            }
+            _origDelTx.apply(this, arguments);
+        };
+    }
+
+    // تحديث الواجهة فور التحميل
+    setTimeout(() => {
+        if(typeof window.renderHome === 'function') window.renderHome();
+    }, 1500);
+
+})();
+</script>
+
 </body>
 </html>
