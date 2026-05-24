@@ -5112,13 +5112,29 @@ function renderHome() {
   const weekStartStr = weekStart.toISOString().split('T')[0];
   const mKey = monthKey(today.getFullYear(), today.getMonth());
 
-  // Today expenses
-  const todayExp = txs.filter(t => t.type==='expense' && !t.isTransfer && t.date===todayStr).reduce((s,t)=>s+t.amountSAR, 0);
-  // This week
-  const weekExp = txs.filter(t => t.type==='expense' && !t.isTransfer && t.date >= weekStartStr).reduce((s,t)=>s+t.amountSAR, 0);
-  // This month
-  const monthExp = txs.filter(t => t.type==='expense' && !t.isTransfer && (t.date||'').startsWith(mKey)).reduce((s,t)=>s+t.amountSAR, 0);
-  const monthInc = txs.filter(t => t.type==='income' && !t.isTransfer && (t.date||'').startsWith(mKey)).reduce((s,t)=>s+t.amountSAR, 0);
+  // ── PERF: single-pass aggregation over txs (was 6+ separate filters + a quadratic account loop) ──
+  let todayExp = 0, weekExp = 0, monthExp = 0, monthInc = 0;
+  const expByCat = {};            // month expense grouped by category
+  const _accBal = {};             // accountId -> net SAR (income - expense), transfers included (matches old logic)
+  const _nonTransfer = [];        // for "recent" list
+  for (const t of txs) {
+    const sar = t.amountSAR || 0;
+    // account balance: by type, transfers included (same as old totalCashBase logic)
+    if (t.account) {
+      if (t.type === 'income') _accBal[t.account] = (_accBal[t.account] || 0) + sar;
+      else if (t.type === 'expense') _accBal[t.account] = (_accBal[t.account] || 0) - sar;
+    }
+    if (t.isTransfer) continue;
+    _nonTransfer.push(t);
+    const d = t.date || '';
+    if (t.type === 'expense') {
+      if (d === todayStr) todayExp += sar;
+      if (d >= weekStartStr) weekExp += sar;
+      if (d.startsWith(mKey)) { monthExp += sar; expByCat[t.cat] = (expByCat[t.cat] || 0) + sar; }
+    } else if (t.type === 'income' && d.startsWith(mKey)) {
+      monthInc += sar;
+    }
+  }
 
   // Greeting based on time
   const hr = today.getHours();
@@ -5126,15 +5142,13 @@ function renderHome() {
   if (hr >= 5 && hr < 12) greet = 'صباح الخير';
   else if (hr >= 12 && hr < 17) greet = 'ظهر سعيد';
 
-  // Recent 3 transactions (excl transfers)
-  const recent = [...txs.filter(t => !t.isTransfer)]
+  // Recent 3 transactions (excl transfers) — uses precomputed list
+  const recent = _nonTransfer
+    .slice()
     .sort((a,b)=>(b.date+' '+(b.time||'')).localeCompare(a.date+' '+(a.time||'')))
     .slice(0, 3);
 
-  // Budgets near limit (>70%)
-  const expByCat = {};
-  txs.filter(t => t.type==='expense' && !t.isTransfer && (t.date||'').startsWith(mKey))
-     .forEach(t => { expByCat[t.cat] = (expByCat[t.cat]||0) + t.amountSAR; });
+  // Budgets near limit (>70%) — expByCat already computed in the single pass above
   const warnBudgets = Object.entries(budgets)
     .map(([cat, lim]) => ({cat, lim, spent: expByCat[cat]||0, pct: Math.round((expByCat[cat]||0)/lim*100)}))
     .filter(b => b.pct >= 70)
@@ -5165,16 +5179,14 @@ function renderHome() {
   // Compute total cash across all accounts (in base currency)
   // IMPORTANT: account balance = sum of (income - expense) of all txs assigned to that account,
   // NOT acc.balance (which is just the initial seed).
+  // Compute total cash across all accounts (in base currency)
+  // PERF: balances already accumulated in _accBal during the single pass above
+  // (was O(accounts × txs) — a full txs.filter() inside the account loop)
   let totalCashBase = 0;
   try {
     for (const acc of (accounts || [])) {
       if (acc.archived) continue;
-      // Compute actual balance from transactions
-      const accTxs = txs.filter(t => t.account === acc.id);
-      const inc = accTxs.filter(t => t.type === 'income').reduce((s, t) => s + (t.amountSAR || 0), 0);
-      const exp = accTxs.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amountSAR || 0), 0);
-      const balSAR = inc - exp;
-      totalCashBase += toBase(balSAR);
+      totalCashBase += toBase(_accBal[acc.id] || 0);
     }
   } catch(e) {}
 
@@ -5677,11 +5689,30 @@ function renderSavList() {
   el.innerHTML = h;
 }
 
+// ── PERF: pagination — render at most LIST_PAGE rows, with a "load more" button ──
+var LIST_PAGE = 60;
+var _listLimits = {};      // id -> current max rows shown
+var _lastListData = {};    // id -> last list passed (so loadMoreList can re-render)
+function loadMoreList(id) {
+  _listLimits[id] = (_listLimits[id] || LIST_PAGE) + LIST_PAGE;
+  renderList(id, _lastListData[id] || []);
+}
+function resetListPaging() { _listLimits = {}; }
+
 function renderList(id, list) {
   const el = document.getElementById(id);
+  if (!el) return;
+  _lastListData[id] = list;
   if (!list.length) { el.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>لا توجد حركات</div>`; return; }
+
+  // Sort newest-first once, then cap to the current page limit (most recent N)
+  const sorted = list.slice().sort((a,b)=>((b.date||'')+' '+(b.time||'')).localeCompare((a.date||'')+' '+(a.time||'')));
+  const limit = _listLimits[id] || LIST_PAGE;
+  const shown = sorted.slice(0, limit);
+  const hasMore = sorted.length > limit;
+
   const grp = {};
-  list.forEach(t => { const k=t.date||''; if(!grp[k])grp[k]=[]; grp[k].push(t); });
+  shown.forEach(t => { const k=t.date||''; if(!grp[k])grp[k]=[]; grp[k].push(t); });
   let h = '';
   Object.keys(grp).sort((a,b)=>b.localeCompare(a)).forEach(d => {
     h += `<div class="date-group-lbl">📅 ${esc(dtLabel(d))}</div>`;
@@ -5714,10 +5745,15 @@ function renderList(id, list) {
       </div>`;
     });
   });
+  if (hasMore) {
+    const remaining = sorted.length - limit;
+    h += `<button onclick="loadMoreList('${id}')" style="display:block;width:100%;margin:10px 0 4px;padding:12px;background:var(--card2);border:1.5px solid var(--border);border-radius:12px;color:var(--accent);font-family:inherit;font-weight:700;font-size:13px;cursor:pointer">⬇️ حمّل المزيد (${remaining} حركة متبقية)</button>`;
+  }
   el.innerHTML = h;
 }
 
 function renderAll() {
+  resetListPaging();
   updateMonthNavLabel();
   const allItems = [...applyFilters(txs), ...applyFilters(savings).map(s=>({...s,type:'savings'}))];
   allItems.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
@@ -7362,12 +7398,20 @@ function initHideAmounts() {
 }
 
 // ── OFFLINE DETECTION ──
+var _offlineBadgeTimer = null;
 function updateOnlineStatus() {
   const badge = document.getElementById('offlineBadge');
   if (!badge) return;
+  // clear any pending auto-hide so timers don't stack
+  if (_offlineBadgeTimer) { clearTimeout(_offlineBadgeTimer); _offlineBadgeTimer = null; }
   if (!navigator.onLine) {
     badge.classList.add('show');
     showToast('⚠️ أنت offline — البيانات محفوظة محلياً', 'warning');
+    // auto-hide the badge after 30s even if still offline
+    _offlineBadgeTimer = setTimeout(() => {
+      badge.classList.remove('show');
+      _offlineBadgeTimer = null;
+    }, 30000);
   } else {
     badge.classList.remove('show');
     showToast('✅ رجعت online!', 'success');
