@@ -6646,6 +6646,24 @@ function updateCsvDatePreview() {
   previewEl.innerHTML = '🔍 معاينة: ' + samples.join(' | ');
 }
 
+// ── IMPORT DEDUP (كشف الحساب) ──
+// توقيع للحركة عشان نمنع تكرار نفس العملية لو الكشف اترفع تاني أو فيه أيام متداخلة.
+// بنعتمد على المبلغ الأصلي + العملة (مش amountSAR) لأن سعر الصرف بيتغير بين الاستيرادات.
+function _txDedupKey(account, date, type, amount, currency, name) {
+  const amt = Math.round((parseFloat(amount) || 0) * 100); // بالقروش لتفادي مشاكل الكسور
+  const nm = (name || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
+  return [account || '', date || '', type || '', amt, currency || '', nm].join('|');
+}
+// نبني الـ Set من الحركات الموجودة فقط (مش من صفوف نفس الاستيراد) عشان نسمح
+// بتكرار حقيقي داخل نفس الكشف، ونمنع فقط إعادة استيراد حركة موجودة قبل كده.
+function buildExistingTxKeys() {
+  const set = new Set();
+  for (const t of txs) {
+    set.add(_txDedupKey(t.account, t.date, t.type, t.amount, t.currency, t.name));
+  }
+  return set;
+}
+
 function confirmCsvImport() {
   if (!csvParsed) return;
   const dateIdx = parseInt(document.getElementById('csvColDate').value);
@@ -6657,7 +6675,8 @@ function confirmCsvImport() {
   const csvCurrency = document.getElementById('csvCurrency').value || 'SAR';
   const rate = csvCurrency === 'SAR' ? 1 : (csvCurrency === 'EGP' ? rates.EGP : rates[csvCurrency]);
 
-  let added = 0, skipped = 0;
+  let added = 0, skipped = 0, dupes = 0;
+  const existingKeys = buildExistingTxKeys();
   csvParsed.rows.forEach(row => {
     const date = parseCSVDate(row[dateIdx], dateFmt);
     const name = (row[nameIdx]||'').trim() || 'حركة من البنك';
@@ -6669,6 +6688,10 @@ function confirmCsvImport() {
     if (typeMode === 'all_expense') { type = 'expense'; finalAmt = Math.abs(amt); }
     else if (typeMode === 'all_income') { type = 'income'; finalAmt = Math.abs(amt); }
     else { type = amt < 0 ? 'expense' : 'income'; finalAmt = Math.abs(amt); }
+
+    // تخطّي الحركات المكررة (موجودة قبل كده / إعادة استيراد نفس الكشف)
+    const key = _txDedupKey(accountId, date, type, finalAmt, csvCurrency, name);
+    if (existingKeys.has(key)) { dupes++; return; }
 
     // Convert to canonical SAR using selected currency (#3)
     const amountSAR = curToSAR(finalAmt, csvCurrency);
@@ -6687,6 +6710,7 @@ function confirmCsvImport() {
   document.getElementById('csvImportModal').classList.remove('open');
   // Use toast instead of alert (#13)
   let msg = `✅ تم استيراد ${added} حركة`;
+  if (dupes > 0) msg += ` · تخطى ${dupes} حركة مكررة`;
   if (skipped > 0) msg += ` · تخطى ${skipped} صف بسبب بيانات ناقصة`;
   if (droppedRows > 0) msg += ` · ${droppedRows} صف تالف`;
   if (typeof showToast === 'function') showToast(msg, added > 0 ? 'success' : 'warning', 5000);
@@ -7739,7 +7763,7 @@ if (lastRateUpdate !== today && navigator.onLine) {
 
     <div class="form-row">
       <div class="form-lbl">💱 العملة</div>
-      <select class="form-inp" id="pdfCurrency">
+      <select class="form-inp" id="pdfCurrency" onchange="if(typeof renderPdfRows==='function')renderPdfRows()">
         <option value="SAR">🇸🇦 ريال</option>
         <option value="EGP" selected>🇪🇬 جنيه</option>
         <option value="USD">🇺🇸 دولار</option>
@@ -10224,9 +10248,11 @@ function showPdfReviewModal() {
     status.innerHTML = `<span style="color:var(--green)">✅ تم استخراج ${pdfParsedRows.length} عملية محتملة</span>`;
   }
   // Fill account dropdown
-  document.getElementById('pdfAccount').innerHTML = accounts.map(a =>
+  const _pdfAcc = document.getElementById('pdfAccount');
+  _pdfAcc.innerHTML = accounts.map(a =>
     `<option value="${a.id}">${a.emoji} ${a.name}</option>`
   ).join('');
+  _pdfAcc.onchange = () => { if (typeof renderPdfRows === 'function') renderPdfRows(); };
   renderPdfRows();
   document.getElementById('pdfImportModal').classList.add('open');
 }
@@ -10238,15 +10264,35 @@ function renderPdfRows() {
     document.getElementById('pdfImportSummary').textContent = '0 عملية محددة';
     return;
   }
+  // علّم الصفوف المكررة (موجودة قبل كده) حسب الحساب والعملة المختارين، وشيل اختيارها تلقائياً
+  const accSel = document.getElementById('pdfAccount');
+  const curSel = document.getElementById('pdfCurrency');
+  const accountId = accSel ? accSel.value : '';
+  const cur = curSel ? curSel.value : 'SAR';
+  const existingKeys = buildExistingTxKeys();
+  let dupCount = 0;
+  pdfParsedRows.forEach(r => {
+    const key = _txDedupKey(accountId, r.date, r.type, r.amount, cur, r.name);
+    const isDup = existingKeys.has(key);
+    if (isDup && !r._dupHandled) { r.selected = false; r._dupHandled = true; } // شيل الاختيار مرة واحدة بس
+    if (!isDup) r._dupHandled = false; // اتشال التكرار (تغير الحساب مثلاً) — رجّع الحالة
+    r._dup = isDup;
+    if (isDup) dupCount++;
+  });
   list.innerHTML = pdfParsedRows.map((r, i) => {
     const sign = r.type === 'income' ? '+' : '-';
-    return `<div class="pdf-row">
+    const dupBadge = r._dup ? `<span style="font-size:9px;font-weight:700;color:var(--red);background:var(--red-dim);padding:1px 6px;border-radius:8px;margin-inline-start:4px">مكرر</span>` : '';
+    return `<div class="pdf-row" style="${r._dup?'opacity:.6':''}">
       <input type="checkbox" ${r.selected?'checked':''} onchange="togglePdfRow(${i})"/>
       <div class="pdf-date">${r.date}</div>
-      <div class="pdf-name">${r.name}</div>
+      <div class="pdf-name">${r.name}${dupBadge}</div>
       <div class="pdf-amt ${r.type==='income'?'in':'out'}">${sign}${fmt(r.amount, 2)}</div>
     </div>`;
   }).join('');
+  if (dupCount > 0) {
+    const st = document.getElementById('pdfStatus');
+    if (st) st.innerHTML = `<span style="color:var(--green)">✅ ${pdfParsedRows.length} عملية</span> · <span style="color:var(--red)">⚠️ ${dupCount} منها مكررة (اتشال اختيارها)</span>`;
+  }
   updatePdfSummary();
 }
 
@@ -10274,8 +10320,12 @@ function confirmPdfImport() {
   const cur = document.getElementById('pdfCurrency').value;
   const accountId = document.getElementById('pdfAccount').value;
   const rate = cur === 'SAR' ? 1 : (cur === 'EGP' ? rates.EGP : rates[cur]);
-  let added = 0;
+  let added = 0, dupes = 0;
+  const existingKeys = buildExistingTxKeys();
   sel.forEach(r => {
+    // تخطّي المكرر (موجود قبل كده / إعادة استيراد)
+    const key = _txDedupKey(accountId, r.date, r.type, r.amount, cur, r.name);
+    if (existingKeys.has(key)) { dupes++; return; }
     const amountSAR = curToSAR(r.amount, cur);
     txs.unshift({
       id: 'pdf_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
@@ -10295,7 +10345,9 @@ function confirmPdfImport() {
   saveData();
   pdfParsedRows = []; pdfRawText = '';
   document.getElementById('pdfImportModal').classList.remove('open');
-  if (typeof showToast === 'function') showToast(`✅ تم استيراد ${added} عملية`, 'success');
+  let msg = `✅ تم استيراد ${added} عملية`;
+  if (dupes > 0) msg += ` · تخطى ${dupes} عملية مكررة`;
+  if (typeof showToast === 'function') showToast(msg, added > 0 ? 'success' : 'warning', 5000);
   renderAll();
 }
 
