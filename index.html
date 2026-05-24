@@ -5755,12 +5755,21 @@ function renderList(id, list) {
 function renderAll() {
   resetListPaging();
   updateMonthNavLabel();
-  const allItems = [...applyFilters(txs), ...applyFilters(savings).map(s=>({...s,type:'savings'}))];
-  allItems.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
-  renderList('allList', allItems);
-  renderList('incList', applyFilters(txs.filter(t=>t.type==='income')));
-  renderList('expList', applyFilters(txs.filter(t=>t.type==='expense')));
-  renderSavList();
+  // PERF: only render the list for the currently-visible tab.
+  // The other three list containers are display:none, so rendering them
+  // (each with its own filter + sort + DOM build) was wasted work on every change.
+  const tab = (typeof curTab !== 'undefined') ? curTab : 'all';
+  if (tab === 'all') {
+    const allItems = [...applyFilters(txs), ...applyFilters(savings).map(s=>({...s,type:'savings'}))];
+    allItems.sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
+    renderList('allList', allItems);
+  } else if (tab === 'income') {
+    renderList('incList', applyFilters(txs.filter(t=>t.type==='income')));
+  } else if (tab === 'expense') {
+    renderList('expList', applyFilters(txs.filter(t=>t.type==='expense')));
+  } else if (tab === 'savings') {
+    renderSavList();
+  }
   updateSummary();
   buildFilterChips([...txs,...savings]);
   renderHome();
