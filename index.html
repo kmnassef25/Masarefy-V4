@@ -10141,74 +10141,123 @@ async function importBankPDF(event) {
 }
 
 function parsePdfText(bankCode) {
-  const lines = pdfRawText.split('\n').map(l => l.trim()).filter(Boolean);
+  const rawLines = pdfRawText.split('\n').map(l => l.trim()).filter(Boolean);
   const rows = [];
 
-  // For each line, try to extract date, amount, description
-  lines.forEach((line, idx) => {
-    const lowerLine = line.toLowerCase();
-    // Skip header/footer lines
-    if (PDF_PATTERNS.skipKeywords.some(kw => lowerLine.includes(kw.toLowerCase()))) return;
-    // Skip very short lines
-    if (line.length < 8) return;
+  const MONTHS_RE = Object.keys(ARABIC_MONTHS).join('|');
+  const CUR_RE = /(EGP|USD|EUR|SAR|GBP|AED|KWD|جنيه|دولار|يورو|ريال|درهم)/i;
+  // كلمات تدل على دائن/دخل (سداد/استرداد) في كشوف البطاقات والحسابات
+  const CREDIT_KW = ['payment','repayment','refund','reversal','adjustment','credit','reverse',
+                     'سداد','دفعة','ايداع','إيداع','دائن','راتب','استرداد','مرتجع','تحويل وارد'];
+  // سطور ملخص/هيدر نتخطاها (مش حركات)
+  const SKIP_KW = ['balance','الرصيد','opening','closing','افتتاح','ختام','page','صفحة','رقم الصفحة',
+                   'total','إجمالي','اجمالي','مجموع','statement','كشف حساب','iban','account no',
+                   'رقم الحساب','رقم البطاقة','الحد الائتمان','حد ائتمان','تاريخ الاستحقاق','تاريخ الكشف',
+                   'الدفعة المستحقة','as of','الوصف مدين','تاريخ المعاملة تاريخ'];
+  // ترجمة/تنظيف أسماء معروفة لما الوصف يطلع مبهم (أكواد مرجع)
+  const NAME_MAP = [['payment','سداد بطاقة'],['سداد','سداد بطاقة'],['repayment','تسوية/سداد'],
+                    ['adjustment','تسوية'],['stamp tax','ضريبة دمغة'],['دمغة','ضريبة دمغة']];
 
-    // Find date
-    let date = null;
-    let dateMatch = null;
-    for (const re of PDF_PATTERNS.dateRegexes) {
-      dateMatch = line.match(re);
-      if (dateMatch) {
-        date = parseDateMatch(dateMatch);
-        if (date) break;
+  const dateDefs = [
+    {re:'(\\d{4})\\s+('+MONTHS_RE+')\\s+(\\d{1,2})', o:'ymd'},   // 2026 أبريل 24 (شائع في كشوف مصر)
+    {re:'(\\d{1,2})\\s+('+MONTHS_RE+')\\s+(\\d{4})', o:'dmy'},   // 24 أبريل 2026
+    {re:'(\\d{2})[/\\-](\\d{2})[/\\-](\\d{4})', o:'dmyn'},        // dd/mm/yyyy
+    {re:'(\\d{4})[/\\-](\\d{2})[/\\-](\\d{2})', o:'ymdn'},        // yyyy/mm/dd
+  ];
+  const pad = n => String(parseInt(n)).padStart(2,'0');
+  const nm  = m => String(ARABIC_MONTHS[m] || 0).padStart(2,'0');
+  const NUM_RE = /(\d{1,3}(?:[,،]\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/g;
+  const toNum = s => parseFloat(String(s).replace(/[,،]/g,''));
+
+  function allDates(line) {
+    const f = [];
+    dateDefs.forEach(d => {
+      const re = new RegExp(d.re, 'g'); let m;
+      while ((m = re.exec(line))) {
+        let iso = null;
+        if (d.o==='ymd') iso = `${m[1]}-${nm(m[2])}-${pad(m[3])}`;
+        else if (d.o==='dmy') iso = `${m[3]}-${nm(m[2])}-${pad(m[1])}`;
+        else if (d.o==='dmyn') iso = `${m[3]}-${m[2]}-${m[1]}`;
+        else if (d.o==='ymdn') iso = `${m[1]}-${m[2]}-${m[3]}`;
+        if (iso) f.push({iso, raw:m[0], index:m.index});
       }
-    }
-    if (!date) return;
-
-    // Find amounts (could be 1, 2, or 3 amounts: debit, credit, balance)
-    const amountMatches = [...line.matchAll(PDF_PATTERNS.amountRegex)]
-      .map(m => m[0])
-      .filter(s => !s.match(/^\d{4}$/) && !s.match(/^\d{1,2}$/) && s.replace(/[,،.\-]/g,'').length >= 2) // exclude years and small numbers
-      .map(s => parseFloat(s.replace(/[,،]/g,'')))
-      .filter(n => !isNaN(n) && Math.abs(n) >= 1);
-
-    if (!amountMatches.length) return;
-
-    // Heuristic: if 3 amounts, the last is balance, second-to-last is the transaction
-    // if 2 amounts, larger could be balance, smaller is transaction
-    // if 1 amount, that's the transaction
-    let amount, type;
-    if (amountMatches.length >= 3) {
-      // Two columns (debit, credit, balance) — the non-zero of first two is the txn
-      const [a, b] = amountMatches;
-      if (Math.abs(a) > 0.01 && Math.abs(b) < 0.01) { amount = a; type = 'expense'; }
-      else if (Math.abs(b) > 0.01 && Math.abs(a) < 0.01) { amount = b; type = 'income'; }
-      else { amount = Math.max(Math.abs(a), Math.abs(b)); type = a > b ? 'expense' : 'income'; }
-    } else if (amountMatches.length === 2) {
-      // Could be amount + balance, or debit + credit
-      amount = amountMatches[0];
-      type = amount < 0 ? 'expense' : 'income';
-      amount = Math.abs(amount);
-    } else {
-      amount = amountMatches[0];
-      type = amount < 0 ? 'expense' : 'income';
-      amount = Math.abs(amount);
-    }
-
-    if (amount < 1) return; // ignore noise
-
-    // Description: remove date and amounts from the line
-    let name = line;
-    if (dateMatch) name = name.replace(dateMatch[0], ' ');
-    amountMatches.forEach(a => {
-      // Remove formatted version
-      name = name.replace(new RegExp('\\b' + Math.abs(a).toLocaleString('en-US') + '\\b'), ' ');
-      name = name.replace(new RegExp('\\b' + Math.abs(a) + '\\b'), ' ');
     });
-    name = name.replace(/\s+/g, ' ').trim();
-    if (!name || name.length < 2) name = 'حركة بنكية';
-    if (name.length > 80) name = name.substring(0, 80);
+    f.sort((a,b)=>a.index-b.index);
+    return f;
+  }
+  function stripDates(line) { let s=line; allDates(line).forEach(d=>s=s.replace(d.raw,' ')); return s; }
 
-    rows.push({date, name, amount, type, selected: true});
+  // المبلغ: لو فيه رمز عملة ناخد الرقم الملاصق ليه (أدق)، وإلا أول توكن رقمي صافي.
+  // بنتجاهل الأرقام الطويلة الملزوقة بحروف (أكواد مرجع/بطاقة) والأرقام >= مليار.
+  function findAmount(line) {
+    const noDates = stripDates(line);
+    const curM = noDates.match(CUR_RE);
+    if (curM) {
+      const before = noDates.slice(0, curM.index);
+      const nb = [...before.matchAll(NUM_RE)].map(x=>x[0]);
+      if (nb.length) { const v = toNum(nb[nb.length-1]); if (!isNaN(v) && v>=0.01 && v<1e9) return {amount:v, currency:curM[1].toUpperCase()}; }
+      const after = noDates.slice(curM.index + curM[1].length);
+      const na = [...after.matchAll(NUM_RE)].map(x=>x[0]);
+      if (na.length) { const v = toNum(na[0]); if (!isNaN(v) && v>=0.01 && v<1e9) return {amount:v, currency:curM[1].toUpperCase()}; }
+    }
+    const tokens = noDates.split(/\s+/).filter(t => /^[\d][\d.,،]*$/.test(t)).map(toNum).filter(n => !isNaN(n) && n>=1 && n<1e9);
+    if (!tokens.length) return null;
+    return {amount: tokens[0], currency: null};
+  }
+
+  function cleanName(line) {
+    let s = stripDates(line);
+    s = s.replace(CUR_RE, ' ');
+    s = s.replace(/(\d{1,3}(?:[,،]\d{3})+(?:\.\d{1,2})?|\d+\.\d{1,2})/g, ' '); // مبالغ
+    s = s.replace(/\d{5,}/g, ' ');   // أكواد طويلة جوه التوكنز
+    s = s.replace(/\b\d+\b/g, ' ');  // أرقام منفصلة باقية
+    s = s.replace(/\s+/g, ' ').trim();
+    return s;
+  }
+  // لو الوصف طلع مبهم (فيه بقايا كود زي EB- أو فاضي) نستبدله بترجمة معروفة
+  function niceName(raw, cleaned) {
+    const low = (raw || '').toLowerCase();
+    const ugly = !cleaned || cleaned.length < 4 || /eb-|^-|card$/i.test(cleaned);
+    if (ugly) { for (const [k,v] of NAME_MAP) if (low.includes(k)) return v; }
+    return cleaned || 'حركة بنكية';
+  }
+  function typeFrom(raw) {
+    const low = (raw || '').toLowerCase();
+    return CREDIT_KW.some(k => low.includes(k)) ? 'income' : 'expense';
+  }
+  function isSkip(low) { return SKIP_KW.some(k => low.includes(k.toLowerCase())); }
+
+  // المرور على السطور مع دعم الحركات الممتدة على أكتر من سطر (تاريخ/وصف/مبلغ منفصلين)
+  let pending = null;
+  rawLines.forEach(line => {
+    const low = line.toLowerCase();
+    if (isSkip(low)) { pending = null; return; }
+    if (line.length < 4) return;
+
+    const dts = allDates(line);
+    const amt = findAmount(line);
+
+    if (dts.length && amt) {
+      // حركة كاملة في سطر واحد
+      const name = niceName(line, cleanName(line));
+      rows.push({date: dts[dts.length-1].iso, name: name.slice(0,80), amount: amt.amount, currency: amt.currency, type: typeFrom(line), selected:true});
+      pending = null;
+    } else if (dts.length && !amt) {
+      // تاريخ بدون مبلغ → بداية حركة ممتدة
+      pending = {date: dts[dts.length-1].iso, parts:[line]};
+    } else if (!dts.length && amt) {
+      // مبلغ بدون تاريخ → يكمّل الحركة الممتدة
+      if (pending) {
+        const rawAll = pending.parts.join(' ') + ' ' + line;
+        const cl = pending.parts.map(cleanName).filter(Boolean).join(' ');
+        const name = niceName(rawAll, cl || cleanName(line));
+        rows.push({date: pending.date, name: name.slice(0,80), amount: amt.amount, currency: amt.currency, type: typeFrom(rawAll), selected:true});
+        pending = null;
+      }
+    } else {
+      // لا تاريخ ولا مبلغ → جزء من وصف الحركة الممتدة
+      if (pending) pending.parts.push(line);
+    }
   });
 
   pdfParsedRows = rows;
@@ -10267,6 +10316,13 @@ function renderPdfRows() {
   // علّم الصفوف المكررة (موجودة قبل كده) حسب الحساب والعملة المختارين، وشيل اختيارها تلقائياً
   const accSel = document.getElementById('pdfAccount');
   const curSel = document.getElementById('pdfCurrency');
+  // لو الـ parser كشف عملة موحدة لكل الحركات، اضبط القائمة عليها تلقائياً
+  if (curSel) {
+    const detected = [...new Set(pdfParsedRows.map(r => r.currency).filter(Boolean))];
+    if (detected.length === 1 && [...curSel.options].some(o => o.value === detected[0])) {
+      curSel.value = detected[0];
+    }
+  }
   const accountId = accSel ? accSel.value : '';
   const cur = curSel ? curSel.value : 'SAR';
   const existingKeys = buildExistingTxKeys();
