@@ -7774,6 +7774,9 @@ if (lastRateUpdate !== today && navigator.onLine) {
     <div style="font-size:12px;font-weight:700;color:var(--muted);margin:14px 0 8px">📋 العمليات المستخرجة (ألغ علامة ✓ للي مش عايز تستوردها)</div>
     <div id="pdfRowsList" style="max-height:300px;overflow-y:auto;background:var(--card2);border-radius:10px;padding:8px"></div>
 
+    <button onclick="togglePdfRaw()" style="width:100%;margin-top:8px;padding:9px;background:var(--card2);border:1.5px solid var(--border);border-radius:10px;color:var(--muted);font-family:inherit;font-weight:700;font-size:11px;cursor:pointer">👁 اعرض النص اللي اتقرا من الـ PDF (للتشخيص)</button>
+    <pre id="pdfRawBox" style="display:none;max-height:240px;overflow:auto;background:#000;color:#0f0;border-radius:10px;padding:10px;margin-top:8px;font-size:10px;line-height:1.5;direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-word"></pre>
+
     <div id="pdfImportSummary" style="background:var(--card);border-radius:10px;padding:10px;margin:12px 0;font-size:12px;color:var(--muted);text-align:center"></div>
 
     <div style="display:flex;gap:8px">
@@ -10306,10 +10309,27 @@ function showPdfReviewModal() {
   document.getElementById('pdfImportModal').classList.add('open');
 }
 
+function togglePdfRaw() {
+  const box = document.getElementById('pdfRawBox');
+  if (!box) return;
+  if (box.style.display === 'none') {
+    const txt = (pdfRawText || '').trim();
+    if (!txt) {
+      box.textContent = '⚠️ مفيش نص اتقرا من الـ PDF خالص.\nغالباً الملف صورة (scanned) — محتاج OCR، مش هينفع يتقرا كنص.';
+    } else {
+      // أرقام السطور تساعدنا نشخّص مكان المشكلة
+      box.textContent = txt.split('\n').map((l,i)=>String(i+1).padStart(3,' ')+'│ '+l).join('\n');
+    }
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
 function renderPdfRows() {
   const list = document.getElementById('pdfRowsList');
   if (!pdfParsedRows.length) {
-    list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:11px">مفيش عمليات</div>`;
+    list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:11px">⚠️ مش لاقي حركات في الـ PDF.<br>اضغط "👁 اعرض النص اللي اتقرا" تحت وابعتهولي عشان أعرف المشكلة.</div>`;
     document.getElementById('pdfImportSummary').textContent = '0 عملية محددة';
     return;
   }
