@@ -10111,15 +10111,32 @@ async function importBankPDF(event) {
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
-      // Reconstruct lines: items with similar y-coord are on same line
-      const itemsByY = {};
-      textContent.items.forEach(it => {
-        const y = Math.round(it.transform[5]);
-        if (!itemsByY[y]) itemsByY[y] = [];
-        itemsByY[y].push({x: it.transform[4], str: it.str});
+      // Reconstruct lines from item coordinates.
+      // FIX: group items whose y are *close* (within a tolerance), not exactly equal.
+      // Many bank PDFs place items on the same visual row at slightly different y
+      // (e.g. 700.1 vs 699.6); rounding split them into separate broken lines and
+      // the row parser then failed ("no transactions found").
+      const items = textContent.items
+        .filter(it => (it.str || '').trim() !== '')
+        .map(it => ({ x: it.transform[4], y: it.transform[5], str: it.str }));
+      // average glyph height → tolerance for "same line"
+      const heights = textContent.items.map(it => Math.abs(it.height || (it.transform && it.transform[3]) || 0)).filter(h => h > 0);
+      const avgH = heights.length ? heights.reduce((a,b)=>a+b,0)/heights.length : 8;
+      const tol = Math.max(3, avgH * 0.6);
+
+      items.sort((a,b) => b.y - a.y); // top → bottom
+      const lines = [];
+      items.forEach(it => {
+        const last = lines[lines.length-1];
+        if (last && Math.abs(last.y - it.y) <= tol) {
+          last.items.push(it);
+          last.y = (last.y * (last.items.length-1) + it.y) / last.items.length; // running avg
+        } else {
+          lines.push({ y: it.y, items: [it] });
+        }
       });
-      Object.keys(itemsByY).sort((a,b) => parseFloat(b) - parseFloat(a)).forEach(y => {
-        const line = itemsByY[y].sort((a,b) => a.x - b.x).map(i => i.str).join(' ').trim();
+      lines.forEach(ln => {
+        const line = ln.items.sort((a,b) => a.x - b.x).map(o => o.str).join(' ').replace(/\s+/g,' ').trim();
         if (line) allText += line + '\n';
       });
       allText += '\n';
@@ -14970,12 +14987,12 @@ setTimeout(() => {
 
   function injectApiKeySettings() {
     const settingsSheet = document.querySelector('#settingsModal .settings-sheet');
-    if (!settingsSheet) return;
-    if (settingsSheet.querySelector('#realtimeApiSection')) return; // already injected
+    if (!settingsSheet) return false;                                    // DOM not ready → retry
+    if (settingsSheet.querySelector('#realtimeApiSection')) return true; // already injected → done
 
     // Find the rate inputs section to inject after
     const saveBtn = settingsSheet.querySelector('button.set-save[onclick*="saveSettings"]');
-    if (!saveBtn) return;
+    if (!saveBtn) return false;                                          // anchor not ready → retry
 
     const section = document.createElement('div');
     section.id = 'realtimeApiSection';
@@ -15008,6 +15025,7 @@ setTimeout(() => {
     `;
     saveBtn.parentNode.insertBefore(section, saveBtn.nextSibling);
     onRtProviderChange();
+    return true;
   }
 
   window.onRtProviderChange = function() {
@@ -15042,15 +15060,22 @@ setTimeout(() => {
     showAlert('✅ تم تعطيل الأسعار اللحظية', 'success');
   };
 
-  // Inject when settings opens
+  // Inject when settings opens — deterministic, no timing guesswork.
+  // The previous code raced setTimeout(50)/setTimeout(1200) to "guess" when
+  // the settings DOM exists. Instead we inject right after openSettings runs
+  // (modal is guaranteed present), retrying on the next animation frame only
+  // if the inner sheet hasn't painted yet. No CPU polling, no fixed delays.
+  function injectApiKeyWhenReady(tries) {
+    if (injectApiKeySettings() === true) return;        // injected (or already there)
+    if ((tries || 0) >= 5) return;                       // give up after ~5 frames
+    requestAnimationFrame(() => injectApiKeyWhenReady((tries || 0) + 1));
+  }
+
   const _origOpenSettings = window.openSettings;
   window.openSettings = function() {
-    if (_origOpenSettings) _origOpenSettings();
-    setTimeout(injectApiKeySettings, 50);
+    if (_origOpenSettings) _origOpenSettings.apply(this, arguments);
+    injectApiKeyWhenReady(0);
   };
-
-  // Also inject on first DOMContentLoaded for safety
-  setTimeout(injectApiKeySettings, 1200);
 
 })();
 
