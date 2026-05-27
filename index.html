@@ -5699,7 +5699,11 @@ function renderSavList() {
   filtered.forEach(t => { const k=t.date||''; if(!grp[k])grp[k]=[]; grp[k].push(t); });
   let h = '';
   Object.keys(grp).sort((a,b)=>b.localeCompare(a)).forEach(d => {
-    h += `<div class="date-group-lbl">📅 ${esc(dtLabel(d))}</div>`;
+    const dayTot = grp[d].reduce((s,t)=>s+(t.amountSAR||0), 0);
+    h += `<div class="date-group-lbl" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <span>📅 ${esc(dtLabel(d))}</span>
+            <span style="font-size:12px;color:var(--sav);font-weight:800">+${fmtBase(dayTot)}</span>
+          </div>`;
     grp[d].sort((a,b)=>(b.time||'').localeCompare(a.time||'')).forEach(t => {
       const em = SAV_EMOJI[t.cat]||'💰';
       const sarLine = t.currency!==baseCurrency ? `<div class="tx-sar">≈ ${fmtBase(t.amountSAR)}</div><div class="tx-rate">${esc(rateDisplayText(t))}</div>` : '';
@@ -5751,7 +5755,20 @@ function renderList(id, list) {
   shown.forEach(t => { const k=t.date||''; if(!grp[k])grp[k]=[]; grp[k].push(t); });
   let h = '';
   Object.keys(grp).sort((a,b)=>b.localeCompare(a)).forEach(d => {
-    h += `<div class="date-group-lbl">📅 ${esc(dtLabel(d))}</div>`;
+    // مجموع اليوم: نفصل المصروف عن الدخل (الجمع بينهم مش له معنى)
+    let dayExp = 0, dayInc = 0;
+    grp[d].forEach(t => {
+      const v = t.amountSAR || 0;
+      if (t.type === 'income' || t.type === 'savings') dayInc += v;
+      else if (t.type === 'expense') dayExp += v;
+    });
+    let totHtml = '';
+    if (dayExp > 0) totHtml += `<span style="color:var(--red);font-weight:800">-${fmtBase(dayExp)}</span>`;
+    if (dayInc > 0) totHtml += `${totHtml?'<span style="color:var(--muted);margin:0 4px">·</span>':''}<span style="color:var(--green);font-weight:800">+${fmtBase(dayInc)}</span>`;
+    h += `<div class="date-group-lbl" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <span>📅 ${esc(dtLabel(d))}</span>
+            <span style="font-size:12px">${totHtml}</span>
+          </div>`;
     grp[d].sort((a,b)=>(b.time||'').localeCompare(a.time||'')).forEach(t => {
       const em = t.type==='savings'?(SAV_EMOJI[t.cat]||'💰'):(EMOJI[t.cat]||(t.type==='income'?'💰':'💸'));
       const sign = t.type==='income'||t.type==='savings'?'+':'-';
