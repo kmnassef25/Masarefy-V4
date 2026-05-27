@@ -5776,6 +5776,16 @@ function renderList(id, list) {
       const tagsLine = (t.tags && t.tags.length) ? `<div class="tx-tags">${t.tags.map(tg=>`<span class="tag-chip">#${esc(tg)}</span>`).join('')}</div>` : '';
       const splitsLine = (t.splits && t.splits.length) ? `<div class="tx-splits">📊 مقسّمة على ${t.splits.length} فئات</div>` : '';
       const refundLine = t.refundOf ? `<div class="tx-refund">↩️ استرجاع</div>` : '';
+      // ربط برحلة أو مناسبة → يظهر تحت العملية
+      let linkLine = '';
+      if (t.tripId && typeof trips !== 'undefined') {
+        const tr = trips.find(x => x.id === t.tripId);
+        if (tr) linkLine += `<div class="tx-link" style="font-size:11px;color:var(--accent);margin-top:3px">🛫 ${esc(tr.name || ('رحلة ' + (tr.country||'')))}</div>`;
+      }
+      if (t.occId && typeof occasions !== 'undefined') {
+        const oc = occasions.find(x => x.id === t.occId);
+        if (oc) linkLine += `<div class="tx-link" style="font-size:11px;color:var(--accent);margin-top:3px">🎉 ${esc(oc.name || oc.type || 'مناسبة')}</div>`;
+      }
       const pendingBadge = t.pending ? `<span class="badge pending-b">⏳ قيد الانتظار</span>` : '';
       h += `<div class="tx-card ${t.type==='income'?'inc':t.type==='savings'?'sav':'exp'} ${t.pending?'is-pending':''}" data-tx-id="${escAttr(t.id)}" data-tx-kind="${t.type==='savings'?'sav':'tx'}">
         <div class="tx-emoji">${em}</div>
@@ -5783,7 +5793,7 @@ function renderList(id, list) {
           <div class="tx-name">${esc(t.name)}${t.recurring?'<span style="font-size:10px;color:var(--accent);margin-right:5px">🔁</span>':''}</div>
           <div class="tx-meta"><span class="badge">${esc(t.cat)}</span><span class="badge" style="background:rgba(14,165,233,.1);color:var(--sar)">${SYM[t.currency]||esc(t.currency)}</span>${t.time?`<span class="badge time-b">⏰ ${esc(t.time)}</span>`:''}${pendingBadge}</div>
           ${tagsLine}
-          ${splitsLine}${refundLine}
+          ${splitsLine}${refundLine}${linkLine}
           ${t.note?`<div class="tx-note">📝 ${esc(t.note)}</div>`:''}${t.receipt?`<div style="margin-top:3px"><span class="receipt-icon-tx" data-action="view-receipt" data-tx-id="${escAttr(t.id)}">📎 إيصال</span></div>`:''}
         </div>
         <div class="tx-right">
