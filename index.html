@@ -6325,9 +6325,45 @@ function safeEval(expr) {
     return result;
   } catch (e) { return null; }
 }
+// ── ARABIC/PERSIAN DIGIT NORMALIZER ──
+// لو الكيبورد بيكتب أرقام عربية-هندية (٠١٢٣) أو فارسية (۰۱۲۳)، نحوّلها لإنجليزية (0123)
+// تلقائياً أثناء الكتابة. ميهمش لغة الكيبورد، النتيجة دايماً أرقام يقدر الكود يقراها.
+const _AR_DIGITS = { '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9',
+                     '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9',
+                     '،':',', '٫':'.', '٬':',' };
+function normalizeDigits(s) {
+  if (s == null) return s;
+  return String(s).replace(/[٠-٩۰-۹،٫٬]/g, ch => _AR_DIGITS[ch] || ch);
+}
+function _bindDigitNormalize(inp) {
+  if (!inp || inp._digitBound) return;
+  inp._digitBound = true;
+  inp.addEventListener('input', () => {
+    const v = inp.value;
+    const nv = normalizeDigits(v);
+    if (nv !== v) {
+      // حافظ على مكان المؤشر تقريباً
+      const pos = inp.selectionStart;
+      inp.value = nv;
+      try { inp.setSelectionRange(pos, pos); } catch(e){}
+    }
+  });
+}
+// اربط كل الخانات الرقمية (الحالية واللي هتضاف لاحقاً) — يتنده مرة عند التحميل
+function bindAllNumericInputs() {
+  document.querySelectorAll('input[inputmode="decimal"], input[inputmode="numeric"], input[type="number"]')
+    .forEach(_bindDigitNormalize);
+}
+// تنده عند بدء التطبيق وبعد فتح أي مودال (المودالات في الـ HTML من الأول فبتشتغل من أول مرة)
+document.addEventListener('DOMContentLoaded', bindAllNumericInputs);
+bindAllNumericInputs();
+
 function evalAmt(commit = false) {
   const inp = document.getElementById('fAmt');
   const preview = document.getElementById('fAmtPreview');
+  // احتياط: لو فيه أي رقم عربي بقي بدون ما يتحوّل، حوّله هنا
+  const norm = normalizeDigits(inp.value);
+  if (norm !== inp.value) inp.value = norm;
   const v = inp.value.trim();
   if (!v) { preview.textContent = ''; updateRatePreview(); return; }
   // If just a plain number, no preview needed
