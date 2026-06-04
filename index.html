@@ -7552,6 +7552,41 @@ highlightBaseOpt();
 updatePinStatus();
 fillAccountSelect();
 if (typeof renderCustomCatBtns === 'function') renderCustomCatBtns();
+
+// ── ONE-TIME CLEANUP: remove orphan trip/occasion entries left behind by an
+//    older edit bug (txObj rebuild dropped tripEntryId/occEntryId, so each edit
+//    created a new entry alongside the stale one). Safe to run once: any entry
+//    that no tx references is the duplicate.
+(function _cleanupOrphanLinkedEntries() {
+  if (localStorage.getItem('msarifyi_orphan_entries_cleaned_v1') === '1') return;
+  try {
+    const tripEntryIds = new Set(txs.map(t => t.tripEntryId).filter(Boolean));
+    const occEntryIds  = new Set(txs.map(t => t.occEntryId).filter(Boolean));
+    let removedT = 0, removedO = 0;
+    if (typeof trips !== 'undefined' && Array.isArray(trips)) {
+      trips.forEach(t => {
+        if (!Array.isArray(t.entries)) return;
+        const before = t.entries.length;
+        t.entries = t.entries.filter(e => tripEntryIds.has(e.id));
+        removedT += before - t.entries.length;
+      });
+      if (removedT > 0 && typeof saveTrips === 'function') saveTrips();
+    }
+    if (typeof occasions !== 'undefined' && Array.isArray(occasions)) {
+      occasions.forEach(o => {
+        if (!Array.isArray(o.entries)) return;
+        const before = o.entries.length;
+        o.entries = o.entries.filter(e => occEntryIds.has(e.id));
+        removedO += before - o.entries.length;
+      });
+      if (removedO > 0 && typeof saveOccasions === 'function') saveOccasions();
+    }
+    localStorage.setItem('msarifyi_orphan_entries_cleaned_v1', '1');
+    if ((removedT + removedO) > 0 && typeof showToast === 'function') {
+      setTimeout(() => showToast(`🧹 تم تنظيف ${removedT + removedO} حركة مكررة قديمة`, 'success', 4000), 1500);
+    }
+  } catch(e) { console.warn('orphan cleanup skipped:', e); }
+})();
 renderAll();
 
 </script>
@@ -9319,10 +9354,11 @@ function delOccasion(id) {
     // Capture link state of the tx being edited (before _origSaveTx mutates state)
     const isEditing = (typeof editingId !== 'undefined') && editingId && !editingIsSavings;
     let prevOccId = null;
+    let prevOccEntryId = null; // FIX: keep the entry id across edits to update (not duplicate)
     let prevTxId = null;
     if (isEditing) {
       const before = txs.find(t => t.id === editingId);
-      if (before) { prevOccId = before.occId || null; prevTxId = before.id; }
+      if (before) { prevOccId = before.occId || null; prevOccEntryId = before.occEntryId || null; prevTxId = before.id; }
     }
     // Read the picker value (only meaningful for income/expense)
     const sel = document.getElementById('fOccLink');
@@ -9343,6 +9379,10 @@ function delOccasion(id) {
       tx = txs[0]; // freshly added
     }
     if (!tx || tx.isTransfer) return result;
+
+    // FIX: restore the occasion entry id so syncTxToOccasion updates the existing
+    // entry instead of creating a duplicate one (the form rebuilds txObj without it).
+    if (prevOccEntryId && !tx.occEntryId) tx.occEntryId = prevOccEntryId;
 
     // Stamp the picked occId on the tx (so syncTxToOccasion sees the new state)
     if (pickedOccId) tx.occId = pickedOccId;
@@ -9907,10 +9947,10 @@ function delTrip(id) {
   const _wrappedSaveTx = window.saveTx;
   window.saveTx = function() {
     const isEditing = (typeof editingId !== 'undefined') && editingId && !editingIsSavings;
-    let prevTripId = null, prevTxId = null;
+    let prevTripId = null, prevTripEntryId = null, prevTxId = null;
     if (isEditing) {
       const before = txs.find(t => t.id === editingId);
-      if (before) { prevTripId = before.tripId || null; prevTxId = before.id; }
+      if (before) { prevTripId = before.tripId || null; prevTripEntryId = before.tripEntryId || null; prevTxId = before.id; }
     }
     const sel = document.getElementById('fTripLink');
     const pickedTripId = (sel && (txType === 'income' || txType === 'expense')) ? (sel.value || '') : '';
@@ -9923,6 +9963,10 @@ function delTrip(id) {
     if (isEditing && prevTxId) tx = txs.find(t => t.id === prevTxId) || txs[0];
     else tx = txs[0];
     if (!tx || tx.isTransfer) return result;
+
+    // FIX: restore the trip entry id so syncTxToTrip updates the existing entry
+    // instead of duplicating it (form rebuilds txObj without it).
+    if (prevTripEntryId && !tx.tripEntryId) tx.tripEntryId = prevTripEntryId;
 
     if (pickedTripId) tx.tripId = pickedTripId;
     else delete tx.tripId;
