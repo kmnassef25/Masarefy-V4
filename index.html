@@ -3769,6 +3769,7 @@ button, .menu-row, .tx-card {
       <button class="export-btn" style="width:100%;margin-top:8px;border-color:var(--accent);color:var(--accent)" onclick="document.getElementById('pdfImportInput').click()">📄 استيراد كشف حساب (PDF)</button>
       <input type="file" id="pdfImportInput" accept=".pdf,application/pdf" style="display:none" onchange="importBankPDF(event)"/>
       <button class="notif-btn" id="notifBtn" onclick="requestNotifPermission()">🔔 تفعيل تنبيهات الميزانية</button>
+      <button class="export-btn" style="width:100%;margin-top:8px;border-color:var(--accent);color:var(--accent)" onclick="manualReconcileEntries()">🧹 تنظيف الحركات المكررة (رحلات/مناسبات)</button>
     </div>
   </div>
 </div>
@@ -7553,40 +7554,88 @@ updatePinStatus();
 fillAccountSelect();
 if (typeof renderCustomCatBtns === 'function') renderCustomCatBtns();
 
-// ── ONE-TIME CLEANUP: remove orphan trip/occasion entries left behind by an
-//    older edit bug (txObj rebuild dropped tripEntryId/occEntryId, so each edit
-//    created a new entry alongside the stale one). Safe to run once: any entry
-//    that no tx references is the duplicate.
-(function _cleanupOrphanLinkedEntries() {
-  if (localStorage.getItem('msarifyi_orphan_entries_cleaned_v1') === '1') return;
+// ── RECONCILE LINKED ENTRIES (رحلات/مناسبات) ──
+// يصلّح التكرار اللي حصل من بق التعديل القديم. القاعدة:
+//   مصدر الحقيقة = الحركات (txs). كل حركة مربوطة بحاوية لازم يكون ليها entry واحدة بس.
+//   • أي entry في الحاوية مش مربوطة بحركة فعلية = مهجورة → تتشال.
+//   • أي حركة مربوطة بالحاوية لكن entry بتاعتها ضاع → نعيد بناء entry واحدة ليها.
+// يرجّع عدد الـ entries اللي اتشالت (التكرار).
+function reconcileLinkedEntries() {
+  let removed = 0;
+
+  function stripPrefix(name) {
+    // أسماء الحركات المربوطة بتبقى "علم الاسم: التفاصيل" — نشيل البادئة للعرض
+    const i = (name || '').indexOf(': ');
+    return i > -1 ? name.slice(i + 2) : (name || 'حركة');
+  }
+
+  function fix(containers, idField, entryField) {
+    if (!Array.isArray(containers)) return;
+    containers.forEach(c => {
+      if (!Array.isArray(c.entries)) { c.entries = []; return; }
+      // الحركات الفعلية المربوطة بالحاوية دي
+      const linkedTxs = txs.filter(t => t[idField] === c.id && !t.isTransfer);
+      const validEntryIds = new Set(linkedTxs.map(t => t[entryField]).filter(Boolean));
+
+      // 1) شيل الـ entries المهجورة (مفيش حركة بتشاور عليها)
+      const before = c.entries.length;
+      c.entries = c.entries.filter(e => validEntryIds.has(e.id));
+      removed += before - c.entries.length;
+
+      // 2) أي حركة مربوطة بس entry بتاعها ضاع/مش موجود → ابني entry واحدة ليها
+      const haveEntry = new Set(c.entries.map(e => e.id));
+      linkedTxs.forEach(t => {
+        if (!t[entryField] || !haveEntry.has(t[entryField])) {
+          const newId = t[entryField] || ('re_' + Date.now() + '_' + Math.random().toString(36).slice(2,7));
+          t[entryField] = newId;
+          c.entries.unshift({
+            id: newId,
+            name: stripPrefix(t.name),
+            amount: t.amount,
+            currency: t.currency,
+            direction: t.type === 'income' ? 'in' : 'out',
+            date: t.date,
+            note: t.note || ''
+          });
+          haveEntry.add(newId);
+        }
+      });
+    });
+  }
+
+  try { if (typeof trips !== 'undefined') fix(trips, 'tripId', 'tripEntryId'); } catch(e){ console.warn('trip reconcile:', e); }
+  try { if (typeof occasions !== 'undefined') fix(occasions, 'occId', 'occEntryId'); } catch(e){ console.warn('occ reconcile:', e); }
+
+  if (removed > 0) {
+    if (typeof saveTrips === 'function') saveTrips();
+    if (typeof saveOccasions === 'function') saveOccasions();
+    saveData();
+  }
+  return removed;
+}
+
+// تشغيل تلقائي مرة (v2 — معيار أقوى من v1)
+(function _autoReconcile() {
+  if (localStorage.getItem('msarifyi_entries_reconciled_v2') === '1') return;
   try {
-    const tripEntryIds = new Set(txs.map(t => t.tripEntryId).filter(Boolean));
-    const occEntryIds  = new Set(txs.map(t => t.occEntryId).filter(Boolean));
-    let removedT = 0, removedO = 0;
-    if (typeof trips !== 'undefined' && Array.isArray(trips)) {
-      trips.forEach(t => {
-        if (!Array.isArray(t.entries)) return;
-        const before = t.entries.length;
-        t.entries = t.entries.filter(e => tripEntryIds.has(e.id));
-        removedT += before - t.entries.length;
-      });
-      if (removedT > 0 && typeof saveTrips === 'function') saveTrips();
+    const n = reconcileLinkedEntries();
+    localStorage.setItem('msarifyi_entries_reconciled_v2', '1');
+    if (n > 0 && typeof showToast === 'function') {
+      setTimeout(() => showToast(`🧹 تم تنظيف ${n} حركة مكررة قديمة`, 'success', 4000), 1500);
     }
-    if (typeof occasions !== 'undefined' && Array.isArray(occasions)) {
-      occasions.forEach(o => {
-        if (!Array.isArray(o.entries)) return;
-        const before = o.entries.length;
-        o.entries = o.entries.filter(e => occEntryIds.has(e.id));
-        removedO += before - o.entries.length;
-      });
-      if (removedO > 0 && typeof saveOccasions === 'function') saveOccasions();
-    }
-    localStorage.setItem('msarifyi_orphan_entries_cleaned_v1', '1');
-    if ((removedT + removedO) > 0 && typeof showToast === 'function') {
-      setTimeout(() => showToast(`🧹 تم تنظيف ${removedT + removedO} حركة مكررة قديمة`, 'success', 4000), 1500);
-    }
-  } catch(e) { console.warn('orphan cleanup skipped:', e); }
+  } catch(e) { console.warn('auto reconcile skipped:', e); }
 })();
+
+// زرار يدوي يقدر المستخدم يعيده وقت ما يحب
+function manualReconcileEntries() {
+  const n = reconcileLinkedEntries();
+  if (typeof renderTrips === 'function') renderTrips();
+  if (typeof renderOccasions === 'function') renderOccasions();
+  if (typeof renderAll === 'function') renderAll();
+  if (typeof showToast === 'function') {
+    showToast(n > 0 ? `🧹 اتشال ${n} حركة مكررة` : '✅ مفيش تكرار — كله سليم', 'success', 3500);
+  }
+}
 renderAll();
 
 </script>
