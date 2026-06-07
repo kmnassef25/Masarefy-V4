@@ -3395,6 +3395,15 @@ button, .menu-row, .tx-card {
   <button class="bottom-bar-btn" onclick="openModal()">＋ إضافة حركة</button>
 </div>
 
+<!-- CATEGORY DETAIL MODAL -->
+<div class="overlay" id="catDetailModal" onclick="closeIfOut(event,'catDetailModal')">
+  <div class="sheet" style="max-width:420px">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div id="catDetailHead"></div>
+    <div id="catDetailBody" style="max-height:60vh;overflow-y:auto"></div>
+  </div>
+</div>
+
 <!-- ADD/EDIT CUSTOM CATEGORY MODAL -->
 <div class="overlay" id="addCatModal" onclick="closeIfOut(event,'addCatModal')">
   <div class="sheet" style="max-width:380px">
@@ -3417,6 +3426,7 @@ button, .menu-row, .tx-card {
       <button class="save-btn" onclick="closeAddCatModal()" style="flex:1;background:var(--card2);color:var(--text)">إلغاء</button>
     </div>
     <button class="save-btn" id="catDeleteBtn" onclick="deleteCustomCat()" style="display:none;width:100%;margin-top:8px;background:transparent;border:1.5px solid var(--red);color:var(--red)">🗑️ حذف الفئة</button>
+    <button class="save-btn" id="catViewBtn" onclick="if(_editingCatName){closeAddCatModal();showCategoryDetail(_editingCatName,'expense');}" style="display:none;width:100%;margin-top:8px;background:transparent;border:1.5px solid var(--accent);color:var(--accent)">📊 شوف اللي اتصرف</button>
   </div>
 </div>
 
@@ -5964,13 +5974,84 @@ function drawPie(canvasId, data, colors, legendId) {
   ctx.beginPath(); ctx.arc(60,60,28,0,Math.PI*2);
   ctx.fillStyle = '#161b22'; ctx.fill();
 
+  const scope = legendId === 'incLegend' ? 'income' : legendId === 'savLegend' ? 'savings' : 'expense';
   legend.innerHTML = data.map(([cat,val],i) =>
-    `<div class="pie-legend-item">
+    `<div class="pie-legend-item" style="cursor:pointer" onclick="showCategoryDetail('${escAttr(cat)}','${scope}')">
       <div class="pie-dot" style="background:${colors[i%colors.length]}"></div>
-      <div class="pie-leg-txt">${EMOJI[cat]||SAV_EMOJI[cat]||'•'} ${cat}</div>
+      <div class="pie-leg-txt">${EMOJI[cat]||SAV_EMOJI[cat]||'•'} ${cat} <span style="font-size:9px;color:var(--muted)">›</span></div>
       <div class="pie-leg-val">${fmt(toBase(val),0)} ${BASE_LABELS[baseCurrency].sym}</div>
     </div>`
   ).join('');
+}
+
+// ── CATEGORY DETAIL ──
+// يعرض كل اللي اتصرف في فئة معينة: إيه/كام/امتى + الإجمالي (الشهر الحالي وكل الوقت)
+// scope: 'expense' | 'income' | 'savings' (افتراضي expense)
+function showCategoryDetail(cat, scope) {
+  scope = scope || 'expense';
+  const head = document.getElementById('catDetailHead');
+  const body = document.getElementById('catDetailBody');
+  const sym = BASE_LABELS[baseCurrency].sym;
+  const emoji = EMOJI[cat] || SAV_EMOJI[cat] || '💸';
+
+  // كل الحركات في الفئة دي (حسب النوع)، باستثناء التحويلات
+  let items;
+  if (scope === 'savings') items = savings.filter(t => t.cat === cat);
+  else items = txs.filter(t => t.cat === cat && t.type === scope && !t.isTransfer);
+
+  items = items.slice().sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
+
+  const totalAll = items.reduce((s,t)=>s+(t.amountSAR||0), 0);
+  const now = new Date();
+  const mKey = monthKey(now.getFullYear(), now.getMonth());
+  const monthItems = items.filter(t => (t.date||'').startsWith(mKey));
+  const totalMonth = monthItems.reduce((s,t)=>s+(t.amountSAR||0), 0);
+  const color = scope === 'income' ? 'var(--green)' : scope === 'savings' ? 'var(--sav)' : 'var(--red)';
+
+  head.innerHTML = `
+    <div class="modal-title" style="display:flex;align-items:center;gap:8px">${emoji} ${esc(cat)}</div>
+    <div style="display:flex;gap:8px;margin:6px 0 12px">
+      <div style="flex:1;background:var(--card2);border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:3px">الشهر ده</div>
+        <div style="font-size:16px;font-weight:900;color:${color};direction:ltr">${fmt(toBase(totalMonth),0)} ${sym}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">${monthItems.length} حركة</div>
+      </div>
+      <div style="flex:1;background:var(--card2);border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:3px">الإجمالي الكلي</div>
+        <div style="font-size:16px;font-weight:900;color:${color};direction:ltr">${fmt(toBase(totalAll),0)} ${sym}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">${items.length} حركة</div>
+      </div>
+    </div>`;
+
+  if (!items.length) {
+    body.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>مفيش حركات في الفئة دي</div>`;
+  } else {
+    // مجمّعة بالشهر، الأحدث أولاً
+    const byMonth = {};
+    items.forEach(t => { const k=(t.date||'').slice(0,7); (byMonth[k]=byMonth[k]||[]).push(t); });
+    let h = '';
+    Object.keys(byMonth).sort((a,b)=>b.localeCompare(a)).forEach(mk => {
+      const monthTot = byMonth[mk].reduce((s,t)=>s+(t.amountSAR||0),0);
+      const [yy,mm] = mk.split('-');
+      const mLabel = mk ? `${arabicMonth(parseInt(yy), parseInt(mm)-1)}` : 'غير محدد';
+      h += `<div class="date-group-lbl" style="display:flex;justify-content:space-between;align-items:center">
+              <span>📅 ${mLabel}</span>
+              <span style="color:${color};font-weight:800">${fmt(toBase(monthTot),0)} ${sym}</span>
+            </div>`;
+      byMonth[mk].forEach(t => {
+        const curSym = (t.currency && t.currency !== baseCurrency) ? ` <span style="font-size:9px;color:var(--muted)">(${fmt(t.amount,0)} ${t.currency})</span>` : '';
+        h += `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--card2);border-radius:10px;padding:9px 11px;margin-bottom:5px;gap:8px">
+                <div style="min-width:0;flex:1">
+                  <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.name||'حركة')}</div>
+                  <div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(dtLabel(t.date))}${t.note?' · '+esc(t.note):''}</div>
+                </div>
+                <div style="font-weight:800;color:${color};direction:ltr;white-space:nowrap">${fmt(toBase(t.amountSAR||0),0)} ${sym}${curSym}</div>
+              </div>`;
+      });
+    });
+    body.innerHTML = h;
+  }
+  document.getElementById('catDetailModal').classList.add('open');
 }
 
 // ── CHART ──
@@ -6476,6 +6557,7 @@ function openAddCatModal(editName) {
   document.getElementById('newCatName').value = existing ? existing.name : '';
   document.getElementById('newCatEmoji').value = existing ? (existing.emoji || '') : '';
   document.getElementById('catDeleteBtn').style.display = existing ? 'block' : 'none';
+  const vb = document.getElementById('catViewBtn'); if (vb) vb.style.display = existing ? 'block' : 'none';
   document.getElementById('addCatModal').classList.add('open');
   setTimeout(() => document.getElementById('newCatName').focus(), 100);
 }
