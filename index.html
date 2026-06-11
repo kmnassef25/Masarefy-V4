@@ -3399,6 +3399,15 @@ button, .menu-row, .tx-card {
   <button class="bottom-bar-btn" onclick="openModal()">＋ إضافة حركة</button>
 </div>
 
+<!-- INSTALLMENT HISTORY MODAL -->
+<div class="overlay" id="instHistModal" onclick="closeIfOut(event,'instHistModal')">
+  <div class="sheet" style="max-width:420px">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div id="instHistHead"></div>
+    <div id="instHistBody" style="max-height:55vh;overflow-y:auto"></div>
+  </div>
+</div>
+
 <!-- MONTHLY RECAP MODAL -->
 <div class="overlay" id="recapModal" onclick="closeIfOut(event,'recapModal')">
   <div class="sheet" style="max-width:420px">
@@ -4071,6 +4080,14 @@ button, .menu-row, .tx-card {
           <option value="ترفيه">🎬 ترفيه</option>
           <option value="أخرى">💸 أخرى</option>
         </select>
+      </div>
+      <div class="form-row"><div class="form-lbl">🏦 يتخصم من حساب</div>
+        <select class="form-inp" id="instPayAccount"></select>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">الحساب اللي القسط التلقائي هيتخصم منه</div>
+      </div>
+      <div class="form-row"><div class="form-lbl">💸 فوائد / رسوم إضافية (اختياري)</div>
+        <input class="form-inp" id="instFees" type="number" inputmode="decimal" placeholder="إجمالي الفوائد والرسوم على كامل المدة"/>
+        <div id="instFeesHint" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
       </div>
       <button class="save-btn" onclick="saveInstallment()">💾 حفظ القسط</button>
     </div>
@@ -8538,6 +8555,27 @@ function _instStatusLabel(info, sym) {
 }
 
 function renderInstallments() {
+  // املأ قائمة حساب الخصم (لو لسه فاضية أو الحسابات اتغيرت)
+  const accSel = document.getElementById('instPayAccount');
+  if (accSel) {
+    const cur = accSel.value;
+    accSel.innerHTML = accounts.map(a => `<option value="${a.id}">${a.emoji} ${esc(a.name)}</option>`).join('');
+    if (cur && accounts.some(a => a.id === cur)) accSel.value = cur;
+  }
+  // hint الفوائد: يوضح القسط الشهري شامل الفوائد
+  const feesInp = document.getElementById('instFees');
+  if (feesInp && !feesInp._hintBound) {
+    feesInp._hintBound = true;
+    feesInp.addEventListener('input', () => {
+      const total = parseFloat(document.getElementById('instTotal').value) || 0;
+      const months = parseInt(document.getElementById('instMonths').value) || 0;
+      const fees = parseFloat(feesInp.value) || 0;
+      const hint = document.getElementById('instFeesHint');
+      if (hint) hint.textContent = (total && months && fees)
+        ? `القسط الشهري شامل الفوائد: ${fmt((total+fees)/months, 2)} — الفوائد ${Math.round(fees/total*100)}% من الأصل`
+        : '';
+    });
+  }
   const el = document.getElementById('installmentsList');
   if (!el) return;
   if (!installments.length) {
@@ -8625,20 +8663,26 @@ function renderInstallments() {
     const statusBadge = `<span style="display:inline-block;font-size:10px;font-weight:700;color:${lbl.color};background:${lbl.bg};border:1px solid ${lbl.color};border-radius:8px;padding:2px 8px;margin-top:4px">${lbl.text}</span>`;
     // Show "ادفع" only if not done AND not already paid this month (otherwise the button is misleading)
     const canPay = !isDone && info.status !== 'paid';
+    const canEarly = !isDone && remaining > 1;
+    const feesLine = (inst.fees && inst.fees > 0) ? `<div style="font-size:10px;color:var(--red);margin-top:2px">💸 فوائد/رسوم: ${fmt(inst.fees,0)} ${inst.currency} (إجمالي التكلفة ${fmt(inst.totalAmount + inst.fees,0)} ${inst.currency})</div>` : '';
     return `<div class="feat-card" style="${isDone?'opacity:.6':''}${info.status==='paid'?'opacity:.85;':''}">
       <div class="feat-card-top">
         <div class="feat-emoji">${emoji}</div>
         <div class="feat-info">
           <div class="feat-name">${esc(inst.name)} ${providerBadge}</div>
           <div class="feat-sub">${inst.store ? '🛍️ ' + esc(inst.store) + ' · ' : ''}${paid} / ${inst.totalMonths} شهر · يوم ${inst.day} من كل شهر</div>
+          ${feesLine}
           <div>${statusBadge}</div>
         </div>
         <div class="feat-amt" style="color:var(--red)">${fmt(toBase(monthlySAR), 0)} ${sym}/شهر</div>
       </div>
       <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:${pct}%;background:${isDone?'var(--green)':'var(--accent)'}"></div></div>
       <div class="budget-pct">${pct}% — متبقي ${fmt(toBase(remainingSAR), 0)} ${sym}${remaining>0?` (${remaining} قسط)`:''}</div>
-      <div class="feat-actions">
+      <div class="feat-actions" style="flex-wrap:wrap">
         ${canPay?`<button class="feat-mini-btn success" onclick="payInstallmentNow('${inst.id}')">💰 ادفع قسط النهاردة</button>`:''}
+        ${canEarly?`<button class="feat-mini-btn" onclick="payInstallmentEarly('${inst.id}')" style="color:var(--accent);border-color:var(--accent)">⚡ دفع مبكر</button>`:''}
+        ${!isDone?`<button class="feat-mini-btn" onclick="settleInstallment('${inst.id}')" style="color:var(--green);border-color:var(--green)">🏁 تسوية كاملة</button>`:''}
+        <button class="feat-mini-btn" onclick="showInstHistory('${inst.id}')" style="color:var(--muted)">📜 السجل</button>
         <button class="feat-mini-btn" onclick="editInstallment('${inst.id}')" style="color:var(--accent);border-color:var(--accent)">✏️ تعديل</button>
         <button class="feat-mini-btn danger" onclick="delInstallment('${inst.id}')">🗑️ حذف</button>
       </div>
@@ -8656,10 +8700,13 @@ function saveInstallment() {
   const day = parseInt(document.getElementById('instDay').value) || 1;
   const cat = document.getElementById('instCat').value;
   const store = document.getElementById('instStore')?.value.trim() || '';
+  const payAccountId = document.getElementById('instPayAccount')?.value || '';
+  const fees = parseFloat(document.getElementById('instFees')?.value) || 0;
   const providerBtn = document.querySelector('.provider-btn.sel');
   const provider = providerBtn?.dataset.provider || '';
   if (!name || !total || !months) { showAlert('املأ الاسم وإجمالي المبلغ وعدد الشهور','error'); return; }
-  if (!monthly) monthly = total / months;
+  // المبلغ الكلي مع الفوائد هو اللي بيتقسم على الشهور
+  if (!monthly) monthly = (total + fees) / months;
   const _today = new Date(); // fresh date, not stale module-load `now` (#2)
   const startMonth = monthKey(_today.getFullYear(), _today.getMonth());
   installments.push({
@@ -8667,10 +8714,13 @@ function saveInstallment() {
     name, totalAmount: total, monthlyPayment: monthly, totalMonths: months,
     currency, day, cat, paidMonths: 0,
     startMonth, lastPaidMonth: null,
-    provider, store
+    provider, store,
+    payAccountId,          // الحساب اللي يتخصم منه القسط التلقائي
+    fees,                  // إجمالي الفوائد/الرسوم على المدة
+    payments: []           // سجل الدفعات: [{month, date, amount, accountId, kind}]
   });
   saveInstallments();
-  ['instName','instTotal','instMonths','instMonthly','instStore'].forEach(id => { const e = document.getElementById(id); if (e) e.value=''; });
+  ['instName','instTotal','instMonths','instMonthly','instStore','instFees'].forEach(id => { const e = document.getElementById(id); if (e) e.value=''; });
   document.getElementById('instMonthlyHint').textContent = '';
   // Reset provider selection to manual
   document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('sel'));
@@ -8796,41 +8846,137 @@ function executePayment({ txId, type, name, amount, currency, rate, amountSAR, c
   };
 }
 
-function payInstallmentNow(id) {
+function payInstallmentNow(id, count) {
   const inst = installments.find(i => i.id === id);
   if (!inst) return;
   if (inst.paidMonths >= inst.totalMonths) { showAlert('القسط ده خلص بالفعل','warning'); return; }
+  count = Math.min(count || 1, inst.totalMonths - inst.paidMonths); // مايدفعش أكتر من المتبقي
   const today = new Date();
   const d = today.toISOString().split('T')[0];
   const t = today.toTimeString().slice(0,5);
   const rate = inst.currency === 'SAR' ? 1 : (inst.currency === 'EGP' ? rates.EGP : rates[inst.currency]);
-  const amountSAR = curToSAR(inst.monthlyPayment, inst.currency);
-  const txName = `💳 ${inst.name} (قسط ${inst.paidMonths+1}/${inst.totalMonths})`;
+  const payAmount = inst.monthlyPayment * count;
+  const amountSAR = curToSAR(payAmount, inst.currency);
+  const fromN = inst.paidMonths + 1, toN = inst.paidMonths + count;
+  const txName = count === 1
+    ? `💳 ${inst.name} (قسط ${fromN}/${inst.totalMonths})`
+    : `💳 ${inst.name} (أقساط ${fromN}-${toN}/${inst.totalMonths})`;
 
   showPayFromPicker(
-    `💳 دفع قسط — ${inst.name}`,
-    `${inst.monthlyPayment} ${inst.currency} • القسط ${inst.paidMonths+1} من ${inst.totalMonths}`,
+    count === 1 ? `💳 دفع قسط — ${inst.name}` : `⚡ دفع ${count} أقساط — ${inst.name}`,
+    `${fmt(payAmount,2)} ${inst.currency} • ${count === 1 ? `القسط ${fromN} من ${inst.totalMonths}` : `الأقساط ${fromN} إلى ${toN}`}`,
     function(accountId) {
       const doSave = executePayment({
         txId: 'tx_inst_' + Date.now(),
         type: 'expense',
         name: txName,
-        amount: inst.monthlyPayment,
+        amount: payAmount,
         currency: inst.currency,
         rate, amountSAR,
         cat: inst.cat,
         date: d, time: t,
-        note: 'قسط شهري',
+        note: count === 1 ? 'قسط شهري' : `دفع مبكر (${count} أقساط)`,
         instId: inst.id
       });
       doSave(accountId);
-      inst.paidMonths++;
-      inst.lastPaidMonth = monthKey(today.getFullYear(), today.getMonth());
+      // سجل الدفعات: دفعة لكل شهر مدفوع
+      if (!Array.isArray(inst.payments)) inst.payments = [];
+      const curM = monthKey(today.getFullYear(), today.getMonth());
+      for (let k = 0; k < count; k++) {
+        inst.payments.push({
+          n: inst.paidMonths + 1,               // رقم القسط
+          date: d,
+          amount: inst.monthlyPayment,
+          currency: inst.currency,
+          accountId,
+          kind: count === 1 ? 'manual' : 'early' // يدوي / مبكر
+        });
+        inst.paidMonths++;
+      }
+      inst.lastPaidMonth = curM;
       saveInstallments();
       renderInstallments(); renderAll();
-      if (typeof showToast === 'function') showToast(`✅ تم دفع قسط ${inst.name}`, 'success');
+      const doneNow = inst.paidMonths >= inst.totalMonths;
+      if (typeof showToast === 'function') showToast(doneNow ? `🎉 مبروك! ${inst.name} خلص بالكامل` : `✅ تم دفع ${count === 1 ? 'قسط' : count + ' أقساط'} — ${inst.name}`, 'success');
     }
   );
+}
+
+// دفع مبكر: يسأل عن عدد الأقساط ثم يستخدم نفس مسار الدفع
+function payInstallmentEarly(id) {
+  const inst = installments.find(i => i.id === id);
+  if (!inst) return;
+  const remaining = inst.totalMonths - (inst.paidMonths || 0);
+  if (remaining <= 0) { showAlert('القسط ده خلص بالفعل','warning'); return; }
+  const v = prompt(`⚡ دفع مبكر — ${inst.name}\nمتبقي ${remaining} قسط. عايز تدفع كام قسط دلوقتي؟`, Math.min(2, remaining));
+  if (v === null) return;
+  const count = parseInt(normalizeDigits(v));
+  if (!count || count < 1) { showAlert('اكتب عدد صحيح','error'); return; }
+  payInstallmentNow(id, count);
+}
+
+// تسوية كاملة: دفع كل المتبقي مرة واحدة
+function settleInstallment(id) {
+  const inst = installments.find(i => i.id === id);
+  if (!inst) return;
+  const remaining = inst.totalMonths - (inst.paidMonths || 0);
+  if (remaining <= 0) { showAlert('القسط ده خلص بالفعل','warning'); return; }
+  const totalRemaining = inst.monthlyPayment * remaining;
+  if (!confirm(`🏁 تسوية كاملة — ${inst.name}\nهتدفع ${remaining} قسط (${fmt(totalRemaining,2)} ${inst.currency}) مرة واحدة وتقفل القسط. متأكد؟`)) return;
+  payInstallmentNow(id, remaining);
+}
+
+// ── سجل الدفعات (تايملاين) ──
+function showInstHistory(id) {
+  const inst = installments.find(i => i.id === id);
+  if (!inst) return;
+  const head = document.getElementById('instHistHead');
+  const body = document.getElementById('instHistBody');
+  const sym = BASE_LABELS[baseCurrency].sym;
+  const paid = inst.paidMonths || 0;
+  const fees = inst.fees || 0;
+  const grandTotal = inst.totalAmount + fees;
+  const kindLabel = { manual:'💰 يدوي', auto:'🤖 تلقائي', early:'⚡ مبكر' };
+
+  head.innerHTML = `
+    <div class="modal-title">📜 سجل الدفعات — ${esc(inst.name)}</div>
+    <div style="display:flex;gap:8px;margin:6px 0 12px">
+      <div style="flex:1;background:var(--card2);border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);font-weight:700">المدفوع</div>
+        <div style="font-size:14px;font-weight:900;color:var(--green)">${paid} / ${inst.totalMonths}</div>
+      </div>
+      <div style="flex:1;background:var(--card2);border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);font-weight:700">أصل المبلغ</div>
+        <div style="font-size:13px;font-weight:900;direction:ltr">${fmt(inst.totalAmount,0)} ${inst.currency}</div>
+      </div>
+      ${fees > 0 ? `<div style="flex:1;background:var(--red-dim);border:1px solid var(--red);border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--red);font-weight:700">فوائد/رسوم</div>
+        <div style="font-size:13px;font-weight:900;color:var(--red);direction:ltr">${fmt(fees,0)} ${inst.currency}</div>
+      </div>` : ''}
+    </div>
+    ${fees > 0 ? `<div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:10px">إجمالي التكلفة: <b style="direction:ltr;display:inline-block">${fmt(grandTotal,0)} ${inst.currency}</b> — الفوائد ${Math.round(fees/inst.totalAmount*100)}% من الأصل</div>` : ''}`;
+
+  const payments = Array.isArray(inst.payments) ? inst.payments.slice() : [];
+  if (!payments.length && paid > 0) {
+    // أقساط قديمة اتدفعت قبل وجود السجل
+    body.innerHTML = `<div style="font-size:11px;color:var(--muted);text-align:center;padding:14px;background:var(--card2);border-radius:12px">اتدفع ${paid} قسط قبل تفعيل سجل الدفعات — الدفعات الجاية هتتسجل هنا بالتفصيل ✅</div>`;
+  } else if (!payments.length) {
+    body.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>لسه مفيش دفعات</div>`;
+  } else {
+    payments.sort((a,b)=>(b.n||0)-(a.n||0)); // الأحدث فوق
+    body.innerHTML = payments.map(p => {
+      const acc = accounts.find(a => a.id === p.accountId);
+      return `<div style="display:flex;align-items:center;gap:10px;background:var(--card2);border-radius:12px;padding:10px 12px;margin-bottom:6px">
+        <div style="width:34px;height:34px;border-radius:50%;background:var(--green-dim);border:1.5px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:var(--green);flex-shrink:0">${p.n}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:800">قسط ${p.n} من ${inst.totalMonths} <span style="font-size:9px;color:var(--muted);font-weight:700">${kindLabel[p.kind]||''}</span></div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(dtLabel(p.date))}${acc?` · ${acc.emoji} ${esc(acc.name)}`:''}</div>
+        </div>
+        <div style="font-weight:800;color:var(--green);direction:ltr;white-space:nowrap">${fmt(p.amount,0)} ${p.currency||inst.currency}</div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('instHistModal').classList.add('open');
 }
 
 // Auto-deduct installments due this month
@@ -8839,15 +8985,24 @@ function checkInstallmentsDue() {
   const curMonth = monthKey(today.getFullYear(), today.getMonth());
   const daysInMonth = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
   let added = 0;
+  const upcoming = []; // أقساط هتستحق خلال 3 أيام — للتذكير
   installments.forEach(inst => {
     if (inst.paidMonths >= inst.totalMonths) return;
     if (inst.lastPaidMonth === curMonth) return;
     // Clamp day to last day of short months (e.g., day=31 in Feb -> 28/29) (#7)
     const effectiveDay = Math.min(inst.day, daysInMonth);
-    if (today.getDate() < effectiveDay) return;
+    if (today.getDate() < effectiveDay) {
+      // تذكير قبل الاستحقاق بـ 3 أيام أو أقل
+      const daysLeft = effectiveDay - today.getDate();
+      if (daysLeft <= 3) upcoming.push({ inst, daysLeft });
+      return;
+    }
     const rate = inst.currency === 'SAR' ? 1 : (inst.currency === 'EGP' ? rates.EGP : rates[inst.currency]);
     const amountSAR = curToSAR(inst.monthlyPayment, inst.currency);
     const dStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(effectiveDay).padStart(2,'0')}`;
+    // FIX: استخدم الحساب اللي المستخدم اختاره للقسط (مش أول حساب وخلاص)
+    const payAcc = (inst.payAccountId && accounts.some(a => a.id === inst.payAccountId))
+      ? inst.payAccountId : accounts[0]?.id;
     txs.unshift({
       id: 'tx_inst_auto_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
       type: 'expense',
@@ -8857,16 +9012,42 @@ function checkInstallmentsDue() {
       cat: inst.cat,
       date: dStr, time: '09:00',
       note: 'قسط شهري تلقائي',
-      account: accounts[0]?.id,
+      account: payAcc,
       recurring: false,
       instId: inst.id
     });
+    // سجل الدفعة
+    if (!Array.isArray(inst.payments)) inst.payments = [];
+    inst.payments.push({ n: inst.paidMonths + 1, date: dStr, amount: inst.monthlyPayment, currency: inst.currency, accountId: payAcc, kind: 'auto' });
     inst.paidMonths++;
     inst.lastPaidMonth = curMonth;
     added++;
   });
   if (added > 0) {
     saveData(); saveInstallments();
+  }
+  // تذكير قبل الاستحقاق (مرة واحدة يومياً لكل قسط)
+  if (upcoming.length) {
+    const remKey = 'msarifyi_inst_reminded';
+    let reminded = {};
+    try { reminded = JSON.parse(localStorage.getItem(remKey) || '{}'); } catch(e){}
+    const todayStr = today.toISOString().split('T')[0];
+    const toRemind = upcoming.filter(u => reminded[u.inst.id] !== todayStr);
+    if (toRemind.length) {
+      toRemind.forEach(u => reminded[u.inst.id] = todayStr);
+      localStorage.setItem(remKey, JSON.stringify(reminded));
+      const first = toRemind[0];
+      const msg = toRemind.length === 1
+        ? `⏰ قسط "${first.inst.name}" هيتخصم ${first.daysLeft === 0 ? 'النهاردة' : first.daysLeft === 1 ? 'بكرة' : 'بعد ' + first.daysLeft + ' أيام'} (${fmt(first.inst.monthlyPayment,0)} ${first.inst.currency})`
+        : `⏰ عندك ${toRemind.length} أقساط هتستحق خلال أيام — افتح الأقساط للتفاصيل`;
+      setTimeout(() => { if (typeof showToast === 'function') showToast(msg, 'warning', 6000); }, 2000);
+      // إشعار نظام لو الإذن متاح
+      try {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('مصاريفي — تذكير قسط', { body: msg.replace('⏰ ',''), icon: './icon-192.png' });
+        }
+      } catch(e){}
+    }
   }
 }
 
