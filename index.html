@@ -308,6 +308,10 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);displ
 
 /* ── DATE GROUP ── */
 .date-group-lbl{font-size:11px;color:var(--muted);font-weight:700;margin:14px 0 8px;padding-right:4px;}
+/* ── TAB TRANSITIONS: انتقال ناعم عند تبديل التابات ── */
+@keyframes tabIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.tab-anim{animation:tabIn .22s ease-out}
+@media (prefers-reduced-motion: reduce){.tab-anim{animation:none}}
 
 /* ── TX CARD ── */
 .tx-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:11px;position:relative;overflow:hidden;animation:fs .3s ease;}
@@ -3395,6 +3399,15 @@ button, .menu-row, .tx-card {
   <button class="bottom-bar-btn" onclick="openModal()">＋ إضافة حركة</button>
 </div>
 
+<!-- MONTHLY RECAP MODAL -->
+<div class="overlay" id="recapModal" onclick="closeIfOut(event,'recapModal')">
+  <div class="sheet" style="max-width:420px">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div id="recapHead"></div>
+    <div id="recapBody" style="max-height:65vh;overflow-y:auto"></div>
+  </div>
+</div>
+
 <!-- CATEGORY DETAIL MODAL -->
 <div class="overlay" id="catDetailModal" onclick="closeIfOut(event,'catDetailModal')">
   <div class="sheet" style="max-width:420px">
@@ -5430,6 +5443,17 @@ function renderHome() {
     </div>
   </div>`;
 
+  // Monthly recap card (شهرك في لمحة)
+  html += `
+    <div onclick="showMonthRecap()" style="display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,rgba(240,180,41,.12),rgba(240,180,41,.03));border:1.5px solid var(--accent);border-radius:14px;padding:12px;margin:8px 0;cursor:pointer;-webkit-tap-highlight-color:rgba(240,180,41,.2)">
+      <div style="font-size:24px">✨</div>
+      <div style="flex:1">
+        <div style="font-weight:800;font-size:13px">شهرك في لمحة</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">أكبر مصروف · أكتر فئة · مقارنة بالشهر اللي فات</div>
+      </div>
+      <div style="color:var(--accent);font-weight:900">›</div>
+    </div>`;
+
   // Recent transactions
   html += `<div class="home-section">
     <div class="home-section-title">⏱️ آخر الحركات</div>`;
@@ -5639,6 +5663,9 @@ function showTab(t, btn) {
   ['home','all','income','expense','savings','budget','chart'].forEach(x =>
     document.getElementById('tab-'+x).style.display = x===t ? '' : 'none'
   );
+  // انتقال ناعم: شغّل أنيميشن الدخول على التاب الجديد
+  const pane = document.getElementById('tab-'+t);
+  if (pane) { pane.classList.remove('tab-anim'); void pane.offsetWidth; pane.classList.add('tab-anim'); }
   const isListTab = ['all','income','expense','savings'].includes(t);
   document.getElementById('searchWrap').classList.toggle('visible', isListTab);
   document.getElementById('monthNavWrap').style.display = isListTab ? '' : 'none';
@@ -6052,6 +6079,72 @@ function showCategoryDetail(cat, scope) {
     body.innerHTML = h;
   }
   document.getElementById('catDetailModal').classList.add('open');
+}
+
+// ── MONTHLY RECAP: "شهرك في لمحة" ──
+function showMonthRecap() {
+  const head = document.getElementById('recapHead');
+  const body = document.getElementById('recapBody');
+  const sym = BASE_LABELS[baseCurrency].sym;
+  const now = new Date();
+  const mKey = monthKey(now.getFullYear(), now.getMonth());
+  const prevDate = new Date(now.getFullYear(), now.getMonth()-1, 1);
+  const pKey = monthKey(prevDate.getFullYear(), prevDate.getMonth());
+
+  // pass واحد على الحركات
+  let curExp=0, curInc=0, prevExp=0;
+  const byCat={}, byDay={};
+  let biggest=null;
+  for (const t of txs) {
+    if (t.isTransfer) continue;
+    const d=t.date||''; const v=t.amountSAR||0;
+    if (t.type==='expense') {
+      if (d.startsWith(mKey)) {
+        curExp+=v;
+        byCat[t.cat]=(byCat[t.cat]||0)+v;
+        byDay[d]=(byDay[d]||0)+v;
+        if (!biggest || v>biggest.amountSAR) biggest={...t, amountSAR:v};
+      } else if (d.startsWith(pKey)) prevExp+=v;
+    } else if (t.type==='income' && d.startsWith(mKey)) curInc+=v;
+  }
+
+  const dayOfMonth = now.getDate();
+  const avgDay = dayOfMonth>0 ? curExp/dayOfMonth : 0;
+  const topCat = Object.entries(byCat).sort((a,b)=>b[1]-a[1])[0];
+  const topDay = Object.entries(byDay).sort((a,b)=>b[1]-a[1])[0];
+  const diff = curExp-prevExp;
+  const diffPct = prevExp>0 ? Math.round(Math.abs(diff)/prevExp*100) : null;
+  const better = diff<=0;
+
+  head.innerHTML = `<div class="modal-title">✨ شهرك في لمحة — ${arabicMonth(now.getFullYear(), now.getMonth())}</div>`;
+
+  const cmpLine = prevExp>0
+    ? `<div style="background:${better?'var(--green-dim)':'var(--red-dim)'};border:1px solid ${better?'var(--green)':'var(--red)'};border-radius:12px;padding:12px;margin-bottom:10px;text-align:center">
+         <div style="font-size:12px;font-weight:700;color:${better?'var(--green)':'var(--red)'}">${better?'👏 صرفت أقل من الشهر اللي فات':'⚠️ صرفت أكتر من الشهر اللي فات'}</div>
+         <div style="font-size:18px;font-weight:900;margin-top:4px;direction:ltr;color:${better?'var(--green)':'var(--red)'}">${better?'-':'+'}${fmt(toBase(Math.abs(diff)),0)} ${sym}${diffPct!==null?` <span style="font-size:12px">(${diffPct}%)</span>`:''}</div>
+       </div>`
+    : '';
+
+  const row = (icon, label, value, sub) => `
+    <div style="display:flex;align-items:center;gap:10px;background:var(--card2);border-radius:12px;padding:11px 13px;margin-bottom:7px">
+      <div style="font-size:22px">${icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:10px;color:var(--muted);font-weight:700">${label}</div>
+        <div style="font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${value}</div>
+        ${sub?`<div style="font-size:10px;color:var(--muted);margin-top:1px">${sub}</div>`:''}
+      </div>
+    </div>`;
+
+  let h = cmpLine;
+  h += row('📤','إجمالي مصروف الشهر',`<span style="color:var(--red);direction:ltr;display:inline-block">${fmt(toBase(curExp),0)} ${sym}</span>`, `دخل الشهر: ${fmt(toBase(curInc),0)} ${sym}`);
+  h += row('📊','متوسط الصرف اليومي',`<span style="direction:ltr;display:inline-block">${fmt(toBase(avgDay),0)} ${sym}</span>`, `على ${dayOfMonth} يوم`);
+  if (topCat) h += row(EMOJI[topCat[0]]||'💸','أكتر فئة صرفت عليها',`${esc(topCat[0])} — <span style="color:var(--red);direction:ltr;display:inline-block">${fmt(toBase(topCat[1]),0)} ${sym}</span>`, curExp>0?`${Math.round(topCat[1]/curExp*100)}% من مصروف الشهر`:'');
+  if (biggest) h += row('💥','أكبر مصروف واحد',`${esc(biggest.name||'حركة')} — <span style="color:var(--red);direction:ltr;display:inline-block">${fmt(toBase(biggest.amountSAR),0)} ${sym}</span>`, esc(dtLabel(biggest.date)));
+  if (topDay) h += row('🔥','أكتر يوم صرفت فيه',`${esc(dtLabel(topDay[0]))}`, `<span style="direction:ltr;display:inline-block">${fmt(toBase(topDay[1]),0)} ${sym}</span>`);
+  if (!curExp && !curInc) h = `<div class="empty"><div class="empty-icon">📭</div>مفيش حركات الشهر ده لسه</div>`;
+
+  body.innerHTML = h;
+  document.getElementById('recapModal').classList.add('open');
 }
 
 // ── CHART ──
