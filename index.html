@@ -377,6 +377,8 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);displ
 
 /* ── MODAL ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s;}
+/* مودالات بتفتح فوق مودالات تانية (سجل القسط، تفصيل الفئة...) لازم تبقى أعلى */
+.overlay.stacked{z-index:260;}
 .overlay.open{opacity:1;pointer-events:all;}
 .sheet{background:var(--card);border-radius:24px 24px 0 0;border-top:1px solid var(--border);padding:16px 16px 30px;width:100%;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,0,.67,0);max-height:94vh;overflow-y:auto;}
 .overlay.open .sheet{transform:translateY(0);}
@@ -3400,7 +3402,7 @@ button, .menu-row, .tx-card {
 </div>
 
 <!-- INSTALLMENT HISTORY MODAL -->
-<div class="overlay" id="instHistModal" onclick="closeIfOut(event,'instHistModal')">
+<div class="overlay stacked" id="instHistModal" onclick="closeIfOut(event,'instHistModal')">
   <div class="sheet" style="max-width:420px">
     <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
     <div id="instHistHead"></div>
@@ -3409,7 +3411,7 @@ button, .menu-row, .tx-card {
 </div>
 
 <!-- MONTHLY RECAP MODAL -->
-<div class="overlay" id="recapModal" onclick="closeIfOut(event,'recapModal')">
+<div class="overlay stacked" id="recapModal" onclick="closeIfOut(event,'recapModal')">
   <div class="sheet" style="max-width:420px">
     <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
     <div id="recapHead"></div>
@@ -3418,7 +3420,7 @@ button, .menu-row, .tx-card {
 </div>
 
 <!-- CATEGORY DETAIL MODAL -->
-<div class="overlay" id="catDetailModal" onclick="closeIfOut(event,'catDetailModal')">
+<div class="overlay stacked" id="catDetailModal" onclick="closeIfOut(event,'catDetailModal')">
   <div class="sheet" style="max-width:420px">
     <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
     <div id="catDetailHead"></div>
@@ -3954,7 +3956,7 @@ button, .menu-row, .tx-card {
 </div>
 
 <!-- ═══════ ACCOUNT PICKER SHEET (for payments) ═══════ -->
-<div class="overlay" id="payFromModal" onclick="closeIfOut(event,'payFromModal')">
+<div class="overlay stacked" id="payFromModal" onclick="closeIfOut(event,'payFromModal')">
   <div class="sheet" style="max-height:80vh">
     <div class="handle" onclick="document.getElementById('payFromModal').classList.remove('open')"></div>
     <div class="modal-title" id="payFromTitle">💳 ادفع من؟</div>
