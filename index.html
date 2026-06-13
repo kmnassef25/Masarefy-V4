@@ -3643,6 +3643,7 @@ button, .menu-row, .tx-card {
     <div class="form-row">
       <div class="form-lbl">🏦 المحفظة</div>
       <select class="form-inp" id="fAccount"></select>
+      <div id="savDeductHint" style="display:none;font-size:10px;color:var(--sav);margin-top:3px">💡 المبلغ هيتخصم من المحفظة دي ويزيد في المدخرات</div>
     </div>
 
     <!-- RECURRING TOGGLE -->
@@ -6259,7 +6260,10 @@ function delSav(id) {
     savings = savings.filter(x => !x.isTransfer || x.transferId !== t.transferId);
     saveData(); saveSavings();
   } else {
-    savings = savings.filter(t=>t.id!==id); saveSavings();
+    savings = savings.filter(t=>t.id!==id);
+    // امسح حركة الخصم المرتبطة من المحفظة (لو موجودة) عشان الفلوس ترجع
+    if (txs.some(x=>x.savDeductFor===id)) { txs = txs.filter(x=>x.savDeductFor!==id); saveData(); }
+    saveSavings();
   }
   renderAll(); if(curTab==='chart')renderChart();
 }
@@ -6603,6 +6607,9 @@ function selType(type) {
   if (nameRow) nameRow.style.display = isTransfer ? 'none' : '';
   if (accountRow) accountRow.style.display = isTransfer ? 'none' : '';
   document.getElementById('recurringRow').style.display = isTransfer ? 'none' : '';
+  // إظهار تنبيه الخصم من المحفظة في وضع الادخار فقط
+  const savHint = document.getElementById('savDeductHint');
+  if (savHint) savHint.style.display = (type === 'savings') ? '' : 'none';
   if (isTransfer) fillTransferDropdowns();
   // V27: re-evaluate occasion picker visibility (hidden for transfer/savings)
   const occSel = document.getElementById('fOccLink');
@@ -6820,9 +6827,33 @@ function saveTx() {
   };
 
   if(txType==='savings'){
-    if(editingId&&editingIsSavings) savings=savings.filter(t=>t.id!==editingId);
+    if(editingId&&editingIsSavings) {
+      savings=savings.filter(t=>t.id!==editingId);
+      // لو تعديل: امسح حركة الخصم القديمة المرتبطة (لو كانت موجودة)
+      const oldDeduct = txs.find(t=>t.savDeductFor===editingId);
+      if(oldDeduct) txs=txs.filter(t=>t.savDeductFor!==editingId);
+    }
     savings.unshift(txObj);
     saveSavings();
+    // ── خصم المبلغ من المحفظة المختارة (لو مش بطاقة ائتمان) ──
+    // كده الفلوس بتنقص من الكاش وتزيد في المدخرات (تحويل حقيقي لأصل زي الذهب)
+    if(account && !String(account).startsWith('cc_')){
+      const emoji = SAV_EMOJI[cat] || '💰';
+      txs.unshift({
+        id:'tx_savbuy_'+Date.now()+'_'+Math.random().toString(36).slice(2,9),
+        type:'expense',
+        name:`${emoji} ${name}`,
+        amount:amt, currency:selPayCurVal, rate, amountSAR,
+        cat:'ادخار',
+        date, time,
+        note:`تحويل لمدخرات (${cat})`,
+        account,
+        isTransfer:true,          // يتعامل كتحويل: ميتحسبش ضمن المصروفات العادية
+        savDeductFor:txObj.id,    // ربط بحركة الادخار عشان التعديل/الحذف
+        recurring:false
+      });
+      saveData();
+    }
   } else if(account && String(account).startsWith('cc_')) {
     // ── بطاقة ائتمان: سجّل في card.transactions فقط — لا تخصم من الجاري ──
     if(editingId&&!editingIsSavings) txs=txs.filter(t=>t.id!==editingId);
@@ -11389,6 +11420,7 @@ function delSavWithUndo(id) {
     savings = savings.filter(x => !x.isTransfer || x.transferId !== t.transferId);
   } else {
     savings = savings.filter(x => x.id !== id);
+    txs = txs.filter(x => x.savDeductFor !== id); // امسح حركة الخصم المرتبطة
   }
   saveData(); saveSavings();
   renderAll(); if(curTab==='chart') renderChart();
