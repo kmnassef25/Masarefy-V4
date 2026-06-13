@@ -3594,7 +3594,26 @@ button, .menu-row, .tx-card {
           <button class="sav-btn" data-cat="أخرى" onclick="selSC(this)"><span class="ci">💎</span>أخرى</button>
         </div>
       </div>
-    </div>
+      <!-- تفاصيل الذهب: تظهر بس لما الفئة ذهب -->
+      <div id="goldDetailsRow" style="display:none">
+        <div style="display:flex;gap:8px">
+          <div class="form-row" style="flex:1">
+            <div class="form-lbl">⚖️ عدد الجرامات</div>
+            <input class="form-inp" id="goldGrams" type="number" inputmode="decimal" placeholder="مثلاً 10" oninput="updateGoldHint()"/>
+          </div>
+          <div class="form-row" style="flex:1">
+            <div class="form-lbl">🔱 العيار</div>
+            <select class="form-inp" id="goldKarat" onchange="updateGoldHint()">
+              <option value="24">24</option>
+              <option value="22">22</option>
+              <option value="21" selected>21</option>
+              <option value="18">18</option>
+              <option value="14">14</option>
+            </select>
+          </div>
+        </div>
+        <div id="goldHint" style="font-size:11px;color:var(--sav);margin-top:-4px;margin-bottom:6px"></div>
+      </div>
 
     <!-- TRANSFER SECTION -->
     <div id="transferSec" style="display:none">
@@ -5766,11 +5785,13 @@ function renderSavList() {
       const em = SAV_EMOJI[t.cat]||'💰';
       const sarLine = t.currency!==baseCurrency ? `<div class="tx-sar">≈ ${fmtBase(t.amountSAR)}</div><div class="tx-rate">${esc(rateDisplayText(t))}</div>` : '';
       const tagsLine = (t.tags && t.tags.length) ? `<div class="tx-tags">${t.tags.map(tg=>`<span class="tag-chip">#${esc(tg)}</span>`).join('')}</div>` : '';
+      const goldLine = (t.goldGrams) ? `<div style="font-size:11px;color:var(--sav);margin-top:2px;font-weight:700">🪙 ${t.goldGrams} جرام · عيار ${t.goldKarat||'?'}${t.amount?` · الجرام ${fmt(t.amount/t.goldGrams,2)} ${SYM[t.currency]||''}`:''}</div>` : '';
       h += `<div class="tx-card sav" data-tx-id="${escAttr(t.id)}" data-tx-kind="sav">
         <div class="tx-emoji">${em}</div>
         <div class="tx-info">
           <div class="tx-name">${esc(t.name)}${t.recurring?'<span style="font-size:10px;color:var(--sav);margin-right:5px">🔁</span>':''}</div>
           <div class="tx-meta"><span class="badge">${esc(t.cat)}</span><span class="badge" style="background:rgba(6,182,212,.1);color:var(--sav)">${SYM[t.currency]||esc(t.currency)}</span>${t.time?`<span class="badge time-b">⏰ ${esc(t.time)}</span>`:''}</div>
+          ${goldLine}
           ${tagsLine}
           ${t.note?`<div class="tx-note">📝 ${esc(t.note)}</div>`:''}${t.receipt?`<div style="margin-top:3px"><span class="receipt-icon-tx" data-action="view-receipt" data-tx-id="${escAttr(t.id)}">📎 إيصال</span></div>`:''}
         </div>
@@ -6345,6 +6366,16 @@ function editSav(id) {
   else document.getElementById('rateBox').classList.add('sar-hidden');
   selSCat=t.cat;
   document.querySelectorAll('#savCatGrid .sav-btn').forEach(b=>b.classList.toggle('sel',b.dataset.cat===t.cat));
+  // تفاصيل الذهب
+  const goldRow = document.getElementById('goldDetailsRow');
+  if (goldRow) {
+    if (t.cat === 'ذهب') {
+      goldRow.style.display = '';
+      document.getElementById('goldGrams').value = t.goldGrams || '';
+      document.getElementById('goldKarat').value = t.goldKarat || '21';
+      updateGoldHint();
+    } else goldRow.style.display = 'none';
+  }
   document.querySelector('#modal .modal-title').textContent='✏️ تعديل المدخرات';
   document.getElementById('modal').classList.add('open');
 }
@@ -6747,7 +6778,30 @@ function deleteCustomCat() {
   if (typeof renderAll === 'function') renderAll();
 }
 function selIC(btn){document.querySelectorAll('#incCatGrid .inc-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selICat=btn.dataset.cat;}
-function selSC(btn){document.querySelectorAll('#savCatGrid .sav-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selSCat=btn.dataset.cat;}
+function selSC(btn){
+  document.querySelectorAll('#savCatGrid .sav-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  selSCat=btn.dataset.cat;
+  // تفاصيل الذهب تظهر بس لما الفئة ذهب
+  const gold = document.getElementById('goldDetailsRow');
+  if (gold) { gold.style.display = (selSCat === 'ذهب') ? '' : 'none'; if (selSCat === 'ذهب') updateGoldHint(); }
+}
+// يحسب سعر الجرام من المبلغ المدخل ويعرضه
+function updateGoldHint(){
+  const hint = document.getElementById('goldHint');
+  if (!hint) return;
+  const grams = parseFloat(normalizeDigits(document.getElementById('goldGrams')?.value)) || 0;
+  const karat = document.getElementById('goldKarat')?.value || '21';
+  const amt = safeEval(normalizeDigits(document.getElementById('fAmt')?.value || '')) || 0;
+  if (grams > 0 && amt > 0) {
+    const perGram = amt / grams;
+    hint.textContent = `💡 ${grams} جرام عيار ${karat} — سعر الجرام ${fmt(perGram,2)} ${selPayCurVal}`;
+  } else if (grams > 0) {
+    hint.textContent = `${grams} جرام عيار ${karat}`;
+  } else {
+    hint.textContent = '';
+  }
+}
 
 // ── SAVE TX ──
 function saveTx() {
@@ -6825,6 +6879,12 @@ function saveTx() {
     pending: isPending || undefined,
     splits: splits || undefined
   };
+  // تفاصيل الذهب (لو ادخار من نوع ذهب)
+  if (txType === 'savings' && cat === 'ذهب') {
+    const grams = parseFloat(normalizeDigits(document.getElementById('goldGrams')?.value)) || 0;
+    const karat = document.getElementById('goldKarat')?.value || '21';
+    if (grams > 0) { txObj.goldGrams = grams; txObj.goldKarat = karat; }
+  }
 
   if(txType==='savings'){
     if(editingId&&editingIsSavings) {
