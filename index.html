@@ -13138,7 +13138,7 @@ window.renderHome = function() {
   }, 100);
 
   // Add dedicated "Gold" menu row
-  setTimeout(() => {
+  (window.__menuInjectors = window.__menuInjectors || []).push(() => {
     const menu = document.querySelector('#menuModal .sheet');
     if (menu && !document.getElementById('menuRowGold')) {
       const row = document.createElement('div');
@@ -13154,8 +13154,125 @@ window.renderHome = function() {
         <div class="mc">‹</div>`;
       menu.appendChild(row);
     }
-  }, 200);
+  });
 })();
+
+// ━━━━━━━━━━━ مدخرات الذهب — قائمة قطع متعددة (محفوظة محلياً فقط) ━━━━━━━━━━━
+var goldSavings = [];
+try { goldSavings = JSON.parse(localStorage.getItem('msarifyi_gold_savings') || '[]') || []; } catch(e) { goldSavings = []; }
+function saveGoldSavings() {
+  localStorage.setItem('msarifyi_gold_savings', JSON.stringify(goldSavings));
+}
+
+function addGoldSavingItem() {
+  const gInp = document.getElementById('gsGramsInp');
+  const kSel = document.getElementById('gsKaratSel');
+  const mInp = document.getElementById('gsMakingInp');
+  const nInp = document.getElementById('gsNameInp');
+  if (!gInp || !kSel) return;
+  const grams = parseFloat(gInp.value) || 0;
+  const karat = parseInt(kSel.value) || 21;
+  const making = mInp ? (parseFloat(mInp.value) || 0) : 0;
+  const name = (nInp && nInp.value.trim()) ? nInp.value.trim() : '';
+  if (grams <= 0) {
+    if (typeof showToast === 'function') showToast('اكتب عدد جرامات صحيح', 'warning');
+    return;
+  }
+  goldSavings.push({
+    id: 'gs_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    name, grams, karat, making
+  });
+  saveGoldSavings();
+  // Clear inputs
+  gInp.value = '';
+  if (mInp) mInp.value = '';
+  if (nInp) nInp.value = '';
+  renderGoldSavings();
+  if (typeof showToast === 'function') showToast('✅ تمت إضافة القطعة', 'success');
+}
+
+function removeGoldSavingItem(id) {
+  goldSavings = goldSavings.filter(it => it.id !== id);
+  saveGoldSavings();
+  renderGoldSavings();
+}
+
+function buildGoldSavingsHTML() {
+  const savedKarat = localStorage.getItem('msarifyi_gold_karat') || '21';
+  return `
+    <div class="gold-savings" id="goldSavingsCard" style="background:var(--card2);border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-top:12px">
+      <div style="font-size:14px;font-weight:900;color:var(--accent);margin-bottom:10px">💰 مدخرات الذهب</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+        <input type="text" id="gsNameInp" placeholder="اسم القطعة (اختياري — مثلاً: غويشة)" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-family:'Cairo',sans-serif;font-size:13px">
+        <div style="display:flex;gap:8px">
+          <input type="number" step="0.01" inputmode="decimal" id="gsGramsInp" placeholder="عدد الجرامات" style="flex:2;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-family:'Cairo',sans-serif;font-size:13px">
+          <select id="gsKaratSel" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-family:'Cairo',sans-serif;font-size:13px">
+            <option value="24"${savedKarat==='24'?' selected':''}>عيار 24</option>
+            <option value="21"${savedKarat==='21'?' selected':''}>عيار 21</option>
+            <option value="18"${savedKarat==='18'?' selected':''}>عيار 18</option>
+          </select>
+        </div>
+        <input type="number" step="1" inputmode="decimal" id="gsMakingInp" placeholder="مصنعية للجرام (اختياري)" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-family:'Cairo',sans-serif;font-size:13px">
+        <button type="button" onclick="addGoldSavingItem()" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-family:'Cairo',sans-serif;font-size:13px;font-weight:900;cursor:pointer;touch-action:manipulation">➕ ضيف القطعة</button>
+      </div>
+      <div id="goldSavingsList"></div>
+    </div>`;
+}
+
+function renderGoldSavings() {
+  const list = document.getElementById('goldSavingsList');
+  if (!list) return;
+  if (!goldSavings.length) {
+    list.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:12px;padding:10px">لسه ما ضفتش أي قطعة ذهب</div>`;
+    return;
+  }
+
+  let totalGrams = 0;        // raw grams (mixed karats)
+  let totalGrams21eq = 0;    // grams normalized to 21k for fair comparison
+  let totalValue = 0;        // EGP (gold value + making)
+
+  const rows = goldSavings.map(it => {
+    const grams = it.grams || 0;
+    const karat = it.karat || 21;
+    const making = it.making || 0;
+    const pricePerGram = (typeof egpPerGramKarat === 'function') ? egpPerGramKarat(karat) : null;
+    const goldVal = pricePerGram != null ? grams * pricePerGram : 0;
+    const makingVal = grams * making;
+    const itemVal = goldVal + makingVal;
+
+    totalGrams += grams;
+    totalGrams21eq += grams * (karat / 21);
+    totalValue += itemVal;
+
+    const label = it.name || `ذهب عيار ${toArabicDigits(karat)}`;
+    const valStr = pricePerGram != null ? `${fmt(itemVal, 0)} ج.م` : '— (حدّث السعر)';
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:10px;background:var(--card);border:1px solid var(--border);margin-bottom:6px">
+        <button type="button" onclick="removeGoldSavingItem('${it.id}')" aria-label="حذف" style="background:none;border:none;color:#f85149;font-size:16px;cursor:pointer;padding:2px 4px;touch-action:manipulation">🗑️</button>
+        <div style="flex:1;text-align:right">
+          <div style="font-size:13px;font-weight:800;color:var(--text)">${label}</div>
+          <div style="font-size:11px;color:var(--muted)">${toArabicDigits(grams)} جرام · عيار ${toArabicDigits(karat)}${making>0?` · مصنعية ${toArabicDigits(making)}`:''}</div>
+        </div>
+        <div style="font-size:13px;font-weight:900;color:var(--accent);white-space:nowrap">${valStr}</div>
+      </div>`;
+  }).join('');
+
+  list.innerHTML = rows + `
+    <div style="margin-top:10px;padding:12px;border-radius:12px;background:linear-gradient(135deg,rgba(255,193,7,0.12),rgba(255,193,7,0.03));border:1.5px solid rgba(255,193,7,0.3)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:12px;color:var(--muted)">إجمالي الجرامات</span>
+        <b style="font-size:15px;color:var(--text)">${toArabicDigits(+totalGrams.toFixed(2))} جرام</b>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:12px;color:var(--muted)">المعادل بعيار 21</span>
+        <b style="font-size:13px;color:var(--text)">${toArabicDigits(+totalGrams21eq.toFixed(2))} جرام</b>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px dashed var(--border);padding-top:8px;margin-top:4px">
+        <span style="font-size:13px;font-weight:900;color:var(--accent)">القيمة الإجمالية</span>
+        <b style="font-size:17px;font-weight:900;color:var(--accent)">${fmt(totalValue, 0)} ج.م</b>
+      </div>
+    </div>`;
+}
 
 // Dedicated gold modal — full-page experience
 function openGoldPage() {
@@ -13185,8 +13302,9 @@ function openGoldPage() {
       • و<b>ضريبة قيمة مضافة</b> ١٤٪ على المصنعية<br>
       • السعر بيتحدّث تلقائياً كل ٤ ساعات لما تفتح التطبيق<br>
       • للأسعار الرسمية الحقيقية، راجع شعبة الذهب
-    </div>` + buildGoldChartHTML();
+    </div>` + buildGoldSavingsHTML() + buildGoldChartHTML();
   setTimeout(() => { try { updateGoldCalc(); } catch(e){} }, 0);
+  setTimeout(() => { try { renderGoldSavings(); } catch(e){} }, 0);
   m.classList.add('open');
 }
 
@@ -13214,6 +13332,10 @@ fetchGoldPrice = async function() {
     // Keep only last 90 days
     goldHistory = goldHistory.slice(-90);
     saveGoldHistory();
+  }
+  // If gold page is open, refresh savings values with new price
+  if (document.getElementById('goldSavingsList')) {
+    try { renderGoldSavings(); } catch(e){}
   }
   return result;
 };
@@ -13839,7 +13961,7 @@ function renderRecurringHub() {
   };
 
   // Add menu rows
-  setTimeout(() => {
+  (window.__menuInjectors = window.__menuInjectors || []).push(() => {
     const menu = document.querySelector('#menuModal .sheet');
     if (!menu) return;
 
@@ -13860,10 +13982,9 @@ function renderRecurringHub() {
     };
 
     addRow('menuRowRecurringHub', '📅', 'المدفوعات الدورية', 'اشتراكات + فواتير + أقساط', openRecurringPaymentsHub);
-    // V27: trips moved into v17 menu grid (المشاريع الكبيرة section) — no need for legacy row anymore
     addRow('menuRowAlerts', '🔔', 'تنبيهات الأسعار', 'لما الذهب أو الدولار يوصل سعر معيّن', openPriceAlerts);
     addRow('menuRowHajj', '🕋', 'ميزانية الحج/العمرة', 'خطّط لرحلتك بالتفصيل', openHajjBudget);
-  }, 300);
+  });
 
   // Run price alerts check on init
   setTimeout(() => { try { checkPriceAlerts(); } catch(e){} }, 2000);
@@ -14207,7 +14328,7 @@ window.renderHome = function() {
 };
 
 // Add menu row for Flights
-setTimeout(() => {
+(window.__menuInjectors = window.__menuInjectors || []).push(() => {
   const menu = document.querySelector('#menuModal .sheet');
   if (menu && !document.getElementById('menuRowFlights')) {
     const row = document.createElement('div');
@@ -14229,7 +14350,7 @@ setTimeout(() => {
     const upcoming = flights.filter(f => new Date(f.flightDate) >= today).length;
     fc.textContent = upcoming ? `${toArabicDigits(upcoming)} رحلة قادمة` : 'سجّل وعدّاد قبل الرحلة';
   }
-}, 350);
+});
 
 // Re-render home to show flight card on init
 setTimeout(() => { try { renderHome(); } catch(e){} }, 400);
@@ -22313,52 +22434,9 @@ setTimeout(() => {
     return false;
   }
 
-  // Attempt immediately and at progressively later times
-  setTimeout(tryInjectV17, 50);
-  setTimeout(tryInjectV17, 300);
-  setTimeout(tryInjectV17, 800);
-  setTimeout(tryInjectV17, 1500);
-  setTimeout(tryInjectV17, 3000);
-  setTimeout(tryInjectV17, 5000);
-
-  // Re-inject whenever menu modal is opened (in case it got rebuilt)
-  document.addEventListener('click', function(e) {
-    const target = e.target;
-    if (!target) return;
-    const txt = (target.textContent || '');
-    const onclick = (target.getAttribute && target.getAttribute('onclick')) || '';
-    const parentClick = target.closest && target.closest('[onclick]');
-    const clickStr = onclick || (parentClick && parentClick.getAttribute('onclick')) || '';
-    if (clickStr.includes('menuModal')) {
-      setTimeout(tryInjectV17, 50);
-      setTimeout(tryInjectV17, 200);
-      setTimeout(tryInjectV17, 500);
-    }
-  }, true);
-
-  // MutationObserver as ultimate safety net — watches for menu rebuild
-  try {
-    const menuModal = document.getElementById('menuModal');
-    if (menuModal && !window.__ccV17Observer) {
-      const observer = new MutationObserver(() => {
-        setTimeout(tryInjectV17, 50);
-      });
-      observer.observe(menuModal, { childList: true, subtree: true });
-      window.__ccV17Observer = observer;
-    } else if (!window.__ccV17DocObserver) {
-      // Watch the body for menuModal being created/modified
-      const docObserver = new MutationObserver((mutations) => {
-        for (const m of mutations) {
-          if (m.target && (m.target.id === 'menuModal' || (m.target.closest && m.target.closest('#menuModal')))) {
-            setTimeout(tryInjectV17, 50);
-            break;
-          }
-        }
-      });
-      docObserver.observe(document.body, { childList: true, subtree: true });
-      window.__ccV17DocObserver = docObserver;
-    }
-  } catch(e) { console.warn('V27 menu observer:', e); }
+  // Attempt once now (in case menu already exists), then via the central observer
+  tryInjectV17();
+  (window.__menuInjectors = window.__menuInjectors || []).push(tryInjectV17);
 
   // Update badge whenever cards change
   if (typeof window.saveCreditCards === 'function' && !window.saveCreditCards.__v27BadgePatched) {
@@ -25939,19 +26017,7 @@ setTimeout(() => {
     }
     return true;
   }
-  // Try to inject the menu row at various times
-  setTimeout(addMenuRow, 500);
-  setTimeout(addMenuRow, 1500);
-  setTimeout(addMenuRow, 3000);
-  // Also when menu opens
-  document.addEventListener('click', (e) => {
-    const onclick = (e.target && e.target.getAttribute && e.target.getAttribute('onclick')) || '';
-    const parentClick = e.target && e.target.closest && e.target.closest('[onclick]');
-    const clickStr = onclick || (parentClick && parentClick.getAttribute('onclick')) || '';
-    if (clickStr.includes('menuModal')) {
-      setTimeout(addMenuRow, 200);
-    }
-  }, true);
+  (window.__menuInjectors = window.__menuInjectors || []).push(addMenuRow);
 
   // ━━━━━━━━━━━ Show transfers in transaction listings ━━━━━━━━━━━
   // The existing tx renderer might not know about 'transfer' type, so we add CSS class
@@ -25965,6 +26031,23 @@ setTimeout(() => {
 
   console.log('✅ Transfer feature loaded');
 })();
+
+// ━━━━━━━━━━━ Central menu injector — one observer, runs on menu open only ━━━━━━━━━━━
+(function () {
+  const run = () => {
+    const injectors = window.__menuInjectors || [];
+    for (const fn of injectors) {
+      try { fn(); } catch (e) { console.warn('menu injector:', e); }
+    }
+  };
+  const menuModal = document.getElementById('menuModal');
+  if (!menuModal) return;
+  const obs = new MutationObserver(() => {
+    if (menuModal.classList.contains('open')) run();
+  });
+  obs.observe(menuModal, { attributes: true, attributeFilter: ['class'] });
+})();
+
 
 </script>
 
