@@ -13164,36 +13164,89 @@ function saveGoldSavings() {
   localStorage.setItem('msarifyi_gold_savings', JSON.stringify(goldSavings));
 }
 
+var goldEditingId = null;
+
+function editGoldSavingItem(id) {
+  const it = goldSavings.find(x => x.id === id);
+  if (!it) return;
+  const gInp = document.getElementById('gsGramsInp');
+  const kSel = document.getElementById('gsKaratSel');
+  const pInp = document.getElementById('gsBuyPriceInp');
+  const mInp = document.getElementById('gsMakingInp');
+  const nInp = document.getElementById('gsNameInp');
+  if (gInp) gInp.value = it.grams || '';
+  if (kSel) kSel.value = String(it.karat || 21);
+  if (pInp) pInp.value = it.buyPrice || '';
+  if (mInp) mInp.value = it.making || '';
+  if (nInp) nInp.value = it.name || '';
+  goldEditingId = id;
+  const btn = document.getElementById('gsAddBtn');
+  if (btn) btn.textContent = '💾 احفظ التعديل';
+  // Scroll the form into view
+  const card = document.getElementById('goldSavingsCard');
+  if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function addGoldSavingItem() {
   const gInp = document.getElementById('gsGramsInp');
   const kSel = document.getElementById('gsKaratSel');
+  const pInp = document.getElementById('gsBuyPriceInp');
   const mInp = document.getElementById('gsMakingInp');
   const nInp = document.getElementById('gsNameInp');
   if (!gInp || !kSel) return;
   const grams = parseFloat(gInp.value) || 0;
   const karat = parseInt(kSel.value) || 21;
+  const buyPrice = pInp ? (parseFloat(pInp.value) || 0) : 0;
   const making = mInp ? (parseFloat(mInp.value) || 0) : 0;
   const name = (nInp && nInp.value.trim()) ? nInp.value.trim() : '';
   if (grams <= 0) {
     if (typeof showToast === 'function') showToast('اكتب عدد جرامات صحيح', 'warning');
     return;
   }
-  goldSavings.push({
-    id: 'gs_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-    name, grams, karat, making
-  });
+  if (buyPrice <= 0) {
+    if (typeof showToast === 'function') showToast('اكتب سعر الشراء', 'warning');
+    return;
+  }
+  if (goldEditingId) {
+    // Save edit
+    const it = goldSavings.find(x => x.id === goldEditingId);
+    if (it) { it.name = name; it.grams = grams; it.karat = karat; it.buyPrice = buyPrice; it.making = making; }
+    goldEditingId = null;
+    const btn = document.getElementById('gsAddBtn');
+    if (btn) btn.textContent = '➕ ضيف القطعة';
+  } else {
+    goldSavings.push({
+      id: 'gs_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      name, grams, karat, buyPrice, making
+    });
+  }
   saveGoldSavings();
   // Clear inputs
   gInp.value = '';
+  if (pInp) pInp.value = '';
   if (mInp) mInp.value = '';
   if (nInp) nInp.value = '';
   renderGoldSavings();
-  if (typeof showToast === 'function') showToast('✅ تمت إضافة القطعة', 'success');
+  if (typeof showToast === 'function') showToast('✅ تم الحفظ', 'success');
 }
 
 function removeGoldSavingItem(id) {
   goldSavings = goldSavings.filter(it => it.id !== id);
   saveGoldSavings();
+  // If we were editing the deleted item, reset the form state
+  if (goldEditingId === id) {
+    goldEditingId = null;
+    const gInp = document.getElementById('gsGramsInp');
+    const pInp = document.getElementById('gsBuyPriceInp');
+    const mInp = document.getElementById('gsMakingInp');
+    const nInp = document.getElementById('gsNameInp');
+    const btn = document.getElementById('gsAddBtn');
+    if (gInp) gInp.value = '';
+    if (pInp) pInp.value = '';
+    if (mInp) mInp.value = '';
+    if (nInp) nInp.value = '';
+    if (btn) btn.textContent = '➕ ضيف القطعة';
+  }
   renderGoldSavings();
 }
 
@@ -13212,8 +13265,9 @@ function buildGoldSavingsHTML() {
             <option value="18"${savedKarat==='18'?' selected':''}>عيار 18</option>
           </select>
         </div>
-        <input type="number" step="1" inputmode="decimal" id="gsMakingInp" placeholder="مصنعية للجرام (اختياري)" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-family:'Cairo',sans-serif;font-size:13px">
-        <button type="button" onclick="addGoldSavingItem()" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-family:'Cairo',sans-serif;font-size:13px;font-weight:900;cursor:pointer;touch-action:manipulation">➕ ضيف القطعة</button>
+        <input type="number" step="1" inputmode="decimal" id="gsBuyPriceInp" placeholder="اشتريتها بكام؟ (الإجمالي شامل المصنعية)" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-family:'Cairo',sans-serif;font-size:13px">
+        <input type="number" step="1" inputmode="decimal" id="gsMakingInp" placeholder="مصنعية الجرام وقتها (اختياري — للمعلومية)" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-family:'Cairo',sans-serif;font-size:13px">
+        <button type="button" id="gsAddBtn" onclick="addGoldSavingItem()" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-family:'Cairo',sans-serif;font-size:13px;font-weight:900;cursor:pointer;touch-action:manipulation">➕ ضيف القطعة</button>
       </div>
       <div id="goldSavingsList"></div>
     </div>`;
@@ -13227,50 +13281,82 @@ function renderGoldSavings() {
     return;
   }
 
-  let totalGrams = 0;        // raw grams (mixed karats)
-  let totalGrams21eq = 0;    // grams normalized to 21k for fair comparison
-  let totalValue = 0;        // EGP (gold value + making)
+  let totalGrams = 0;       // raw grams (mixed karats)
+  let totalCost = 0;        // EGP paid
+  let totalValueNow = 0;    // EGP current value
+  let hasPrice = (typeof goldData !== 'undefined' && goldData);
 
   const rows = goldSavings.map(it => {
     const grams = it.grams || 0;
     const karat = it.karat || 21;
+    const buyPrice = it.buyPrice || 0;
     const making = it.making || 0;
     const pricePerGram = (typeof egpPerGramKarat === 'function') ? egpPerGramKarat(karat) : null;
-    const goldVal = pricePerGram != null ? grams * pricePerGram : 0;
-    const makingVal = grams * making;
-    const itemVal = goldVal + makingVal;
+    const valueNow = pricePerGram != null ? grams * pricePerGram : 0;
+    const diff = valueNow - buyPrice;
 
     totalGrams += grams;
-    totalGrams21eq += grams * (karat / 21);
-    totalValue += itemVal;
+    totalCost += buyPrice;
+    if (pricePerGram != null) totalValueNow += valueNow;
 
     const label = it.name || `ذهب عيار ${toArabicDigits(karat)}`;
-    const valStr = pricePerGram != null ? `${fmt(itemVal, 0)} ج.م` : '— (حدّث السعر)';
+    const buyPerGram = grams > 0 ? buyPrice / grams : 0;
+    let diffStr = '';
+    let perGramStr = '';
+    if (pricePerGram == null) {
+      diffStr = `<div style="font-size:11px;color:var(--muted)">— حدّث السعر</div>`;
+      perGramStr = `<div style="font-size:10px;color:var(--muted);margin-top:2px">اشتريت الجرام بـ ${fmt(buyPerGram,0)} ج.م</div>`;
+    } else {
+      const isUp = diff >= 0;
+      const color = isUp ? '#3fb950' : '#f85149';
+      const sign = isUp ? '▲ كسبان' : '▼ خسران';
+      diffStr = `<div style="font-size:11px;font-weight:800;color:${color}">${sign} ${fmt(Math.abs(diff), 0)} ج.م</div>`;
+      perGramStr = `<div style="font-size:10px;color:var(--muted);margin-top:2px">الجرام: شراء ${fmt(buyPerGram,0)} ← دلوقتي ${fmt(pricePerGram,0)} ج.م</div>`;
+    }
+    const valStr = pricePerGram != null ? `${fmt(valueNow, 0)} ج.م` : '—';
     return `
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:10px;background:var(--card);border:1px solid var(--border);margin-bottom:6px">
-        <button type="button" onclick="removeGoldSavingItem('${it.id}')" aria-label="حذف" style="background:none;border:none;color:#f85149;font-size:16px;cursor:pointer;padding:2px 4px;touch-action:manipulation">🗑️</button>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <button type="button" onclick="removeGoldSavingItem('${it.id}')" aria-label="حذف" style="background:none;border:none;color:#f85149;font-size:16px;cursor:pointer;padding:2px 4px;touch-action:manipulation">🗑️</button>
+          <button type="button" onclick="editGoldSavingItem('${it.id}')" aria-label="تعديل" style="background:none;border:none;color:var(--accent);font-size:15px;cursor:pointer;padding:2px 4px;touch-action:manipulation">✏️</button>
+        </div>
         <div style="flex:1;text-align:right">
           <div style="font-size:13px;font-weight:800;color:var(--text)">${label}</div>
-          <div style="font-size:11px;color:var(--muted)">${toArabicDigits(grams)} جرام · عيار ${toArabicDigits(karat)}${making>0?` · مصنعية ${toArabicDigits(making)}`:''}</div>
+          <div style="font-size:11px;color:var(--muted)">${toArabicDigits(grams)} جرام · عيار ${toArabicDigits(karat)} · شراء ${fmt(buyPrice,0)} ج.م${making>0?` · مصنعية ${toArabicDigits(making)}/جرام`:''}</div>
+          ${perGramStr}
         </div>
-        <div style="font-size:13px;font-weight:900;color:var(--accent);white-space:nowrap">${valStr}</div>
+        <div style="text-align:left;white-space:nowrap">
+          <div style="font-size:13px;font-weight:900;color:var(--accent)">${valStr}</div>
+          ${diffStr}
+        </div>
       </div>`;
   }).join('');
+
+  const totalDiff = totalValueNow - totalCost;
+  const isUp = totalDiff >= 0;
+  const diffColor = isUp ? '#3fb950' : '#f85149';
+  const diffLabel = isUp ? '▲ إجمالي مكسبك' : '▼ إجمالي خسارتك';
+  const pct = totalCost > 0 ? (totalDiff / totalCost) * 100 : 0;
 
   list.innerHTML = rows + `
     <div style="margin-top:10px;padding:12px;border-radius:12px;background:linear-gradient(135deg,rgba(255,193,7,0.12),rgba(255,193,7,0.03));border:1.5px solid rgba(255,193,7,0.3)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <span style="font-size:12px;color:var(--muted)">إجمالي الجرامات</span>
-        <b style="font-size:15px;color:var(--text)">${toArabicDigits(+totalGrams.toFixed(2))} جرام</b>
+        <b style="font-size:14px;color:var(--text)">${toArabicDigits(+totalGrams.toFixed(2))} جرام</b>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-size:12px;color:var(--muted)">المعادل بعيار 21</span>
-        <b style="font-size:13px;color:var(--text)">${toArabicDigits(+totalGrams21eq.toFixed(2))} جرام</b>
+        <span style="font-size:12px;color:var(--muted)">المدفوع (الشراء)</span>
+        <b style="font-size:13px;color:var(--text)">${fmt(totalCost, 0)} ج.م</b>
       </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:12px;color:var(--muted)">القيمة دلوقتي</span>
+        <b style="font-size:14px;color:var(--accent)">${hasPrice ? fmt(totalValueNow, 0) + ' ج.م' : '— حدّث السعر'}</b>
+      </div>
+      ${hasPrice ? `
       <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px dashed var(--border);padding-top:8px;margin-top:4px">
-        <span style="font-size:13px;font-weight:900;color:var(--accent)">القيمة الإجمالية</span>
-        <b style="font-size:17px;font-weight:900;color:var(--accent)">${fmt(totalValue, 0)} ج.م</b>
-      </div>
+        <span style="font-size:13px;font-weight:900;color:${diffColor}">${diffLabel}</span>
+        <b style="font-size:17px;font-weight:900;color:${diffColor}">${fmt(Math.abs(totalDiff), 0)} ج.م <span style="font-size:12px">(${isUp?'+':'-'}${toArabicDigits(Math.abs(pct).toFixed(1))}٪)</span></b>
+      </div>` : ''}
     </div>`;
 }
 
@@ -13303,6 +13389,7 @@ function openGoldPage() {
       • السعر بيتحدّث تلقائياً كل ٤ ساعات لما تفتح التطبيق<br>
       • للأسعار الرسمية الحقيقية، راجع شعبة الذهب
     </div>` + buildGoldSavingsHTML() + buildGoldChartHTML();
+  goldEditingId = null;
   setTimeout(() => { try { updateGoldCalc(); } catch(e){} }, 0);
   setTimeout(() => { try { renderGoldSavings(); } catch(e){} }, 0);
   m.classList.add('open');
