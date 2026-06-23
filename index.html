@@ -3397,6 +3397,72 @@ input:focus,select:focus,textarea:focus{
   to{opacity:1;transform:translateY(0) scale(1)}
 }
 
+/* ── 13. قسم «خيارات إضافية» المطوي في إضافة حركة ──────────────── */
+.adv-section{
+  background:var(--card2);
+  border:1.5px solid var(--border);
+  border-radius:12px;
+  margin:6px 0 10px;
+  overflow:hidden;
+  transition:border-color .2s ease;
+}
+.adv-section[open]{border-color:var(--rf-ring);}
+.adv-summary{
+  list-style:none;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:13px 14px;
+  font-family:'Cairo',sans-serif;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.adv-summary::-webkit-details-marker{display:none;}
+.adv-summary-txt{font-size:13px;font-weight:800;color:var(--text);}
+.adv-summary-hint{
+  font-size:10px;color:var(--muted);font-weight:600;
+  flex:1;text-align:right;
+}
+.adv-chevron{
+  font-size:18px;color:var(--accent);font-weight:900;
+  transition:transform .25s var(--rf-ease);
+  line-height:1;
+}
+.adv-section[open] .adv-chevron{transform:rotate(180deg);}
+.adv-body{
+  padding:4px 14px 12px;
+  border-top:1px solid var(--border);
+  animation:rf-adv-in .25s var(--rf-ease);
+}
+@keyframes rf-adv-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+/* داخل القسم: شيل الـ margin الزيادة من أول عنصر */
+.adv-body > .form-row:first-child{margin-top:8px;}
+
+/* ── 14. لمسات شكلية على فورم إضافة الحركة ────────────────────── */
+/* المبلغ يبقى أبرز وأكبر */
+#modal #fAmt{
+  font-size:22px !important;
+  font-weight:900 !important;
+  letter-spacing:.5px;
+  text-align:center;
+  padding:12px !important;
+  border-width:1.5px !important;
+}
+#modal #fAmt:focus{
+  border-color:var(--accent) !important;
+  box-shadow:0 0 0 3px var(--rf-glow) !important;
+}
+/* عنوان المودال أوضح */
+#modal .modal-title{
+  font-size:17px;font-weight:900;
+  letter-spacing:-.3px;
+  margin-bottom:14px;
+}
+/* أزرار نوع الحركة: تفاعل أنعم */
+#modal .type-btn{transition:all .18s var(--rf-ease);}
+#modal .type-btn:active{transform:scale(.96);}
+
 /* ── 11b. زرار الحفظ في إضافة حركة: ثابت تحت دايمًا (حل مشكلة اختفاء الزر مع الكيبورد على iOS) ── */
 #modal .sheet .save-btn{
   position:sticky;
@@ -3802,6 +3868,32 @@ input:focus,select:focus,textarea:focus{
       <input class="form-inp" id="fNote" placeholder="مثال: جاكيت أزرق + جوارب من Zara..."/>
     </div>
 
+    <!-- LINK TO OCCASION (V27) -->
+    <div class="form-row" id="fOccLinkRow" style="display:none">
+      <div class="form-lbl">🎁 اربط بمناسبة (اختياري)</div>
+      <select class="form-inp" id="fOccLink">
+        <option value="">— مفيش —</option>
+      </select>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">الحركة هتترصد كمصروف/إيداع جوه المناسبة دي</div>
+    </div>
+
+    <!-- LINK TO TRIP (V27) -->
+    <div class="form-row" id="fTripLinkRow" style="display:none">
+      <div class="form-lbl">🛫 اربط برحلة (اختياري)</div>
+      <select class="form-inp" id="fTripLink">
+        <option value="">— مفيش —</option>
+      </select>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">الحركة هتترصد كمصروف/إيداع جوه الرحلة دي</div>
+    </div>
+
+    <!-- ═══ خيارات إضافية (مطوية) ═══ -->
+    <details class="adv-section" id="advSection">
+      <summary class="adv-summary">
+        <span class="adv-summary-txt">⚙️ خيارات إضافية</span>
+        <span class="adv-summary-hint">إيصال · تكرار · tags · تقسيم</span>
+        <span class="adv-chevron">⌄</span>
+      </summary>
+      <div class="adv-body">
     <!-- RECEIPT PHOTO -->
     <div class="form-row" id="receiptRow">
       <div class="form-lbl">📸 صورة الإيصال — Claude يقرأها تلقائياً</div>
@@ -3843,23 +3935,7 @@ input:focus,select:focus,textarea:focus{
       </select>
     </div>
 
-    <!-- LINK TO OCCASION (V27) -->
-    <div class="form-row" id="fOccLinkRow" style="display:none">
-      <div class="form-lbl">🎁 اربط بمناسبة (اختياري)</div>
-      <select class="form-inp" id="fOccLink">
-        <option value="">— مفيش —</option>
-      </select>
-      <div style="font-size:10px;color:var(--muted);margin-top:4px">الحركة هتترصد كمصروف/إيداع جوه المناسبة دي</div>
-    </div>
 
-    <!-- LINK TO TRIP (V27) -->
-    <div class="form-row" id="fTripLinkRow" style="display:none">
-      <div class="form-lbl">🛫 اربط برحلة (اختياري)</div>
-      <select class="form-inp" id="fTripLink">
-        <option value="">— مفيش —</option>
-      </select>
-      <div style="font-size:10px;color:var(--muted);margin-top:4px">الحركة هتترصد كمصروف/إيداع جوه الرحلة دي</div>
-    </div>
 
     <!-- TAGS (#27) -->
     <div class="form-row">
@@ -3897,6 +3973,8 @@ input:focus,select:focus,textarea:focus{
       <button type="button" class="export-btn" onclick="addSplitRow()" style="width:100%;margin-top:6px">➕ أضف فئة</button>
       <div class="split-summary" id="splitSummary"></div>
     </div>
+      </div>
+    </details>
 
     <button class="save-btn" onclick="saveTx()">💾 حفظ الحركة</button>
   </div>
