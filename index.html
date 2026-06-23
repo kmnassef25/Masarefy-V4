@@ -3261,6 +3261,152 @@ button, .menu-row, .tx-card {
       .v24-facts-mini { grid-template-columns: repeat(2, 1fr); }
     }
   
+
+/* ═══════════════════════════════════════════════════════════════
+   تجديد الواجهة — REFRESH LAYER (v32)
+   طبقة تحسينات بصرية فوق التصميم الحالي. لا تمسّ أي منطق.
+   تحترم الثيم الفاتح والغامق + prefers-reduced-motion.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. نظام ألوان أعمق وأكثر تناسقًا (غامق) ──────────────────── */
+:root{
+  /* عمق إضافي للخلفية بتدرّج خفيف بدل لون مسطّح */
+  --rf-bg-1:#0b0f14;
+  --rf-bg-2:#0e131a;
+  --rf-glow:rgba(240,180,41,.07);
+  --rf-ring:rgba(240,180,41,.35);
+  --rf-shadow-sm:0 1px 2px rgba(0,0,0,.25), 0 2px 8px rgba(0,0,0,.18);
+  --rf-shadow-md:0 4px 14px rgba(0,0,0,.32), 0 1px 3px rgba(0,0,0,.22);
+  --rf-shadow-lg:0 18px 50px rgba(0,0,0,.48);
+  --rf-ease:cubic-bezier(.34,1.2,.46,1);
+}
+
+/* خلفية بتدرّج ناعم جدًا + توهّج علوي ذهبي خفيف */
+body{
+  background:
+    radial-gradient(120% 80% at 50% -10%, var(--rf-glow), transparent 60%),
+    linear-gradient(180deg, var(--rf-bg-2), var(--rf-bg-1)) !important;
+}
+:root[data-theme="light"] body{
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(240,180,41,.10), transparent 60%),
+    linear-gradient(180deg, #fbfcfe, #f3f5f9) !important;
+}
+
+/* ── 2. الهيدر: عمق وثبات أوضح ───────────────────────────────── */
+.header{
+  box-shadow:0 1px 0 rgba(255,255,255,.03), 0 6px 18px -8px rgba(0,0,0,.5);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+.app-name{
+  letter-spacing:-.3px;
+  text-shadow:0 0 24px var(--rf-glow);
+}
+
+/* ── 3. شريط التابات: مؤشّر نشِط أنعم + لمسة تفاعل ─────────────── */
+.tab-btn{
+  position:relative;
+  border-radius:12px 12px 0 0;
+  transition:color .2s var(--rf-ease), background .2s ease;
+}
+.tab-btn:active{transform:translateY(1px);}
+.tab-btn.active{
+  background:linear-gradient(180deg, rgba(240,180,41,.12), rgba(240,180,41,.02));
+}
+/* مؤشّر متحرّك تحت التاب النشِط */
+.tab-btn.active::after{
+  content:'';
+  position:absolute;
+  left:18%;right:18%;bottom:-1px;height:3px;
+  border-radius:3px 3px 0 0;
+  background:linear-gradient(90deg, var(--accent), var(--accent2));
+  box-shadow:0 0 12px var(--rf-ring);
+  animation:rf-tab-pop .28s var(--rf-ease);
+}
+@keyframes rf-tab-pop{from{transform:scaleX(.3);opacity:0}to{transform:scaleX(1);opacity:1}}
+
+/* ── 4. كروت الملخّص: ظل وعمق وتفاعل لمس أرقى ─────────────────── */
+.sum-main,.sum-inc,.sum-exp,.sum-sav{
+  box-shadow:var(--rf-shadow-md), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  transition:transform .18s var(--rf-ease), box-shadow .18s ease !important;
+}
+.sum-main:active,.sum-inc:active,.sum-exp:active,.sum-sav:active{
+  transform:translateY(1px) scale(.985);
+}
+.sum-main .val,.sum-inc .val,.sum-exp .val,.sum-sav .val{
+  letter-spacing:-.5px;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ── 5. الكروت العامة: حواف وظلال موحّدة وأنعم ────────────────── */
+.tx-card,.home-section,.habit-card,.gold-card,.islamic-card{
+  box-shadow:var(--rf-shadow-sm);
+  transition:transform .16s var(--rf-ease), box-shadow .2s ease, border-color .2s ease;
+}
+.tx-card{border-radius:16px;}
+.tx-card:active{transform:scale(.99);}
+/* الشريط الجانبي للحركة أنعم بتدرّج */
+.tx-card.inc::after{background:linear-gradient(180deg, var(--green), rgba(63,185,80,.5)) !important;}
+.tx-card.exp::after{background:linear-gradient(180deg, var(--red), rgba(248,81,73,.5)) !important;}
+
+/* أرقام جدولية في كل المبالغ لمحاذاة أنظف */
+.tx-orig,.sum-main .val,.hero-card .val,.stat-val,.stats-grid .val{
+  font-variant-numeric:tabular-nums;
+}
+
+/* ── 6. الشارات (badges): أنعم وأوضح ──────────────────────────── */
+.badge{
+  border:1px solid rgba(255,255,255,.05);
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+}
+
+/* ── 7. الأزرار: تأثير ضغط موحّد في كل التطبيق ────────────────── */
+button{transition:transform .12s var(--rf-ease), filter .15s ease, box-shadow .15s ease;}
+button:active{transform:scale(.97);}
+button:focus-visible{outline:2px solid var(--rf-ring);outline-offset:2px;}
+
+/* ── 8. المودالات / الشيتات: ظهور أنعم وظل أعمق ───────────────── */
+.overlay{backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
+.sheet,.modal-box,.modal-content,[class*="sheet"]{
+  box-shadow:var(--rf-shadow-lg) !important;
+}
+/* مقبض السحب أوضح */
+.sheet .handle,.drag-handle,[class*="handle"]{
+  opacity:.6;
+}
+
+/* ── 9. حقول الإدخال: حلقة تركيز ذهبية واضحة ──────────────────── */
+input,select,textarea{
+  transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--rf-ring) !important;
+  box-shadow:0 0 0 3px var(--rf-glow) !important;
+  outline:none;
+}
+
+/* ── 10. شريط التمرير الداخلي (سطح المكتب) ───────────────────── */
+.body-scroll{scroll-behavior:smooth;}
+
+/* ── 11. تحريك ظهور التابات أنعم قليلًا ──────────────────────── */
+.tab-anim{animation:rf-tab-in .26s var(--rf-ease) !important;}
+@keyframes rf-tab-in{
+  from{opacity:0;transform:translateY(10px) scale(.995)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+/* ── 12. احترام تقليل الحركة بالكامل ─────────────────────────── */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+    scroll-behavior:auto !important;
+  }
+}
+
 </style>
 
 </head>
@@ -3594,7 +3740,26 @@ button, .menu-row, .tx-card {
           <button class="sav-btn" data-cat="أخرى" onclick="selSC(this)"><span class="ci">💎</span>أخرى</button>
         </div>
       </div>
-    </div>
+      <!-- تفاصيل الذهب: تظهر بس لما الفئة ذهب -->
+      <div id="goldDetailsRow" style="display:none">
+        <div style="display:flex;gap:8px">
+          <div class="form-row" style="flex:1">
+            <div class="form-lbl">⚖️ عدد الجرامات</div>
+            <input class="form-inp" id="goldGrams" type="number" inputmode="decimal" placeholder="مثلاً 10" oninput="updateGoldHint()"/>
+          </div>
+          <div class="form-row" style="flex:1">
+            <div class="form-lbl">🔱 العيار</div>
+            <select class="form-inp" id="goldKarat" onchange="updateGoldHint()">
+              <option value="24">24</option>
+              <option value="22">22</option>
+              <option value="21" selected>21</option>
+              <option value="18">18</option>
+              <option value="14">14</option>
+            </select>
+          </div>
+        </div>
+        <div id="goldHint" style="font-size:11px;color:var(--sav);margin-top:-4px;margin-bottom:6px"></div>
+      </div>
 
     <!-- TRANSFER SECTION -->
     <div id="transferSec" style="display:none">
@@ -5330,7 +5495,7 @@ function renderHome() {
   // Only show forecast if user has at least one account/card/installment
   const showForecast = (accounts && accounts.length > 0) &&
                        ((window.creditCards && window.creditCards.length > 0) ||
-                        (installments && installments.length > 0));
+                        (typeof installments !== 'undefined' && installments && installments.length > 0));
 
   if (showForecast) {
     html += `
@@ -5766,11 +5931,13 @@ function renderSavList() {
       const em = SAV_EMOJI[t.cat]||'💰';
       const sarLine = t.currency!==baseCurrency ? `<div class="tx-sar">≈ ${fmtBase(t.amountSAR)}</div><div class="tx-rate">${esc(rateDisplayText(t))}</div>` : '';
       const tagsLine = (t.tags && t.tags.length) ? `<div class="tx-tags">${t.tags.map(tg=>`<span class="tag-chip">#${esc(tg)}</span>`).join('')}</div>` : '';
+      const goldLine = (t.goldGrams) ? `<div style="font-size:11px;color:var(--sav);margin-top:2px;font-weight:700">🪙 ${t.goldGrams} جرام · عيار ${t.goldKarat||'?'}${t.amount?` · الجرام ${fmt(t.amount/t.goldGrams,2)} ${SYM[t.currency]||''}`:''}</div>` : '';
       h += `<div class="tx-card sav" data-tx-id="${escAttr(t.id)}" data-tx-kind="sav">
         <div class="tx-emoji">${em}</div>
         <div class="tx-info">
           <div class="tx-name">${esc(t.name)}${t.recurring?'<span style="font-size:10px;color:var(--sav);margin-right:5px">🔁</span>':''}</div>
           <div class="tx-meta"><span class="badge">${esc(t.cat)}</span><span class="badge" style="background:rgba(6,182,212,.1);color:var(--sav)">${SYM[t.currency]||esc(t.currency)}</span>${t.time?`<span class="badge time-b">⏰ ${esc(t.time)}</span>`:''}</div>
+          ${goldLine}
           ${tagsLine}
           ${t.note?`<div class="tx-note">📝 ${esc(t.note)}</div>`:''}${t.receipt?`<div style="margin-top:3px"><span class="receipt-icon-tx" data-action="view-receipt" data-tx-id="${escAttr(t.id)}">📎 إيصال</span></div>`:''}
         </div>
@@ -6345,6 +6512,16 @@ function editSav(id) {
   else document.getElementById('rateBox').classList.add('sar-hidden');
   selSCat=t.cat;
   document.querySelectorAll('#savCatGrid .sav-btn').forEach(b=>b.classList.toggle('sel',b.dataset.cat===t.cat));
+  // تفاصيل الذهب
+  const goldRow = document.getElementById('goldDetailsRow');
+  if (goldRow) {
+    if (t.cat === 'ذهب') {
+      goldRow.style.display = '';
+      document.getElementById('goldGrams').value = t.goldGrams || '';
+      document.getElementById('goldKarat').value = t.goldKarat || '21';
+      updateGoldHint();
+    } else goldRow.style.display = 'none';
+  }
   document.querySelector('#modal .modal-title').textContent='✏️ تعديل المدخرات';
   document.getElementById('modal').classList.add('open');
 }
@@ -6747,7 +6924,30 @@ function deleteCustomCat() {
   if (typeof renderAll === 'function') renderAll();
 }
 function selIC(btn){document.querySelectorAll('#incCatGrid .inc-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selICat=btn.dataset.cat;}
-function selSC(btn){document.querySelectorAll('#savCatGrid .sav-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selSCat=btn.dataset.cat;}
+function selSC(btn){
+  document.querySelectorAll('#savCatGrid .sav-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  selSCat=btn.dataset.cat;
+  // تفاصيل الذهب تظهر بس لما الفئة ذهب
+  const gold = document.getElementById('goldDetailsRow');
+  if (gold) { gold.style.display = (selSCat === 'ذهب') ? '' : 'none'; if (selSCat === 'ذهب') updateGoldHint(); }
+}
+// يحسب سعر الجرام من المبلغ المدخل ويعرضه
+function updateGoldHint(){
+  const hint = document.getElementById('goldHint');
+  if (!hint) return;
+  const grams = parseFloat(normalizeDigits(document.getElementById('goldGrams')?.value)) || 0;
+  const karat = document.getElementById('goldKarat')?.value || '21';
+  const amt = safeEval(normalizeDigits(document.getElementById('fAmt')?.value || '')) || 0;
+  if (grams > 0 && amt > 0) {
+    const perGram = amt / grams;
+    hint.textContent = `💡 ${grams} جرام عيار ${karat} — سعر الجرام ${fmt(perGram,2)} ${selPayCurVal}`;
+  } else if (grams > 0) {
+    hint.textContent = `${grams} جرام عيار ${karat}`;
+  } else {
+    hint.textContent = '';
+  }
+}
 
 // ── SAVE TX ──
 function saveTx() {
@@ -6825,6 +7025,12 @@ function saveTx() {
     pending: isPending || undefined,
     splits: splits || undefined
   };
+  // تفاصيل الذهب (لو ادخار من نوع ذهب)
+  if (txType === 'savings' && cat === 'ذهب') {
+    const grams = parseFloat(normalizeDigits(document.getElementById('goldGrams')?.value)) || 0;
+    const karat = document.getElementById('goldKarat')?.value || '21';
+    if (grams > 0) { txObj.goldGrams = grams; txObj.goldKarat = karat; }
+  }
 
   if(txType==='savings'){
     if(editingId&&editingIsSavings) {
@@ -7861,7 +8067,6 @@ function manualReconcileEntries() {
     showToast(n > 0 ? `🧹 اتشال ${n} حركة مكررة` : '✅ مفيش تكرار — كله سليم', 'success', 3500);
   }
 }
-renderAll();
 
 </script>
 
@@ -12514,44 +12719,6 @@ function checkRecurringV2() {
 var investments = JSON.parse(localStorage.getItem('msarifyi_investments') || '[]');
 function saveInvestments() { localStorage.setItem('msarifyi_investments', JSON.stringify(investments)); }
 
-function addInvestment() {
-  const type = prompt('نوع الاستثمار: ذهب، أسهم، عملة رقمية؟');
-  if (!type) return;
-  const name = prompt('الاسم (مثال: ذهب 21، سهم أرامكو، بيتكوين):');
-  if (!name) return;
-  const qty = parseFloat(prompt('الكمية (جرامات/أسهم/وحدات):'));
-  if (!qty) return;
-  const cost = parseFloat(prompt('سعر الوحدة وقت الشراء بالريال:'));
-  if (!cost) return;
-  investments.push({
-    id: 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
-    type, name, qty,
-    avgCost: cost,
-    currentPrice: cost,
-    addedAt: new Date().toISOString()
-  });
-  saveInvestments();
-  renderInvestments();
-}
-
-function delInvestment(id) {
-  if (!confirm('حذف هذا الاستثمار؟')) return;
-  investments = investments.filter(i => i.id !== id);
-  saveInvestments();
-  renderInvestments();
-}
-
-function updateInvestmentPrice(id) {
-  const inv = investments.find(i => i.id === id);
-  if (!inv) return;
-  const np = parseFloat(prompt('السعر الحالي للوحدة بالريال:', inv.currentPrice));
-  if (!np) return;
-  inv.currentPrice = np;
-  inv.priceUpdatedAt = new Date().toISOString();
-  saveInvestments();
-  renderInvestments();
-}
-
 function renderInvestments() {
   const el = document.getElementById('investList');
   if (!el) return;
@@ -13138,7 +13305,7 @@ window.renderHome = function() {
   }, 100);
 
   // Add dedicated "Gold" menu row
-  (window.__menuInjectors = window.__menuInjectors || []).push(() => {
+  setTimeout(() => {
     const menu = document.querySelector('#menuModal .sheet');
     if (menu && !document.getElementById('menuRowGold')) {
       const row = document.createElement('div');
@@ -13154,211 +13321,8 @@ window.renderHome = function() {
         <div class="mc">‹</div>`;
       menu.appendChild(row);
     }
-  });
+  }, 200);
 })();
-
-// ━━━━━━━━━━━ مدخرات الذهب — قائمة قطع متعددة (محفوظة محلياً فقط) ━━━━━━━━━━━
-var goldSavings = [];
-try { goldSavings = JSON.parse(localStorage.getItem('msarifyi_gold_savings') || '[]') || []; } catch(e) { goldSavings = []; }
-function saveGoldSavings() {
-  localStorage.setItem('msarifyi_gold_savings', JSON.stringify(goldSavings));
-}
-
-var goldEditingId = null;
-
-function editGoldSavingItem(id) {
-  const it = goldSavings.find(x => x.id === id);
-  if (!it) return;
-  const gInp = document.getElementById('gsGramsInp');
-  const kSel = document.getElementById('gsKaratSel');
-  const pInp = document.getElementById('gsBuyPriceInp');
-  const mInp = document.getElementById('gsMakingInp');
-  const nInp = document.getElementById('gsNameInp');
-  if (gInp) gInp.value = it.grams || '';
-  if (kSel) kSel.value = String(it.karat || 21);
-  if (pInp) pInp.value = it.buyPrice || '';
-  if (mInp) mInp.value = it.making || '';
-  if (nInp) nInp.value = it.name || '';
-  goldEditingId = id;
-  const btn = document.getElementById('gsAddBtn');
-  if (btn) btn.textContent = '💾 احفظ التعديل';
-  // Scroll the form into view
-  const card = document.getElementById('goldSavingsCard');
-  if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function addGoldSavingItem() {
-  const gInp = document.getElementById('gsGramsInp');
-  const kSel = document.getElementById('gsKaratSel');
-  const pInp = document.getElementById('gsBuyPriceInp');
-  const mInp = document.getElementById('gsMakingInp');
-  const nInp = document.getElementById('gsNameInp');
-  if (!gInp || !kSel) return;
-  const grams = parseFloat(gInp.value) || 0;
-  const karat = parseInt(kSel.value) || 21;
-  const buyPrice = pInp ? (parseFloat(pInp.value) || 0) : 0;
-  const making = mInp ? (parseFloat(mInp.value) || 0) : 0;
-  const name = (nInp && nInp.value.trim()) ? nInp.value.trim() : '';
-  if (grams <= 0) {
-    if (typeof showToast === 'function') showToast('اكتب عدد جرامات صحيح', 'warning');
-    return;
-  }
-  if (buyPrice <= 0) {
-    if (typeof showToast === 'function') showToast('اكتب سعر الشراء', 'warning');
-    return;
-  }
-  if (goldEditingId) {
-    // Save edit
-    const it = goldSavings.find(x => x.id === goldEditingId);
-    if (it) { it.name = name; it.grams = grams; it.karat = karat; it.buyPrice = buyPrice; it.making = making; }
-    goldEditingId = null;
-    const btn = document.getElementById('gsAddBtn');
-    if (btn) btn.textContent = '➕ ضيف القطعة';
-  } else {
-    goldSavings.push({
-      id: 'gs_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-      name, grams, karat, buyPrice, making
-    });
-  }
-  saveGoldSavings();
-  // Clear inputs
-  gInp.value = '';
-  if (pInp) pInp.value = '';
-  if (mInp) mInp.value = '';
-  if (nInp) nInp.value = '';
-  renderGoldSavings();
-  if (typeof showToast === 'function') showToast('✅ تم الحفظ', 'success');
-}
-
-function removeGoldSavingItem(id) {
-  goldSavings = goldSavings.filter(it => it.id !== id);
-  saveGoldSavings();
-  // If we were editing the deleted item, reset the form state
-  if (goldEditingId === id) {
-    goldEditingId = null;
-    const gInp = document.getElementById('gsGramsInp');
-    const pInp = document.getElementById('gsBuyPriceInp');
-    const mInp = document.getElementById('gsMakingInp');
-    const nInp = document.getElementById('gsNameInp');
-    const btn = document.getElementById('gsAddBtn');
-    if (gInp) gInp.value = '';
-    if (pInp) pInp.value = '';
-    if (mInp) mInp.value = '';
-    if (nInp) nInp.value = '';
-    if (btn) btn.textContent = '➕ ضيف القطعة';
-  }
-  renderGoldSavings();
-}
-
-function buildGoldSavingsHTML() {
-  const savedKarat = localStorage.getItem('msarifyi_gold_karat') || '21';
-  return `
-    <div class="gold-savings" id="goldSavingsCard" style="background:var(--card2);border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-top:12px">
-      <div style="font-size:14px;font-weight:900;color:var(--accent);margin-bottom:10px">💰 مدخرات الذهب</div>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
-        <input type="text" id="gsNameInp" placeholder="اسم القطعة (اختياري — مثلاً: غويشة)" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-family:'Cairo',sans-serif;font-size:13px">
-        <div style="display:flex;gap:8px">
-          <input type="number" step="0.01" inputmode="decimal" id="gsGramsInp" placeholder="عدد الجرامات" style="flex:2;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-family:'Cairo',sans-serif;font-size:13px">
-          <select id="gsKaratSel" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-family:'Cairo',sans-serif;font-size:13px">
-            <option value="24"${savedKarat==='24'?' selected':''}>عيار 24</option>
-            <option value="21"${savedKarat==='21'?' selected':''}>عيار 21</option>
-            <option value="18"${savedKarat==='18'?' selected':''}>عيار 18</option>
-          </select>
-        </div>
-        <input type="number" step="1" inputmode="decimal" id="gsBuyPriceInp" placeholder="اشتريتها بكام؟ (الإجمالي شامل المصنعية)" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-family:'Cairo',sans-serif;font-size:13px">
-        <input type="number" step="1" inputmode="decimal" id="gsMakingInp" placeholder="مصنعية الجرام وقتها (اختياري — للمعلومية)" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-family:'Cairo',sans-serif;font-size:13px">
-        <button type="button" id="gsAddBtn" onclick="addGoldSavingItem()" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-family:'Cairo',sans-serif;font-size:13px;font-weight:900;cursor:pointer;touch-action:manipulation">➕ ضيف القطعة</button>
-      </div>
-      <div id="goldSavingsList"></div>
-    </div>`;
-}
-
-function renderGoldSavings() {
-  const list = document.getElementById('goldSavingsList');
-  if (!list) return;
-  if (!goldSavings.length) {
-    list.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:12px;padding:10px">لسه ما ضفتش أي قطعة ذهب</div>`;
-    return;
-  }
-
-  let totalGrams = 0;       // raw grams (mixed karats)
-  let totalCost = 0;        // EGP paid
-  let totalValueNow = 0;    // EGP current value
-  let hasPrice = (typeof goldData !== 'undefined' && goldData);
-
-  const rows = goldSavings.map(it => {
-    const grams = it.grams || 0;
-    const karat = it.karat || 21;
-    const buyPrice = it.buyPrice || 0;
-    const making = it.making || 0;
-    const pricePerGram = (typeof egpPerGramKarat === 'function') ? egpPerGramKarat(karat) : null;
-    const valueNow = pricePerGram != null ? grams * pricePerGram : 0;
-    const diff = valueNow - buyPrice;
-
-    totalGrams += grams;
-    totalCost += buyPrice;
-    if (pricePerGram != null) totalValueNow += valueNow;
-
-    const label = it.name || `ذهب عيار ${toArabicDigits(karat)}`;
-    const buyPerGram = grams > 0 ? buyPrice / grams : 0;
-    let diffStr = '';
-    let perGramStr = '';
-    if (pricePerGram == null) {
-      diffStr = `<div style="font-size:11px;color:var(--muted)">— حدّث السعر</div>`;
-      perGramStr = `<div style="font-size:10px;color:var(--muted);margin-top:2px">اشتريت الجرام بـ ${fmt(buyPerGram,0)} ج.م</div>`;
-    } else {
-      const isUp = diff >= 0;
-      const color = isUp ? '#3fb950' : '#f85149';
-      const sign = isUp ? '▲ كسبان' : '▼ خسران';
-      diffStr = `<div style="font-size:11px;font-weight:800;color:${color}">${sign} ${fmt(Math.abs(diff), 0)} ج.م</div>`;
-      perGramStr = `<div style="font-size:10px;color:var(--muted);margin-top:2px">الجرام: شراء ${fmt(buyPerGram,0)} ← دلوقتي ${fmt(pricePerGram,0)} ج.م</div>`;
-    }
-    const valStr = pricePerGram != null ? `${fmt(valueNow, 0)} ج.م` : '—';
-    return `
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:10px;background:var(--card);border:1px solid var(--border);margin-bottom:6px">
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <button type="button" onclick="removeGoldSavingItem('${it.id}')" aria-label="حذف" style="background:none;border:none;color:#f85149;font-size:16px;cursor:pointer;padding:2px 4px;touch-action:manipulation">🗑️</button>
-          <button type="button" onclick="editGoldSavingItem('${it.id}')" aria-label="تعديل" style="background:none;border:none;color:var(--accent);font-size:15px;cursor:pointer;padding:2px 4px;touch-action:manipulation">✏️</button>
-        </div>
-        <div style="flex:1;text-align:right">
-          <div style="font-size:13px;font-weight:800;color:var(--text)">${label}</div>
-          <div style="font-size:11px;color:var(--muted)">${toArabicDigits(grams)} جرام · عيار ${toArabicDigits(karat)} · شراء ${fmt(buyPrice,0)} ج.م${making>0?` · مصنعية ${toArabicDigits(making)}/جرام`:''}</div>
-          ${perGramStr}
-        </div>
-        <div style="text-align:left;white-space:nowrap">
-          <div style="font-size:13px;font-weight:900;color:var(--accent)">${valStr}</div>
-          ${diffStr}
-        </div>
-      </div>`;
-  }).join('');
-
-  const totalDiff = totalValueNow - totalCost;
-  const isUp = totalDiff >= 0;
-  const diffColor = isUp ? '#3fb950' : '#f85149';
-  const diffLabel = isUp ? '▲ إجمالي مكسبك' : '▼ إجمالي خسارتك';
-  const pct = totalCost > 0 ? (totalDiff / totalCost) * 100 : 0;
-
-  list.innerHTML = rows + `
-    <div style="margin-top:10px;padding:12px;border-radius:12px;background:linear-gradient(135deg,rgba(255,193,7,0.12),rgba(255,193,7,0.03));border:1.5px solid rgba(255,193,7,0.3)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-size:12px;color:var(--muted)">إجمالي الجرامات</span>
-        <b style="font-size:14px;color:var(--text)">${toArabicDigits(+totalGrams.toFixed(2))} جرام</b>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-size:12px;color:var(--muted)">المدفوع (الشراء)</span>
-        <b style="font-size:13px;color:var(--text)">${fmt(totalCost, 0)} ج.م</b>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-size:12px;color:var(--muted)">القيمة دلوقتي</span>
-        <b style="font-size:14px;color:var(--accent)">${hasPrice ? fmt(totalValueNow, 0) + ' ج.م' : '— حدّث السعر'}</b>
-      </div>
-      ${hasPrice ? `
-      <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px dashed var(--border);padding-top:8px;margin-top:4px">
-        <span style="font-size:13px;font-weight:900;color:${diffColor}">${diffLabel}</span>
-        <b style="font-size:17px;font-weight:900;color:${diffColor}">${fmt(Math.abs(totalDiff), 0)} ج.م <span style="font-size:12px">(${isUp?'+':'-'}${toArabicDigits(Math.abs(pct).toFixed(1))}٪)</span></b>
-      </div>` : ''}
-    </div>`;
-}
 
 // Dedicated gold modal — full-page experience
 function openGoldPage() {
@@ -13388,10 +13352,8 @@ function openGoldPage() {
       • و<b>ضريبة قيمة مضافة</b> ١٤٪ على المصنعية<br>
       • السعر بيتحدّث تلقائياً كل ٤ ساعات لما تفتح التطبيق<br>
       • للأسعار الرسمية الحقيقية، راجع شعبة الذهب
-    </div>` + buildGoldSavingsHTML() + buildGoldChartHTML();
-  goldEditingId = null;
+    </div>` + buildGoldChartHTML();
   setTimeout(() => { try { updateGoldCalc(); } catch(e){} }, 0);
-  setTimeout(() => { try { renderGoldSavings(); } catch(e){} }, 0);
   m.classList.add('open');
 }
 
@@ -13419,10 +13381,6 @@ fetchGoldPrice = async function() {
     // Keep only last 90 days
     goldHistory = goldHistory.slice(-90);
     saveGoldHistory();
-  }
-  // If gold page is open, refresh savings values with new price
-  if (document.getElementById('goldSavingsList')) {
-    try { renderGoldSavings(); } catch(e){}
   }
   return result;
 };
@@ -13477,36 +13435,6 @@ function buildGoldChartHTML() {
 // ═══════════════ FEATURE: PRICE ALERTS ═══════════════
 var priceAlerts = JSON.parse(localStorage.getItem('msarifyi_price_alerts') || '[]');
 function savePriceAlerts() { localStorage.setItem('msarifyi_price_alerts', JSON.stringify(priceAlerts)); }
-
-function addPriceAlert() {
-  const type = prompt('نوع التنبيه:\n1 = ذهب عيار 21\n2 = ذهب عيار 24\n3 = الدولار (USD/EGP)\n4 = اليورو (EUR/EGP)\n5 = الريال (SAR/EGP)\n\nاكتب الرقم:');
-  if (!type || !['1','2','3','4','5'].includes(type)) return;
-  const direction = prompt('متى نبهنّك؟\n1 = لما السعر يبقى أعلى من الهدف\n2 = لما السعر يبقى أقل من الهدف\n\nاكتب الرقم:');
-  if (!direction || !['1','2'].includes(direction)) return;
-  const target = parseFloat(prompt('السعر المستهدف بالجنيه:'));
-  if (!target) return;
-
-  const typeNames = {'1':'ذهب 21', '2':'ذهب 24', '3':'دولار', '4':'يورو', '5':'ريال'};
-  priceAlerts.push({
-    id: 'pa_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
-    type: type,
-    typeName: typeNames[type],
-    direction: direction === '1' ? 'above' : 'below',
-    target,
-    triggered: false,
-    createdAt: new Date().toISOString()
-  });
-  savePriceAlerts();
-  renderPriceAlerts();
-  showAlert('✅ تم إنشاء التنبيه', 'success');
-}
-
-function delPriceAlert(id) {
-  if (!confirm('حذف التنبيه؟')) return;
-  priceAlerts = priceAlerts.filter(a => a.id !== id);
-  savePriceAlerts();
-  renderPriceAlerts();
-}
 
 function checkPriceAlerts() {
   if (!priceAlerts.length) return;
@@ -13614,46 +13542,6 @@ function getTravelMode() {
 function saveTravelMode(t) {
   if (t) localStorage.setItem('msarifyi_travel_mode', JSON.stringify(t));
   else localStorage.removeItem('msarifyi_travel_mode');
-}
-
-function startTravelMode() {
-  const country = prompt('وجهة السفر (مثال: تركيا، الإمارات):');
-  if (!country) return;
-  const currency = prompt('عملة الوجهة:\nUSD = دولار\nEUR = يورو\nEGP = جنيه مصري\nSAR = ريال سعودي\nTRY = ليرة تركية\nAED = درهم إماراتي\n\n(لو غير مدعومة استخدم USD)') || 'USD';
-  const dailyBudget = parseFloat(prompt(`ميزانيتك اليومية بـ${currency}:`)) || 0;
-  const days = parseInt(prompt('عدد أيام الرحلة:')) || 7;
-
-  const travel = {
-    active: true,
-    country,
-    currency: currency.toUpperCase(),
-    dailyBudget,
-    totalBudget: dailyBudget * days,
-    days,
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + days*86400000).toISOString().split('T')[0],
-    transactions: []
-  };
-  saveTravelMode(travel);
-  showAlert(`✈️ بدأت رحلة ${country}! بالتوفيق`, 'success');
-  renderHome();
-  renderTravelCard();
-}
-
-function endTravelMode() {
-  const t = getTravelMode();
-  if (!t) return;
-  if (!confirm('إنهاء وضع السفر؟ هتتخسر الإحصائيات لو ما عملتش حفظ')) return;
-  t.active = false;
-  t.endedAt = new Date().toISOString();
-  saveTravelMode(t);
-  // Also archive
-  const archive = JSON.parse(localStorage.getItem('msarifyi_travel_archive') || '[]');
-  archive.unshift(t);
-  localStorage.setItem('msarifyi_travel_archive', JSON.stringify(archive.slice(0, 20)));
-  saveTravelMode(null);
-  showAlert(`✅ انتهت الرحلة. إجمالي ${t.transactions.length} حركة`, 'success');
-  renderHome();
 }
 
 function renderTravelCard() {
@@ -13787,69 +13675,11 @@ const HAJJ_CATEGORIES = [
   {key: 'other', name: '💵 مصاريف أخرى', emoji: '💵'}
 ];
 
-function setupHajjBudget() {
-  const type = prompt('نوع الرحلة:\n1 = حج\n2 = عمرة\n\nاكتب الرقم:');
-  if (!type || !['1','2'].includes(type)) return;
-  const targetDate = prompt('تاريخ الرحلة (مثال: 2026-06-15):');
-  if (!targetDate || !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
-    showAlert('تاريخ غير صحيح', 'error');
-    return;
-  }
-  const total = parseFloat(prompt('الميزانية الإجمالية المتوقعة بالـ' + BASE_LABELS[baseCurrency].name + ':'));
-  if (!total) return;
-
-  hajjBudget = {
-    id: 'hajj_' + Date.now(),
-    type: type === '1' ? 'حج' : 'عمرة',
-    targetDate,
-    totalBudget: total,
-    breakdown: HAJJ_CATEGORIES.reduce((acc, c) => { acc[c.key] = 0; return acc; }, {}),
-    saved: 0,
-    createdAt: new Date().toISOString()
-  };
-  saveHajjBudget();
-  renderHajjBudget();
-  openHajjBudget();
-}
-
-function delHajjBudget() {
-  if (!confirm('حذف ميزانية الحج/العمرة؟')) return;
-  hajjBudget = null;
-  saveHajjBudget();
-  document.getElementById('hajjModal')?.classList.remove('open');
-  renderHome();
-}
-
 function updateHajjAllocation(key, amount) {
   if (!hajjBudget) return;
   hajjBudget.breakdown[key] = parseFloat(amount) || 0;
   saveHajjBudget();
   renderHajjBudget();
-}
-
-function addToHajjSavings() {
-  if (!hajjBudget) return;
-  const amt = parseFloat(prompt(`أضف للمدخرات (${BASE_LABELS[baseCurrency].name}):`));
-  if (!amt) return;
-  hajjBudget.saved = (hajjBudget.saved || 0) + amt;
-  saveHajjBudget();
-  // Also create a savings transaction
-  savings.unshift({
-    id: 'hajj_sav_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
-    type: 'savings',
-    name: hajjBudget.type === 'حج' ? '🕋 ادخار الحج' : '🕌 ادخار العمرة',
-    amount: amt,
-    currency: baseCurrency,
-    rate: 1,
-    amountSAR: baseCurrency === 'SAR' ? amt : amt * (rates.EGP || 1),
-    cat: hajjBudget.type === 'حج' ? 'حج' : 'عمرة',
-    date: new Date().toISOString().split('T')[0],
-    time: new Date().toTimeString().slice(0,5),
-    note: 'ادخار رحلة ' + hajjBudget.type
-  });
-  saveSavings();
-  renderHajjBudget();
-  showAlert('✅ تم إضافة المبلغ', 'success');
 }
 
 function renderHajjBudget() {
@@ -14048,7 +13878,7 @@ function renderRecurringHub() {
   };
 
   // Add menu rows
-  (window.__menuInjectors = window.__menuInjectors || []).push(() => {
+  setTimeout(() => {
     const menu = document.querySelector('#menuModal .sheet');
     if (!menu) return;
 
@@ -14069,9 +13899,10 @@ function renderRecurringHub() {
     };
 
     addRow('menuRowRecurringHub', '📅', 'المدفوعات الدورية', 'اشتراكات + فواتير + أقساط', openRecurringPaymentsHub);
+    // V27: trips moved into v17 menu grid (المشاريع الكبيرة section) — no need for legacy row anymore
     addRow('menuRowAlerts', '🔔', 'تنبيهات الأسعار', 'لما الذهب أو الدولار يوصل سعر معيّن', openPriceAlerts);
     addRow('menuRowHajj', '🕋', 'ميزانية الحج/العمرة', 'خطّط لرحلتك بالتفصيل', openHajjBudget);
-  });
+  }, 300);
 
   // Run price alerts check on init
   setTimeout(() => { try { checkPriceAlerts(); } catch(e){} }, 2000);
@@ -14415,7 +14246,7 @@ window.renderHome = function() {
 };
 
 // Add menu row for Flights
-(window.__menuInjectors = window.__menuInjectors || []).push(() => {
+setTimeout(() => {
   const menu = document.querySelector('#menuModal .sheet');
   if (menu && !document.getElementById('menuRowFlights')) {
     const row = document.createElement('div');
@@ -14437,7 +14268,7 @@ window.renderHome = function() {
     const upcoming = flights.filter(f => new Date(f.flightDate) >= today).length;
     fc.textContent = upcoming ? `${toArabicDigits(upcoming)} رحلة قادمة` : 'سجّل وعدّاد قبل الرحلة';
   }
-});
+}, 350);
 
 // Re-render home to show flight card on init
 setTimeout(() => { try { renderHome(); } catch(e){} }, 400);
@@ -18365,9 +18196,7 @@ setTimeout(() => {
   }
 
   // Run multiple times to catch dynamically-added modals (V18 cars/weddings inject after delay)
-  setTimeout(v19Boot, 300);
-  setTimeout(v19Boot, 1000);
-  setTimeout(v19Boot, 2000);
+  setTimeout(v19Boot, 800);
 
 })();
 
@@ -19614,9 +19443,7 @@ setTimeout(() => {
       ensureModalCanAlwaysClose();
     } catch (e) { console.warn('V22 init:', e); }
   }
-  setTimeout(v22Boot, 300);
-  setTimeout(v22Boot, 1200);
-  setTimeout(v22Boot, 2500);
+  setTimeout(v22Boot, 800);
 
   // Also re-run when menu opens
   const _origUpdateMenuCounts = window.updateMenuCounts;
@@ -20315,9 +20142,7 @@ setTimeout(() => {
       }
     } catch (e) { console.warn('V23 init:', e); }
   }
-  setTimeout(v23Boot, 500);
-  setTimeout(v23Boot, 1500);
-  setTimeout(v23Boot, 3000);
+  setTimeout(v23Boot, 800);
 
 })();
 
@@ -22521,9 +22346,52 @@ setTimeout(() => {
     return false;
   }
 
-  // Attempt once now (in case menu already exists), then via the central observer
-  tryInjectV17();
-  (window.__menuInjectors = window.__menuInjectors || []).push(tryInjectV17);
+  // Attempt immediately and at progressively later times
+  setTimeout(tryInjectV17, 50);
+  setTimeout(tryInjectV17, 300);
+  setTimeout(tryInjectV17, 800);
+  setTimeout(tryInjectV17, 1500);
+  setTimeout(tryInjectV17, 3000);
+  setTimeout(tryInjectV17, 5000);
+
+  // Re-inject whenever menu modal is opened (in case it got rebuilt)
+  document.addEventListener('click', function(e) {
+    const target = e.target;
+    if (!target) return;
+    const txt = (target.textContent || '');
+    const onclick = (target.getAttribute && target.getAttribute('onclick')) || '';
+    const parentClick = target.closest && target.closest('[onclick]');
+    const clickStr = onclick || (parentClick && parentClick.getAttribute('onclick')) || '';
+    if (clickStr.includes('menuModal')) {
+      setTimeout(tryInjectV17, 50);
+      setTimeout(tryInjectV17, 200);
+      setTimeout(tryInjectV17, 500);
+    }
+  }, true);
+
+  // MutationObserver as ultimate safety net — watches for menu rebuild
+  try {
+    const menuModal = document.getElementById('menuModal');
+    if (menuModal && !window.__ccV17Observer) {
+      const observer = new MutationObserver(() => {
+        setTimeout(tryInjectV17, 50);
+      });
+      observer.observe(menuModal, { childList: true, subtree: true });
+      window.__ccV17Observer = observer;
+    } else if (!window.__ccV17DocObserver) {
+      // Watch the body for menuModal being created/modified
+      const docObserver = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          if (m.target && (m.target.id === 'menuModal' || (m.target.closest && m.target.closest('#menuModal')))) {
+            setTimeout(tryInjectV17, 50);
+            break;
+          }
+        }
+      });
+      docObserver.observe(document.body, { childList: true, subtree: true });
+      window.__ccV17DocObserver = docObserver;
+    }
+  } catch(e) { console.warn('V27 menu observer:', e); }
 
   // Update badge whenever cards change
   if (typeof window.saveCreditCards === 'function' && !window.saveCreditCards.__v27BadgePatched) {
@@ -22772,9 +22640,7 @@ setTimeout(() => {
   }
 
   // Try to patch immediately and on every modal open
-  setTimeout(patchHub, 100);
-  setTimeout(patchHub, 1000);
-  setTimeout(patchHub, 3000);
+  setTimeout(patchHub, 800);
 
   // ─────────────────────────────────────────────────────
   // 2) PDF STATEMENT PARSER
@@ -24029,176 +23895,6 @@ setTimeout(() => {
   // ─────────────────────────────────────────────────────
   // BEAUTIFY CARD DETAIL — bank statement style
   // ─────────────────────────────────────────────────────
-  function renderBeautifulCardDetail(cardId) {
-    const card = (window.creditCards||[]).find(c => c.id === cardId);
-    if (!card) return;
-    const container = document.getElementById('ccDetailContent');
-    if (!container) return;
-
-    const txs = (card.transactions||[]).slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
-    const purchases = txs.filter(t => t.type === 'purchase' || !t.type || t.type === '');
-    const payments = txs.filter(t => t.type === 'payment' || t.type === 'refund');
-    const totalPurchases = purchases.reduce((s,t) => s + (t.amount||0), 0);
-    const totalPayments = payments.reduce((s,t) => s + (t.amount||0), 0);
-    const balance = totalPurchases - totalPayments;
-    const limit = card.limit || 0;
-    const available = limit - balance;
-    const util = limit > 0 ? (balance / limit * 100) : 0;
-    const sym = card.currency === 'EGP' ? 'ج.م' : (card.currency === 'USD' ? '$' : 'SAR');
-
-    // Linked installments
-    let linkedInsts = [];
-    if (typeof installments !== 'undefined' && Array.isArray(installments)) {
-      linkedInsts = installments.filter(i => i.linkedCardId === card.id && (i.paidMonths||0) < i.totalMonths);
-    }
-    const totalInstMonthly = linkedInsts.reduce((s,i) => s + (i.monthlyPayment||0), 0);
-
-    // Group transactions by month
-    const byMonth = {};
-    for (const tx of txs) {
-      const mk = (tx.date || '').slice(0,7);
-      if (!byMonth[mk]) byMonth[mk] = [];
-      byMonth[mk].push(tx);
-    }
-    const sortedMonths = Object.keys(byMonth).sort().reverse();
-
-    const utilColor = util >= 90 ? '#ef4444' : (util >= 70 ? '#f59e0b' : '#10b981');
-
-    container.innerHTML = `
-      <!-- Statement-style header -->
-      <div style="background:linear-gradient(135deg,${card.gradFrom||'#7c3aed'} 0%,${card.gradTo||'#4f46e5'} 100%);color:#fff;border-radius:18px;padding:18px;margin-bottom:14px;position:relative;overflow:hidden">
-        <div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;background:rgba(255,255,255,.1);border-radius:50%"></div>
-        <div style="position:absolute;bottom:-30px;left:-30px;width:140px;height:140px;background:rgba(255,255,255,.05);border-radius:50%"></div>
-        <div style="position:relative;z-index:1">
-          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:14px">
-            <div>
-              <div style="font-size:11px;opacity:.85;letter-spacing:1.5px;font-weight:700">${esc(card.bankName||'BANK')}</div>
-              <div style="font-size:16px;font-weight:900;margin-top:2px">${esc(card.name||'')}</div>
-            </div>
-            <div style="font-size:11px;opacity:.85;text-align:left">
-              ${(card.type || card.cardType || 'visa').toUpperCase()}
-              ${card.last4?`<div style="font-family:monospace;margin-top:2px">•••• ${card.last4}</div>`:''}
-            </div>
-          </div>
-          <div style="font-size:11px;opacity:.85">المبلغ المستحق</div>
-          <div style="font-size:28px;font-weight:900;direction:ltr">${fmt(balance)} <span style="font-size:14px;opacity:.85">${sym}</span></div>
-          <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:11px">
-            <div><span style="opacity:.85">الحد:</span> <b style="direction:ltr">${fmt(limit,0)}</b></div>
-            <div><span style="opacity:.85">المتاح:</span> <b style="direction:ltr;color:#bef264">${fmt(available,0)}</b></div>
-          </div>
-          <div style="background:rgba(255,255,255,.15);border-radius:10px;height:8px;margin-top:8px;overflow:hidden">
-            <div style="background:${utilColor};height:100%;width:${Math.min(util,100)}%;transition:width .3s"></div>
-          </div>
-          <div style="text-align:left;font-size:10px;opacity:.9;margin-top:2px;direction:ltr">${util.toFixed(1)}%</div>
-        </div>
-      </div>
-
-      <!-- Action buttons -->
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px">
-        <button onclick="window.openCardPdfImport('${card.id}')" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📄 رفع كشف PDF</button>
-        <button onclick="window.openCardReport('${card.id}')" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📊 التقرير الكامل</button>
-        <button onclick="if(typeof openCardPurchaseModal==='function')openCardPurchaseModal('${card.id}')" style="background:var(--card2);color:var(--accent);border:1px solid var(--border);border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">➕ مشترى جديد</button>
-        <button onclick="if(typeof openCardPaymentModal==='function')openCardPaymentModal('${card.id}')" style="background:var(--card2);color:var(--green);border:1px solid var(--border);border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">💵 سداد</button>
-      </div>
-
-      <!-- Quick stats -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px">
-        <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--muted);font-weight:700">المشتريات</div>
-          <div style="color:var(--red);font-weight:900;font-size:13px;direction:ltr">${fmt(totalPurchases,0)}</div>
-        </div>
-        <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--muted);font-weight:700">المدفوع</div>
-          <div style="color:var(--green);font-weight:900;font-size:13px;direction:ltr">${fmt(totalPayments,0)}</div>
-        </div>
-        <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--muted);font-weight:700">العمليات</div>
-          <div style="color:var(--text);font-weight:900;font-size:13px">${txs.length}</div>
-        </div>
-      </div>
-
-      <!-- Linked installments -->
-      ${linkedInsts.length > 0 ? `
-        <div style="background:linear-gradient(135deg,#7c3aed15,#4f46e515);border:1px solid #7c3aed40;border-radius:12px;padding:12px;margin-bottom:14px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <div style="font-weight:900;color:#7c3aed;font-size:13px">📋 الأقساط النشطة (${linkedInsts.length})</div>
-            <div style="font-size:11px;color:#7c3aed;font-weight:900;direction:ltr">${fmt(totalInstMonthly)} ${sym}/شهر</div>
-          </div>
-          ${linkedInsts.map(i => `
-            <div style="background:var(--card);border-radius:8px;padding:8px;margin-top:6px;font-size:12px">
-              <div style="display:flex;justify-content:space-between">
-                <span style="font-weight:700">${esc(i.name)}</span>
-                <span style="direction:ltr;font-weight:900;color:#f59e0b">${fmt(i.monthlyPayment)}</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px">
-                <span>${i.paidMonths||0}/${i.totalMonths} شهر</span>
-                <span>متبقي ${i.totalMonths - (i.paidMonths||0)} قسط</span>
-              </div>
-              <div style="background:var(--card2);height:4px;border-radius:2px;margin-top:4px;overflow:hidden">
-                <div style="background:#7c3aed;height:100%;width:${((i.paidMonths||0)/i.totalMonths*100).toFixed(1)}%"></div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      ` : ''}
-
-      <!-- Transactions grouped by month -->
-      ${txs.length === 0 ? `
-        <div style="background:var(--card2);border-radius:12px;padding:30px 20px;text-align:center;color:var(--muted)">
-          <div style="font-size:36px;margin-bottom:8px">📭</div>
-          <div style="font-size:13px">لا توجد عمليات بعد</div>
-          <div style="font-size:11px;margin-top:6px;opacity:.7">ارفع كشف PDF أو أضف عملية يدوياً</div>
-        </div>
-      ` : sortedMonths.map(mk => {
-        const monthTxs = byMonth[mk];
-        const monthSpend = monthTxs.filter(t => t.type !== 'payment' && t.type !== 'refund').reduce((s,t) => s + (t.amount||0), 0);
-        const monthPaid = monthTxs.filter(t => t.type === 'payment' || t.type === 'refund').reduce((s,t) => s + (t.amount||0), 0);
-        return `
-          <div style="margin-bottom:14px">
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 4px;font-size:12px">
-              <div style="font-weight:900;color:var(--accent)">📅 ${mk}</div>
-              <div style="direction:ltr;display:flex;gap:8px;font-weight:700">
-                ${monthSpend>0?`<span style="color:var(--red)">-${fmt(monthSpend,0)}</span>`:''}
-                ${monthPaid>0?`<span style="color:var(--green)">+${fmt(monthPaid,0)}</span>`:''}
-              </div>
-            </div>
-            <div style="background:var(--card2);border-radius:10px;overflow:hidden">
-              ${monthTxs.map((tx, idx) => {
-                const isPaid = tx.type === 'payment' || tx.type === 'refund';
-                const isFee = tx.type === 'fee';
-                const isPlanMove = tx.type === 'plan_move' || tx.type === 'plan_credit' || tx.type === 'plan_debit';
-                const color = isPaid?'var(--green)':(isFee?'#f59e0b':(isPlanMove?'var(--muted)':'var(--red)'));
-                const icon = isPaid?'💵':(isFee?'💸':(isPlanMove?'↔':'🛒'));
-                const sign = isPaid?'+':(isPlanMove?'':'-');
-                return `
-                <div class="cc-tx-row" data-tx-id="${tx.id}" style="padding:10px 12px;${idx>0?'border-top:1px solid var(--border);':''}font-size:12px">
-                  <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
-                    <div style="flex:1;min-width:0">
-                      <div style="display:flex;align-items:center;gap:6px;font-weight:700">
-                        <span>${icon}</span>
-                        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(tx.name||'')}</span>
-                      </div>
-                      <div style="display:flex;gap:8px;font-size:10px;color:var(--muted);margin-top:2px">
-                        <span>${tx.date}</span>
-                        ${tx.category?`<span>• ${esc(tx.category)}</span>`:''}
-                        ${tx.importedFromPdf?`<span style="color:#7c3aed">• PDF</span>`:''}
-                      </div>
-                    </div>
-                    <div style="color:${color};direction:ltr;font-weight:900;flex-shrink:0">${sign}${fmt(tx.amount)}</div>
-                  </div>
-                  <div style="display:flex;gap:4px;margin-top:6px">
-                    <button onclick="event.stopPropagation();window.editCardTransaction('${card.id}','${tx.id}')" style="flex:1;background:transparent;color:var(--accent);border:1px solid var(--border);border-radius:6px;padding:3px;font-size:10px;font-family:inherit;font-weight:700;cursor:pointer">✏️ تعديل</button>
-                    <button onclick="event.stopPropagation();window.deleteCardTransactionConfirm('${card.id}','${tx.id}')" style="flex:1;background:transparent;color:var(--red);border:1px solid var(--border);border-radius:6px;padding:3px;font-size:10px;font-family:inherit;font-weight:700;cursor:pointer">🗑 حذف</button>
-                  </div>
-                </div>
-              `;}).join('')}
-            </div>
-          </div>
-        `;
-      }).join('')}
-    `;
-  }
-
   // Override openCardDetail to use beautiful version — DISABLED in V29
   // V29 owns the detail view rendering. Leave V28's renderBeautifulCardDetail
   // function defined but don't wrap openCardDetail; V29 will provide it.
@@ -26104,7 +25800,19 @@ setTimeout(() => {
     }
     return true;
   }
-  (window.__menuInjectors = window.__menuInjectors || []).push(addMenuRow);
+  // Try to inject the menu row at various times
+  setTimeout(addMenuRow, 500);
+  setTimeout(addMenuRow, 1500);
+  setTimeout(addMenuRow, 3000);
+  // Also when menu opens
+  document.addEventListener('click', (e) => {
+    const onclick = (e.target && e.target.getAttribute && e.target.getAttribute('onclick')) || '';
+    const parentClick = e.target && e.target.closest && e.target.closest('[onclick]');
+    const clickStr = onclick || (parentClick && parentClick.getAttribute('onclick')) || '';
+    if (clickStr.includes('menuModal')) {
+      setTimeout(addMenuRow, 200);
+    }
+  }, true);
 
   // ━━━━━━━━━━━ Show transfers in transaction listings ━━━━━━━━━━━
   // The existing tx renderer might not know about 'transfer' type, so we add CSS class
@@ -26118,23 +25826,6 @@ setTimeout(() => {
 
   console.log('✅ Transfer feature loaded');
 })();
-
-// ━━━━━━━━━━━ Central menu injector — one observer, runs on menu open only ━━━━━━━━━━━
-(function () {
-  const run = () => {
-    const injectors = window.__menuInjectors || [];
-    for (const fn of injectors) {
-      try { fn(); } catch (e) { console.warn('menu injector:', e); }
-    }
-  };
-  const menuModal = document.getElementById('menuModal');
-  if (!menuModal) return;
-  const obs = new MutationObserver(() => {
-    if (menuModal.classList.contains('open')) run();
-  });
-  obs.observe(menuModal, { attributes: true, attributeFilter: ['class'] });
-})();
-
 
 </script>
 
