@@ -3397,6 +3397,17 @@ input:focus,select:focus,textarea:focus{
   to{opacity:1;transform:translateY(0) scale(1)}
 }
 
+/* ── 11b. زرار الحفظ في إضافة حركة: ثابت تحت دايمًا (حل مشكلة اختفاء الزر مع الكيبورد على iOS) ── */
+#modal .sheet .save-btn{
+  position:sticky;
+  bottom:calc(env(safe-area-inset-bottom, 0px) - 6px);
+  z-index:5;
+  margin-top:14px;
+  box-shadow:0 -10px 20px -6px var(--card), 0 6px 18px -6px rgba(240,180,41,.45);
+}
+/* مساحة سفلية كافية تحت آخر عنصر عشان الزر الثابت ما يغطّيش حاجة */
+#modal .sheet{padding-bottom:calc(20px + env(safe-area-inset-bottom, 0px)) !important;}
+
 /* ── 12. احترام تقليل الحركة بالكامل ─────────────────────────── */
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{
@@ -6129,7 +6140,7 @@ function saveBudget() {
 
 // ── BUDGET NOTIFICATIONS ──
 function checkBudgetAlerts(spentByCat) {
-  if (Notification.permission !== 'granted') return;
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
   const sym = BASE_LABELS[baseCurrency].sym;
   Object.entries(budgets).forEach(([cat, limitSAR]) => {
     const spent = spentByCat[cat] || 0;
@@ -6603,7 +6614,7 @@ function openSettings() {
   document.getElementById('rUSD').value=Number(rates.USD).toFixed(2);
   document.getElementById('rEUR').value=Number(rates.EUR).toFixed(2);
   const nb=document.getElementById('notifBtn');
-  if(Notification.permission==='granted'){nb.textContent='✅ الإشعارات مفعّلة';nb.style.borderColor='var(--green)';nb.style.color='var(--green)';}
+  if(typeof Notification!=='undefined' && Notification.permission==='granted'){nb.textContent='✅ الإشعارات مفعّلة';nb.style.borderColor='var(--green)';nb.style.color='var(--green)';}
   document.getElementById('settingsModal').classList.add('open');
 }
 function saveSettings() {
