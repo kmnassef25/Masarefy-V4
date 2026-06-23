@@ -3261,229 +3261,6 @@ button, .menu-row, .tx-card {
       .v24-facts-mini { grid-template-columns: repeat(2, 1fr); }
     }
   
-
-/* ═══════════════════════════════════════════════════════════════
-   تجديد الواجهة — REFRESH LAYER (v32)
-   طبقة تحسينات بصرية فوق التصميم الحالي. لا تمسّ أي منطق.
-   تحترم الثيم الفاتح والغامق + prefers-reduced-motion.
-   ═══════════════════════════════════════════════════════════════ */
-
-/* ── 1. نظام ألوان أعمق وأكثر تناسقًا (غامق) ──────────────────── */
-:root{
-  /* عمق إضافي للخلفية بتدرّج خفيف بدل لون مسطّح */
-  --rf-bg-1:#0b0f14;
-  --rf-bg-2:#0e131a;
-  --rf-glow:rgba(240,180,41,.07);
-  --rf-ring:rgba(240,180,41,.35);
-  --rf-shadow-sm:0 1px 2px rgba(0,0,0,.25), 0 2px 8px rgba(0,0,0,.18);
-  --rf-shadow-md:0 4px 14px rgba(0,0,0,.32), 0 1px 3px rgba(0,0,0,.22);
-  --rf-shadow-lg:0 18px 50px rgba(0,0,0,.48);
-  --rf-ease:cubic-bezier(.34,1.2,.46,1);
-}
-
-/* خلفية بتدرّج ناعم جدًا + توهّج علوي ذهبي خفيف */
-body{
-  background:
-    radial-gradient(120% 80% at 50% -10%, var(--rf-glow), transparent 60%),
-    linear-gradient(180deg, var(--rf-bg-2), var(--rf-bg-1)) !important;
-}
-:root[data-theme="light"] body{
-  background:
-    radial-gradient(120% 80% at 50% -10%, rgba(240,180,41,.10), transparent 60%),
-    linear-gradient(180deg, #fbfcfe, #f3f5f9) !important;
-}
-
-/* ── 2. الهيدر: عمق وثبات أوضح ───────────────────────────────── */
-.header{
-  box-shadow:0 1px 0 rgba(255,255,255,.03), 0 6px 18px -8px rgba(0,0,0,.5);
-  backdrop-filter:blur(8px);
-  -webkit-backdrop-filter:blur(8px);
-}
-.app-name{
-  letter-spacing:-.3px;
-  text-shadow:0 0 24px var(--rf-glow);
-}
-
-/* ── 3. شريط التابات: مؤشّر نشِط أنعم + لمسة تفاعل ─────────────── */
-.tab-btn{
-  position:relative;
-  border-radius:12px 12px 0 0;
-  transition:color .2s var(--rf-ease), background .2s ease;
-}
-.tab-btn:active{transform:translateY(1px);}
-.tab-btn.active{
-  background:linear-gradient(180deg, rgba(240,180,41,.12), rgba(240,180,41,.02));
-}
-/* مؤشّر متحرّك تحت التاب النشِط */
-.tab-btn.active::after{
-  content:'';
-  position:absolute;
-  left:18%;right:18%;bottom:-1px;height:3px;
-  border-radius:3px 3px 0 0;
-  background:linear-gradient(90deg, var(--accent), var(--accent2));
-  box-shadow:0 0 12px var(--rf-ring);
-  animation:rf-tab-pop .28s var(--rf-ease);
-}
-@keyframes rf-tab-pop{from{transform:scaleX(.3);opacity:0}to{transform:scaleX(1);opacity:1}}
-
-/* ── 4. كروت الملخّص: ظل وعمق وتفاعل لمس أرقى ─────────────────── */
-.sum-main,.sum-inc,.sum-exp,.sum-sav{
-  box-shadow:var(--rf-shadow-md), inset 0 1px 0 rgba(255,255,255,.08) !important;
-  transition:transform .18s var(--rf-ease), box-shadow .18s ease !important;
-}
-.sum-main:active,.sum-inc:active,.sum-exp:active,.sum-sav:active{
-  transform:translateY(1px) scale(.985);
-}
-.sum-main .val,.sum-inc .val,.sum-exp .val,.sum-sav .val{
-  letter-spacing:-.5px;
-  font-variant-numeric:tabular-nums;
-}
-
-/* ── 5. الكروت العامة: حواف وظلال موحّدة وأنعم ────────────────── */
-.tx-card,.home-section,.habit-card,.gold-card,.islamic-card{
-  box-shadow:var(--rf-shadow-sm);
-  transition:transform .16s var(--rf-ease), box-shadow .2s ease, border-color .2s ease;
-}
-.tx-card{border-radius:16px;}
-.tx-card:active{transform:scale(.99);}
-/* الشريط الجانبي للحركة أنعم بتدرّج */
-.tx-card.inc::after{background:linear-gradient(180deg, var(--green), rgba(63,185,80,.5)) !important;}
-.tx-card.exp::after{background:linear-gradient(180deg, var(--red), rgba(248,81,73,.5)) !important;}
-
-/* أرقام جدولية في كل المبالغ لمحاذاة أنظف */
-.tx-orig,.sum-main .val,.hero-card .val,.stat-val,.stats-grid .val{
-  font-variant-numeric:tabular-nums;
-}
-
-/* ── 6. الشارات (badges): أنعم وأوضح ──────────────────────────── */
-.badge{
-  border:1px solid rgba(255,255,255,.05);
-  backdrop-filter:blur(4px);
-  -webkit-backdrop-filter:blur(4px);
-}
-
-/* ── 7. الأزرار: تأثير ضغط موحّد في كل التطبيق ────────────────── */
-button{transition:transform .12s var(--rf-ease), filter .15s ease, box-shadow .15s ease;}
-button:active{transform:scale(.97);}
-button:focus-visible{outline:2px solid var(--rf-ring);outline-offset:2px;}
-
-/* ── 8. المودالات / الشيتات: ظهور أنعم وظل أعمق ───────────────── */
-.overlay{backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
-.sheet,.modal-box,.modal-content,[class*="sheet"]{
-  box-shadow:var(--rf-shadow-lg) !important;
-}
-/* مقبض السحب أوضح */
-.sheet .handle,.drag-handle,[class*="handle"]{
-  opacity:.6;
-}
-
-/* ── 9. حقول الإدخال: حلقة تركيز ذهبية واضحة ──────────────────── */
-input,select,textarea{
-  transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
-}
-input:focus,select:focus,textarea:focus{
-  border-color:var(--rf-ring) !important;
-  box-shadow:0 0 0 3px var(--rf-glow) !important;
-  outline:none;
-}
-
-/* ── 10. شريط التمرير الداخلي (سطح المكتب) ───────────────────── */
-.body-scroll{scroll-behavior:smooth;}
-
-/* ── 11. تحريك ظهور التابات أنعم قليلًا ──────────────────────── */
-.tab-anim{animation:rf-tab-in .26s var(--rf-ease) !important;}
-@keyframes rf-tab-in{
-  from{opacity:0;transform:translateY(10px) scale(.995)}
-  to{opacity:1;transform:translateY(0) scale(1)}
-}
-
-/* ── 13. قسم «خيارات إضافية» المطوي في إضافة حركة ──────────────── */
-.adv-section{
-  background:var(--card2);
-  border:1.5px solid var(--border);
-  border-radius:12px;
-  margin:6px 0 10px;
-  overflow:hidden;
-  transition:border-color .2s ease;
-}
-.adv-section[open]{border-color:var(--rf-ring);}
-.adv-summary{
-  list-style:none;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:13px 14px;
-  font-family:'Cairo',sans-serif;
-  user-select:none;
-  -webkit-tap-highlight-color:transparent;
-}
-.adv-summary::-webkit-details-marker{display:none;}
-.adv-summary-txt{font-size:13px;font-weight:800;color:var(--text);}
-.adv-summary-hint{
-  font-size:10px;color:var(--muted);font-weight:600;
-  flex:1;text-align:right;
-}
-.adv-chevron{
-  font-size:18px;color:var(--accent);font-weight:900;
-  transition:transform .25s var(--rf-ease);
-  line-height:1;
-}
-.adv-section[open] .adv-chevron{transform:rotate(180deg);}
-.adv-body{
-  padding:4px 14px 12px;
-  border-top:1px solid var(--border);
-  animation:rf-adv-in .25s var(--rf-ease);
-}
-@keyframes rf-adv-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-/* داخل القسم: شيل الـ margin الزيادة من أول عنصر */
-.adv-body > .form-row:first-child{margin-top:8px;}
-
-/* ── 14. لمسات شكلية على فورم إضافة الحركة ────────────────────── */
-/* المبلغ يبقى أبرز وأكبر */
-#modal #fAmt{
-  font-size:22px !important;
-  font-weight:900 !important;
-  letter-spacing:.5px;
-  text-align:center;
-  padding:12px !important;
-  border-width:1.5px !important;
-}
-#modal #fAmt:focus{
-  border-color:var(--accent) !important;
-  box-shadow:0 0 0 3px var(--rf-glow) !important;
-}
-/* عنوان المودال أوضح */
-#modal .modal-title{
-  font-size:17px;font-weight:900;
-  letter-spacing:-.3px;
-  margin-bottom:14px;
-}
-/* أزرار نوع الحركة: تفاعل أنعم */
-#modal .type-btn{transition:all .18s var(--rf-ease);}
-#modal .type-btn:active{transform:scale(.96);}
-
-/* ── 11b. زرار الحفظ في إضافة حركة: ثابت تحت دايمًا (حل مشكلة اختفاء الزر مع الكيبورد على iOS) ── */
-#modal .sheet .save-btn{
-  position:sticky;
-  bottom:calc(env(safe-area-inset-bottom, 0px) - 6px);
-  z-index:5;
-  margin-top:14px;
-  box-shadow:0 -10px 20px -6px var(--card), 0 6px 18px -6px rgba(240,180,41,.45);
-}
-/* مساحة سفلية كافية تحت آخر عنصر عشان الزر الثابت ما يغطّيش حاجة */
-#modal .sheet{padding-bottom:calc(20px + env(safe-area-inset-bottom, 0px)) !important;}
-
-/* ── 12. احترام تقليل الحركة بالكامل ─────────────────────────── */
-@media (prefers-reduced-motion: reduce){
-  *,*::before,*::after{
-    animation-duration:.001ms !important;
-    animation-iteration-count:1 !important;
-    transition-duration:.001ms !important;
-    scroll-behavior:auto !important;
-  }
-}
-
 </style>
 
 </head>
@@ -3817,26 +3594,7 @@ input:focus,select:focus,textarea:focus{
           <button class="sav-btn" data-cat="أخرى" onclick="selSC(this)"><span class="ci">💎</span>أخرى</button>
         </div>
       </div>
-      <!-- تفاصيل الذهب: تظهر بس لما الفئة ذهب -->
-      <div id="goldDetailsRow" style="display:none">
-        <div style="display:flex;gap:8px">
-          <div class="form-row" style="flex:1">
-            <div class="form-lbl">⚖️ عدد الجرامات</div>
-            <input class="form-inp" id="goldGrams" type="number" inputmode="decimal" placeholder="مثلاً 10" oninput="updateGoldHint()"/>
-          </div>
-          <div class="form-row" style="flex:1">
-            <div class="form-lbl">🔱 العيار</div>
-            <select class="form-inp" id="goldKarat" onchange="updateGoldHint()">
-              <option value="24">24</option>
-              <option value="22">22</option>
-              <option value="21" selected>21</option>
-              <option value="18">18</option>
-              <option value="14">14</option>
-            </select>
-          </div>
-        </div>
-        <div id="goldHint" style="font-size:11px;color:var(--sav);margin-top:-4px;margin-bottom:6px"></div>
-      </div>
+    </div>
 
     <!-- TRANSFER SECTION -->
     <div id="transferSec" style="display:none">
@@ -3868,32 +3626,6 @@ input:focus,select:focus,textarea:focus{
       <input class="form-inp" id="fNote" placeholder="مثال: جاكيت أزرق + جوارب من Zara..."/>
     </div>
 
-    <!-- LINK TO OCCASION (V27) -->
-    <div class="form-row" id="fOccLinkRow" style="display:none">
-      <div class="form-lbl">🎁 اربط بمناسبة (اختياري)</div>
-      <select class="form-inp" id="fOccLink">
-        <option value="">— مفيش —</option>
-      </select>
-      <div style="font-size:10px;color:var(--muted);margin-top:4px">الحركة هتترصد كمصروف/إيداع جوه المناسبة دي</div>
-    </div>
-
-    <!-- LINK TO TRIP (V27) -->
-    <div class="form-row" id="fTripLinkRow" style="display:none">
-      <div class="form-lbl">🛫 اربط برحلة (اختياري)</div>
-      <select class="form-inp" id="fTripLink">
-        <option value="">— مفيش —</option>
-      </select>
-      <div style="font-size:10px;color:var(--muted);margin-top:4px">الحركة هتترصد كمصروف/إيداع جوه الرحلة دي</div>
-    </div>
-
-    <!-- ═══ خيارات إضافية (مطوية) ═══ -->
-    <details class="adv-section" id="advSection">
-      <summary class="adv-summary">
-        <span class="adv-summary-txt">⚙️ خيارات إضافية</span>
-        <span class="adv-summary-hint">إيصال · تكرار · tags · تقسيم</span>
-        <span class="adv-chevron">⌄</span>
-      </summary>
-      <div class="adv-body">
     <!-- RECEIPT PHOTO -->
     <div class="form-row" id="receiptRow">
       <div class="form-lbl">📸 صورة الإيصال — Claude يقرأها تلقائياً</div>
@@ -3935,7 +3667,23 @@ input:focus,select:focus,textarea:focus{
       </select>
     </div>
 
+    <!-- LINK TO OCCASION (V27) -->
+    <div class="form-row" id="fOccLinkRow" style="display:none">
+      <div class="form-lbl">🎁 اربط بمناسبة (اختياري)</div>
+      <select class="form-inp" id="fOccLink">
+        <option value="">— مفيش —</option>
+      </select>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">الحركة هتترصد كمصروف/إيداع جوه المناسبة دي</div>
+    </div>
 
+    <!-- LINK TO TRIP (V27) -->
+    <div class="form-row" id="fTripLinkRow" style="display:none">
+      <div class="form-lbl">🛫 اربط برحلة (اختياري)</div>
+      <select class="form-inp" id="fTripLink">
+        <option value="">— مفيش —</option>
+      </select>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">الحركة هتترصد كمصروف/إيداع جوه الرحلة دي</div>
+    </div>
 
     <!-- TAGS (#27) -->
     <div class="form-row">
@@ -3973,8 +3721,6 @@ input:focus,select:focus,textarea:focus{
       <button type="button" class="export-btn" onclick="addSplitRow()" style="width:100%;margin-top:6px">➕ أضف فئة</button>
       <div class="split-summary" id="splitSummary"></div>
     </div>
-      </div>
-    </details>
 
     <button class="save-btn" onclick="saveTx()">💾 حفظ الحركة</button>
   </div>
@@ -6020,13 +5766,11 @@ function renderSavList() {
       const em = SAV_EMOJI[t.cat]||'💰';
       const sarLine = t.currency!==baseCurrency ? `<div class="tx-sar">≈ ${fmtBase(t.amountSAR)}</div><div class="tx-rate">${esc(rateDisplayText(t))}</div>` : '';
       const tagsLine = (t.tags && t.tags.length) ? `<div class="tx-tags">${t.tags.map(tg=>`<span class="tag-chip">#${esc(tg)}</span>`).join('')}</div>` : '';
-      const goldLine = (t.goldGrams) ? `<div style="font-size:11px;color:var(--sav);margin-top:2px;font-weight:700">🪙 ${t.goldGrams} جرام · عيار ${t.goldKarat||'?'}${t.amount?` · الجرام ${fmt(t.amount/t.goldGrams,2)} ${SYM[t.currency]||''}`:''}</div>` : '';
       h += `<div class="tx-card sav" data-tx-id="${escAttr(t.id)}" data-tx-kind="sav">
         <div class="tx-emoji">${em}</div>
         <div class="tx-info">
           <div class="tx-name">${esc(t.name)}${t.recurring?'<span style="font-size:10px;color:var(--sav);margin-right:5px">🔁</span>':''}</div>
           <div class="tx-meta"><span class="badge">${esc(t.cat)}</span><span class="badge" style="background:rgba(6,182,212,.1);color:var(--sav)">${SYM[t.currency]||esc(t.currency)}</span>${t.time?`<span class="badge time-b">⏰ ${esc(t.time)}</span>`:''}</div>
-          ${goldLine}
           ${tagsLine}
           ${t.note?`<div class="tx-note">📝 ${esc(t.note)}</div>`:''}${t.receipt?`<div style="margin-top:3px"><span class="receipt-icon-tx" data-action="view-receipt" data-tx-id="${escAttr(t.id)}">📎 إيصال</span></div>`:''}
         </div>
@@ -6601,16 +6345,6 @@ function editSav(id) {
   else document.getElementById('rateBox').classList.add('sar-hidden');
   selSCat=t.cat;
   document.querySelectorAll('#savCatGrid .sav-btn').forEach(b=>b.classList.toggle('sel',b.dataset.cat===t.cat));
-  // تفاصيل الذهب
-  const goldRow = document.getElementById('goldDetailsRow');
-  if (goldRow) {
-    if (t.cat === 'ذهب') {
-      goldRow.style.display = '';
-      document.getElementById('goldGrams').value = t.goldGrams || '';
-      document.getElementById('goldKarat').value = t.goldKarat || '21';
-      updateGoldHint();
-    } else goldRow.style.display = 'none';
-  }
   document.querySelector('#modal .modal-title').textContent='✏️ تعديل المدخرات';
   document.getElementById('modal').classList.add('open');
 }
@@ -7013,30 +6747,7 @@ function deleteCustomCat() {
   if (typeof renderAll === 'function') renderAll();
 }
 function selIC(btn){document.querySelectorAll('#incCatGrid .inc-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selICat=btn.dataset.cat;}
-function selSC(btn){
-  document.querySelectorAll('#savCatGrid .sav-btn').forEach(b=>b.classList.remove('sel'));
-  btn.classList.add('sel');
-  selSCat=btn.dataset.cat;
-  // تفاصيل الذهب تظهر بس لما الفئة ذهب
-  const gold = document.getElementById('goldDetailsRow');
-  if (gold) { gold.style.display = (selSCat === 'ذهب') ? '' : 'none'; if (selSCat === 'ذهب') updateGoldHint(); }
-}
-// يحسب سعر الجرام من المبلغ المدخل ويعرضه
-function updateGoldHint(){
-  const hint = document.getElementById('goldHint');
-  if (!hint) return;
-  const grams = parseFloat(normalizeDigits(document.getElementById('goldGrams')?.value)) || 0;
-  const karat = document.getElementById('goldKarat')?.value || '21';
-  const amt = safeEval(normalizeDigits(document.getElementById('fAmt')?.value || '')) || 0;
-  if (grams > 0 && amt > 0) {
-    const perGram = amt / grams;
-    hint.textContent = `💡 ${grams} جرام عيار ${karat} — سعر الجرام ${fmt(perGram,2)} ${selPayCurVal}`;
-  } else if (grams > 0) {
-    hint.textContent = `${grams} جرام عيار ${karat}`;
-  } else {
-    hint.textContent = '';
-  }
-}
+function selSC(btn){document.querySelectorAll('#savCatGrid .sav-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selSCat=btn.dataset.cat;}
 
 // ── SAVE TX ──
 function saveTx() {
@@ -7114,12 +6825,6 @@ function saveTx() {
     pending: isPending || undefined,
     splits: splits || undefined
   };
-  // تفاصيل الذهب (لو ادخار من نوع ذهب)
-  if (txType === 'savings' && cat === 'ذهب') {
-    const grams = parseFloat(normalizeDigits(document.getElementById('goldGrams')?.value)) || 0;
-    const karat = document.getElementById('goldKarat')?.value || '21';
-    if (grams > 0) { txObj.goldGrams = grams; txObj.goldKarat = karat; }
-  }
 
   if(txType==='savings'){
     if(editingId&&editingIsSavings) {
@@ -8156,6 +7861,7 @@ function manualReconcileEntries() {
     showToast(n > 0 ? `🧹 اتشال ${n} حركة مكررة` : '✅ مفيش تكرار — كله سليم', 'success', 3500);
   }
 }
+renderAll();
 
 </script>
 
@@ -12808,6 +12514,44 @@ function checkRecurringV2() {
 var investments = JSON.parse(localStorage.getItem('msarifyi_investments') || '[]');
 function saveInvestments() { localStorage.setItem('msarifyi_investments', JSON.stringify(investments)); }
 
+function addInvestment() {
+  const type = prompt('نوع الاستثمار: ذهب، أسهم، عملة رقمية؟');
+  if (!type) return;
+  const name = prompt('الاسم (مثال: ذهب 21، سهم أرامكو، بيتكوين):');
+  if (!name) return;
+  const qty = parseFloat(prompt('الكمية (جرامات/أسهم/وحدات):'));
+  if (!qty) return;
+  const cost = parseFloat(prompt('سعر الوحدة وقت الشراء بالريال:'));
+  if (!cost) return;
+  investments.push({
+    id: 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
+    type, name, qty,
+    avgCost: cost,
+    currentPrice: cost,
+    addedAt: new Date().toISOString()
+  });
+  saveInvestments();
+  renderInvestments();
+}
+
+function delInvestment(id) {
+  if (!confirm('حذف هذا الاستثمار؟')) return;
+  investments = investments.filter(i => i.id !== id);
+  saveInvestments();
+  renderInvestments();
+}
+
+function updateInvestmentPrice(id) {
+  const inv = investments.find(i => i.id === id);
+  if (!inv) return;
+  const np = parseFloat(prompt('السعر الحالي للوحدة بالريال:', inv.currentPrice));
+  if (!np) return;
+  inv.currentPrice = np;
+  inv.priceUpdatedAt = new Date().toISOString();
+  saveInvestments();
+  renderInvestments();
+}
+
 function renderInvestments() {
   const el = document.getElementById('investList');
   if (!el) return;
@@ -13525,6 +13269,36 @@ function buildGoldChartHTML() {
 var priceAlerts = JSON.parse(localStorage.getItem('msarifyi_price_alerts') || '[]');
 function savePriceAlerts() { localStorage.setItem('msarifyi_price_alerts', JSON.stringify(priceAlerts)); }
 
+function addPriceAlert() {
+  const type = prompt('نوع التنبيه:\n1 = ذهب عيار 21\n2 = ذهب عيار 24\n3 = الدولار (USD/EGP)\n4 = اليورو (EUR/EGP)\n5 = الريال (SAR/EGP)\n\nاكتب الرقم:');
+  if (!type || !['1','2','3','4','5'].includes(type)) return;
+  const direction = prompt('متى نبهنّك؟\n1 = لما السعر يبقى أعلى من الهدف\n2 = لما السعر يبقى أقل من الهدف\n\nاكتب الرقم:');
+  if (!direction || !['1','2'].includes(direction)) return;
+  const target = parseFloat(prompt('السعر المستهدف بالجنيه:'));
+  if (!target) return;
+
+  const typeNames = {'1':'ذهب 21', '2':'ذهب 24', '3':'دولار', '4':'يورو', '5':'ريال'};
+  priceAlerts.push({
+    id: 'pa_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
+    type: type,
+    typeName: typeNames[type],
+    direction: direction === '1' ? 'above' : 'below',
+    target,
+    triggered: false,
+    createdAt: new Date().toISOString()
+  });
+  savePriceAlerts();
+  renderPriceAlerts();
+  showAlert('✅ تم إنشاء التنبيه', 'success');
+}
+
+function delPriceAlert(id) {
+  if (!confirm('حذف التنبيه؟')) return;
+  priceAlerts = priceAlerts.filter(a => a.id !== id);
+  savePriceAlerts();
+  renderPriceAlerts();
+}
+
 function checkPriceAlerts() {
   if (!priceAlerts.length) return;
   let triggered = [];
@@ -13631,6 +13405,46 @@ function getTravelMode() {
 function saveTravelMode(t) {
   if (t) localStorage.setItem('msarifyi_travel_mode', JSON.stringify(t));
   else localStorage.removeItem('msarifyi_travel_mode');
+}
+
+function startTravelMode() {
+  const country = prompt('وجهة السفر (مثال: تركيا، الإمارات):');
+  if (!country) return;
+  const currency = prompt('عملة الوجهة:\nUSD = دولار\nEUR = يورو\nEGP = جنيه مصري\nSAR = ريال سعودي\nTRY = ليرة تركية\nAED = درهم إماراتي\n\n(لو غير مدعومة استخدم USD)') || 'USD';
+  const dailyBudget = parseFloat(prompt(`ميزانيتك اليومية بـ${currency}:`)) || 0;
+  const days = parseInt(prompt('عدد أيام الرحلة:')) || 7;
+
+  const travel = {
+    active: true,
+    country,
+    currency: currency.toUpperCase(),
+    dailyBudget,
+    totalBudget: dailyBudget * days,
+    days,
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date(Date.now() + days*86400000).toISOString().split('T')[0],
+    transactions: []
+  };
+  saveTravelMode(travel);
+  showAlert(`✈️ بدأت رحلة ${country}! بالتوفيق`, 'success');
+  renderHome();
+  renderTravelCard();
+}
+
+function endTravelMode() {
+  const t = getTravelMode();
+  if (!t) return;
+  if (!confirm('إنهاء وضع السفر؟ هتتخسر الإحصائيات لو ما عملتش حفظ')) return;
+  t.active = false;
+  t.endedAt = new Date().toISOString();
+  saveTravelMode(t);
+  // Also archive
+  const archive = JSON.parse(localStorage.getItem('msarifyi_travel_archive') || '[]');
+  archive.unshift(t);
+  localStorage.setItem('msarifyi_travel_archive', JSON.stringify(archive.slice(0, 20)));
+  saveTravelMode(null);
+  showAlert(`✅ انتهت الرحلة. إجمالي ${t.transactions.length} حركة`, 'success');
+  renderHome();
 }
 
 function renderTravelCard() {
@@ -13764,11 +13578,69 @@ const HAJJ_CATEGORIES = [
   {key: 'other', name: '💵 مصاريف أخرى', emoji: '💵'}
 ];
 
+function setupHajjBudget() {
+  const type = prompt('نوع الرحلة:\n1 = حج\n2 = عمرة\n\nاكتب الرقم:');
+  if (!type || !['1','2'].includes(type)) return;
+  const targetDate = prompt('تاريخ الرحلة (مثال: 2026-06-15):');
+  if (!targetDate || !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
+    showAlert('تاريخ غير صحيح', 'error');
+    return;
+  }
+  const total = parseFloat(prompt('الميزانية الإجمالية المتوقعة بالـ' + BASE_LABELS[baseCurrency].name + ':'));
+  if (!total) return;
+
+  hajjBudget = {
+    id: 'hajj_' + Date.now(),
+    type: type === '1' ? 'حج' : 'عمرة',
+    targetDate,
+    totalBudget: total,
+    breakdown: HAJJ_CATEGORIES.reduce((acc, c) => { acc[c.key] = 0; return acc; }, {}),
+    saved: 0,
+    createdAt: new Date().toISOString()
+  };
+  saveHajjBudget();
+  renderHajjBudget();
+  openHajjBudget();
+}
+
+function delHajjBudget() {
+  if (!confirm('حذف ميزانية الحج/العمرة؟')) return;
+  hajjBudget = null;
+  saveHajjBudget();
+  document.getElementById('hajjModal')?.classList.remove('open');
+  renderHome();
+}
+
 function updateHajjAllocation(key, amount) {
   if (!hajjBudget) return;
   hajjBudget.breakdown[key] = parseFloat(amount) || 0;
   saveHajjBudget();
   renderHajjBudget();
+}
+
+function addToHajjSavings() {
+  if (!hajjBudget) return;
+  const amt = parseFloat(prompt(`أضف للمدخرات (${BASE_LABELS[baseCurrency].name}):`));
+  if (!amt) return;
+  hajjBudget.saved = (hajjBudget.saved || 0) + amt;
+  saveHajjBudget();
+  // Also create a savings transaction
+  savings.unshift({
+    id: 'hajj_sav_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
+    type: 'savings',
+    name: hajjBudget.type === 'حج' ? '🕋 ادخار الحج' : '🕌 ادخار العمرة',
+    amount: amt,
+    currency: baseCurrency,
+    rate: 1,
+    amountSAR: baseCurrency === 'SAR' ? amt : amt * (rates.EGP || 1),
+    cat: hajjBudget.type === 'حج' ? 'حج' : 'عمرة',
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toTimeString().slice(0,5),
+    note: 'ادخار رحلة ' + hajjBudget.type
+  });
+  saveSavings();
+  renderHajjBudget();
+  showAlert('✅ تم إضافة المبلغ', 'success');
 }
 
 function renderHajjBudget() {
@@ -18285,7 +18157,9 @@ setTimeout(() => {
   }
 
   // Run multiple times to catch dynamically-added modals (V18 cars/weddings inject after delay)
-  setTimeout(v19Boot, 800);
+  setTimeout(v19Boot, 300);
+  setTimeout(v19Boot, 1000);
+  setTimeout(v19Boot, 2000);
 
 })();
 
@@ -19532,7 +19406,9 @@ setTimeout(() => {
       ensureModalCanAlwaysClose();
     } catch (e) { console.warn('V22 init:', e); }
   }
-  setTimeout(v22Boot, 800);
+  setTimeout(v22Boot, 300);
+  setTimeout(v22Boot, 1200);
+  setTimeout(v22Boot, 2500);
 
   // Also re-run when menu opens
   const _origUpdateMenuCounts = window.updateMenuCounts;
@@ -20231,7 +20107,9 @@ setTimeout(() => {
       }
     } catch (e) { console.warn('V23 init:', e); }
   }
-  setTimeout(v23Boot, 800);
+  setTimeout(v23Boot, 500);
+  setTimeout(v23Boot, 1500);
+  setTimeout(v23Boot, 3000);
 
 })();
 
@@ -22729,7 +22607,9 @@ setTimeout(() => {
   }
 
   // Try to patch immediately and on every modal open
-  setTimeout(patchHub, 800);
+  setTimeout(patchHub, 100);
+  setTimeout(patchHub, 1000);
+  setTimeout(patchHub, 3000);
 
   // ─────────────────────────────────────────────────────
   // 2) PDF STATEMENT PARSER
@@ -23984,6 +23864,176 @@ setTimeout(() => {
   // ─────────────────────────────────────────────────────
   // BEAUTIFY CARD DETAIL — bank statement style
   // ─────────────────────────────────────────────────────
+  function renderBeautifulCardDetail(cardId) {
+    const card = (window.creditCards||[]).find(c => c.id === cardId);
+    if (!card) return;
+    const container = document.getElementById('ccDetailContent');
+    if (!container) return;
+
+    const txs = (card.transactions||[]).slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
+    const purchases = txs.filter(t => t.type === 'purchase' || !t.type || t.type === '');
+    const payments = txs.filter(t => t.type === 'payment' || t.type === 'refund');
+    const totalPurchases = purchases.reduce((s,t) => s + (t.amount||0), 0);
+    const totalPayments = payments.reduce((s,t) => s + (t.amount||0), 0);
+    const balance = totalPurchases - totalPayments;
+    const limit = card.limit || 0;
+    const available = limit - balance;
+    const util = limit > 0 ? (balance / limit * 100) : 0;
+    const sym = card.currency === 'EGP' ? 'ج.م' : (card.currency === 'USD' ? '$' : 'SAR');
+
+    // Linked installments
+    let linkedInsts = [];
+    if (typeof installments !== 'undefined' && Array.isArray(installments)) {
+      linkedInsts = installments.filter(i => i.linkedCardId === card.id && (i.paidMonths||0) < i.totalMonths);
+    }
+    const totalInstMonthly = linkedInsts.reduce((s,i) => s + (i.monthlyPayment||0), 0);
+
+    // Group transactions by month
+    const byMonth = {};
+    for (const tx of txs) {
+      const mk = (tx.date || '').slice(0,7);
+      if (!byMonth[mk]) byMonth[mk] = [];
+      byMonth[mk].push(tx);
+    }
+    const sortedMonths = Object.keys(byMonth).sort().reverse();
+
+    const utilColor = util >= 90 ? '#ef4444' : (util >= 70 ? '#f59e0b' : '#10b981');
+
+    container.innerHTML = `
+      <!-- Statement-style header -->
+      <div style="background:linear-gradient(135deg,${card.gradFrom||'#7c3aed'} 0%,${card.gradTo||'#4f46e5'} 100%);color:#fff;border-radius:18px;padding:18px;margin-bottom:14px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;background:rgba(255,255,255,.1);border-radius:50%"></div>
+        <div style="position:absolute;bottom:-30px;left:-30px;width:140px;height:140px;background:rgba(255,255,255,.05);border-radius:50%"></div>
+        <div style="position:relative;z-index:1">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:14px">
+            <div>
+              <div style="font-size:11px;opacity:.85;letter-spacing:1.5px;font-weight:700">${esc(card.bankName||'BANK')}</div>
+              <div style="font-size:16px;font-weight:900;margin-top:2px">${esc(card.name||'')}</div>
+            </div>
+            <div style="font-size:11px;opacity:.85;text-align:left">
+              ${(card.type || card.cardType || 'visa').toUpperCase()}
+              ${card.last4?`<div style="font-family:monospace;margin-top:2px">•••• ${card.last4}</div>`:''}
+            </div>
+          </div>
+          <div style="font-size:11px;opacity:.85">المبلغ المستحق</div>
+          <div style="font-size:28px;font-weight:900;direction:ltr">${fmt(balance)} <span style="font-size:14px;opacity:.85">${sym}</span></div>
+          <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:11px">
+            <div><span style="opacity:.85">الحد:</span> <b style="direction:ltr">${fmt(limit,0)}</b></div>
+            <div><span style="opacity:.85">المتاح:</span> <b style="direction:ltr;color:#bef264">${fmt(available,0)}</b></div>
+          </div>
+          <div style="background:rgba(255,255,255,.15);border-radius:10px;height:8px;margin-top:8px;overflow:hidden">
+            <div style="background:${utilColor};height:100%;width:${Math.min(util,100)}%;transition:width .3s"></div>
+          </div>
+          <div style="text-align:left;font-size:10px;opacity:.9;margin-top:2px;direction:ltr">${util.toFixed(1)}%</div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px">
+        <button onclick="window.openCardPdfImport('${card.id}')" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📄 رفع كشف PDF</button>
+        <button onclick="window.openCardReport('${card.id}')" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📊 التقرير الكامل</button>
+        <button onclick="if(typeof openCardPurchaseModal==='function')openCardPurchaseModal('${card.id}')" style="background:var(--card2);color:var(--accent);border:1px solid var(--border);border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">➕ مشترى جديد</button>
+        <button onclick="if(typeof openCardPaymentModal==='function')openCardPaymentModal('${card.id}')" style="background:var(--card2);color:var(--green);border:1px solid var(--border);border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">💵 سداد</button>
+      </div>
+
+      <!-- Quick stats -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px">
+        <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-weight:700">المشتريات</div>
+          <div style="color:var(--red);font-weight:900;font-size:13px;direction:ltr">${fmt(totalPurchases,0)}</div>
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-weight:700">المدفوع</div>
+          <div style="color:var(--green);font-weight:900;font-size:13px;direction:ltr">${fmt(totalPayments,0)}</div>
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-weight:700">العمليات</div>
+          <div style="color:var(--text);font-weight:900;font-size:13px">${txs.length}</div>
+        </div>
+      </div>
+
+      <!-- Linked installments -->
+      ${linkedInsts.length > 0 ? `
+        <div style="background:linear-gradient(135deg,#7c3aed15,#4f46e515);border:1px solid #7c3aed40;border-radius:12px;padding:12px;margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-weight:900;color:#7c3aed;font-size:13px">📋 الأقساط النشطة (${linkedInsts.length})</div>
+            <div style="font-size:11px;color:#7c3aed;font-weight:900;direction:ltr">${fmt(totalInstMonthly)} ${sym}/شهر</div>
+          </div>
+          ${linkedInsts.map(i => `
+            <div style="background:var(--card);border-radius:8px;padding:8px;margin-top:6px;font-size:12px">
+              <div style="display:flex;justify-content:space-between">
+                <span style="font-weight:700">${esc(i.name)}</span>
+                <span style="direction:ltr;font-weight:900;color:#f59e0b">${fmt(i.monthlyPayment)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px">
+                <span>${i.paidMonths||0}/${i.totalMonths} شهر</span>
+                <span>متبقي ${i.totalMonths - (i.paidMonths||0)} قسط</span>
+              </div>
+              <div style="background:var(--card2);height:4px;border-radius:2px;margin-top:4px;overflow:hidden">
+                <div style="background:#7c3aed;height:100%;width:${((i.paidMonths||0)/i.totalMonths*100).toFixed(1)}%"></div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      <!-- Transactions grouped by month -->
+      ${txs.length === 0 ? `
+        <div style="background:var(--card2);border-radius:12px;padding:30px 20px;text-align:center;color:var(--muted)">
+          <div style="font-size:36px;margin-bottom:8px">📭</div>
+          <div style="font-size:13px">لا توجد عمليات بعد</div>
+          <div style="font-size:11px;margin-top:6px;opacity:.7">ارفع كشف PDF أو أضف عملية يدوياً</div>
+        </div>
+      ` : sortedMonths.map(mk => {
+        const monthTxs = byMonth[mk];
+        const monthSpend = monthTxs.filter(t => t.type !== 'payment' && t.type !== 'refund').reduce((s,t) => s + (t.amount||0), 0);
+        const monthPaid = monthTxs.filter(t => t.type === 'payment' || t.type === 'refund').reduce((s,t) => s + (t.amount||0), 0);
+        return `
+          <div style="margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 4px;font-size:12px">
+              <div style="font-weight:900;color:var(--accent)">📅 ${mk}</div>
+              <div style="direction:ltr;display:flex;gap:8px;font-weight:700">
+                ${monthSpend>0?`<span style="color:var(--red)">-${fmt(monthSpend,0)}</span>`:''}
+                ${monthPaid>0?`<span style="color:var(--green)">+${fmt(monthPaid,0)}</span>`:''}
+              </div>
+            </div>
+            <div style="background:var(--card2);border-radius:10px;overflow:hidden">
+              ${monthTxs.map((tx, idx) => {
+                const isPaid = tx.type === 'payment' || tx.type === 'refund';
+                const isFee = tx.type === 'fee';
+                const isPlanMove = tx.type === 'plan_move' || tx.type === 'plan_credit' || tx.type === 'plan_debit';
+                const color = isPaid?'var(--green)':(isFee?'#f59e0b':(isPlanMove?'var(--muted)':'var(--red)'));
+                const icon = isPaid?'💵':(isFee?'💸':(isPlanMove?'↔':'🛒'));
+                const sign = isPaid?'+':(isPlanMove?'':'-');
+                return `
+                <div class="cc-tx-row" data-tx-id="${tx.id}" style="padding:10px 12px;${idx>0?'border-top:1px solid var(--border);':''}font-size:12px">
+                  <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
+                    <div style="flex:1;min-width:0">
+                      <div style="display:flex;align-items:center;gap:6px;font-weight:700">
+                        <span>${icon}</span>
+                        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(tx.name||'')}</span>
+                      </div>
+                      <div style="display:flex;gap:8px;font-size:10px;color:var(--muted);margin-top:2px">
+                        <span>${tx.date}</span>
+                        ${tx.category?`<span>• ${esc(tx.category)}</span>`:''}
+                        ${tx.importedFromPdf?`<span style="color:#7c3aed">• PDF</span>`:''}
+                      </div>
+                    </div>
+                    <div style="color:${color};direction:ltr;font-weight:900;flex-shrink:0">${sign}${fmt(tx.amount)}</div>
+                  </div>
+                  <div style="display:flex;gap:4px;margin-top:6px">
+                    <button onclick="event.stopPropagation();window.editCardTransaction('${card.id}','${tx.id}')" style="flex:1;background:transparent;color:var(--accent);border:1px solid var(--border);border-radius:6px;padding:3px;font-size:10px;font-family:inherit;font-weight:700;cursor:pointer">✏️ تعديل</button>
+                    <button onclick="event.stopPropagation();window.deleteCardTransactionConfirm('${card.id}','${tx.id}')" style="flex:1;background:transparent;color:var(--red);border:1px solid var(--border);border-radius:6px;padding:3px;font-size:10px;font-family:inherit;font-weight:700;cursor:pointer">🗑 حذف</button>
+                  </div>
+                </div>
+              `;}).join('')}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    `;
+  }
+
   // Override openCardDetail to use beautiful version — DISABLED in V29
   // V29 owns the detail view rendering. Leave V28's renderBeautifulCardDetail
   // function defined but don't wrap openCardDetail; V29 will provide it.
@@ -25916,6 +25966,361 @@ setTimeout(() => {
   console.log('✅ Transfer feature loaded');
 })();
 
+</script>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     v34 — NEW PROFESSIONAL HOME PAGE (الصفحة الرئيسية الجديدة)
+     module مستقل. يبني #homeContent من الصفر بتصميم احترافي.
+     يستخدم بيانات ودوال عالمية فقط (txs, savings, accounts, goals,
+     installments, fmtBase, toBase, fmt...) — لا يعتمد على أي دالة
+     محبوسة. في الآخر يربط window.renderHome بالنسخة الجديدة.
+     ═══════════════════════════════════════════════════════════════ -->
+<style>
+/* ── الصفحة الرئيسية الجديدة ── */
+.h2-wrap{display:flex;flex-direction:column;gap:14px;padding-bottom:8px;}
+
+/* البطاقة البطل — الرصيد */
+.h2-hero{
+  position:relative;
+  background:linear-gradient(135deg,#1c2230 0%,#161b22 60%,#13171e 100%);
+  border:1px solid rgba(240,180,41,.22);
+  border-radius:22px;
+  padding:22px 20px 18px;
+  overflow:hidden;
+  box-shadow:0 10px 36px -10px rgba(0,0,0,.55);
+}
+.h2-hero::before{
+  content:'';position:absolute;top:-60px;left:-50px;
+  width:180px;height:180px;border-radius:50%;
+  background:radial-gradient(circle,rgba(240,180,41,.18),transparent 70%);
+  pointer-events:none;
+}
+.h2-hero-lbl{font-size:12px;color:var(--accent);font-weight:800;letter-spacing:.3px;display:flex;align-items:center;gap:6px;}
+.h2-hero-val{font-size:34px;font-weight:900;color:#fff;direction:ltr;text-align:right;margin:6px 0 2px;letter-spacing:-.5px;font-variant-numeric:tabular-nums;text-shadow:0 2px 8px rgba(0,0,0,.4);}
+.h2-hero-sub{font-size:12px;color:var(--muted);font-weight:600;}
+.h2-hero-row{display:flex;gap:10px;margin-top:16px;}
+.h2-hero-mini{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:11px 12px;}
+.h2-hero-mini .m-lbl{font-size:10px;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:4px;}
+.h2-hero-mini .m-val{font-size:16px;font-weight:900;direction:ltr;text-align:right;margin-top:3px;font-variant-numeric:tabular-nums;}
+.h2-hero-mini.inc .m-val{color:#3fb950;}
+.h2-hero-mini.exp .m-val{color:#f85149;}
+.h2-hero-mini.sav .m-val{color:#06b6d4;}
+
+/* عنوان قسم */
+.h2-sec-title{font-size:13px;font-weight:900;color:var(--text);display:flex;align-items:center;gap:7px;margin:2px 2px 0;}
+.h2-sec-title .see-all{margin-right:auto;font-size:11px;color:var(--accent);font-weight:700;cursor:pointer;}
+
+/* بطاقة عامة */
+.h2-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,.18);}
+.h2-card.tap{cursor:pointer;transition:transform .16s cubic-bezier(.34,1.2,.46,1),border-color .2s;}
+.h2-card.tap:active{transform:scale(.985);border-color:var(--rf-ring,rgba(240,180,41,.35));}
+
+/* صفّ ميزانية */
+.h2-bud-row{margin-bottom:12px;}
+.h2-bud-row:last-child{margin-bottom:0;}
+.h2-bud-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.h2-bud-emoji{font-size:18px;}
+.h2-bud-name{font-size:13px;font-weight:700;}
+.h2-bud-nums{margin-right:auto;font-size:11px;color:var(--muted);direction:ltr;font-variant-numeric:tabular-nums;}
+.h2-bud-bar{height:8px;background:var(--card2);border-radius:6px;overflow:hidden;}
+.h2-bud-fill{height:100%;border-radius:6px;transition:width .5s cubic-bezier(.34,1.2,.46,1);}
+.h2-bud-pct{font-size:11px;font-weight:800;margin-right:6px;}
+
+/* التزامات */
+.h2-commit{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);}
+.h2-commit:last-child{border-bottom:none;padding-bottom:0;}
+.h2-commit:first-child{padding-top:0;}
+.h2-commit-em{font-size:22px;flex-shrink:0;}
+.h2-commit-info{flex:1;min-width:0;}
+.h2-commit-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.h2-commit-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.h2-commit-amt{font-size:14px;font-weight:900;direction:ltr;flex-shrink:0;font-variant-numeric:tabular-nums;}
+
+/* أهداف */
+.h2-goal-head{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.h2-goal-name{font-size:13px;font-weight:700;}
+.h2-goal-pct{margin-right:auto;font-size:12px;font-weight:900;color:var(--accent);}
+
+/* حركة */
+.h2-tx{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--border);}
+.h2-tx:last-child{border-bottom:none;padding-bottom:0;}
+.h2-tx:first-child{padding-top:0;}
+.h2-tx-em{font-size:21px;flex-shrink:0;}
+.h2-tx-info{flex:1;min-width:0;}
+.h2-tx-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.h2-tx-date{font-size:10px;color:var(--muted);margin-top:2px;}
+.h2-tx-amt{font-size:14px;font-weight:900;direction:ltr;flex-shrink:0;font-variant-numeric:tabular-nums;}
+.h2-tx-amt.inc{color:#3fb950;}
+.h2-tx-amt.exp{color:#f85149;}
+
+/* أزرار سريعة */
+.h2-quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.h2-quick-btn{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px 6px;text-align:center;cursor:pointer;transition:transform .15s cubic-bezier(.34,1.2,.46,1),border-color .2s;font-family:'Cairo',sans-serif;}
+.h2-quick-btn:active{transform:scale(.95);border-color:var(--rf-ring,rgba(240,180,41,.4));}
+.h2-quick-em{font-size:22px;display:block;margin-bottom:5px;}
+.h2-quick-lbl{font-size:10px;font-weight:700;color:var(--muted);}
+
+/* شاشة فاضية */
+.h2-empty{text-align:center;padding:40px 20px;color:var(--muted);}
+.h2-empty-em{font-size:54px;margin-bottom:14px;}
+.h2-empty-title{font-size:16px;font-weight:900;color:var(--text);margin-bottom:6px;}
+.h2-empty-txt{font-size:13px;line-height:1.6;margin-bottom:18px;}
+.h2-empty-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;border:none;border-radius:14px;padding:13px 28px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:900;cursor:pointer;}
+
+@media (prefers-reduced-motion: reduce){
+  .h2-bud-fill,.h2-card.tap,.h2-quick-btn{transition:none !important;}
+}
+</style>
+<script>
+(function newHomePage(){
+  'use strict';
+
+  // أدوات آمنة (لو دالة عالمية مش موجودة، بديل)
+  function _fmtBase(v){ try{ return fmtBase(v); }catch(e){ try{return fmt(v)+' '+(BASE_LABELS[baseCurrency]?BASE_LABELS[baseCurrency].sym:'');}catch(e2){return String(Math.round(v||0));} } }
+  function _toBase(v){ try{ return toBase(v); }catch(e){ return v; } }
+  function _fmt(v,d){ try{ return fmt(v,d); }catch(e){ return String(Math.round(v||0)); } }
+  function _sym(){ try{ return BASE_LABELS[baseCurrency].sym; }catch(e){ return 'ر.س'; } }
+  function _emoji(cat){ try{ return EMOJI[cat] || '💸'; }catch(e){ return '💸'; } }
+  function _esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // فتح modal بأمان
+  function _open(modalId, renderFn){
+    try{
+      var m = document.getElementById(modalId);
+      if (m) m.classList.add('open');
+      if (renderFn && typeof window[renderFn]==='function') window[renderFn]();
+    }catch(e){}
+  }
+  window._h2open = _open;
+
+  // تاريخ مقروء
+  function _niceDate(d){
+    try{
+      var dt = new Date(d);
+      var today = new Date(); today.setHours(0,0,0,0);
+      var that = new Date(dt); that.setHours(0,0,0,0);
+      var diff = Math.round((today - that)/86400000);
+      if (diff===0) return 'النهاردة';
+      if (diff===1) return 'إمبارح';
+      if (diff>1 && diff<7) return 'من '+diff+' أيام';
+      return dt.toLocaleDateString('ar-EG',{day:'numeric',month:'short'});
+    }catch(e){ return d||''; }
+  }
+
+  // ── حساب الأرقام (نفس منطق updateSummary) ──
+  function calcTotals(){
+    var t = Array.isArray(txs)?txs:[];
+    var s = Array.isArray(savings)?savings:[];
+    var inc = t.filter(x=>x.type==='income' && !x.isTransfer).reduce((a,x)=>a+(x.amountSAR||0),0);
+    var exp = t.filter(x=>x.type==='expense' && !x.isTransfer).reduce((a,x)=>a+(x.amountSAR||0),0);
+    var sav = s.reduce((a,x)=>a+(x.amountSAR||0),0);
+    var incCount = t.filter(x=>x.type==='income' && !x.isTransfer).length;
+    var expCount = t.filter(x=>x.type==='expense' && !x.isTransfer).length;
+    return { inc, exp, sav, net: inc-exp, total: (inc-exp)+sav, incCount, expCount };
+  }
+
+  // ── بطاقة الرصيد ──
+  function heroCard(T){
+    return `
+    <div class="h2-hero">
+      <div class="h2-hero-lbl">💰 إجمالي الفلوس</div>
+      <div class="h2-hero-val" style="color:${T.total>=0?'#fff':'#ff7b72'}">${_fmtBase(T.total)}</div>
+      <div class="h2-hero-sub">صافي الدخل + المدخرات</div>
+      <div class="h2-hero-row">
+        <div class="h2-hero-mini inc">
+          <div class="m-lbl">📥 الدخل</div>
+          <div class="m-val">${_fmtBase(T.inc)}</div>
+        </div>
+        <div class="h2-hero-mini exp">
+          <div class="m-lbl">📤 المصروف</div>
+          <div class="m-val">${_fmtBase(T.exp)}</div>
+        </div>
+        <div class="h2-hero-mini sav">
+          <div class="m-lbl">🏦 ادخار</div>
+          <div class="m-val">${_fmtBase(T.sav)}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── بطاقة الميزانيات ──
+  function budgetCard(){
+    try{
+      var b = (typeof budgets!=='undefined' && budgets) ? budgets : {};
+      var keys = Object.keys(b).filter(k=>b[k]>0);
+      if (!keys.length) return '';
+      // اصرف الشهر الحالي لكل فئة
+      var today = new Date();
+      var ym = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
+      var spent = {};
+      (txs||[]).forEach(t=>{
+        if (t.type!=='expense' || t.isTransfer) return;
+        if ((t.date||'').slice(0,7)!==ym) return;
+        spent[t.cat] = (spent[t.cat]||0) + (t.amountSAR||0);
+      });
+      // رتّب بالأعلى استهلاكًا، خد أعلى 3
+      var rows = keys.map(k=>({cat:k, limit:b[k], spent:spent[k]||0, pct:Math.round(((spent[k]||0)/b[k])*100)}))
+                     .sort((a,b)=>b.pct-a.pct).slice(0,3);
+      if (!rows.length) return '';
+      var html = '<div class="h2-sec-title">📊 الميزانيات <span class="see-all" onclick="showTab(\'budget\',document.querySelector(\'.tab-btn\'))">الكل ›</span></div>';
+      html += '<div class="h2-card">';
+      rows.forEach(r=>{
+        var color = r.pct>=100?'#f85149':r.pct>=80?'#f0883e':'#3fb950';
+        var w = Math.min(r.pct,100);
+        html += `<div class="h2-bud-row">
+          <div class="h2-bud-head">
+            <span class="h2-bud-emoji">${_emoji(r.cat)}</span>
+            <span class="h2-bud-name">${_esc(r.cat)}</span>
+            <span class="h2-bud-nums">${_fmt(_toBase(r.spent),0)} / ${_fmt(_toBase(r.limit),0)} ${_sym()}</span>
+          </div>
+          <div style="display:flex;align-items:center">
+            <div class="h2-bud-bar" style="flex:1"><div class="h2-bud-fill" style="width:${w}%;background:${color}"></div></div>
+            <span class="h2-bud-pct" style="color:${color}">${r.pct}%</span>
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+      return html;
+    }catch(e){ return ''; }
+  }
+
+  // ── بطاقة الالتزامات (أقساط + فواتير) ──
+  function commitmentsCard(){
+    try{
+      var items = [];
+      // أقساط نشطة
+      var inst = (typeof installments!=='undefined' && Array.isArray(installments))?installments:[];
+      inst.forEach(i=>{
+        var paid = i.paid||0, total = i.count||i.months||0;
+        if (total && paid>=total) return; // مخلّص
+        items.push({ em:'💳', name:i.name||'قسط', meta: total?('قسط '+(paid+1)+' من '+total):'قسط', amt:i.monthly||0 });
+      });
+      // فواتير
+      var bl = (typeof bills!=='undefined' && Array.isArray(bills))?bills:[];
+      bl.forEach(b=>{
+        items.push({ em:'🧾', name:b.name||'فاتورة', meta:b.type||'فاتورة', amt:b.amount||0 });
+      });
+      if (!items.length) return '';
+      items = items.slice(0,4);
+      var totalMonthly = items.reduce((a,x)=>a+(x.amt||0),0);
+      var html = '<div class="h2-sec-title">📌 التزامات قادمة</div>';
+      html += '<div class="h2-card tap" onclick="_h2open(\'installmentsModal\',\'renderInstallments\')">';
+      items.forEach(i=>{
+        html += `<div class="h2-commit">
+          <span class="h2-commit-em">${i.em}</span>
+          <div class="h2-commit-info">
+            <div class="h2-commit-name">${_esc(i.name)}</div>
+            <div class="h2-commit-meta">${_esc(i.meta)}</div>
+          </div>
+          <div class="h2-commit-amt">${_fmtBase(i.amt)}</div>
+        </div>`;
+      });
+      html += '</div>';
+      return html;
+    }catch(e){ return ''; }
+  }
+
+  // ── بطاقة أقرب هدف ──
+  function goalCard(){
+    try{
+      var g = (typeof goals!=='undefined' && Array.isArray(goals))?goals:[];
+      var active = g.filter(x=>{ var saved=x.saved||0, target=x.target||0; return target>0 && saved<target; });
+      if (!active.length) return '';
+      // الأقرب للإنجاز
+      active.sort((a,b)=>((b.saved||0)/(b.target||1))-((a.saved||0)/(a.target||1)));
+      var top = active[0];
+      var pct = Math.round(((top.saved||0)/(top.target||1))*100);
+      var html = '<div class="h2-sec-title">🎯 أقرب هدف</div>';
+      html += `<div class="h2-card tap" onclick="_h2open('goalsModal','renderGoals')">
+        <div class="h2-goal-head">
+          <span style="font-size:18px">🎯</span>
+          <span class="h2-goal-name">${_esc(top.name||'هدف')}</span>
+          <span class="h2-goal-pct">${pct}%</span>
+        </div>
+        <div class="h2-bud-bar"><div class="h2-bud-fill" style="width:${Math.min(pct,100)}%;background:linear-gradient(90deg,var(--accent),var(--accent2))"></div></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:7px;direction:ltr;text-align:right">${_fmtBase(top.saved||0)} / ${_fmtBase(top.target||0)}</div>
+      </div>`;
+      return html;
+    }catch(e){ return ''; }
+  }
+
+  // ── آخر الحركات ──
+  function recentCard(){
+    try{
+      var t = (Array.isArray(txs)?txs:[]).filter(x=>!x.isTransfer);
+      if (!t.length) return '';
+      var sorted = t.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
+      var html = '<div class="h2-sec-title">🧾 آخر الحركات <span class="see-all" onclick="showTab(\'all\',document.querySelector(\'.tab-btn\'))">الكل ›</span></div>';
+      html += '<div class="h2-card">';
+      sorted.forEach(t=>{
+        var isInc = t.type==='income';
+        html += `<div class="h2-tx">
+          <span class="h2-tx-em">${_emoji(t.cat)}</span>
+          <div class="h2-tx-info">
+            <div class="h2-tx-name">${_esc(t.name||t.cat||'حركة')}</div>
+            <div class="h2-tx-date">${_niceDate(t.date)} · ${_esc(t.cat||'')}</div>
+          </div>
+          <div class="h2-tx-amt ${isInc?'inc':'exp'}">${isInc?'+':'−'}${_fmtBase(t.amountSAR||0)}</div>
+        </div>`;
+      });
+      html += '</div>';
+      return html;
+    }catch(e){ return ''; }
+  }
+
+  // ── أزرار سريعة ──
+  function quickActions(){
+    return `
+    <div class="h2-sec-title" style="margin-top:4px">⚡ وصول سريع</div>
+    <div class="h2-quick">
+      <div class="h2-quick-btn" onclick="_h2open('goalsModal','renderGoals')"><span class="h2-quick-em">🎯</span><span class="h2-quick-lbl">أهداف</span></div>
+      <div class="h2-quick-btn" onclick="_h2open('installmentsModal','renderInstallments')"><span class="h2-quick-em">💳</span><span class="h2-quick-lbl">أقساط</span></div>
+      <div class="h2-quick-btn" onclick="_h2open('jameyaModal','renderJameya')"><span class="h2-quick-em">🤝</span><span class="h2-quick-lbl">جمعيات</span></div>
+      <div class="h2-quick-btn" onclick="_h2open('accountsModal','renderAccounts')"><span class="h2-quick-em">🏦</span><span class="h2-quick-lbl">محافظ</span></div>
+    </div>`;
+  }
+
+  // ── شاشة فاضية (أول استخدام) ──
+  function emptyState(){
+    return `
+    <div class="h2-empty">
+      <div class="h2-empty-em">👋</div>
+      <div class="h2-empty-title">أهلاً بيك في مصاريفي</div>
+      <div class="h2-empty-txt">ابدأ بإضافة أول حركة — دخل أو مصروف —<br>وهتشوف ملخّص فلوسك هنا.</div>
+      <button class="h2-empty-btn" onclick="openModal()">➕ أضف أول حركة</button>
+    </div>`;
+  }
+
+  // ── البناء الرئيسي ──
+  function renderHomeV2(){
+    var el = document.getElementById('homeContent');
+    if (!el) return;
+    var T = calcTotals();
+
+    // شاشة فاضية لو مفيش أي حركات ولا مدخرات
+    if ((!txs || !txs.length) && (!savings || !savings.length)){
+      el.innerHTML = '<div class="h2-wrap">'+heroCard(T)+emptyState()+'</div>';
+      return;
+    }
+
+    var parts = [
+      heroCard(T),
+      budgetCard(),
+      commitmentsCard(),
+      goalCard(),
+      recentCard(),
+      quickActions()
+    ].filter(Boolean);
+
+    el.innerHTML = '<div class="h2-wrap">'+parts.join('')+'</div>';
+  }
+
+  // نعرّضها ونربطها
+  window.renderHomeV2 = renderHomeV2;
+  window.renderHome = renderHomeV2;
+
+})();
 </script>
 
 </body>
