@@ -7477,7 +7477,8 @@ function generateMonthlyReport() {
 
     <div class="footer">💰 مصاريفي | Masarefy — تطبيق إدارة المصاريف الشخصية<br>اضغط Ctrl+P لحفظ كـ PDF</div>
 <script>setTimeout(()=>window.print(), 500);<\/script>
-  </body></html>`);
+  
+</body></html>`);
   w.document.close();
 }
 
@@ -26217,6 +26218,16 @@ setTimeout(() => {
 .h2-hero-lbl{font-size:12px;color:var(--accent);font-weight:800;letter-spacing:.3px;display:flex;align-items:center;gap:6px;}
 .h2-hero-val{font-size:34px;font-weight:900;color:#fff;direction:ltr;text-align:right;margin:6px 0 2px;letter-spacing:-.5px;font-variant-numeric:tabular-nums;text-shadow:0 2px 8px rgba(0,0,0,.4);}
 .h2-hero-sub{font-size:12px;color:var(--muted);font-weight:600;}
+.h2-hero-debt{font-size:11px;color:#ff9b94;font-weight:700;margin-top:3px;}
+.h2-cur-switch{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+.h2-cur-btn{flex:1;min-width:54px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:7px 4px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:800;color:var(--muted);cursor:pointer;transition:all .16s cubic-bezier(.34,1.2,.46,1);}
+.h2-cur-btn:active{transform:scale(.94);}
+.h2-cur-btn.on{background:rgba(240,180,41,.18);border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
+.h2-alerts{display:flex;flex-direction:column;gap:8px;}
+.h2-alert{display:flex;align-items:center;gap:10px;border-radius:12px;padding:11px 13px;}
+.h2-alert-em{font-size:18px;flex-shrink:0;}
+.h2-alert-txt{flex:1;min-width:0;font-size:12.5px;font-weight:700;color:var(--text);}
+.h2-alert-sub{font-size:13px;font-weight:900;direction:ltr;flex-shrink:0;font-variant-numeric:tabular-nums;}
 .h2-hero-row{display:flex;gap:10px;margin-top:16px;}
 .h2-hero-mini{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:11px 12px;}
 .h2-hero-mini .m-lbl{font-size:10px;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:4px;}
@@ -26335,28 +26346,69 @@ setTimeout(() => {
     var sav = s.reduce((a,x)=>a+(x.amountSAR||0),0);
     var incCount = t.filter(x=>x.type==='income' && !x.isTransfer).length;
     var expCount = t.filter(x=>x.type==='expense' && !x.isTransfer).length;
-    return { inc, exp, sav, net: inc-exp, total: (inc-exp)+sav, incCount, expCount };
+    // الديون (المستلَفة وغير المسدّدة) — تُطرح من صافي الثروة
+    var dArr = (typeof debts!=='undefined' && Array.isArray(debts))?debts:[];
+    var debt = dArr.filter(d=>!d.paid && d.type==='borrowed').reduce((a,d)=>a+(d.amountSAR||0),0);
+    var liquid = (inc-exp)+sav;          // الفلوس السائلة
+    var netWorth = liquid - debt;        // صافي الثروة الحقيقي
+    // الأرصدة الصافية بكل عملة (للتبديل السريع)
+    var byCur = {};
+    t.forEach(x=>{
+      if (x.isTransfer) return;
+      var c = x.currency||'SAR';
+      if (!byCur[c]) byCur[c]={inc:0,exp:0};
+      if (x.type==='income') byCur[c].inc += (x.amount||0);
+      else if (x.type==='expense') byCur[c].exp += (x.amount||0);
+    });
+    return { inc, exp, sav, net: inc-exp, total: liquid, liquid, debt, netWorth, byCur, incCount, expCount };
   }
 
-  // ── بطاقة الرصيد ──
+  // تبديل عملة العرض في الـ Hero (ريال/جنيه) — يحفظ الاختيار
+  function _heroCur(){ return localStorage.getItem('msarifyi_hero_cur') || baseCurrency; }
+  window._setHeroCur = function(c){
+    localStorage.setItem('msarifyi_hero_cur', c);
+    if (typeof renderHomeV2==='function') renderHomeV2();
+  };
+  // حوّل مبلغ SAR لعملة العرض المختارة في الـ Hero
+  function _heroFmt(sarAmt){
+    var c = _heroCur();
+    var v;
+    try{ v = (typeof sarToCur==='function') ? sarToCur(sarAmt, c) : sarAmt; }catch(e){ v = sarAmt; }
+    var sym = (BASE_LABELS[c]&&BASE_LABELS[c].sym) || '';
+    return _fmt(v,0)+' '+sym;
+  }
+
+  // ── بطاقة صافي الثروة (Hero) ──
   function heroCard(T){
+    var c = _heroCur();
+    // أزرار تبديل العملة — العملات اللي عند المستخدم فعلاً + الأساسية
+    var curs = ['SAR','EGP','USD','EUR'];
+    var switcher = curs.map(function(cur){
+      var on = cur===c;
+      var lbl = (BASE_LABELS[cur]&&BASE_LABELS[cur].flag||'')+' '+(BASE_LABELS[cur]&&BASE_LABELS[cur].sym||cur);
+      return `<button class="h2-cur-btn${on?' on':''}" onclick="_setHeroCur('${cur}')">${lbl}</button>`;
+    }).join('');
+    var nwColor = T.netWorth>=0 ? '#fff' : '#ff7b72';
+    var debtLine = T.debt>0 ? `<div class="h2-hero-debt">− ديون: ${_heroFmt(T.debt)}</div>` : '';
     return `
     <div class="h2-hero">
-      <div class="h2-hero-lbl">💰 إجمالي الفلوس</div>
-      <div class="h2-hero-val" style="color:${T.total>=0?'#fff':'#ff7b72'}">${_fmtBase(T.total)}</div>
-      <div class="h2-hero-sub">صافي الدخل + المدخرات</div>
+      <div class="h2-hero-lbl">💎 صافي الثروة</div>
+      <div class="h2-hero-val" style="color:${nwColor}">${_heroFmt(T.netWorth)}</div>
+      <div class="h2-hero-sub">السائل ${_heroFmt(T.liquid)}${T.debt>0?' · بعد خصم الديون':''}</div>
+      ${debtLine}
+      <div class="h2-cur-switch">${switcher}</div>
       <div class="h2-hero-row">
         <div class="h2-hero-mini inc">
           <div class="m-lbl">📥 الدخل</div>
-          <div class="m-val">${_fmtBase(T.inc)}</div>
+          <div class="m-val">${_heroFmt(T.inc)}</div>
         </div>
         <div class="h2-hero-mini exp">
           <div class="m-lbl">📤 المصروف</div>
-          <div class="m-val">${_fmtBase(T.exp)}</div>
+          <div class="m-val">${_heroFmt(T.exp)}</div>
         </div>
         <div class="h2-hero-mini sav">
           <div class="m-lbl">🏦 ادخار</div>
-          <div class="m-val">${_fmtBase(T.sav)}</div>
+          <div class="m-val">${_heroFmt(T.sav)}</div>
         </div>
       </div>
     </div>`;
@@ -26517,6 +26569,66 @@ setTimeout(() => {
   }
 
   // ── البناء الرئيسي ──
+  // ── كروت التنبيهات الذكية ──
+  function alertsCard(){
+    try{
+      var alerts = [];
+      var today = new Date();
+      var todayDay = today.getDate();
+      // 1) أقساط قرب موعد سدادها (خلال 5 أيام)
+      var inst = (typeof installments!=='undefined' && Array.isArray(installments))?installments:[];
+      inst.forEach(function(i){
+        var paid = i.paidMonths||0, total = i.totalMonths||0;
+        if (total && paid>=total) return;
+        if (i.lastPaidMonth){
+          var curMK = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
+          if (i.lastPaidMonth===curMK) return; // مدفوع الشهر ده
+        }
+        var dueDay = i.day||1;
+        var diff = dueDay - todayDay;
+        if (diff>=0 && diff<=5){
+          var amtSAR = (typeof curToSAR==='function') ? curToSAR(i.monthlyPayment||0, i.currency||'SAR') : (i.monthlyPayment||0);
+          alerts.push({ em:'⏰', color:'var(--accent)', bg:'rgba(240,180,41,.12)',
+            txt: diff===0 ? `قسط «${_esc(i.name)}» مستحق النهاردة` : `قسط «${_esc(i.name)}» بعد ${diff} ${diff===1?'يوم':'أيام'}`,
+            sub: _fmtBase(amtSAR) });
+        }
+      });
+      // 2) فواتير قرب موعدها
+      var bl = (typeof bills!=='undefined' && Array.isArray(bills))?bills:[];
+      // 3) تخطّي ميزانية (فئة عدّت 90%+)
+      var b = (typeof budgets!=='undefined' && budgets)?budgets:{};
+      var ym = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
+      var spent = {};
+      (txs||[]).forEach(function(t){
+        if (t.type!=='expense'||t.isTransfer) return;
+        if ((t.date||'').slice(0,7)!==ym) return;
+        spent[t.cat]=(spent[t.cat]||0)+(t.amountSAR||0);
+      });
+      Object.keys(b).filter(function(k){return b[k]>0;}).forEach(function(k){
+        var pct = Math.round(((spent[k]||0)/b[k])*100);
+        if (pct>=90){
+          alerts.push({ em: pct>=100?'🚨':'⚠️', color: pct>=100?'var(--red)':'#f0883e',
+            bg: pct>=100?'rgba(248,81,73,.12)':'rgba(240,136,62,.12)',
+            txt: pct>=100 ? `تخطّيت ميزانية «${_esc(k)}»` : `قربت على حد ميزانية «${_esc(k)}»`,
+            sub: pct+'%' });
+        }
+      });
+      if (!alerts.length) return '';
+      alerts = alerts.slice(0,4);
+      var html = '<div class="h2-sec-title">🔔 تنبيهات</div>';
+      html += '<div class="h2-alerts">';
+      alerts.forEach(function(a){
+        html += `<div class="h2-alert" style="border-right:3px solid ${a.color};background:${a.bg}">
+          <span class="h2-alert-em">${a.em}</span>
+          <div class="h2-alert-txt">${a.txt}</div>
+          <span class="h2-alert-sub" style="color:${a.color}">${a.sub}</span>
+        </div>`;
+      });
+      html += '</div>';
+      return html;
+    }catch(e){ return ''; }
+  }
+
   function renderHomeV2(){
     var el = document.getElementById('homeContent');
     if (!el) return;
@@ -26530,6 +26642,7 @@ setTimeout(() => {
 
     var parts = [
       heroCard(T),
+      alertsCard(),
       budgetCard(),
       commitmentsCard(),
       goalCard(),
@@ -26667,5 +26780,112 @@ input:focus,select:focus,textarea:focus{
 }
 </style>
 
+<script id="swipe-close-v40">
+/* ═══ السحب للإغلاق (swipe down) — يعمل على كل المودالات، آمن ولا يلمس أي منطق ═══ */
+(function(){
+  'use strict';
+  var startY=0, curY=0, dragging=false, activeSheet=null, activeOverlay=null;
+  function getSheet(t){
+    var s = t.closest && t.closest('.sheet, .settings-sheet');
+    return s || null;
+  }
+  function onStart(e){
+    var touch = e.touches ? e.touches[0] : e;
+    var target = e.target;
+    var sheet = getSheet(target);
+    if (!sheet) return;
+    var overlay = sheet.closest('.overlay');
+    if (!overlay || !overlay.classList.contains('open')) return;
+    var isHandle = target.classList && target.classList.contains('handle');
+    if (!isHandle && sheet.scrollTop > 4) return;
+    startY = touch.clientY; curY = startY; dragging = true;
+    activeSheet = sheet; activeOverlay = overlay;
+    sheet.style.transition = 'none';
+  }
+  function onMove(e){
+    if (!dragging || !activeSheet) return;
+    var touch = e.touches ? e.touches[0] : e;
+    curY = touch.clientY;
+    var dy = curY - startY;
+    if (dy < 0) dy = 0;
+    if (dy > 0){
+      activeSheet.style.transform = 'translateY(' + dy + 'px)';
+      var op = Math.max(0, 1 - dy/400);
+      activeOverlay.style.opacity = op;
+    }
+  }
+  function onEnd(){
+    if (!dragging || !activeSheet) return;
+    var dy = curY - startY;
+    activeSheet.style.transition = '';
+    activeSheet.style.transform = '';
+    activeOverlay.style.opacity = '';
+    if (dy > 100){ activeOverlay.classList.remove('open'); }
+    dragging = false; activeSheet = null; activeOverlay = null;
+  }
+  document.addEventListener('touchstart', onStart, {passive:true});
+  document.addEventListener('touchmove', onMove, {passive:true});
+  document.addEventListener('touchend', onEnd, {passive:true});
+  document.addEventListener('touchcancel', onEnd, {passive:true});
+})();
+</script>
+<style id="polish-v40">
+/* ═══════════════════════════════════════════════════════════
+   POLISH v40 — تحسينات الشكل والانبثاقات (CSS آمن، يحترم الثيم والحركة)
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── 1) خلفية المودال بـ blur (عمق احترافي) ── */
+.overlay{background:rgba(0,0,0,.55) !important;backdrop-filter:blur(8px) saturate(120%);-webkit-backdrop-filter:blur(8px) saturate(120%);}
+
+/* ── 2) أنيميشن طلوع المودال أنعم (spring لطيف) ── */
+.sheet,.settings-sheet{
+  transition:transform .42s cubic-bezier(.34,1.4,.5,1) !important;
+  box-shadow:0 -12px 40px -8px rgba(0,0,0,.5);
+}
+
+/* المقبض (handle) أوضح وأنعم */
+.handle{transition:background-color .2s,width .2s;}
+.handle:active{background-color:var(--accent) !important;width:72px !important;}
+
+/* ── 5) عمق الكروت (ظلال خفيفة متدرّجة) ── */
+.feat-card,.inst2-card,.h2-card,.v23-wallet-card{
+  box-shadow:0 2px 10px -4px rgba(0,0,0,.25), 0 1px 2px rgba(0,0,0,.12);
+}
+
+/* ── 6) ردّ فعل اللمس (tap feedback) لكل العناصر القابلة للضغط ── */
+.feat-card,.inst2-card,.h2-card,.menu-row,.tab,
+button,.btn,.quick-btn,.action-btn,.feat-mini-btn,.inst2-btn,
+.st2-btn,.h2-cur-btn,.h2-quick-btn,.cat-btn,.provider-btn{
+  transition:transform .14s cubic-bezier(.34,1.3,.5,1), box-shadow .18s, opacity .15s, background-color .18s, border-color .18s;
+}
+.feat-card:active,.inst2-card:active,.h2-card:active,.menu-row:active{
+  transform:scale(.985);
+}
+button:active,.btn:active,.quick-btn:active,.action-btn:active,
+.feat-mini-btn:active,.st2-btn:active,.cat-btn:active,.provider-btn:active{
+  transform:scale(.95);
+}
+
+/* ── 8) الحالة الفاضية (empty states) أحلى ── */
+.empty{padding:36px 20px !important;text-align:center;}
+.empty-icon{
+  font-size:52px !important;margin-bottom:12px;display:inline-block;
+  filter:grayscale(.2);opacity:.85;
+  animation:emptyFloat 3s ease-in-out infinite;
+}
+@keyframes emptyFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+/* تحسين عام لشريط التمرير داخل المودالات */
+.sheet::-webkit-scrollbar,.settings-sheet::-webkit-scrollbar{width:5px;}
+.sheet::-webkit-scrollbar-thumb,.settings-sheet::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* احترام تفضيل تقليل الحركة + الثيم الفاتح */
+@media (prefers-reduced-motion: reduce){
+  .sheet,.settings-sheet,.handle,.feat-card,.inst2-card,.h2-card,.menu-row,
+  button,.empty-icon{transition:none !important;animation:none !important;}
+}
+body.light .overlay{background:rgba(0,0,0,.35) !important;}
+body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0,0,0,.2);}
+</style>
 </body>
 </html>
