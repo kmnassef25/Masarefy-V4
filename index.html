@@ -712,6 +712,8 @@ select.form-inp{padding-left:8px;}
 .menu-row .mt-s{font-size:11px;color:var(--muted);margin-top:2px;}
 .menu-row .mc{font-size:18px;color:var(--muted);}
 
+
+
 /* ── PIN LOCK ── */
 .pin-overlay{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;}
 .pin-title{font-size:18px;font-weight:900;color:var(--accent);margin-bottom:8px;}
@@ -738,6 +740,92 @@ select.form-inp{padding-left:8px;}
 .feat-mini-btn{flex:1;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;padding:6px;cursor:pointer;}
 .feat-mini-btn.danger{color:var(--red);}
 .feat-mini-btn.success{color:var(--green);}
+
+/* ═══ v39 — تطوير صفحة الأقساط (شكل + تنظيم) ═══ */
+/* بطاقة الإجمالي الرئيسية */
+.inst2-hero{
+  background:linear-gradient(135deg,#2a1518 0%,#1d1416 55%,#161214 100%);
+  border:1px solid rgba(248,81,73,.3);border-radius:20px;
+  padding:20px;margin-bottom:14px;position:relative;overflow:hidden;
+  box-shadow:0 10px 32px -12px rgba(0,0,0,.55);
+}
+.inst2-hero::before{content:'';position:absolute;top:-50px;left:-40px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(248,81,73,.18),transparent 70%);}
+.inst2-hero-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;position:relative;}
+.inst2-hero-lbl{font-size:12px;color:#ff9b94;font-weight:800;}
+.inst2-hero-chip{font-size:10px;color:var(--muted);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:3px 10px;font-weight:700;}
+.inst2-hero-val{font-size:30px;font-weight:900;color:#fff;direction:ltr;margin-bottom:10px;letter-spacing:-.5px;font-variant-numeric:tabular-nums;position:relative;}
+.inst2-hero-bar{height:8px;background:rgba(0,0,0,.3);border-radius:6px;overflow:hidden;margin-bottom:7px;position:relative;}
+.inst2-hero-bar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .6s cubic-bezier(.34,1.2,.46,1);}
+.inst2-hero-sub{font-size:11px;color:var(--muted);font-weight:600;position:relative;}
+
+/* صف الإحصائيات 3 */
+.inst2-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.inst2-stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;}
+.inst2-stat .s-lbl{font-size:10px;font-weight:800;margin-bottom:4px;}
+.inst2-stat .s-val{font-size:15px;font-weight:900;direction:ltr;font-variant-numeric:tabular-nums;}
+.inst2-stat.monthly .s-lbl,.inst2-stat.monthly .s-val{color:var(--accent);}
+.inst2-stat.paid .s-lbl,.inst2-stat.paid .s-val{color:var(--green);}
+.inst2-stat.left .s-lbl,.inst2-stat.left .s-val{color:var(--red);}
+
+/* بانر القسط القادم */
+.inst2-next{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#1a1206;border-radius:14px;padding:12px 14px;margin-bottom:16px;box-shadow:0 6px 20px -8px rgba(240,180,41,.6);}
+.inst2-next-icon{font-size:22px;flex-shrink:0;}
+.inst2-next-txt{flex:1;min-width:0;}
+.inst2-next-name{font-size:13px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.inst2-next-meta{font-size:11px;font-weight:700;opacity:.8;margin-top:1px;}
+.inst2-next-amt{font-size:16px;font-weight:900;direction:ltr;flex-shrink:0;font-variant-numeric:tabular-nums;}
+
+/* بطاقة القسط */
+.inst2-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:15px;margin-bottom:12px;box-shadow:0 2px 12px rgba(0,0,0,.18);transition:transform .16s cubic-bezier(.34,1.2,.46,1),border-color .2s;}
+.inst2-card.done{opacity:.55;}
+.inst2-card.paid{opacity:.85;}
+.inst2-card-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;}
+.inst2-card-em{flex-shrink:0;line-height:1;min-width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px;padding:0 8px;}
+.inst2-card-em.prov-tabby{background:#3dffba;box-shadow:0 3px 12px -3px rgba(61,255,186,.5);}
+.inst2-card-em.prov-tamara{background:#3a0ca3;box-shadow:0 3px 12px -3px rgba(58,12,163,.5);}
+.inst2-card-em.prov-bank{background:linear-gradient(135deg,#7b8cff,#5868e8);}
+.inst2-card-em.prov-dealer{background:linear-gradient(135deg,var(--accent),var(--accent2));}
+.inst2-card-em.prov-default{background:var(--card2);border:1px solid var(--border);font-size:24px;}
+/* لوجوهات الماركات */
+.inst2-logo{font-weight:900;font-size:15px;letter-spacing:-.5px;}
+.inst2-logo.logo-tabby{color:#1a1a2e;font-family:'Cairo',sans-serif;}
+.inst2-logo.logo-tamara{color:#fff;font-family:'Cairo',sans-serif;}
+.inst2-logo.logo-bank,.inst2-logo.logo-dealer,.inst2-logo.logo-default{font-size:24px;}
+.inst2-card-info{flex:1;min-width:0;}
+.inst2-card-name{font-size:14px;font-weight:900;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.inst2-card-meta{font-size:11px;color:var(--muted);margin-top:3px;font-weight:600;}
+.inst2-card-fees{font-size:10px;color:var(--red);margin-top:3px;}
+.inst2-card-amt{text-align:left;flex-shrink:0;}
+.inst2-card-amt .a-val{font-size:16px;font-weight:900;color:var(--red);direction:ltr;font-variant-numeric:tabular-nums;}
+.inst2-card-amt .a-unit{font-size:10px;color:var(--muted);font-weight:700;}
+
+/* badge الحالة */
+.inst2-badge{display:inline-block;font-size:10px;font-weight:800;border-radius:8px;padding:3px 9px;margin-top:6px;}
+/* شريط التقدّم */
+.inst2-prog{height:7px;background:var(--card2);border-radius:6px;overflow:hidden;margin-bottom:6px;}
+.inst2-prog-fill{height:100%;border-radius:6px;transition:width .5s cubic-bezier(.34,1.2,.46,1);}
+.inst2-prog-lbl{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px;}
+
+/* الأزرار — منظّمة: الأساسي بارز + ثانوية صغيرة */
+.inst2-actions-main{margin-bottom:8px;}
+.inst2-btn-pay{width:100%;background:linear-gradient(135deg,#3fb950,#2ea043);color:#fff;border:none;border-radius:12px;padding:12px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:transform .14s cubic-bezier(.34,1.2,.46,1);box-shadow:0 4px 14px -4px rgba(63,185,80,.5);}
+.inst2-btn-pay:active{transform:scale(.98);}
+.inst2-actions-sub{display:flex;gap:6px;flex-wrap:wrap;}
+.inst2-btn{flex:1;min-width:62px;background:var(--card2);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;padding:8px 4px;cursor:pointer;transition:transform .14s cubic-bezier(.34,1.2,.46,1),border-color .2s,color .2s;}
+.inst2-btn:active{transform:scale(.95);}
+.inst2-btn.early{color:var(--accent);}.inst2-btn.early:active{border-color:var(--accent);}
+.inst2-btn.settle{color:var(--green);}.inst2-btn.settle:active{border-color:var(--green);}
+.inst2-btn.edit{color:var(--accent);}
+.inst2-btn.del{color:var(--red);}.inst2-btn.del:active{border-color:var(--red);}
+
+/* badges المزوّدين */
+.inst2-prov{font-size:10px;font-weight:800;border-radius:7px;padding:2px 8px;}
+.inst2-prov.tabby{background:#3fffbf22;color:#2ee6a8;border:1px solid #2ee6a855;}
+.inst2-prov.tamara{background:#ff9bd522;color:#ff7ec4;border:1px solid #ff7ec455;}
+.inst2-prov.bank{background:var(--card2);color:var(--blue);border:1px solid var(--blue);}
+.inst2-prov.dealer{background:var(--card2);color:var(--accent);border:1px solid var(--accent);}
+
+@media (prefers-reduced-motion: reduce){.inst2-hero-bar-fill,.inst2-prog-fill,.inst2-card,.inst2-btn,.inst2-btn-pay{transition:none !important;}}
 
 /* ── HOME TAB ── */
 .home-greet{background:linear-gradient(135deg,rgba(240,180,41,0.18),rgba(240,180,41,0.05));border:1px solid rgba(240,180,41,0.25);color:var(--text);padding:14px 16px;border-radius:14px;margin-bottom:12px;}
@@ -3731,83 +3819,154 @@ button, .menu-row, .tx-card {
   <div class="settings-sheet">
     <button class="sheet-close-btn" onclick="document.getElementById('settingsModal').classList.remove('open')">✕</button>
     <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
-    <div class="modal-title">⚙️ الإعدادات</div>
+    <div class="st2-head"><div class="t">⚙️ الإعدادات</div></div>
 
-    <!-- BASE CURRENCY SELECTOR -->
-    <div style="margin-bottom:18px">
-      <div class="subsection-label">💱 العملة الأساسية</div>
-      <div class="base-cur-grid">
-        <button class="base-cur-opt" data-base="SAR" onclick="setBase('SAR')"><span class="bf">🇸🇦</span>ريال<br><span style="font-size:9px;opacity:.7">SAR</span></button>
-        <button class="base-cur-opt" data-base="EGP" onclick="setBase('EGP')"><span class="bf">🇪🇬</span>جنيه<br><span style="font-size:9px;opacity:.7">EGP</span></button>
-        <button class="base-cur-opt" data-base="USD" onclick="setBase('USD')"><span class="bf">🇺🇸</span>دولار<br><span style="font-size:9px;opacity:.7">USD</span></button>
-        <button class="base-cur-opt" data-base="EUR" onclick="setBase('EUR')"><span class="bf">🇪🇺</span>يورو<br><span style="font-size:9px;opacity:.7">EUR</span></button>
-      </div>
-      <p style="font-size:10px;color:var(--muted);text-align:center">كل المبالغ هتتحول للعملة دي تلقائياً</p>
-    </div>
-
-    <div style="border-top:1px solid var(--border);padding-top:14px">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px">💵 أسعار الصرف</div>
-      <p style="font-size:10px;color:var(--muted);margin-bottom:10px">بتتحدّث تلقائياً لكل حركة جديدة</p>
-    </div>
-
-    <div class="set-row">
-      <div class="set-icon">🇪🇬</div>
-      <div class="set-info">
-        <div class="set-lbl">الجنيه المصري</div>
-        <div class="set-sub">1 ريال = كام جنيه؟</div>
-      </div>
-      <input class="set-inp" id="rEGP" type="number" step="0.01" placeholder="13.50"/>
-    </div>
-    <div class="set-row">
-      <div class="set-icon">🇺🇸</div>
-      <div class="set-info">
-        <div class="set-lbl">الدولار الأمريكي</div>
-        <div class="set-sub">1 دولار = كام ريال؟</div>
-      </div>
-      <input class="set-inp" id="rUSD" type="number" step="0.01" placeholder="3.75"/>
-    </div>
-    <div class="set-row">
-      <div class="set-icon">🇪🇺</div>
-      <div class="set-info">
-        <div class="set-lbl">اليورو</div>
-        <div class="set-sub">1 يورو = كام ريال؟</div>
-      </div>
-      <input class="set-inp" id="rEUR" type="number" step="0.01" placeholder="4.10"/>
-    </div>
-
-    <button class="set-save" onclick="saveSettings()">✅ حفظ الأسعار</button>
-
-    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:18px">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">🎨 المظهر والأمان</div>
-      <div class="recurring-row">
-        <div><div class="recurring-lbl">🌗 الثيم الفاتح</div><div style="font-size:11px;color:var(--muted);margin-top:2px">تبديل بين الفاتح والغامق</div></div>
-        <label class="toggle-sw"><input type="checkbox" id="themeToggle" onchange="toggleTheme()"><span class="toggle-slider"></span></label>
-      </div>
-      <div class="recurring-row" style="margin-top:8px">
-        <div><div class="recurring-lbl">🔒 قفل بـ PIN</div><div style="font-size:11px;color:var(--muted);margin-top:2px" id="pinStatus">معطّل</div></div>
-        <button class="feat-mini-btn" style="flex:0 0 auto;padding:8px 14px" onclick="togglePin()" id="pinBtnTxt">تفعيل</button>
+    <!-- ═══ v35: مركز التحكم الجديد ═══ -->
+    <!-- العملة والأسعار -->
+    <div class="st2-group">
+      <div class="st2-group-title">💱 العملة وأسعار الصرف</div>
+      <div class="st2-card">
+        <div class="st2-cur-grid">
+          <button class="st2-cur base-cur-opt" data-base="SAR" onclick="setBase('SAR')"><span class="f">🇸🇦</span>ريال<span class="c">SAR</span></button>
+          <button class="st2-cur base-cur-opt" data-base="EGP" onclick="setBase('EGP')"><span class="f">🇪🇬</span>جنيه<span class="c">EGP</span></button>
+          <button class="st2-cur base-cur-opt" data-base="USD" onclick="setBase('USD')"><span class="f">🇺🇸</span>دولار<span class="c">USD</span></button>
+          <button class="st2-cur base-cur-opt" data-base="EUR" onclick="setBase('EUR')"><span class="f">🇪🇺</span>يورو<span class="c">EUR</span></button>
+        </div>
+        <div style="border-top:1px solid var(--border);margin:14px -14px 0;padding:14px 14px 0">
+          <div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px">أسعار الصرف</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:10px">اكتب السعر بأرقام السوق الحقيقية — اضغط الزر تحت تشوف أحدث الأسعار</div>
+          <div class="st2-rate">
+            <span class="st2-rate-fl">🇪🇬</span>
+            <div class="st2-rate-info"><div class="st2-rate-name">الجنيه المصري</div><div class="st2-rate-sub">1 ريال = كام جنيه؟</div></div>
+            <input class="st2-rate-inp" id="rEGP" type="number" step="0.01" placeholder="13.50"/>
+          </div>
+          <div class="st2-rate">
+            <span class="st2-rate-fl">🇺🇸</span>
+            <div class="st2-rate-info"><div class="st2-rate-name">الدولار الأمريكي</div><div class="st2-rate-sub">1 دولار = كام ريال؟</div></div>
+            <input class="st2-rate-inp" id="rUSD" type="number" step="0.01" placeholder="3.75"/>
+          </div>
+          <div class="st2-rate">
+            <span class="st2-rate-fl">🇪🇺</span>
+            <div class="st2-rate-info"><div class="st2-rate-name">اليورو</div><div class="st2-rate-sub">1 يورو = كام ريال؟</div></div>
+            <input class="st2-rate-inp" id="rEUR" type="number" step="0.01" placeholder="4.10"/>
+          </div>
+          <button class="st2-btn gold" style="margin-top:12px" onclick="window.open('https://edahabapp.com/','_blank')">🔗 شوف أسعار السوق المصري الآن</button>
+          <button class="st2-btn primary" style="margin-top:8px" onclick="saveSettings()">✅ حفظ الأسعار</button>
+        </div>
       </div>
     </div>
 
-    <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">📤 تصدير البيانات</div>
-      <div class="export-row">
-        <button class="export-btn" onclick="exportCSV()">📊 تصدير CSV</button>
-        <button class="export-btn" onclick="exportJSON()">💾 نسخ احتياطي</button>
-        <button class="export-btn" onclick="generateMonthlyReport()">📄 تقرير شهري</button>
+    <!-- المظهر والأمان -->
+    <div class="st2-group">
+      <div class="st2-group-title">🎨 المظهر والأمان</div>
+      <div class="st2-card">
+        <div class="st2-row">
+          <span class="st2-row-em">🌗</span>
+          <div class="st2-row-info"><div class="st2-row-name">الثيم الفاتح</div><div class="st2-row-sub">تبديل بين الفاتح والغامق</div></div>
+          <label class="toggle-sw"><input type="checkbox" id="themeToggle" onchange="toggleTheme()"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="st2-row">
+          <span class="st2-row-em">🔒</span>
+          <div class="st2-row-info"><div class="st2-row-name">قفل بـ PIN</div><div class="st2-row-sub" id="pinStatus">معطّل</div></div>
+          <button class="st2-mini-btn" onclick="togglePin()" id="pinBtnTxt">تفعيل</button>
+        </div>
+        <div class="st2-row">
+          <span class="st2-row-em">🔔</span>
+          <div class="st2-row-info"><div class="st2-row-name">تنبيهات الميزانية</div><div class="st2-row-sub">يبعتلك تنبيه لو تخطّيت الحد</div></div>
+          <button class="st2-mini-btn" id="notifBtn" onclick="requestNotifPermission()">تفعيل</button>
+        </div>
       </div>
-      <button class="export-btn" style="width:100%;margin-top:8px;border-color:var(--sav);color:var(--sav)" onclick="document.getElementById('restoreInput').click()">♻️ استرداد من نسخة احتياطية</button>
-      <input type="file" id="restoreInput" accept=".json,application/json" style="display:none" onchange="restoreBackup(event)"/>
+    </div>
 
-      <button class="export-btn" style="width:100%;margin-top:8px;border-color:var(--blue);color:var(--blue)" onclick="document.getElementById('csvImportInput').click()">🏦 استيراد كشف حساب (CSV)</button>
-      <input type="file" id="csvImportInput" accept=".csv,text/csv" style="display:none" onchange="importBankCSV(event)"/>
-      <button class="export-btn" style="width:100%;margin-top:8px;border-color:var(--accent);color:var(--accent)" onclick="document.getElementById('pdfImportInput').click()">📄 استيراد كشف حساب (PDF)</button>
-      <input type="file" id="pdfImportInput" accept=".pdf,application/pdf" style="display:none" onchange="importBankPDF(event)"/>
-      <button class="notif-btn" id="notifBtn" onclick="requestNotifPermission()">🔔 تفعيل تنبيهات الميزانية</button>
-      <button class="export-btn" style="width:100%;margin-top:8px;border-color:var(--accent);color:var(--accent)" onclick="manualReconcileEntries()">🧹 تنظيف الحركات المكررة (رحلات/مناسبات)</button>
+    <!-- البيانات والنسخ الاحتياطي -->
+    <div class="st2-group">
+      <div class="st2-group-title">💾 البيانات والنسخ الاحتياطي</div>
+      <div class="st2-card">
+        <button class="st2-btn primary" onclick="exportJSON()">💾 نسخة احتياطية كاملة</button>
+        <button class="st2-btn green" onclick="document.getElementById('restoreInput').click()">♻️ استرداد من نسخة احتياطية</button>
+        <input type="file" id="restoreInput" accept=".json,application/json" style="display:none" onchange="restoreBackup(event)"/>
+        <div class="st2-btn-2" style="margin-top:8px">
+          <button class="st2-btn" onclick="exportCSV()">📊 تصدير CSV</button>
+          <button class="st2-btn" onclick="generateMonthlyReport()">📄 تقرير شهري</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- الاستيراد والأدوات -->
+    <div class="st2-group">
+      <div class="st2-group-title">📥 استيراد كشف الحساب</div>
+      <div class="st2-card">
+        <button class="st2-btn blue" onclick="document.getElementById('csvImportInput').click()">🏦 استيراد كشف حساب (CSV)</button>
+        <input type="file" id="csvImportInput" accept=".csv,text/csv" style="display:none" onchange="importBankCSV(event)"/>
+        <button class="st2-btn gold" onclick="document.getElementById('pdfImportInput').click()">📄 استيراد كشف حساب (PDF)</button>
+        <input type="file" id="pdfImportInput" accept=".pdf,application/pdf" style="display:none" onchange="importBankPDF(event)"/>
+        <button class="st2-btn" onclick="manualReconcileEntries()">🧹 تنظيف الحركات المكررة</button>
+      </div>
     </div>
   </div>
 </div>
+
+
+<style>
+/* ═══ v35 — مركز التحكم (الإعدادات) الجديد ═══ */
+.st2-sheet{padding-bottom:calc(28px + env(safe-area-inset-bottom,0px)) !important;}
+.st2-head{text-align:center;margin-bottom:18px;}
+.st2-head .t{font-size:19px;font-weight:900;color:var(--text);letter-spacing:-.3px;}
+.st2-head .s{font-size:12px;color:var(--muted);font-weight:600;margin-top:3px;}
+
+/* قسم */
+.st2-group{margin-bottom:16px;}
+.st2-group-title{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:900;color:var(--accent);margin:0 2px 9px;letter-spacing:.2px;}
+.st2-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,.16);}
+
+/* شبكة العملة */
+.st2-cur-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.st2-cur{background:var(--card2);border:1.5px solid var(--border);border-radius:13px;padding:11px 4px;text-align:center;cursor:pointer;font-family:'Cairo',sans-serif;color:var(--text);font-size:12px;font-weight:700;transition:all .18s cubic-bezier(.34,1.2,.46,1);}
+.st2-cur:active{transform:scale(.95);}
+.st2-cur .f{font-size:22px;display:block;margin-bottom:3px;}
+.st2-cur .c{font-size:9px;opacity:.6;display:block;margin-top:1px;}
+.st2-cur.active,.st2-cur.sel{border-color:var(--accent);background:rgba(240,180,41,.14);box-shadow:0 0 0 1px var(--accent);color:var(--accent);}
+
+/* صف سعر صرف */
+.st2-rate{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--border);}
+.st2-rate:last-of-type{border-bottom:none;}
+.st2-rate-fl{font-size:22px;flex-shrink:0;}
+.st2-rate-info{flex:1;min-width:0;}
+.st2-rate-name{font-size:13px;font-weight:700;}
+.st2-rate-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.st2-rate-inp{width:88px;background:var(--card2);border:1.5px solid var(--border);border-radius:10px;padding:9px;text-align:center;color:var(--text);font-family:'Cairo',sans-serif;font-size:14px;font-weight:800;direction:ltr;flex-shrink:0;}
+.st2-rate-inp:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px rgba(240,180,41,.12);}
+
+/* صف تبديل/إعداد */
+.st2-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
+.st2-row:last-child{border-bottom:none;}
+.st2-row:first-child{padding-top:2px;}
+.st2-row-em{font-size:20px;flex-shrink:0;width:26px;text-align:center;}
+.st2-row-info{flex:1;min-width:0;}
+.st2-row-name{font-size:13px;font-weight:700;}
+.st2-row-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* زر أساسي عريض */
+.st2-btn{width:100%;border:1.5px solid var(--border);background:var(--card2);color:var(--text);border-radius:13px;padding:12px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s cubic-bezier(.34,1.2,.46,1);display:flex;align-items:center;justify-content:center;gap:7px;}
+.st2-btn:active{transform:scale(.98);}
+.st2-btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;border:none;font-weight:900;}
+.st2-btn.green{border-color:var(--sav,#06b6d4);color:var(--sav,#06b6d4);}
+.st2-btn.blue{border-color:var(--blue,#58a6ff);color:var(--blue,#58a6ff);}
+.st2-btn.gold{border-color:var(--accent);color:var(--accent);}
+.st2-btn + .st2-btn{margin-top:8px;}
+
+/* زرين جنب بعض */
+.st2-btn-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.st2-btn-2 .st2-btn{margin-top:0;}
+.st2-btn-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.st2-btn-3 .st2-btn{margin-top:0;flex-direction:column;gap:4px;padding:12px 4px;font-size:11px;}
+.st2-btn-3 .st2-btn .be{font-size:18px;}
+
+.st2-mini-btn{flex:0 0 auto;padding:8px 16px;border-radius:10px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Cairo',sans-serif;font-size:12px;font-weight:800;cursor:pointer;}
+.st2-mini-btn:active{transform:scale(.95);}
+
+@media (prefers-reduced-motion: reduce){.st2-cur,.st2-btn,.st2-mini-btn{transition:none !important;}}
+</style>
 
 <!-- BUDGET MODAL -->
 <div class="overlay" id="budgetModal" onclick="closeIfOut(event,'budgetModal')">
@@ -3849,6 +4008,37 @@ button, .menu-row, .tx-card {
   </div>
 </div>
 
+<!-- GOLD MODAL (v38) -->
+<div class="overlay" id="goldModal" onclick="closeIfOut(event,'goldModal')">
+  <div class="sheet">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title">🥇 الذهب وأسعاره</div>
+    <div id="goldModalContent"></div>
+  </div>
+</div>
+
+<script>
+// v38 — فتح الذهب وأسعار العملات من مركز التحكم
+function openGoldModal(){
+  try{
+    var c = document.getElementById('goldModalContent');
+    if (c && typeof buildGoldCardHTML==='function'){
+      c.innerHTML = buildGoldCardHTML();
+      setTimeout(function(){ try{ updateGoldCalc(); }catch(e){} }, 0);
+    }
+    var m = document.getElementById('goldModal');
+    if (m) m.classList.add('open');
+  }catch(e){}
+}
+window.openGoldModal = openGoldModal;
+
+function openCurrencyRates(){
+  // يفتح الإعدادات (فيها أسعار الصرف)
+  try{ if (typeof openSettings==='function') openSettings(); }catch(e){}
+}
+window.openCurrencyRates = openCurrencyRates;
+</script>
+
 <!-- MENU SHEET -->
 <div class="overlay" id="menuModal" onclick="closeIfOut(event,'menuModal')">
   <div class="sheet">
@@ -3869,7 +4059,7 @@ button, .menu-row, .tx-card {
       <div class="mc">‹</div>
     </div>
     <div class="menu-row" onclick="closeAndOpen('menuModal','subsModal',renderSubs)">
-      <div class="mi">📅</div>
+      <div class="mi">📺</div>
       <div class="mt"><div class="mt-l">الاشتراكات</div><div class="mt-s" id="menuSubCount">--</div></div>
       <div class="mc">‹</div>
     </div>
@@ -3922,6 +4112,7 @@ button, .menu-row, .tx-card {
       <div class="mi">🌙</div>
       <div class="mt"><div class="mt-l">الثيمات الموسمية</div><div class="mt-s" id="menuSeasonLbl">اختر ثيم الموسم</div></div>
       <div class="mc">‹</div>
+    </div>
     </div>
   </div>
 </div>
@@ -8645,35 +8836,40 @@ function renderInstallments() {
     break;
   }
 
-  let html = `<div style="background:linear-gradient(135deg,rgba(248,81,73,.15),rgba(248,81,73,.05));border:1px solid var(--red);border-radius:14px;padding:16px;margin-bottom:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:11px;color:var(--red);font-weight:700">💳 إجمالي الأقساط المتبقية</div>
-      <div style="font-size:10px;color:var(--muted)">${active.length} قسط نشط</div>
+  let html = `<div class="inst2-hero">
+    <div class="inst2-hero-top">
+      <div class="inst2-hero-lbl">💳 إجمالي الأقساط المتبقية</div>
+      <div class="inst2-hero-chip">${active.length} قسط نشط</div>
     </div>
-    <div style="font-size:26px;font-weight:900;color:#fff;direction:ltr;margin-bottom:8px">${fmt(toBase(totalDebtSAR),0)} ${sym}</div>
-    <div class="budget-bar-bg" style="margin-bottom:6px"><div class="budget-bar-fill" style="width:${overallPct}%;background:var(--accent)"></div></div>
-    <div style="font-size:11px;color:var(--muted)">${overallPct}% مدفوع من إجمالي ${fmt(toBase(totalOriginalSAR),0)} ${sym}</div>
+    <div class="inst2-hero-val">${fmt(toBase(totalDebtSAR),0)} ${sym}</div>
+    <div class="inst2-hero-bar"><div class="inst2-hero-bar-fill" style="width:${overallPct}%"></div></div>
+    <div class="inst2-hero-sub">${overallPct}% مدفوع من إجمالي ${fmt(toBase(totalOriginalSAR),0)} ${sym}</div>
   </div>
 
-  <div style="display:flex;gap:8px;margin-bottom:14px">
-    <div style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center">
-      <div style="font-size:10px;color:var(--accent);font-weight:700">📅 شهرياً</div>
-      <div style="font-size:14px;font-weight:900;direction:ltr;margin-top:3px;color:var(--accent)">${fmt(toBase(totalMonthlySAR),0)} ${sym}</div>
+  <div class="inst2-stats">
+    <div class="inst2-stat monthly">
+      <div class="s-lbl">📅 شهرياً</div>
+      <div class="s-val">${fmt(toBase(totalMonthlySAR),0)} ${sym}</div>
     </div>
-    <div style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center">
-      <div style="font-size:10px;color:var(--green);font-weight:700">✅ المدفوع</div>
-      <div style="font-size:14px;font-weight:900;direction:ltr;margin-top:3px;color:var(--green)">${fmt(toBase(totalPaidSAR),0)} ${sym}</div>
+    <div class="inst2-stat paid">
+      <div class="s-lbl">✅ المدفوع</div>
+      <div class="s-val">${fmt(toBase(totalPaidSAR),0)} ${sym}</div>
     </div>
-    <div style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center">
-      <div style="font-size:10px;color:var(--red);font-weight:700">⏳ المتبقي</div>
-      <div style="font-size:14px;font-weight:900;direction:ltr;margin-top:3px;color:var(--red)">${fmt(toBase(totalDebtSAR),0)} ${sym}</div>
+    <div class="inst2-stat left">
+      <div class="s-lbl">⏳ المتبقي</div>
+      <div class="s-val">${fmt(toBase(totalDebtSAR),0)} ${sym}</div>
     </div>
   </div>`;
 
   if (nextDue) {
     const lbl = _instStatusLabel(nextDue.info, sym);
-    html += `<div style="background:var(--accent);color:#000;border-radius:10px;padding:10px;margin-bottom:12px;font-size:12px;font-weight:700;text-align:center">
-      ⏰ القسط القادم: ${nextDue.name} (${fmt(toBase(nextDue.amt),0)} ${sym}) — ${lbl.text.replace(/^[^\s]+\s/,'')}
+    html += `<div class="inst2-next">
+      <span class="inst2-next-icon">⏰</span>
+      <div class="inst2-next-txt">
+        <div class="inst2-next-name">${esc(nextDue.name)}</div>
+        <div class="inst2-next-meta">القسط القادم · ${lbl.text.replace(/^[^\s]+\s/,'')}</div>
+      </div>
+      <div class="inst2-next-amt">${fmt(toBase(nextDue.amt),0)} ${sym}</div>
     </div>`;
   }
 
@@ -8686,38 +8882,49 @@ function renderInstallments() {
     const remainingSAR = monthlySAR * remaining;
     const isDone = paid >= inst.totalMonths;
     const lbl = _instStatusLabel(info, sym);
-    // Provider badge (V11)
+    // Provider badge (V11) — new scoped classes
     let providerBadge = '';
-    if (inst.provider === 'tabby') providerBadge = '<span class="prov-badge prov-tabby">tabby</span>';
-    else if (inst.provider === 'tamara') providerBadge = '<span class="prov-badge prov-tamara">tamara</span>';
-    else if (inst.provider === 'bank') providerBadge = '<span class="prov-badge prov-bank">🏦 بنك</span>';
-    else if (inst.provider === 'dealer') providerBadge = '<span class="prov-badge prov-dealer">🏪 محل</span>';
-    const emoji = inst.provider === 'tabby' ? '💚' : inst.provider === 'tamara' ? '🩷' : '💳';
-    const statusBadge = `<span style="display:inline-block;font-size:10px;font-weight:700;color:${lbl.color};background:${lbl.bg};border:1px solid ${lbl.color};border-radius:8px;padding:2px 8px;margin-top:4px">${lbl.text}</span>`;
+    if (inst.provider === 'tabby') providerBadge = '<span class="inst2-prov tabby">tabby</span>';
+    else if (inst.provider === 'tamara') providerBadge = '<span class="inst2-prov tamara">tamara</span>';
+    else if (inst.provider === 'bank') providerBadge = '<span class="inst2-prov bank">🏦 بنك</span>';
+    else if (inst.provider === 'dealer') providerBadge = '<span class="inst2-prov dealer">🏪 محل</span>';
+    // لوجوهات المزوّدين الحقيقية (نص بخط الشركة المميز بدل القلب)
+    const providerLogo = (function(p){
+      if (p === 'tabby') return '<span class="inst2-logo logo-tabby">tabby</span>';
+      if (p === 'tamara') return '<span class="inst2-logo logo-tamara">tamara</span>';
+      if (p === 'bank') return '<span class="inst2-logo logo-bank">🏦</span>';
+      if (p === 'dealer') return '<span class="inst2-logo logo-dealer">🏪</span>';
+      return '<span class="inst2-logo logo-default">💳</span>';
+    })(inst.provider);
+    const statusBadge = `<span class="inst2-badge" style="color:${lbl.color};background:${lbl.bg};border:1px solid ${lbl.color}">${lbl.text}</span>`;
     // Show "ادفع" only if not done AND not already paid this month (otherwise the button is misleading)
     const canPay = !isDone && info.status !== 'paid';
     const canEarly = !isDone && remaining > 1;
-    const feesLine = (inst.fees && inst.fees > 0) ? `<div style="font-size:10px;color:var(--red);margin-top:2px">💸 فوائد/رسوم: ${fmt(inst.fees,0)} ${inst.currency} (إجمالي التكلفة ${fmt(inst.totalAmount + inst.fees,0)} ${inst.currency})</div>` : '';
-    return `<div class="feat-card" style="${isDone?'opacity:.6':''}${info.status==='paid'?'opacity:.85;':''}">
-      <div class="feat-card-top">
-        <div class="feat-emoji">${emoji}</div>
-        <div class="feat-info">
-          <div class="feat-name">${esc(inst.name)} ${providerBadge}</div>
-          <div class="feat-sub">${inst.store ? '🛍️ ' + esc(inst.store) + ' · ' : ''}${paid} / ${inst.totalMonths} شهر · يوم ${inst.day} من كل شهر</div>
+    const feesLine = (inst.fees && inst.fees > 0) ? `<div class="inst2-card-fees">💸 فوائد/رسوم: ${fmt(inst.fees,0)} ${inst.currency} (إجمالي ${fmt(inst.totalAmount + inst.fees,0)} ${inst.currency})</div>` : '';
+    const stateClass = isDone ? 'done' : (info.status==='paid' ? 'paid' : '');
+    return `<div class="inst2-card ${stateClass}">
+      <div class="inst2-card-head">
+        <span class="inst2-card-em prov-${inst.provider||'default'}">${providerLogo}</span>
+        <div class="inst2-card-info">
+          <div class="inst2-card-name">${esc(inst.name)} ${providerBadge}</div>
+          <div class="inst2-card-meta">${inst.store ? '🛍️ ' + esc(inst.store) + ' · ' : ''}${paid} / ${inst.totalMonths} شهر · يوم ${inst.day} من كل شهر</div>
           ${feesLine}
           <div>${statusBadge}</div>
         </div>
-        <div class="feat-amt" style="color:var(--red)">${fmt(toBase(monthlySAR), 0)} ${sym}/شهر</div>
+        <div class="inst2-card-amt">
+          <div class="a-val">${fmt(toBase(monthlySAR), 0)}</div>
+          <div class="a-unit">${sym}/شهر</div>
+        </div>
       </div>
-      <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:${pct}%;background:${isDone?'var(--green)':'var(--accent)'}"></div></div>
-      <div class="budget-pct">${pct}% — متبقي ${fmt(toBase(remainingSAR), 0)} ${sym}${remaining>0?` (${remaining} قسط)`:''}</div>
-      <div class="feat-actions" style="flex-wrap:wrap">
-        ${canPay?`<button class="feat-mini-btn success" onclick="payInstallmentNow('${inst.id}')">💰 ادفع قسط النهاردة</button>`:''}
-        ${canEarly?`<button class="feat-mini-btn" onclick="payInstallmentEarly('${inst.id}')" style="color:var(--accent);border-color:var(--accent)">⚡ دفع مبكر</button>`:''}
-        ${!isDone?`<button class="feat-mini-btn" onclick="settleInstallment('${inst.id}')" style="color:var(--green);border-color:var(--green)">🏁 تسوية كاملة</button>`:''}
-        <button class="feat-mini-btn" onclick="showInstHistory('${inst.id}')" style="color:var(--muted)">📜 السجل</button>
-        <button class="feat-mini-btn" onclick="editInstallment('${inst.id}')" style="color:var(--accent);border-color:var(--accent)">✏️ تعديل</button>
-        <button class="feat-mini-btn danger" onclick="delInstallment('${inst.id}')">🗑️ حذف</button>
+      <div class="inst2-prog"><div class="inst2-prog-fill" style="width:${pct}%;background:${isDone?'var(--green)':'var(--accent)'}"></div></div>
+      <div class="inst2-prog-lbl">${pct}% — متبقي ${fmt(toBase(remainingSAR), 0)} ${sym}${remaining>0?` (${remaining} قسط)`:''}</div>
+      ${canPay?`<div class="inst2-actions-main"><button class="inst2-btn-pay" onclick="payInstallmentNow('${inst.id}')">💰 ادفع قسط النهاردة</button></div>`:''}
+      <div class="inst2-actions-sub">
+        ${canEarly?`<button class="inst2-btn early" onclick="payInstallmentEarly('${inst.id}')">⚡ دفع مبكر</button>`:''}
+        ${!isDone?`<button class="inst2-btn settle" onclick="settleInstallment('${inst.id}')">🏁 تسوية</button>`:''}
+        <button class="inst2-btn" onclick="showInstHistory('${inst.id}')">📜 السجل</button>
+        <button class="inst2-btn edit" onclick="editInstallment('${inst.id}')">✏️ تعديل</button>
+        <button class="inst2-btn del" onclick="delInstallment('${inst.id}')">🗑️ حذف</button>
       </div>
     </div>`;
   }).join('');
@@ -9169,21 +9376,24 @@ function renderJameya() {
     const totalSAR = curToSAR(totalGet, j.currency);
     const monthlySAR = curToSAR(j.monthlyAmount, j.currency);
     const pct = Math.min(Math.round(currentMonth / j.totalMembers * 100), 100);
-    return `<div class="feat-card" style="${isDone?'opacity:.6':''}">
-      <div class="feat-card-top">
-        <div class="feat-emoji">🤝</div>
-        <div class="feat-info">
-          <div class="feat-name">${j.name} ${isDone?'<span style="font-size:10px;color:var(--green)">✓ خلصت</span>':''}</div>
-          <div class="feat-sub">${turnStatus} · ${currentMonth}/${j.totalMembers} شهر</div>
+    return `<div class="inst2-card ${isDone?'done':''}">
+      <div class="inst2-card-head">
+        <span class="inst2-card-em prov-default" style="background:linear-gradient(135deg,#06b6d4,#0891b2)">🤝</span>
+        <div class="inst2-card-info">
+          <div class="inst2-card-name">${j.name} ${isDone?'<span style="font-size:10px;color:var(--green)">✓ خلصت</span>':''}</div>
+          <div class="inst2-card-meta">${turnStatus} · ${currentMonth}/${j.totalMembers} شهر</div>
         </div>
-        <div class="feat-amt" style="color:var(--accent)">${fmt(toBase(totalSAR), 0)} ${sym}</div>
+        <div class="inst2-card-amt">
+          <div class="a-val" style="color:var(--sav)">${fmt(toBase(totalSAR), 0)}</div>
+          <div class="a-unit">${sym}</div>
+        </div>
       </div>
-      <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:${pct}%;background:var(--sav)"></div></div>
-      <div class="budget-pct">${pct}% — ${fmt(toBase(monthlySAR), 0)} ${sym} كل شهر</div>
-      <div class="feat-actions">
-        ${monthsToTurn === 0 && !j.received ? `<button class="feat-mini-btn success" onclick="claimJameya('${j.id}')">💰 قبضت دوري</button>` : ''}
-        <button class="feat-mini-btn" onclick="editJameya('${j.id}')" style="color:var(--accent);border-color:var(--accent)">✏️ تعديل</button>
-        <button class="feat-mini-btn danger" onclick="delJameyaItem('${j.id}')">🗑️ حذف</button>
+      <div class="inst2-prog"><div class="inst2-prog-fill" style="width:${pct}%;background:var(--sav)"></div></div>
+      <div class="inst2-prog-lbl">${pct}% — ${fmt(toBase(monthlySAR), 0)} ${sym} كل شهر</div>
+      ${monthsToTurn === 0 && !j.received ? `<div class="inst2-actions-main"><button class="inst2-btn-pay" style="background:linear-gradient(135deg,#06b6d4,#0891b2);box-shadow:0 4px 14px -4px rgba(6,182,212,.5)" onclick="claimJameya('${j.id}')">💰 قبضت دوري</button></div>` : ''}
+      <div class="inst2-actions-sub">
+        <button class="inst2-btn edit" onclick="editJameya('${j.id}')">✏️ تعديل</button>
+        <button class="inst2-btn del" onclick="delJameyaItem('${j.id}')">🗑️ حذف</button>
       </div>
     </div>`;
   }).join('');
@@ -16597,6 +16807,14 @@ setTimeout(() => {
         { id:'goals', icon:'🎯', title:'أهداف الادخار', sub:'وفّر للحاجات الكبيرة', modal:'goalsModal', render:'renderGoals', countKey:'menuGoalCount' },
         { id:'subs', icon:'📅', title:'الاشتراكات', sub:'Netflix, Spotify, إلخ', modal:'subsModal', render:'renderSubs', countKey:'menuSubCount' },
         { id:'bills', icon:'🏠', title:'فواتير المنزل', sub:'كهرباء، ماء، إنترنت', modal:'billsModal', render:'renderBills', countKey:'menuBillCount' }
+      ]
+    },
+    {
+      section: '💱 العملة والذهب',
+      cat: 'currency',
+      items: [
+        { id:'gold', icon:'🥇', title:'الذهب وأسعاره', sub:'عيار 24، 21، 18 + حاسبة', custom:'openGoldModal' },
+        { id:'currency', icon:'💱', title:'أسعار العملات', sub:'دولار، يورو، جنيه', custom:'openCurrencyRates' }
       ]
     },
     {
@@ -26189,17 +26407,21 @@ setTimeout(() => {
   function commitmentsCard(){
     try{
       var items = [];
-      // أقساط نشطة
+      // أقساط نشطة — الحقول الصحيحة: monthlyPayment, paidMonths, totalMonths, currency
       var inst = (typeof installments!=='undefined' && Array.isArray(installments))?installments:[];
       inst.forEach(i=>{
-        var paid = i.paid||0, total = i.count||i.months||0;
+        var paid = i.paidMonths||0, total = i.totalMonths||i.months||0;
         if (total && paid>=total) return; // مخلّص
-        items.push({ em:'💳', name:i.name||'قسط', meta: total?('قسط '+(paid+1)+' من '+total):'قسط', amt:i.monthly||0 });
+        // المبلغ بعملته → حوّله للعملة الأساسية
+        var monthlyRaw = i.monthlyPayment||0;
+        var monthlySAR = (typeof curToSAR==='function') ? curToSAR(monthlyRaw, i.currency||'SAR') : monthlyRaw;
+        items.push({ em:'💳', name:i.name||'قسط', meta: total?('قسط '+(paid+1)+' من '+total):'قسط', amt:monthlySAR });
       });
-      // فواتير
+      // فواتير — amount بعملة SAR افتراضياً
       var bl = (typeof bills!=='undefined' && Array.isArray(bills))?bills:[];
       bl.forEach(b=>{
-        items.push({ em:'🧾', name:b.name||'فاتورة', meta:b.type||'فاتورة', amt:b.amount||0 });
+        var billSAR = (typeof curToSAR==='function') ? curToSAR(b.amount||0, b.currency||'SAR') : (b.amount||0);
+        items.push({ em:'🧾', name:b.name||'فاتورة', meta:b.type||'فاتورة', amt:billSAR });
       });
       if (!items.length) return '';
       items = items.slice(0,4);
@@ -26225,21 +26447,23 @@ setTimeout(() => {
   function goalCard(){
     try{
       var g = (typeof goals!=='undefined' && Array.isArray(goals))?goals:[];
-      var active = g.filter(x=>{ var saved=x.saved||0, target=x.target||0; return target>0 && saved<target; });
+      // الحقول الصحيحة: current (المُدّخر), target — كلاهما بالعملة الأساسية
+      var active = g.filter(x=>{ var cur=x.current||0, target=x.target||0; return target>0 && cur<target; });
       if (!active.length) return '';
       // الأقرب للإنجاز
-      active.sort((a,b)=>((b.saved||0)/(b.target||1))-((a.saved||0)/(a.target||1)));
+      active.sort((a,b)=>((b.current||0)/(b.target||1))-((a.current||0)/(a.target||1)));
       var top = active[0];
-      var pct = Math.round(((top.saved||0)/(top.target||1))*100);
+      var pct = Math.round(((top.current||0)/(top.target||1))*100);
+      var sym = _sym();
       var html = '<div class="h2-sec-title">🎯 أقرب هدف</div>';
       html += `<div class="h2-card tap" onclick="_h2open('goalsModal','renderGoals')">
         <div class="h2-goal-head">
-          <span style="font-size:18px">🎯</span>
+          <span style="font-size:18px">${top.emoji||'🎯'}</span>
           <span class="h2-goal-name">${_esc(top.name||'هدف')}</span>
           <span class="h2-goal-pct">${pct}%</span>
         </div>
         <div class="h2-bud-bar"><div class="h2-bud-fill" style="width:${Math.min(pct,100)}%;background:linear-gradient(90deg,var(--accent),var(--accent2))"></div></div>
-        <div style="font-size:11px;color:var(--muted);margin-top:7px;direction:ltr;text-align:right">${_fmtBase(top.saved||0)} / ${_fmtBase(top.target||0)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:7px;direction:ltr;text-align:right">${_fmt(top.current||0,0)} / ${_fmt(top.target||0,0)} ${sym}</div>
       </div>`;
       return html;
     }catch(e){ return ''; }
@@ -26322,6 +26546,126 @@ setTimeout(() => {
 
 })();
 </script>
+
+
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   v37 — تجديد بصري شامل (FULL VISUAL REFRESH)
+   طبقة فوق التصميم الحالي. لا تمسّ أي منطق.
+   تحترم الثيم الفاتح + prefers-reduced-motion.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root{
+  --rf-ease:cubic-bezier(.34,1.2,.46,1);
+  --rf-ring:rgba(240,180,41,.4);
+  --rf-glow:rgba(240,180,41,.08);
+}
+
+/* ── خلفية أعمق بتدرّج وتوهّج ذهبي خفيف ── */
+body{
+  background:
+    radial-gradient(130% 70% at 50% -8%, var(--rf-glow), transparent 55%),
+    linear-gradient(180deg, #11161d, #0b0f14) !important;
+}
+:root[data-theme="light"] body{
+  background:
+    radial-gradient(130% 70% at 50% -8%, rgba(240,180,41,.10), transparent 55%),
+    linear-gradient(180deg, #fbfcfe, #f2f4f8) !important;
+}
+
+/* ── الهيدر: عمق وثبات ── */
+.header{
+  box-shadow:0 1px 0 rgba(255,255,255,.03), 0 8px 22px -12px rgba(0,0,0,.6);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+}
+.app-name{letter-spacing:-.4px;text-shadow:0 0 26px var(--rf-glow);}
+
+/* ── شريط التابات: مؤشّر نشِط أنعم ── */
+.tab-btn{
+  position:relative;border-radius:11px 11px 0 0;
+  transition:color .2s var(--rf-ease), background .2s ease;
+}
+.tab-btn:active{transform:translateY(1px);}
+.tab-btn.active{background:linear-gradient(180deg, rgba(240,180,41,.12), transparent);}
+.tab-btn.active::after{
+  content:'';position:absolute;left:16%;right:16%;bottom:-1px;height:3px;
+  border-radius:3px 3px 0 0;
+  background:linear-gradient(90deg, var(--accent), var(--accent2));
+  box-shadow:0 0 12px var(--rf-ring);
+  animation:rf-tab .3s var(--rf-ease);
+}
+@keyframes rf-tab{from{transform:scaleX(.3);opacity:0}to{transform:scaleX(1);opacity:1}}
+
+/* ── كروت الملخّص الأفقية: عمق وتفاعل ── */
+.sum-main,.sum-inc,.sum-exp,.sum-sav,.sum-cur{
+  transition:transform .18s var(--rf-ease), box-shadow .18s ease !important;
+}
+.sum-main:active,.sum-inc:active,.sum-exp:active,.sum-sav:active,.sum-cur:active{
+  transform:translateY(1px) scale(.985);
+}
+.sum-main .val,.sum-inc .val,.sum-exp .val,.sum-sav .val,.sum-cur .val{
+  letter-spacing:-.5px;font-variant-numeric:tabular-nums;
+}
+
+/* ── كل الكروت: ظلال وحواف موحّدة ── */
+.tx-card,.menu-row,.goal-card,.inst-card,.debt-card,.acc-card,.bill-card,
+.sub-card,.jam-card,.occ-card,.order-card,.cc-card{
+  transition:transform .16s var(--rf-ease), box-shadow .2s ease, border-color .2s ease;
+}
+.tx-card:active{transform:scale(.99);}
+
+/* أرقام جدولية في كل المبالغ */
+.tx-orig,.stat-val,.goal-amt,.inst-amt,.acc-bal,.amt,.val{
+  font-variant-numeric:tabular-nums;
+}
+
+/* ── الأزرار: تأثير ضغط موحّد ── */
+button{transition:transform .12s var(--rf-ease), filter .15s ease, box-shadow .15s ease;}
+button:active{transform:scale(.97);}
+button:focus-visible{outline:2px solid var(--rf-ring);outline-offset:2px;}
+
+/* الزر العائم (إضافة حركة) — أبرز */
+.add-fab,.fab,.add-btn-main,[class*="add-tx"]{
+  box-shadow:0 8px 24px -6px rgba(240,180,41,.5) !important;
+}
+
+/* ── المودالات/الشيتات: ظهور أنعم وظل أعمق ── */
+.overlay{backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
+.sheet,.settings-sheet{
+  box-shadow:0 -8px 50px rgba(0,0,0,.5) !important;
+}
+.handle{opacity:.5;transition:opacity .2s;}
+.sheet:hover .handle{opacity:.7;}
+
+/* عنوان المودال أوضح */
+.modal-title{letter-spacing:-.3px;}
+
+/* ── حقول الإدخال: حلقة تركيز ذهبية ── */
+input,select,textarea{
+  transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--rf-ring) !important;
+  box-shadow:0 0 0 3px var(--rf-glow) !important;
+  outline:none;
+}
+
+/* ── شارة العملة في الهيدر ── */
+#baseCurChip,.base-cur-chip{transition:transform .15s var(--rf-ease);}
+#baseCurChip:active,.base-cur-chip:active{transform:scale(.94);}
+
+/* ── تمرير أنعم ── */
+.body-scroll,#tab-home,#tab-all{scroll-behavior:smooth;}
+
+/* ── احترام تقليل الحركة ── */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    transition-duration:.001ms !important;
+    scroll-behavior:auto !important;
+  }
+}
+</style>
 
 </body>
 </html>
