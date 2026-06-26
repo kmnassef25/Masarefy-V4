@@ -774,6 +774,19 @@ select.form-inp{padding-left:8px;}
 .inst2-next-name{font-size:13px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .inst2-next-meta{font-size:11px;font-weight:700;opacity:.8;margin-top:1px;}
 .inst2-next-amt{font-size:16px;font-weight:900;direction:ltr;flex-shrink:0;font-variant-numeric:tabular-nums;}
+/* التوزيع الشهري */
+.inst2-mb{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:16px;box-shadow:0 2px 10px -4px rgba(0,0,0,.25);}
+.inst2-mb-title{font-size:13px;font-weight:900;color:var(--text);margin-bottom:12px;}
+.inst2-mb-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.inst2-mb-row:last-child{margin-bottom:0;}
+.inst2-mb-lbl{font-size:11px;font-weight:700;color:var(--muted);width:92px;flex-shrink:0;}
+.inst2-mb-lbl.now{color:var(--accent);font-weight:900;}
+.inst2-mb-bar{flex:1;height:8px;background:var(--card2);border-radius:6px;overflow:hidden;min-width:30px;}
+.inst2-mb-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--blue),#7b8cff);transition:width .5s cubic-bezier(.34,1.2,.46,1);}
+.inst2-mb-fill.now{background:linear-gradient(90deg,var(--accent),var(--accent2));}
+.inst2-mb-val{font-size:12px;font-weight:900;direction:ltr;flex-shrink:0;font-variant-numeric:tabular-nums;color:var(--text);min-width:72px;text-align:left;}
+.inst2-mb-val.now{color:var(--accent);}
+@media (prefers-reduced-motion: reduce){.inst2-mb-fill{transition:none !important;}}
 
 /* بطاقة القسط */
 .inst2-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:15px;margin-bottom:12px;box-shadow:0 2px 12px rgba(0,0,0,.18);transition:transform .16s cubic-bezier(.34,1.2,.46,1),border-color .2s;}
@@ -8553,6 +8566,33 @@ var dualSalary = JSON.parse(localStorage.getItem('msarifyi_dual_salary') || 'nul
 var rateMeta = JSON.parse(localStorage.getItem('msarifyi_rate_meta') || '{}'); // {source, ts}
 
 function saveInstallments() { localStorage.setItem('msarifyi_installments', JSON.stringify(installments)); }
+
+// تنضيف تلقائي: احذف الأقساط المنتهية اللي عدّى على آخر دفعة فيها أكتر من شهرين
+function _autoCleanFinishedInstallments(){
+  try{
+    if (!Array.isArray(installments) || !installments.length) return;
+    var now = new Date();
+    // مفتاح "قبل شهرين" بصيغة YYYY-MM
+    var cutoff = new Date(now.getFullYear(), now.getMonth()-2, 1);
+    var cutoffKey = cutoff.getFullYear()+'-'+String(cutoff.getMonth()+1).padStart(2,'0');
+    var before = installments.length;
+    installments = installments.filter(function(i){
+      var paid = i.paidMonths||0, total = i.totalMonths||0;
+      var finished = total>0 && paid>=total;
+      if (!finished) return true; // لسه نشط → خليه
+      // منتهي: شيله بس لو آخر دفعة من أكتر من شهرين
+      var lpm = i.lastPaidMonth;
+      if (!lpm) return true; // مفيش تاريخ دفعة → خليه احتياطاً
+      // قارن: لو lastPaidMonth أقدم من cutoffKey → احذف
+      return lpm > cutoffKey; // أحدث من الحد → خليه
+    });
+    if (installments.length !== before){
+      saveInstallments();
+    }
+  }catch(e){}
+}
+// شغّلها مرة عند التحميل
+_autoCleanFinishedInstallments();
 function saveJameyaData() { localStorage.setItem('msarifyi_jameya', JSON.stringify(jameya)); }
 function saveOccasions() { localStorage.setItem('msarifyi_occasions', JSON.stringify(occasions)); }
 function saveDualSalary() { localStorage.setItem('msarifyi_dual_salary', JSON.stringify(dualSalary)); }
@@ -8809,6 +8849,65 @@ function _instStatusLabel(info, sym) {
   return { text: `📅 بعد ${d} يوم`, color: 'var(--muted)', bg: 'var(--card2)' };
 }
 
+// ── التوزيع الشهري للأقساط: كل شهر قادم وإجمالي المستحق فيه ──
+function _instMonthlyBreakdown(active, sym, today){
+  try{
+    if (!active || !active.length) return '';
+    var now = today || new Date();
+    var curY = now.getFullYear(), curM = now.getMonth(); // 0-indexed
+    // اجمع المبلغ المستحق لكل شهر (مفتاح: عدد الشهور من دلوقتي 0,1,2..)
+    var months = {}; // offset -> totalSAR
+    var maxOffset = 0;
+    active.forEach(function(i){
+      var paid = i.paidMonths||0;
+      var remaining = (i.totalMonths||0) - paid;
+      if (remaining<=0) return;
+      var monthlySAR = curToSAR(i.monthlyPayment||0, i.currency||'SAR');
+      // القسط ليه دفعة في كل شهر من الشهور المتبقية، بدءاً من الشهر الحالي
+      for (var k=0; k<remaining; k++){
+        months[k] = (months[k]||0) + monthlySAR;
+        if (k>maxOffset) maxOffset = k;
+      }
+    });
+    var offsets = Object.keys(months).map(Number).sort(function(a,b){return a-b;});
+    if (!offsets.length) return '';
+    // أسماء الشهور بالعربي
+    var arMonths = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+    // اعرض حتى 6 شهور قادمة (الباقي نجمعه)
+    var SHOW = 6;
+    var rows = '';
+    var shownOffsets = offsets.filter(function(o){return o<SHOW;});
+    var maxVal = Math.max.apply(null, shownOffsets.map(function(o){return months[o];}));
+    shownOffsets.forEach(function(o){
+      var mIdx = (curM + o) % 12;
+      var yr = curY + Math.floor((curM + o)/12);
+      var lbl = o===0 ? ('الشهر ده · '+arMonths[mIdx]) : o===1 ? ('الشهر الجاي · '+arMonths[mIdx]) : (arMonths[mIdx]+' '+yr);
+      var val = months[o];
+      var barPct = maxVal>0 ? Math.round(val/maxVal*100) : 0;
+      var isNow = o===0;
+      rows += '<div class="inst2-mb-row">'
+        + '<div class="inst2-mb-lbl'+(isNow?' now':'')+'">'+lbl+'</div>'
+        + '<div class="inst2-mb-bar"><div class="inst2-mb-fill'+(isNow?' now':'')+'" style="width:'+barPct+'%"></div></div>'
+        + '<div class="inst2-mb-val'+(isNow?' now':'')+'">'+fmt(toBase(val),0)+' '+sym+'</div>'
+        + '</div>';
+    });
+    // لو فيه شهور بعد الـ6، اجمعها في سطر "وبعد كده"
+    var beyond = offsets.filter(function(o){return o>=SHOW;});
+    if (beyond.length){
+      var beyondTotal = beyond.reduce(function(s,o){return s+months[o];},0);
+      rows += '<div class="inst2-mb-row">'
+        + '<div class="inst2-mb-lbl" style="color:var(--muted)">وبعد كده ('+beyond.length+' شهور)</div>'
+        + '<div class="inst2-mb-bar"></div>'
+        + '<div class="inst2-mb-val" style="color:var(--muted)">'+fmt(toBase(beyondTotal),0)+' '+sym+'</div>'
+        + '</div>';
+    }
+    return '<div class="inst2-mb">'
+      + '<div class="inst2-mb-title">🗓️ التوزيع على الشهور</div>'
+      + rows
+      + '</div>';
+  }catch(e){ return ''; }
+}
+
 function renderInstallments() {
   // املأ قائمة حساب الخصم (لو لسه فاضية أو الحسابات اتغيرت)
   const accSel = document.getElementById('instPayAccount');
@@ -8903,6 +9002,9 @@ function renderInstallments() {
       <div class="inst2-next-amt">${fmt(toBase(nextDue.amt),0)} ${sym}</div>
     </div>`;
   }
+
+  // ── التوزيع الشهري: كل شهر قادم وإجمالي الأقساط المستحقة فيه ──
+  html += _instMonthlyBreakdown(active, sym, today);
 
   // Render each installment card (sorted)
   html += enriched.map(({ inst, info }) => {
