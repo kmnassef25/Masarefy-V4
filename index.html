@@ -22572,10 +22572,12 @@ setTimeout(() => {
 
     document.getElementById('ccPaymentModal').classList.remove('open');
     if (typeof showToast === 'function') showToast(`✅ تم سداد ${formatBaseAmount(amount, card.currency)}`, 'success');
-    if (typeof renderAll === 'function') renderAll();
+    // ملاحظة: شيلنا renderAll() الثقيلة (بتعيد بناء كل الحركات) — مش محتاجينها هنا، دي سبب اللاج
     renderCreditCards();
     updateCardMenuCount();
     if (window.__lastViewedCardId) openCardDetail(window.__lastViewedCardId);
+    // حدّث شاشة الحركات في الخلفية بدون ما تعطّل (لو المستخدم راح لها)
+    if (typeof renderAll === 'function') setTimeout(renderAll, 0);
   };
 
   // Delete a transaction from a card
@@ -22606,9 +22608,9 @@ setTimeout(() => {
 
     saveCreditCards();
     if (typeof showToast === 'function') showToast('🗑️ تم الحذف', 'info');
-    if (typeof renderAll === 'function') renderAll();
     renderCreditCards();
     if (window.__lastViewedCardId) openCardDetail(window.__lastViewedCardId);
+    if (typeof renderAll === 'function') setTimeout(renderAll, 0);
   };
 
   // ─────────────────────────────────────────────────────
