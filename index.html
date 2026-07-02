@@ -774,19 +774,192 @@ select.form-inp{padding-left:8px;}
 .inst2-next-name{font-size:13px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .inst2-next-meta{font-size:11px;font-weight:700;opacity:.8;margin-top:1px;}
 .inst2-next-amt{font-size:16px;font-weight:900;direction:ltr;flex-shrink:0;font-variant-numeric:tabular-nums;}
-/* التوزيع الشهري */
-.inst2-mb{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:16px;box-shadow:0 2px 10px -4px rgba(0,0,0,.25);}
-.inst2-mb-title{font-size:13px;font-weight:900;color:var(--text);margin-bottom:12px;}
-.inst2-mb-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+/* التوزيع الشهري — تصميم مطوّر */
+.inst2-mb{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:16px;box-shadow:0 4px 16px -6px rgba(0,0,0,.3);}
+.inst2-mb-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+.inst2-mb-title{font-size:14px;font-weight:900;color:var(--text);}
+.inst2-mb-grand{font-size:15px;font-weight:900;color:var(--accent);direction:ltr;font-variant-numeric:tabular-nums;}
+.inst2-mb-legend{display:flex;gap:14px;margin-bottom:14px;}
+.inst2-mb-leg{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:var(--muted);}
+.inst2-mb-leg .dot{width:9px;height:9px;border-radius:3px;display:inline-block;}
+.inst2-mb-leg .dot.inst{background:var(--blue);}
+.inst2-mb-leg .dot.card{background:#a855f7;}
+.inst2-mb-row{margin-bottom:13px;padding:10px;border-radius:12px;background:var(--card2);transition:background .2s;}
 .inst2-mb-row:last-child{margin-bottom:0;}
-.inst2-mb-lbl{font-size:11px;font-weight:700;color:var(--muted);width:92px;flex-shrink:0;}
-.inst2-mb-lbl.now{color:var(--accent);font-weight:900;}
-.inst2-mb-bar{flex:1;height:8px;background:var(--card2);border-radius:6px;overflow:hidden;min-width:30px;}
-.inst2-mb-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--blue),#7b8cff);transition:width .5s cubic-bezier(.34,1.2,.46,1);}
-.inst2-mb-fill.now{background:linear-gradient(90deg,var(--accent),var(--accent2));}
-.inst2-mb-val{font-size:12px;font-weight:900;direction:ltr;flex-shrink:0;font-variant-numeric:tabular-nums;color:var(--text);min-width:72px;text-align:left;}
+.inst2-mb-row.now{background:linear-gradient(135deg,rgba(240,180,41,.12),rgba(240,180,41,.04));border:1px solid rgba(240,180,41,.3);}
+.inst2-mb-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+.inst2-mb-lbl{font-size:13px;font-weight:800;color:var(--text);display:flex;align-items:baseline;gap:7px;}
+.inst2-mb-lbl.now{color:var(--accent);}
+.inst2-mb-sub{font-size:10px;font-weight:600;color:var(--muted);}
+.inst2-mb-val{font-size:14px;font-weight:900;direction:ltr;font-variant-numeric:tabular-nums;color:var(--text);}
 .inst2-mb-val.now{color:var(--accent);}
-@media (prefers-reduced-motion: reduce){.inst2-mb-fill{transition:none !important;}}
+.inst2-mb-bar{height:9px;background:rgba(0,0,0,.15);border-radius:6px;overflow:hidden;display:flex;}
+.inst2-mb-fill-inst{height:100%;background:linear-gradient(90deg,var(--blue),#7b8cff);transition:width .6s cubic-bezier(.34,1.2,.46,1);}
+.inst2-mb-fill-card{height:100%;background:linear-gradient(90deg,#a855f7,#c084fc);transition:width .6s cubic-bezier(.34,1.2,.46,1);}
+.inst2-mb-detail{font-size:10px;color:var(--muted);margin-top:6px;font-weight:700;direction:ltr;text-align:right;}
+.inst2-mb-ccnote{margin-top:12px;padding:10px 12px;background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.25);border-radius:12px;font-size:11px;font-weight:700;color:#c084fc;line-height:1.6;}
+/* خط زمني لأدوار الجمعية */
+.jam-tl{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:16px;box-shadow:0 4px 16px -6px rgba(0,0,0,.3);}
+.jam-tl-title{font-size:14px;font-weight:900;color:var(--text);margin-bottom:14px;}
+.jam-tl-row{margin-bottom:14px;padding:11px;border-radius:12px;background:var(--card2);}
+.jam-tl-row:last-child{margin-bottom:0;}
+.jam-tl-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px;}
+.jam-tl-name{font-size:13px;font-weight:800;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.jam-tl-amt{font-size:13px;font-weight:900;color:#5eead4;direction:ltr;font-variant-numeric:tabular-nums;flex-shrink:0;}
+.jam-tl-bar{position:relative;height:8px;background:rgba(0,0,0,.15);border-radius:6px;overflow:visible;margin-bottom:9px;}
+.jam-tl-fill{height:100%;background:linear-gradient(90deg,#06b6d4,#22d3ee);border-radius:6px;transition:width .6s cubic-bezier(.34,1.2,.46,1);}
+.jam-tl-marker{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid #06b6d4;transform:translate(50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.3);}
+.jam-tl-foot{display:flex;justify-content:space-between;align-items:center;}
+.jam-tl-status{font-size:10px;font-weight:800;border-radius:8px;padding:3px 9px;}
+.jam-tl-date{font-size:10px;color:var(--muted);font-weight:600;}
+@media (prefers-reduced-motion: reduce){.jam-tl-fill{transition:none !important;}}
+
+/* ═══ تطوير تصميم الإعدادات (CSS آمن) ═══ */
+/* رأس أفخم */
+.st2-head{margin-bottom:20px !important;padding:6px 0;}
+.st2-head .t{font-size:22px !important;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+/* عناوين المجموعات: خط جانبي مميز */
+.st2-group{margin-bottom:18px !important;}
+.st2-group-title{font-size:12.5px !important;padding-right:10px;position:relative;}
+.st2-group-title::before{content:'';position:absolute;right:0;top:50%;transform:translateY(-50%);width:3px;height:14px;background:linear-gradient(var(--accent),var(--accent2));border-radius:3px;}
+/* الكروت: عمق أكبر + حدود ألطف */
+.st2-card{border-radius:18px !important;padding:16px !important;box-shadow:0 4px 16px -6px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.03) !important;border-color:var(--border) !important;}
+/* أزرار العملة: أنعم */
+.st2-cur{border-radius:14px !important;padding:12px 4px !important;}
+.st2-cur .f{font-size:24px !important;}
+.st2-cur.active,.st2-cur.sel{box-shadow:0 0 0 1.5px var(--accent), 0 4px 12px -4px rgba(240,180,41,.4) !important;transform:translateY(-1px);}
+/* صفوف الإعدادات: أيقونات في مربعات */
+.st2-row-em{width:38px !important;height:38px;display:flex;align-items:center;justify-content:center;background:var(--card2);border-radius:11px;font-size:19px !important;}
+.st2-row-name{font-size:13.5px !important;font-weight:800 !important;}
+/* حقول أسعار الصرف: أوضح */
+.st2-rate-fl{width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--card2);border-radius:10px;font-size:20px !important;}
+.st2-rate-inp{border-radius:11px !important;font-size:15px !important;transition:border-color .18s, box-shadow .18s, transform .14s !important;}
+.st2-rate-inp:focus{transform:scale(1.03);}
+/* الأزرار: عمق + حركة */
+.st2-btn{border-radius:13px !important;padding:13px !important;font-weight:800 !important;transition:transform .14s cubic-bezier(.34,1.3,.5,1), background-color .18s, border-color .18s, box-shadow .2s !important;box-shadow:0 2px 8px -3px rgba(0,0,0,.2) !important;}
+.st2-btn:active{transform:scale(.97) !important;}
+.st2-btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2)) !important;color:#1a1206 !important;border-color:transparent !important;box-shadow:0 4px 14px -4px rgba(240,180,41,.5) !important;}
+.st2-btn.green{background:linear-gradient(135deg,#3fb950,#2ea043) !important;color:#fff !important;border-color:transparent !important;box-shadow:0 4px 14px -4px rgba(63,185,80,.4) !important;}
+.st2-btn.blue{background:linear-gradient(135deg,#58a6ff,#4090e8) !important;color:#fff !important;border-color:transparent !important;}
+.st2-btn.gold{background:linear-gradient(135deg,#d4a94a,#b8892e) !important;color:#fff !important;border-color:transparent !important;}
+.st2-btn:not(.primary):not(.green):not(.blue):not(.gold){margin-bottom:8px;}
+.st2-btn-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.st2-btn-2 .st2-btn{margin-bottom:0;}
+/* أزرار mini + toggle */
+.st2-mini-btn{transition:transform .14s, background-color .18s !important;}
+.st2-mini-btn:active{transform:scale(.94);}
+/* زرار القفل أوضح */
+.sheet-close-btn{transition:transform .16s, background-color .18s !important;}
+.sheet-close-btn:active{transform:scale(.9) rotate(90deg);}
+
+@media (prefers-reduced-motion: reduce){
+  .st2-btn,.st2-cur,.st2-rate-inp,.st2-mini-btn,.sheet-close-btn{transition:none !important;}
+}
+
+/* ═══ تطوير كبير: الرأس + الكاردين العلوية (CSS آمن) ═══ */
+/* الرأس: أنظف ومرتّب */
+.header-top{margin-bottom:16px !important;padding-top:2px;}
+.app-name{
+  font-size:23px !important;font-weight:900 !important;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:-.3px;
+}
+/* الأزرار الدائرية (☰ ⚙️) شكل موحّد أنيق */
+.header-top button[onclick*="openMenu"],
+.header-top button[onclick*="openSettings"]:not(.base-cur-chip){
+  width:38px !important;height:38px !important;padding:0 !important;
+  border-radius:12px !important;font-size:16px !important;
+  background:var(--card2) !important;border:1px solid var(--border) !important;
+  display:inline-flex !important;align-items:center;justify-content:center;
+  transition:transform .14s cubic-bezier(.34,1.3,.5,1), background-color .18s, border-color .18s !important;
+  box-shadow:0 2px 8px -3px rgba(0,0,0,.2);
+}
+.header-top button[onclick*="openMenu"]:active,
+.header-top button[onclick*="openSettings"]:not(.base-cur-chip):active{transform:scale(.9);}
+/* شارة العملة أفخم */
+.base-cur-chip{
+  border-radius:12px !important;padding:8px 13px !important;font-weight:800 !important;
+  background:linear-gradient(135deg,rgba(240,180,41,.16),rgba(240,180,41,.06)) !important;
+  border:1px solid rgba(240,180,41,.3) !important;
+  box-shadow:0 2px 8px -3px rgba(240,180,41,.3) !important;
+  transition:transform .14s cubic-bezier(.34,1.3,.5,1) !important;
+}
+.base-cur-chip:active{transform:scale(.94) !important;}
+/* الوقت/التاريخ أنضف */
+.live-time{background:var(--card2);border:1px solid var(--border);border-radius:11px;padding:6px 10px;}
+.live-time .dte{font-size:10.5px !important;font-weight:700 !important;color:var(--text) !important;}
+.live-time .dte-hijri{font-size:9.5px !important;}
+
+/* زرار إخفاء الرصيد أنعم */
+.hide-balance-btn{
+  width:40px;height:40px;border-radius:12px !important;
+  background:var(--card2) !important;border:1px solid var(--border) !important;
+  transition:transform .14s cubic-bezier(.34,1.3,.5,1), background-color .18s !important;
+  box-shadow:0 2px 8px -3px rgba(0,0,0,.2);
+}
+.hide-balance-btn:active{transform:scale(.9);}
+
+/* الكاردين: أفخم وأعمق */
+.sum-main,.sum-inc,.sum-exp,.sum-sav{
+  border-radius:22px !important;padding:20px 22px !important;min-width:180px !important;
+  box-shadow:0 12px 36px -10px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.14) !important;
+  transition:transform .18s cubic-bezier(.34,1.2,.46,1), box-shadow .25s !important;
+}
+.sum-main::before,.sum-inc::before,.sum-exp::before,.sum-sav::before{height:4px !important;}
+.sum-main:active,.sum-inc:active,.sum-exp:active,.sum-sav:active{transform:translateY(-2px) scale(.99) !important;}
+/* دائرة إضاءة زخرفية داخل كل كارت */
+.sum-main::after,.sum-inc::after,.sum-exp::after,.sum-sav::after{
+  content:'';position:absolute;top:-30px;left:-20px;width:110px;height:110px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.07),transparent 70%);pointer-events:none;
+}
+/* القيم أبرز */
+.sum-main .val,.sum-inc .val,.sum-exp .val,.sum-sav .val{font-size:26px !important;letter-spacing:-.5px;}
+.sum-main .lbl,.sum-inc .lbl,.sum-exp .lbl,.sum-sav .lbl{font-size:11.5px !important;font-weight:800 !important;}
+/* الكارت الرئيسي (الفلوس) أبرز شوية */
+.sum-main{
+  background:linear-gradient(135deg,rgba(240,180,41,.14),rgba(255,255,255,.03)) !important;
+  border-color:rgba(240,180,41,.28) !important;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .header-top button,.base-cur-chip,.hide-balance-btn,.sum-main,.sum-inc,.sum-exp,.sum-sav{transition:none !important;}
+}
+
+/* ═══ شارت الذهب + المحفظة ═══ */
+.gold-chart-box{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-top:14px;}
+.gold-chart-title{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:800;color:var(--text);margin-bottom:10px;}
+.gold-chart-chg{font-size:12px;font-weight:900;direction:ltr;}
+.gold-chart-svg{width:100%;height:90px;display:block;}
+.gold-chart-foot{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-weight:700;margin-top:8px;direction:ltr;}
+.gold-chart-empty{font-size:11px;color:var(--muted);text-align:center;padding:20px 10px;line-height:1.7;}
+
+.gold-port-box{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-top:14px;}
+.gold-port-title{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:900;color:var(--text);margin-bottom:12px;}
+.gold-port-add{background:linear-gradient(135deg,#d4a94a,#b8892e);color:#fff;border:none;border-radius:10px;padding:7px 14px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:800;cursor:pointer;transition:transform .14s;}
+.gold-port-add:active{transform:scale(.94);}
+.gold-port-empty{font-size:11px;color:var(--muted);text-align:center;padding:16px 10px;line-height:1.7;}
+.gold-port-summary{background:linear-gradient(135deg,rgba(212,169,74,.12),rgba(212,169,74,.04));border:1px solid rgba(212,169,74,.25);border-radius:12px;padding:12px;margin-bottom:12px;}
+.gps-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.gps-cell{text-align:center;}
+.gps-lbl{font-size:9.5px;color:var(--muted);font-weight:700;margin-bottom:4px;}
+.gps-val{font-size:14px;font-weight:900;color:var(--text);direction:ltr;font-variant-numeric:tabular-nums;}
+.gps-pct{text-align:center;font-size:11px;font-weight:800;margin-top:10px;direction:ltr;}
+.gold-port-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:11px;margin-bottom:8px;}
+.gold-port-item:last-child{margin-bottom:0;}
+.gpi-info{min-width:0;flex:1;}
+.gpi-name{font-size:12.5px;font-weight:800;color:var(--text);}
+.gpi-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+.gpi-vals{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.gpi-profit{font-size:13px;font-weight:900;direction:ltr;font-variant-numeric:tabular-nums;}
+.gpi-del{background:none;border:none;cursor:pointer;font-size:14px;opacity:.6;padding:2px;}
+.gpi-del:active{opacity:1;}
+/* أزرار اختيار العيار في مودال الإضافة */
+.gold-karat-pick{display:flex;gap:8px;}
+.gold-karat-btn{flex:1;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px 6px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:800;color:var(--muted);cursor:pointer;transition:transform .14s cubic-bezier(.34,1.3,.5,1), background-color .18s, border-color .18s, color .18s;}
+.gold-karat-btn:active{transform:scale(.95);}
+.gold-karat-btn.active{background:linear-gradient(135deg,rgba(212,169,74,.18),rgba(212,169,74,.06));border-color:#d4a94a;color:#e0b955;box-shadow:0 0 0 1px #d4a94a;}
+@media (prefers-reduced-motion: reduce){.inst2-mb-fill-inst,.inst2-mb-fill-card{transition:none !important;}}
 
 /* بطاقة القسط */
 .inst2-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:15px;margin-bottom:12px;box-shadow:0 2px 12px rgba(0,0,0,.18);transition:transform .16s cubic-bezier(.34,1.2,.46,1),border-color .2s;}
@@ -4028,6 +4201,52 @@ button, .menu-row, .tx-card {
     <div id="goldModalContent"></div>
   </div>
 </div>
+
+<!-- مودال إضافة ذهب للمحفظة -->
+<div class="overlay" id="goldAddModal" onclick="closeIfOut(event,'goldAddModal')">
+  <div class="sheet" style="max-height:88vh">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title">💼 إضافة ذهب للمحفظة</div>
+    <div style="padding:0 2px">
+      <div class="form-row">
+        <div class="form-lbl">⚖️ عدد الجرامات</div>
+        <input class="form-inp" id="goldAddGrams" type="number" step="0.01" inputmode="decimal" placeholder="مثال: 10" style="direction:ltr"/>
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">🥇 العيار</div>
+        <div class="gold-karat-pick">
+          <button type="button" class="gold-karat-btn" data-karat="24" onclick="selGoldKarat(this)">عيار 24</button>
+          <button type="button" class="gold-karat-btn active" data-karat="21" onclick="selGoldKarat(this)">عيار 21</button>
+          <button type="button" class="gold-karat-btn" data-karat="18" onclick="selGoldKarat(this)">عيار 18</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">💰 سعر شراء الجرام (ج.م)</div>
+        <input class="form-inp" id="goldAddPrice" type="number" step="1" inputmode="decimal" placeholder="السعر وقت الشراء" style="direction:ltr"/>
+        <div id="goldAddHint" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
+      </div>
+      <button class="st2-btn primary" style="width:100%;margin-top:8px" onclick="saveGoldHolding()">✅ حفظ في المحفظة</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// اختيار العيار في مودال الإضافة
+function selGoldKarat(btn){
+  try{
+    btn.parentElement.querySelectorAll('.gold-karat-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    // لو فيه سعر حالي، اقترحه
+    var k = parseInt(btn.dataset.karat)||21;
+    if (typeof goldData!=='undefined' && goldData && typeof egpPerGramKarat==='function'){
+      var cur = egpPerGramKarat(k);
+      var hint = document.getElementById('goldAddHint');
+      if (hint && cur) hint.textContent = 'السعر الحالي لعيار '+k+' ≈ '+fmt(cur,0)+' ج.م/جرام';
+    }
+  }catch(e){}
+}
+window.selGoldKarat = selGoldKarat;
+</script>
 
 <script>
 // v38 — فتح الذهب وأسعار العملات من مركز التحكم
@@ -7478,9 +7697,7 @@ function generateMonthlyReport() {
     txRowsInc += `<tr><td>${t.date}</td><td>${t.name}</td><td>${t.cat}</td><td style="color:#28a745;direction:ltr">${fmt(toBase(t.amountSAR),2)} ${sym}</td></tr>`;
   });
 
-  const w = window.open('', '_blank');
-  if (!w) { showAlert('السماح بالنوافذ المنبثقة عشان التقرير يفتح', 'warning'); return; }
-  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>تقرير ${monthName}</title>
+  const _reportHTML = (`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>تقرير ${monthName}</title>
   <style>
     body{font-family:Arial,sans-serif;padding:30px;color:#222;line-height:1.6;}
     h1{color:#1a2332;border-bottom:3px solid #f0b429;padding-bottom:10px;}
@@ -7493,8 +7710,18 @@ function generateMonthlyReport() {
     th,td{padding:8px;text-align:right;border-bottom:1px solid #d0d7de;}
     th{background:#f6f8fa;font-weight:bold;}
     .footer{margin-top:40px;padding-top:14px;border-top:1px solid #d0d7de;text-align:center;font-size:11px;color:#656d76;}
-    @media print{body{padding:15px}}
+    @media print{body{padding:15px}.report-actions{display:none !important;}}
+    .report-actions{position:fixed;top:0;left:0;right:0;background:#1a2332;padding:12px 16px;display:flex;gap:10px;justify-content:center;box-shadow:0 2px 12px rgba(0,0,0,.25);z-index:9999;}
+    .report-actions button{font-family:Arial,sans-serif;font-size:14px;font-weight:bold;border:none;border-radius:10px;padding:11px 20px;cursor:pointer;}
+    .ra-close{background:#f85149;color:#fff;}
+    .ra-print{background:#f0b429;color:#1a2332;}
+    .report-body{margin-top:64px;}
   </style></head><body>
+    <div class="report-actions">
+      <button class="ra-close" onclick="window.close(); setTimeout(function(){history.back();},100);">✕ إغلاق التقرير</button>
+      <button class="ra-print" onclick="window.print()">🖨️ طباعة / حفظ PDF</button>
+    </div>
+    <div class="report-body">
     <h1>📊 التقرير الشهري — ${monthName}</h1>
     <p style="color:#656d76;font-size:12px">تم إنشاء التقرير في ${new Date().toLocaleString('ar-EG')}</p>
 
@@ -7518,11 +7745,24 @@ function generateMonthlyReport() {
     <h2>تفاصيل الدخل</h2>
     <table><thead><tr><th>التاريخ</th><th>البيان</th><th>الفئة</th><th>المبلغ</th></tr></thead><tbody>${txRowsInc || '<tr><td colspan="4" style="text-align:center;color:#656d76">لا يوجد</td></tr>'}</tbody></table>
 
-    <div class="footer">💰 مصاريفي | Masarefy — تطبيق إدارة المصاريف الشخصية<br>اضغط Ctrl+P لحفظ كـ PDF</div>
-<script>setTimeout(()=>window.print(), 500);<\/script>
-  
+    <div class="footer">💰 مصاريفي | Masarefy — تطبيق إدارة المصاريف الشخصية<br>اضغط زر الطباعة فوق لحفظ التقرير كـ PDF</div>
+    </div>
 </body></html>`);
-  w.document.close();
+  // افتح التقرير كصفحة حقيقية (Blob) — ليها زرار رجوع طبيعي + زرار الإغلاق بيشتغل
+  try{
+    const blob = new Blob([_reportHTML], {type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, '_blank');
+    if (!w) {
+      // fallback: لو النوافذ المنبثقة ممنوعة، افتح في نفس التبويب (فيه زرار رجوع)
+      window.location.href = url;
+      return;
+    }
+    // نظّف الـ URL بعد ما يحمّل
+    setTimeout(()=>{ try{ URL.revokeObjectURL(url); }catch(e){} }, 60000);
+  }catch(e){
+    if (typeof showAlert==='function') showAlert('حصل خطأ في فتح التقرير', 'warning');
+  }
 }
 
 // ── SAMPLE DATA ──
@@ -8852,58 +9092,103 @@ function _instStatusLabel(info, sym) {
 // ── التوزيع الشهري للأقساط: كل شهر قادم وإجمالي المستحق فيه ──
 function _instMonthlyBreakdown(active, sym, today){
   try{
-    if (!active || !active.length) return '';
     var now = today || new Date();
     var curY = now.getFullYear(), curM = now.getMonth(); // 0-indexed
-    // اجمع المبلغ المستحق لكل شهر (مفتاح: عدد الشهور من دلوقتي 0,1,2..)
-    var months = {}; // offset -> totalSAR
-    var maxOffset = 0;
-    active.forEach(function(i){
+    // months[offset] = { inst: SAR, cards: SAR }  — نفصل الأقساط عن البطاقات
+    var months = {};
+    function bucket(o){ if(!months[o]) months[o]={inst:0,cards:0}; return months[o]; }
+
+    // 1) الأقساط: كل قسط يتوزّع على شهوره المتبقية
+    (active||[]).forEach(function(i){
       var paid = i.paidMonths||0;
       var remaining = (i.totalMonths||0) - paid;
       if (remaining<=0) return;
       var monthlySAR = curToSAR(i.monthlyPayment||0, i.currency||'SAR');
-      // القسط ليه دفعة في كل شهر من الشهور المتبقية، بدءاً من الشهر الحالي
-      for (var k=0; k<remaining; k++){
-        months[k] = (months[k]||0) + monthlySAR;
-        if (k>maxOffset) maxOffset = k;
-      }
+      for (var k=0; k<remaining; k++){ bucket(k).inst += monthlySAR; }
     });
+
+    // 2) بطاقات الائتمان: الحد الأدنى الشهري (متجدد) — نضيفه للشهر الحالي + نعرضه كالتزام متكرر
+    var ccList = [];
+    var ccTotalMinSAR = 0, ccTotalOutSAR = 0;
+    try{
+      var cards = (typeof CARDS==='function') ? CARDS() : (window.creditCards||[]);
+      (cards||[]).forEach(function(c){
+        var pd = (typeof calcPaymentDue==='function') ? calcPaymentDue(c) : null;
+        var minDue = pd ? pd.minimumDue : ((typeof calcCard==='function')? calcCard(c).minDue : 0);
+        var out = pd ? pd.totalOutstanding : 0;
+        if (minDue<=0) return;
+        var minSAR = curToSAR(minDue, c.currency||'SAR');
+        var outSAR = curToSAR(out, c.currency||'SAR');
+        ccTotalMinSAR += minSAR; ccTotalOutSAR += outSAR;
+        ccList.push({ name: c.name||'بطاقة', minSAR: minSAR, outSAR: outSAR, dueDay: (pd&&pd.dueDay)||c.dueDay||25, days: pd?pd.daysUntilDue:null });
+        // الحد الأدنى للبطاقة يضاف للشهر الحالي (هو المستحق دلوقتي)
+        bucket(0).cards += minSAR;
+      });
+    }catch(e){}
+
     var offsets = Object.keys(months).map(Number).sort(function(a,b){return a-b;});
     if (!offsets.length) return '';
-    // أسماء الشهور بالعربي
     var arMonths = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-    // اعرض حتى 6 شهور قادمة (الباقي نجمعه)
     var SHOW = 6;
-    var rows = '';
     var shownOffsets = offsets.filter(function(o){return o<SHOW;});
-    var maxVal = Math.max.apply(null, shownOffsets.map(function(o){return months[o];}));
+    // القيمة الكلية لكل شهر (للأشرطة والمقارنة)
+    function monthTotal(o){ return (months[o].inst||0)+(months[o].cards||0); }
+    var maxVal = Math.max.apply(null, shownOffsets.map(monthTotal).concat([1]));
+    var grandTotal = offsets.reduce(function(s,o){return s+monthTotal(o);},0);
+
+    var rows = '';
     shownOffsets.forEach(function(o){
       var mIdx = (curM + o) % 12;
       var yr = curY + Math.floor((curM + o)/12);
-      var lbl = o===0 ? ('الشهر ده · '+arMonths[mIdx]) : o===1 ? ('الشهر الجاي · '+arMonths[mIdx]) : (arMonths[mIdx]+' '+yr);
-      var val = months[o];
-      var barPct = maxVal>0 ? Math.round(val/maxVal*100) : 0;
+      var lbl = o===0 ? ('الشهر ده') : o===1 ? ('الشهر الجاي') : (arMonths[mIdx]);
+      var subLbl = arMonths[mIdx] + (o>=2? (' '+yr):'');
+      var vInst = months[o].inst||0, vCards = months[o].cards||0, vTot = vInst+vCards;
+      var barPct = maxVal>0 ? Math.round(vTot/maxVal*100) : 0;
+      // نسبة الأقساط من البطاقات داخل الشهر (شريط مقسوم)
+      var instPct = vTot>0 ? Math.round(vInst/vTot*100) : 0;
       var isNow = o===0;
-      rows += '<div class="inst2-mb-row">'
-        + '<div class="inst2-mb-lbl'+(isNow?' now':'')+'">'+lbl+'</div>'
-        + '<div class="inst2-mb-bar"><div class="inst2-mb-fill'+(isNow?' now':'')+'" style="width:'+barPct+'%"></div></div>'
-        + '<div class="inst2-mb-val'+(isNow?' now':'')+'">'+fmt(toBase(val),0)+' '+sym+'</div>'
+      // تفصيل صغير: كام أقساط + كام بطاقات
+      var detail = '';
+      if (vInst>0 && vCards>0) detail = '💳 '+fmt(toBase(vInst),0)+' + 💎 '+fmt(toBase(vCards),0);
+      else if (vCards>0) detail = '💎 بطاقات';
+      else detail = '💳 أقساط';
+      rows += '<div class="inst2-mb-row'+(isNow?' now':'')+'">'
+        + '<div class="inst2-mb-head">'
+          + '<div class="inst2-mb-lbl'+(isNow?' now':'')+'">'+lbl+'<span class="inst2-mb-sub">'+subLbl+'</span></div>'
+          + '<div class="inst2-mb-val'+(isNow?' now':'')+'">'+fmt(toBase(vTot),0)+' '+sym+'</div>'
+        + '</div>'
+        + '<div class="inst2-mb-bar"><div class="inst2-mb-fill-inst" style="width:'+(barPct*instPct/100)+'%"></div><div class="inst2-mb-fill-card" style="width:'+(barPct*(100-instPct)/100)+'%"></div></div>'
+        + (isNow?('<div class="inst2-mb-detail">'+detail+'</div>'):'')
         + '</div>';
     });
-    // لو فيه شهور بعد الـ6، اجمعها في سطر "وبعد كده"
+    // شهور بعد الـ6
     var beyond = offsets.filter(function(o){return o>=SHOW;});
     if (beyond.length){
-      var beyondTotal = beyond.reduce(function(s,o){return s+months[o];},0);
-      rows += '<div class="inst2-mb-row">'
-        + '<div class="inst2-mb-lbl" style="color:var(--muted)">وبعد كده ('+beyond.length+' شهور)</div>'
-        + '<div class="inst2-mb-bar"></div>'
+      var beyondTotal = beyond.reduce(function(s,o){return s+monthTotal(o);},0);
+      rows += '<div class="inst2-mb-row"><div class="inst2-mb-head">'
+        + '<div class="inst2-mb-lbl" style="color:var(--muted)">وبعد كده<span class="inst2-mb-sub">'+beyond.length+' شهور</span></div>'
         + '<div class="inst2-mb-val" style="color:var(--muted)">'+fmt(toBase(beyondTotal),0)+' '+sym+'</div>'
-        + '</div>';
+        + '</div></div>';
     }
+
+    // ملاحظة عن البطاقات (متجددة)
+    var ccNote = '';
+    if (ccList.length){
+      ccNote = '<div class="inst2-mb-ccnote">💎 بطاقات الائتمان: الحد الأدنى ~'+fmt(toBase(ccTotalMinSAR),0)+' '+sym+' شهرياً (متجدد) · إجمالي المستحق '+fmt(toBase(ccTotalOutSAR),0)+' '+sym+'</div>';
+    }
+
+    // legend
+    var legend = '<div class="inst2-mb-legend">'
+      + '<span class="inst2-mb-leg"><i class="dot inst"></i> أقساط</span>'
+      + (ccList.length?'<span class="inst2-mb-leg"><i class="dot card"></i> بطاقات (حد أدنى)</span>':'')
+      + '</div>';
+
     return '<div class="inst2-mb">'
-      + '<div class="inst2-mb-title">🗓️ التوزيع على الشهور</div>'
+      + '<div class="inst2-mb-top"><div class="inst2-mb-title">🗓️ التوزيع على الشهور</div>'
+      + '<div class="inst2-mb-grand">'+fmt(toBase(grandTotal),0)+' '+sym+'</div></div>'
+      + legend
       + rows
+      + ccNote
       + '</div>';
   }catch(e){ return ''; }
 }
@@ -8933,7 +9218,16 @@ function renderInstallments() {
   const el = document.getElementById('installmentsList');
   if (!el) return;
   if (!installments.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">💳</div>لا توجد أقساط</div>`;
+    // لو مفيش أقساط بس فيه بطاقات ائتمان ليها مستحقات → اعرض التوزيع بتاعها
+    var _ccCards = (typeof CARDS==='function') ? CARDS() : (window.creditCards||[]);
+    var _hasCC = false;
+    try{ _hasCC = (_ccCards||[]).some(function(c){ var pd=(typeof calcPaymentDue==='function')?calcPaymentDue(c):null; return (pd?pd.minimumDue:0)>0; }); }catch(e){}
+    if (_hasCC){
+      var _sym2 = BASE_LABELS[baseCurrency].sym;
+      el.innerHTML = '<div class="empty" style="padding:20px"><div class="empty-icon">💳</div>مفيش أقساط — بس دي مستحقات بطاقاتك</div>' + _instMonthlyBreakdown([], _sym2, new Date());
+    } else {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">💳</div>لا توجد أقساط</div>`;
+    }
     return;
   }
   const sym = BASE_LABELS[baseCurrency].sym;
@@ -9428,6 +9722,44 @@ function checkInstallmentsDue() {
 // JAMEYA
 // ═══════════════════════════════════════════════════════════════
 
+// خط زمني لأدوار الجمعيات — دورك جاي إمتى في كل جمعية
+function _jameyaTimeline(active, sym, today){
+  try{
+    if (!active || !active.length) return '';
+    var now = today || new Date();
+    var rows = active.map(function(j){
+      var start = new Date(j.startDate);
+      var myTurnDate = new Date(start);
+      myTurnDate.setMonth(myTurnDate.getMonth() + j.myTurn - 1);
+      var monthsToTurn = (myTurnDate.getFullYear() - now.getFullYear())*12 + (myTurnDate.getMonth() - now.getMonth());
+      var totalGet = curToSAR(j.monthlyAmount * j.totalMembers, j.currency);
+      var arMonths = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+      var turnMonthLbl = arMonths[myTurnDate.getMonth()] + ' ' + myTurnDate.getFullYear();
+      // نسبة التقدّم نحو الدور (كام عضو خلص من إجمالي حتى دورك)
+      var pct = j.myTurn>0 ? Math.min(100, Math.round(((j.totalMembers - Math.max(0,monthsToTurn)) / j.totalMembers)*100)) : 0;
+      var statusTxt, statusColor, statusBg;
+      if (monthsToTurn < 0){ statusTxt='✓ قبضت'; statusColor='var(--green)'; statusBg='var(--green-dim)'; }
+      else if (monthsToTurn === 0){ statusTxt='🎉 دورك الشهر ده!'; statusColor='#06b6d4'; statusBg='rgba(6,182,212,.15)'; }
+      else { statusTxt='بعد '+monthsToTurn+' شهر'; statusColor='var(--muted)'; statusBg='var(--card2)'; }
+      return '<div class="jam-tl-row">'
+        + '<div class="jam-tl-head">'
+          + '<div class="jam-tl-name">🤝 '+esc(j.name)+'</div>'
+          + '<div class="jam-tl-amt">'+fmt(toBase(totalGet),0)+' '+sym+'</div>'
+        + '</div>'
+        + '<div class="jam-tl-bar"><div class="jam-tl-fill" style="width:'+pct+'%"></div><div class="jam-tl-marker" style="right:'+pct+'%"></div></div>'
+        + '<div class="jam-tl-foot">'
+          + '<span class="jam-tl-status" style="color:'+statusColor+';background:'+statusBg+'">'+statusTxt+'</span>'
+          + '<span class="jam-tl-date">'+(monthsToTurn>=0? ('دورك: '+turnMonthLbl) : '')+'</span>'
+        + '</div>'
+      + '</div>';
+    }).join('');
+    return '<div class="jam-tl">'
+      + '<div class="jam-tl-title">📅 مواعيد أدوارك</div>'
+      + rows
+      + '</div>';
+  }catch(e){ return ''; }
+}
+
 function renderJameya() {
   const el = document.getElementById('jameyaList');
   if (!el) return;
@@ -9465,36 +9797,44 @@ function renderJameya() {
     }
   });
 
-  let html = `<div style="background:linear-gradient(135deg,rgba(6,182,212,.15),rgba(6,182,212,.05));border:1px solid var(--sav);border-radius:14px;padding:16px;margin-bottom:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:11px;color:var(--sav);font-weight:700">🤝 إجمالي الجمعيات (هتقبض)</div>
-      <div style="font-size:10px;color:var(--muted)">${active.length} جمعية نشطة</div>
+  let html = `<div class="inst2-hero" style="background:linear-gradient(135deg,#0a2a2e 0%,#0d1f22 55%,#0d1719 100%);border-color:rgba(6,182,212,.3)">
+    <div class="inst2-hero-top">
+      <div class="inst2-hero-lbl" style="color:#5eead4">🤝 إجمالي الجمعيات (هتقبض)</div>
+      <div class="inst2-hero-chip">${active.length} جمعية نشطة</div>
     </div>
-    <div style="font-size:26px;font-weight:900;color:#fff;direction:ltr;margin-bottom:6px">${fmt(toBase(totalToReceiveSAR),0)} ${sym}</div>
-    <div style="font-size:11px;color:var(--muted)">دفعت لحد دلوقتي ${fmt(toBase(totalPaidSoFarSAR),0)} ${sym}</div>
+    <div class="inst2-hero-val">${fmt(toBase(totalToReceiveSAR),0)} ${sym}</div>
+    <div class="inst2-hero-sub">دفعت لحد دلوقتي ${fmt(toBase(totalPaidSoFarSAR),0)} ${sym}</div>
   </div>
 
-  <div style="display:flex;gap:8px;margin-bottom:14px">
-    <div style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center">
-      <div style="font-size:10px;color:var(--accent);font-weight:700">📅 شهرياً</div>
-      <div style="font-size:14px;font-weight:900;direction:ltr;margin-top:3px;color:var(--accent)">${fmt(toBase(totalMonthlySAR),0)} ${sym}</div>
+  <div class="inst2-stats">
+    <div class="inst2-stat monthly">
+      <div class="s-lbl">📅 شهرياً</div>
+      <div class="s-val">${fmt(toBase(totalMonthlySAR),0)} ${sym}</div>
     </div>
-    <div style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center">
-      <div style="font-size:10px;color:var(--green);font-weight:700">💰 دفعت</div>
-      <div style="font-size:14px;font-weight:900;direction:ltr;margin-top:3px;color:var(--green)">${fmt(toBase(totalPaidSoFarSAR),0)} ${sym}</div>
+    <div class="inst2-stat paid">
+      <div class="s-lbl">💰 دفعت</div>
+      <div class="s-val">${fmt(toBase(totalPaidSoFarSAR),0)} ${sym}</div>
     </div>
-    <div style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center">
-      <div style="font-size:10px;color:var(--sav);font-weight:700">🎯 هتقبض</div>
-      <div style="font-size:14px;font-weight:900;direction:ltr;margin-top:3px;color:var(--sav)">${fmt(toBase(totalToReceiveSAR),0)} ${sym}</div>
+    <div class="inst2-stat" style="--dummy:0">
+      <div class="s-lbl" style="color:#5eead4">🎯 هتقبض</div>
+      <div class="s-val" style="color:#5eead4">${fmt(toBase(totalToReceiveSAR),0)} ${sym}</div>
     </div>
   </div>`;
 
   if (nextTurnInfo) {
     const turnLabel = nextTurnInfo.months === 0 ? '🎉 الشهر ده!' : `بعد ${nextTurnInfo.months} شهر`;
-    html += `<div style="background:var(--sav);color:#000;border-radius:10px;padding:10px;margin-bottom:12px;font-size:12px;font-weight:700;text-align:center">
-      ⏰ أقرب دور: ${nextTurnInfo.name} (${fmt(toBase(nextTurnInfo.amount),0)} ${sym}) — ${turnLabel}
+    html += `<div class="inst2-next" style="background:linear-gradient(135deg,#06b6d4,#0891b2);color:#04252a;box-shadow:0 6px 20px -8px rgba(6,182,212,.6)">
+      <span class="inst2-next-icon">⏰</span>
+      <div class="inst2-next-txt">
+        <div class="inst2-next-name">${esc(nextTurnInfo.name)}</div>
+        <div class="inst2-next-meta">أقرب دور · ${turnLabel}</div>
+      </div>
+      <div class="inst2-next-amt">${fmt(toBase(nextTurnInfo.amount),0)} ${sym}</div>
     </div>`;
   }
+
+  // خط زمني للأدوار — دورك جاي إمتى في كل جمعية
+  html += _jameyaTimeline(active, sym, today);
 
   html += jameya.map(j => {
     const start = new Date(j.startDate);
@@ -11003,6 +11343,8 @@ function updateMenuCounts() {
 
   // Dual salary
   setText('menuDualSal', dualSalary && dualSalary.amount ? `${fmt(dualSalary.amount,0)} ${SYM[dualSalary.primary]}` : 'معطل');
+  // زامن badges تصميم V17 (عشان عدد الأقساط وغيره يظهر من بره)
+  try{ if (typeof updateMenuV17Counts === 'function') updateMenuV17Counts(); }catch(e){}
 }
 
 // Hook into existing openMenu to update new counts
@@ -13284,6 +13626,13 @@ async function fetchGoldPrice() {
       source: 'السعر الفوري العالمي (LBMA-derived)'
     };
     localStorage.setItem('msarifyi_gold', JSON.stringify(goldData));
+    // سجّل تاريخ السعر للشارت (نحتفظ بآخر 60 نقطة)
+    try{
+      var hist = JSON.parse(localStorage.getItem('msarifyi_gold_history') || '[]');
+      hist.push({ p: usdPerOz, t: Date.now() });
+      if (hist.length > 60) hist = hist.slice(-60);
+      localStorage.setItem('msarifyi_gold_history', JSON.stringify(hist));
+    }catch(e){}
     renderGoldCard(); // re-render with fresh data
     if (typeof showToast === 'function') showToast('✅ تم تحديث سعر الذهب', 'success');
     return goldData;
@@ -13305,6 +13654,67 @@ function egpPerGramKarat(karat) {
   const egpPerGram24 = usdPerGram * usdToEgp;
   return egpPerGram24 * (karat / 24);
 }
+
+// فتح مودال إضافة ذهب (بدل الـ prompt القبيح)
+function showAddGoldHolding(){
+  try{
+    // صفّر الفورمة
+    var g = document.getElementById('goldAddGrams'); if (g) g.value = '';
+    var p = document.getElementById('goldAddPrice'); if (p) p.value = '';
+    var hint = document.getElementById('goldAddHint'); if (hint) hint.textContent = '';
+    // رجّع العيار الافتراضي 21
+    document.querySelectorAll('#goldAddModal .gold-karat-btn').forEach(function(b){
+      b.classList.toggle('active', b.dataset.karat==='21');
+    });
+    // اقترح السعر الحالي
+    if (typeof goldData!=='undefined' && goldData && typeof egpPerGramKarat==='function'){
+      var cur = egpPerGramKarat(21);
+      if (cur){
+        if (hint) hint.textContent = 'السعر الحالي لعيار 21 ≈ '+fmt(cur,0)+' ج.م/جرام';
+        if (p) p.placeholder = 'مثال: '+fmt(cur,0);
+      }
+    }
+    var m = document.getElementById('goldAddModal');
+    if (m) m.classList.add('open');
+  }catch(e){}
+}
+window.showAddGoldHolding = showAddGoldHolding;
+
+// حفظ الذهب من الفورمة
+function saveGoldHolding(){
+  try{
+    var grams = parseFloat(document.getElementById('goldAddGrams').value);
+    if (!grams || grams<=0){ if(typeof showToast==='function') showToast('اكتب عدد جرامات صحيح','warning'); return; }
+    var karatBtn = document.querySelector('#goldAddModal .gold-karat-btn.active');
+    var karat = karatBtn ? (parseInt(karatBtn.dataset.karat)||21) : 21;
+    var buyPrice = parseFloat(document.getElementById('goldAddPrice').value);
+    if (!buyPrice || buyPrice<=0){ if(typeof showToast==='function') showToast('اكتب سعر شراء صحيح','warning'); return; }
+    var port = JSON.parse(localStorage.getItem('msarifyi_gold_portfolio') || '[]');
+    port.push({ id: 'g'+Date.now(), grams: grams, karat: karat, buyPrice: buyPrice, date: new Date().toISOString().slice(0,10) });
+    localStorage.setItem('msarifyi_gold_portfolio', JSON.stringify(port));
+    // اقفل المودال وأعد بناء البطاقة
+    var m = document.getElementById('goldAddModal'); if (m) m.classList.remove('open');
+    var c = document.getElementById('goldModalContent');
+    if (c && typeof buildGoldCardHTML==='function'){ c.innerHTML = buildGoldCardHTML(); setTimeout(function(){ try{updateGoldCalc();}catch(e){} },0); }
+    if (typeof renderGoldCard==='function') renderGoldCard();
+    if (typeof showToast==='function') showToast('✅ اتسجّل في محفظتك','success');
+  }catch(e){}
+}
+window.saveGoldHolding = saveGoldHolding;
+
+// حذف مشترى ذهب
+function delGoldHolding(id){
+  try{
+    var port = JSON.parse(localStorage.getItem('msarifyi_gold_portfolio') || '[]');
+    port = port.filter(function(x){ return x.id !== id; });
+    localStorage.setItem('msarifyi_gold_portfolio', JSON.stringify(port));
+    var c = document.getElementById('goldModalContent');
+    if (c && typeof buildGoldCardHTML==='function') c.innerHTML = buildGoldCardHTML();
+    if (typeof renderGoldCard==='function') renderGoldCard();
+    if (typeof showToast==='function') showToast('اتحذف','success');
+  }catch(e){}
+}
+window.delGoldHolding = delGoldHolding;
 
 function renderGoldCard() {
   // Find the home content & inject/refresh gold card
@@ -13390,7 +13800,108 @@ function buildGoldCardHTML() {
     <div class="gold-meta">
       ${hasData ? '🏛️ السعر الفوري العالمي (LBMA-derived) · السوق المحلي يضيف مصنعية + ضريبة (آخر تحديث: ' + ageStr + ')' : ageStr}
     </div>
+    ${_goldChartHTML()}
+    ${_goldPortfolioHTML()}
   </div>`;
+}
+
+// ── شارت حركة سعر الذهب ──
+function _goldChartHTML(){
+  try{
+    var hist = JSON.parse(localStorage.getItem('msarifyi_gold_history') || '[]');
+    // ضيف النقطة الحالية لو موجودة
+    if (goldData && goldData.usdPerOz){
+      if (!hist.length || hist[hist.length-1].p !== goldData.usdPerOz){
+        // ما نحفظش، بس نعرض النقطة الحالية في الرسم
+      }
+    }
+    if (hist.length < 2){
+      return `<div class="gold-chart-box">
+        <div class="gold-chart-title">📈 حركة السعر (دولار/أوقية)</div>
+        <div class="gold-chart-empty">لسه بنجمع البيانات — كل ما تحدّث السعر، الشارت هيرسم حركته.<br>${hist.length===1?'عندك نقطة واحدة، محتاجين تحديث تاني.':'اضغط 🔄 تحديث فوق.'}</div>
+      </div>`;
+    }
+    var prices = hist.map(h=>h.p);
+    var min = Math.min.apply(null, prices), max = Math.max.apply(null, prices);
+    var range = (max-min) || 1;
+    var W = 300, H = 90, pad = 6;
+    var n = prices.length;
+    var pts = prices.map(function(p,i){
+      var x = pad + (i/(n-1))*(W-2*pad);
+      var y = pad + (1-(p-min)/range)*(H-2*pad);
+      return x.toFixed(1)+','+y.toFixed(1);
+    });
+    var first = prices[0], last = prices[n-1];
+    var up = last >= first;
+    var lineColor = up ? '#3fb950' : '#f85149';
+    var areaColor = up ? 'rgba(63,185,80,.15)' : 'rgba(248,81,73,.15)';
+    var pathD = 'M '+pts.join(' L ');
+    var areaD = pathD + ` L ${(W-pad).toFixed(1)},${(H-pad).toFixed(1)} L ${pad.toFixed(1)},${(H-pad).toFixed(1)} Z`;
+    var changePct = first>0 ? ((last-first)/first*100) : 0;
+    var changeAbs = last - first;
+    return `<div class="gold-chart-box">
+      <div class="gold-chart-title">
+        <span>📈 حركة السعر (دولار/أوقية)</span>
+        <span class="gold-chart-chg" style="color:${lineColor}">${up?'▲':'▼'} ${changePct>=0?'+':''}${changePct.toFixed(2)}%</span>
+      </div>
+      <svg viewBox="0 0 ${W} ${H}" class="gold-chart-svg" preserveAspectRatio="none">
+        <path d="${areaD}" fill="${areaColor}" stroke="none"/>
+        <path d="${pathD}" fill="none" stroke="${lineColor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+      <div class="gold-chart-foot">
+        <span>أدنى: $${fmt(min,0)}</span>
+        <span style="color:${lineColor}">${changeAbs>=0?'+':''}$${fmt(Math.abs(changeAbs),0)}</span>
+        <span>أعلى: $${fmt(max,0)}</span>
+      </div>
+    </div>`;
+  }catch(e){ return ''; }
+}
+
+// ── محفظة الذهب (مشترياتك + ربح/خسارة) ──
+function _goldPortfolioHTML(){
+  try{
+    var port = JSON.parse(localStorage.getItem('msarifyi_gold_portfolio') || '[]');
+    var curK21 = goldData ? egpPerGramKarat(21) : null; // سعر البيع الحالي عيار 21 (مرجع)
+    var rows = '';
+    var totalCost = 0, totalValue = 0, totalGrams = 0;
+    port.forEach(function(item){
+      var curPrice = goldData ? egpPerGramKarat(item.karat||21) : null;
+      var cost = (item.grams||0) * (item.buyPrice||0);
+      var value = curPrice ? (item.grams||0) * curPrice : 0;
+      var profit = value - cost;
+      totalCost += cost; totalValue += value; totalGrams += (item.grams||0);
+      var pColor = profit>=0 ? 'var(--green)' : 'var(--red)';
+      rows += `<div class="gold-port-item">
+        <div class="gpi-info">
+          <div class="gpi-name">🥇 ${toArabicDigits(item.grams||0)} جرام · عيار ${toArabicDigits(item.karat||21)}</div>
+          <div class="gpi-sub">شراء بـ ${fmt(item.buyPrice||0,0)} ج.م/جرام · ${item.date||''}</div>
+        </div>
+        <div class="gpi-vals">
+          ${curPrice?`<div class="gpi-profit" style="color:${pColor}">${profit>=0?'+':''}${fmt(profit,0)} ج.م</div>`:'<div class="gpi-profit" style="color:var(--muted)">—</div>'}
+          <button class="gpi-del" onclick="delGoldHolding('${item.id}')">🗑️</button>
+        </div>
+      </div>`;
+    });
+    var totalProfit = totalValue - totalCost;
+    var tpColor = totalProfit>=0 ? 'var(--green)' : 'var(--red)';
+    var tpPct = totalCost>0 ? (totalProfit/totalCost*100) : 0;
+    var summary = port.length ? `<div class="gold-port-summary">
+      <div class="gps-row">
+        <div class="gps-cell"><div class="gps-lbl">💰 التكلفة</div><div class="gps-val">${fmt(totalCost,0)}</div></div>
+        <div class="gps-cell"><div class="gps-lbl">💎 القيمة الحالية</div><div class="gps-val">${goldData?fmt(totalValue,0):'—'}</div></div>
+        <div class="gps-cell"><div class="gps-lbl">${totalProfit>=0?'📈 ربح':'📉 خسارة'}</div><div class="gps-val" style="color:${tpColor}">${goldData?((totalProfit>=0?'+':'')+fmt(totalProfit,0)):'—'}</div></div>
+      </div>
+      ${goldData?`<div class="gps-pct" style="color:${tpColor}">${totalProfit>=0?'▲':'▼'} ${tpPct>=0?'+':''}${tpPct.toFixed(1)}% على إجمالي ${toArabicDigits(totalGrams)} جرام</div>`:''}
+    </div>` : '';
+    return `<div class="gold-port-box">
+      <div class="gold-port-title">
+        <span>💼 محفظة ذهبي</span>
+        <button class="gold-port-add" onclick="showAddGoldHolding()">＋ إضافة</button>
+      </div>
+      ${summary}
+      ${rows || '<div class="gold-port-empty">سجّل مشترياتك من الذهب وتابع قيمتها والربح/الخسارة مع تغيّر السعر.</div>'}
+    </div>`;
+  }catch(e){ return ''; }
 }
 
 function updateGoldCalc() {
@@ -17066,7 +17577,7 @@ setTimeout(() => {
       setBadge('menuSubCount', recurringTxs?.filter(r=>r.type==='expense').length || 0);
       setBadge('menuBillCount', (typeof bills!=='undefined'?bills:[]).length);
       setBadge('menuDebtCount', debts?.filter(d=>!d.cleared).length || 0);
-      setBadge('menuInstCount', installments?.filter(i=>{const paid=i.paidMonths||0;return paid<i.months;}).length || 0);
+      setBadge('menuInstCount', installments?.filter(i=>{const paid=i.paidMonths||0;return paid<(i.totalMonths||i.months||0);}).length || 0);
       setBadge('menuJamCount', jameya?.length || 0);
       setBadge('menuOrdersCount', orders?.filter(o=>o.status==='pending').length || 0);
       setBadge('menuVehCount', vehicles?.length || 0);
@@ -24628,6 +25139,9 @@ setTimeout(() => {
     };
   }
 
+  // عرّض دوال حساب البطاقات عشان التوزيع الشهري (في closure تاني) يوصلها
+  try{ window.calcCard = calcCard; window.calcPaymentDue = calcPaymentDue; window.CARDS = CARDS; }catch(e){}
+
   // List of available statement periods (based on existing tx data)
   function listPeriods(card) {
     const set = new Set();
@@ -24713,24 +25227,28 @@ setTimeout(() => {
 
     // Header summary
     let html = `
-      <div style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border-radius:16px;padding:16px;margin:10px 0 14px">
-        <div style="font-size:11px;opacity:.85;letter-spacing:1.5px;font-weight:700">إجمالي البطاقات</div>
-        <div style="display:flex;justify-content:space-between;align-items:end;margin-top:4px">
-          <div>
-            <div style="font-size:11px;opacity:.85">المبلغ المستحق</div>
-            <div style="font-size:24px;font-weight:900;direction:ltr">${fmt(totalBalance)} <span style="font-size:13px;opacity:.85">${sym}</span></div>
+      <div style="background:linear-gradient(135deg,#7c3aed,#5b21b6 55%,#4f46e5);color:#fff;border-radius:20px;padding:18px;margin:10px 0 16px;position:relative;overflow:hidden;box-shadow:0 12px 32px -10px rgba(124,58,237,.55)">
+        <div style="position:absolute;top:-40px;right:-30px;width:150px;height:150px;background:radial-gradient(circle,rgba(255,255,255,.15),transparent 70%);border-radius:50%;pointer-events:none"></div>
+        <div style="position:absolute;bottom:-50px;left:-20px;width:130px;height:130px;background:radial-gradient(circle,rgba(255,255,255,.08),transparent 70%);border-radius:50%;pointer-events:none"></div>
+        <div style="position:relative;z-index:1">
+          <div style="font-size:11px;opacity:.85;letter-spacing:1.5px;font-weight:800">💎 إجمالي البطاقات</div>
+          <div style="display:flex;justify-content:space-between;align-items:end;margin-top:6px">
+            <div>
+              <div style="font-size:11px;opacity:.85">المبلغ المستحق</div>
+              <div style="font-size:27px;font-weight:900;direction:ltr;text-shadow:0 1px 3px rgba(0,0,0,.2)">${fmt(totalBalance)} <span style="font-size:13px;opacity:.85">${sym}</span></div>
+            </div>
+            <div style="text-align:left">
+              <div style="font-size:11px;opacity:.85">المتاح</div>
+              <div style="font-size:16px;font-weight:900;direction:ltr;color:#bef264">${fmt0(totalAvail)}</div>
+            </div>
           </div>
-          <div style="text-align:left">
-            <div style="font-size:11px;opacity:.85">المتاح</div>
-            <div style="font-size:15px;font-weight:900;direction:ltr;color:#bef264">${fmt0(totalAvail)}</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:6px;margin-top:10px;font-size:11px">
-          <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:5px 10px;flex:1;text-align:center">
-            <span style="opacity:.85">الحد الأدنى:</span> <b style="direction:ltr">${fmt(totalMin)}</b>
-          </div>
-          <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:5px 10px;flex:1;text-align:center">
-            <span style="opacity:.85">عدد البطاقات:</span> <b>${cards.length}</b>
+          <div style="display:flex;gap:7px;margin-top:12px;font-size:11px">
+            <div style="background:rgba(255,255,255,.16);border-radius:10px;padding:7px 10px;flex:1;text-align:center">
+              <div style="opacity:.85;font-size:10px">الحد الأدنى</div><b style="direction:ltr;font-size:13px">${fmt(totalMin)}</b>
+            </div>
+            <div style="background:rgba(255,255,255,.16);border-radius:10px;padding:7px 10px;flex:1;text-align:center">
+              <div style="opacity:.85;font-size:10px">عدد البطاقات</div><b style="font-size:13px">${cards.length}</b>
+            </div>
           </div>
         </div>
       </div>
@@ -24743,28 +25261,34 @@ setTimeout(() => {
       const cardSym = symFor(card.currency);
       const utilColor = r.utilization >= 90 ? '#ef4444' : (r.utilization >= 70 ? '#f59e0b' : '#10b981');
       html += `
-        <div onclick="window.openCardDetail('${card.id}')" style="background:linear-gradient(135deg,${bank.from},${bank.to});color:#fff;border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer;position:relative;overflow:hidden">
-          <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:rgba(255,255,255,.08);border-radius:50%"></div>
+        <div onclick="window.openCardDetail('${card.id}')" style="background:linear-gradient(135deg,${bank.from},${bank.to});color:#fff;border-radius:18px;padding:18px;margin-bottom:13px;cursor:pointer;position:relative;overflow:hidden;box-shadow:0 12px 30px -10px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.12)">
+          <div style="position:absolute;top:-30px;right:-30px;width:130px;height:130px;background:radial-gradient(circle,rgba(255,255,255,.1),transparent 65%);border-radius:50%"></div>
+          <div style="position:absolute;bottom:-40px;left:-25px;width:110px;height:110px;background:radial-gradient(circle,rgba(255,255,255,.06),transparent 65%);border-radius:50%"></div>
           <div style="position:relative;z-index:1">
-            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px">
               <div style="min-width:0;flex:1">
-                <div style="font-size:10px;opacity:.85;letter-spacing:1.5px;font-weight:700">${esc(bank.name)}</div>
-                <div style="font-size:14px;font-weight:900;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(card.name||'بطاقة')}</div>
+                <div style="font-size:10px;opacity:.85;letter-spacing:1.5px;font-weight:800">${esc(bank.name)}</div>
+                <div style="font-size:15px;font-weight:900;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.2)">${esc(card.name||'بطاقة')}</div>
               </div>
               <div style="text-align:left;flex-shrink:0">
-                <div style="font-size:10px;opacity:.85;font-weight:700">${(card.type || card.cardType || 'visa').toUpperCase()}</div>
-                ${card.last4?`<div style="font-family:monospace;font-size:11px;margin-top:2px;opacity:.9">•••• ${card.last4}</div>`:''}
+                <div style="font-size:12px;opacity:.95;font-weight:900;font-style:italic;letter-spacing:-.5px">${(card.type || card.cardType || 'visa').toUpperCase()}</div>
               </div>
             </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <div style="width:38px;height:28px;border-radius:6px;background:linear-gradient(135deg,#f7d774,#d4a94a 45%,#f7d774 60%,#b8892e);box-shadow:inset 0 1px 2px rgba(255,255,255,.5),0 1px 2px rgba(0,0,0,.25);flex-shrink:0;position:relative">
+                <div style="position:absolute;inset:5px 4px;border:1px solid rgba(0,0,0,.15);border-radius:3px"></div>
+              </div>
+              <div style="font-family:monospace;font-size:14px;letter-spacing:2px;opacity:.92;text-shadow:0 1px 2px rgba(0,0,0,.2)">•••• •••• •••• ${card.last4||'••••'}</div>
+            </div>
             <div style="font-size:10px;opacity:.85">المستحق</div>
-            <div style="font-size:22px;font-weight:900;direction:ltr">${fmt(r.balance)} <span style="font-size:12px;opacity:.85">${cardSym}</span></div>
-            <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;opacity:.95">
+            <div style="font-size:23px;font-weight:900;direction:ltr;text-shadow:0 1px 3px rgba(0,0,0,.25)">${fmt(r.balance)} <span style="font-size:12px;opacity:.85">${cardSym}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;opacity:.95">
               <span>الحد: <b style="direction:ltr">${fmt0(r.limit)}</b></span>
               <span>المتاح: <b style="direction:ltr">${fmt0(r.available)}</b></span>
               <span>الاستخدام: <b>${r.utilization.toFixed(0)}%</b></span>
             </div>
-            <div style="background:rgba(255,255,255,.2);border-radius:8px;height:6px;margin-top:6px;overflow:hidden">
-              <div style="background:${utilColor};height:100%;width:${r.utilization}%;transition:width .3s"></div>
+            <div style="background:rgba(0,0,0,.22);border-radius:8px;height:7px;margin-top:7px;overflow:hidden">
+              <div style="background:${utilColor};height:100%;width:${r.utilization}%;transition:width .6s cubic-bezier(.34,1.2,.46,1);border-radius:8px"></div>
             </div>
           </div>
         </div>
@@ -27039,6 +27563,72 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 .tx-orig{font-variant-numeric:tabular-nums;}
 
 @media (prefers-reduced-motion: reduce){.tx-card{transition:none !important;}}
+
+/* ═══ تطوير كبير: تصميم بطاقات الائتمان (CSS آمن) ═══ */
+/* البطاقة: عمق أكبر + لمعة + شريحة */
+.cc-card{
+  border-radius:20px !important;
+  padding:20px !important;
+  min-height:150px;
+  box-shadow:0 12px 32px -8px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.14) !important;
+  transition:transform .2s cubic-bezier(.34,1.3,.5,1), box-shadow .25s !important;
+}
+.cc-card:active{transform:scale(.975) translateY(1px) !important;}
+/* لمعة قطرية متحركة خفيفة */
+.cc-card .cc-shine{
+  content:'';position:absolute;top:0;left:-60%;width:50%;height:100%;
+  background:linear-gradient(105deg,transparent,rgba(255,255,255,.13),transparent);
+  transform:skewX(-18deg);pointer-events:none;z-index:1;
+  animation:ccShine 6s ease-in-out infinite;
+}
+@keyframes ccShine{0%,80%{left:-60%}88%,100%{left:130%}}
+/* شريحة الذهب (chip) */
+.cc-card .cc-chip{
+  width:38px;height:28px;border-radius:6px;
+  background:linear-gradient(135deg,#f7d774,#d4a94a 45%,#f7d774 60%,#b8892e);
+  position:relative;z-index:1;margin-bottom:12px;
+  box-shadow:inset 0 1px 2px rgba(255,255,255,.5), 0 1px 2px rgba(0,0,0,.3);
+}
+.cc-card .cc-chip::before{content:'';position:absolute;inset:5px 4px;border:1px solid rgba(0,0,0,.18);border-radius:3px;}
+.cc-card .cc-chip::after{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(0,0,0,.18);}
+/* رقم البطاقة أوضح */
+.cc-card-number{font-size:17px !important;letter-spacing:3px !important;text-shadow:0 1px 2px rgba(0,0,0,.3);font-family:'Courier New',monospace !important;}
+/* شعار نوع البطاقة أكبر وأوضح */
+.cc-card-type-logo{font-size:26px !important;text-shadow:0 1px 3px rgba(0,0,0,.3);}
+.cc-card-bank{font-size:14px !important;text-shadow:0 1px 2px rgba(0,0,0,.25);}
+/* الرصيد أبرز */
+.cc-balance-val{font-size:20px !important;text-shadow:0 1px 2px rgba(0,0,0,.3);}
+/* شريط التقدّم أنعم */
+.cc-progress{height:7px !important;border-radius:6px !important;background:rgba(0,0,0,.25) !important;}
+.cc-progress-fill{border-radius:6px !important;transition:width .6s cubic-bezier(.34,1.2,.46,1) !important;}
+
+/* ملخّص الإجمالي: أفخم */
+.cc-summary-card{
+  border-radius:20px !important;
+  background:linear-gradient(135deg,#1a1f2e,#12151f) !important;
+  border:1px solid rgba(255,255,255,.08) !important;
+  box-shadow:0 10px 30px -10px rgba(0,0,0,.5) !important;
+  padding:18px !important;position:relative;overflow:hidden;
+}
+.cc-summary-card::before{content:'';position:absolute;top:-40px;right:-30px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(88,166,255,.15),transparent 70%);pointer-events:none;}
+.cc-summary-val{font-size:24px !important;font-weight:900 !important;}
+
+/* أزرار البطاقة: أنعم وأوضح */
+.cc-actions-row{gap:8px !important;margin:10px 0 18px !important;}
+.cc-act-btn{
+  border-radius:12px !important;padding:11px 8px !important;font-weight:800 !important;
+  transition:transform .14s cubic-bezier(.34,1.3,.5,1), background-color .18s, border-color .18s !important;
+  box-shadow:0 2px 8px -3px rgba(0,0,0,.25) !important;
+}
+.cc-act-btn:active{transform:scale(.94) !important;}
+
+/* التنبيهات: أوضح */
+.cc-alert{border-radius:12px !important;padding:10px 13px !important;font-weight:700 !important;margin-bottom:10px !important;}
+
+@media (prefers-reduced-motion: reduce){
+  .cc-card,.cc-act-btn,.cc-progress-fill{transition:none !important;}
+  .cc-card .cc-shine{animation:none !important;display:none;}
+}
 </style>
 </body>
 </html>
