@@ -154,7 +154,7 @@
   --sar:#0ea5e9; --egp:#2ea043; --usd:#22c55e; --eur:#a78bfa; --sav:#06b6d4; --sav-dim:rgba(6,182,212,0.15);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html{height:100%;height:100dvh;}
+html{height:100%;height:100dvh;background:var(--bg);}
 body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;max-width:430px;margin:0 auto;height:100%;height:100dvh;overflow:hidden;}
 
 /* ── HEADER ── */
@@ -1054,10 +1054,13 @@ select.form-inp{padding-left:8px;}
 .debt-type-btn.borrow-s{border-color:var(--red);background:var(--red-dim);color:var(--red);}
 
 /* ── TOAST NOTIFICATIONS ── */
-.toast-container{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:column;gap:8px;width:90%;max-width:400px;pointer-events:none;}
+.toast-container{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:column;gap:8px;width:90%;max-width:400px;pointer-events:none;}
 .toast{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:toastIn .3s ease, toastOut .3s ease 2.7s forwards;pointer-events:all;}
-@keyframes toastIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
-@keyframes toastOut{to{opacity:0;transform:translateY(-20px)}}
+@keyframes toastIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(20px)}}
+/* تغطية المنطقة السفلية (safe area) بلون خلفية التطبيق — يشتغل في كل الأوضاع (دارك/لايت/أي ثيم) */
+html{background:var(--bg) !important;}
+body::after{content:'';position:fixed;left:0;right:0;bottom:0;height:env(safe-area-inset-bottom,0);background:var(--card);z-index:99;pointer-events:none;}
 .toast.success{border-color:var(--green);background:rgba(63,185,80,.1);}
 .toast.error{border-color:var(--red);background:rgba(248,81,73,.1);}
 .toast.warning{border-color:var(--accent);background:rgba(240,180,41,.1);}
@@ -8022,13 +8025,29 @@ function toggleTheme() {
   const isLight = document.getElementById('themeToggle').checked;
   document.documentElement.setAttribute('data-theme', isLight ? 'light' : 'dark');
   localStorage.setItem('msarifyi_theme', isLight ? 'light' : 'dark');
+  _syncThemeColor();
 }
 function initTheme() {
   const t = localStorage.getItem('msarifyi_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', t);
   const tt = document.getElementById('themeToggle');
   if (tt) tt.checked = t === 'light';
+  _syncThemeColor();
 }
+// حدّث لون شريط المتصفح حسب ثيم التطبيق الفعلي (مش إعداد النظام) — يمنع الجزء الأبيض
+function _syncThemeColor(){
+  try{
+    // اقرأ لون خلفية التطبيق الفعلي من الـ CSS variable
+    var bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0d1117';
+    // شيل أي theme-color قديمة واحطّ واحدة ثابتة تطابق التطبيق
+    document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){ m.parentNode.removeChild(m); });
+    var meta = document.createElement('meta');
+    meta.name = 'theme-color';
+    meta.content = bg;
+    document.head.appendChild(meta);
+  }catch(e){}
+}
+window._syncThemeColor = _syncThemeColor;
 
 // ── PULL TO REFRESH ──
 (function setupPTR() {
