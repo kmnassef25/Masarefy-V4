@@ -9877,20 +9877,39 @@ function renderJameya() {
     const totalSAR = curToSAR(totalGet, j.currency);
     const monthlySAR = curToSAR(j.monthlyAmount, j.currency);
     const pct = Math.min(Math.round(currentMonth / j.totalMembers * 100), 100);
+    // تفاصيل توضيحية
+    const paidSoFar = j.monthlyAmount * currentMonth;              // اللي دفعته لحد دلوقتي
+    const remainingToPay = j.monthlyAmount * (j.totalMembers - currentMonth); // باقي عليك تدفعه
+    const paidSoFarSAR = curToSAR(paidSoFar, j.currency);
+    const remainingToPaySAR = curToSAR(remainingToPay, j.currency);
+    const arMonths = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+    const turnMonthTxt = arMonths[myTurnDate.getMonth()] + ' ' + myTurnDate.getFullYear();
+    // حالة الدور (لون)
+    let turnColor, turnBg;
+    if (monthsToTurn < 0){ turnColor='var(--green)'; turnBg='var(--green-dim)'; }
+    else if (monthsToTurn === 0){ turnColor='#06b6d4'; turnBg='rgba(6,182,212,.15)'; }
+    else { turnColor='var(--accent)'; turnBg='rgba(240,180,41,.12)'; }
     return `<div class="inst2-card ${isDone?'done':''}">
       <div class="inst2-card-head">
         <span class="inst2-card-em prov-default" style="background:linear-gradient(135deg,#06b6d4,#0891b2)">🤝</span>
         <div class="inst2-card-info">
           <div class="inst2-card-name">${j.name} ${isDone?'<span style="font-size:10px;color:var(--green)">✓ خلصت</span>':''}</div>
-          <div class="inst2-card-meta">${turnStatus} · ${currentMonth}/${j.totalMembers} شهر</div>
+          <div class="inst2-card-meta">دورك رقم ${j.myTurn} من ${j.totalMembers} · ${j.totalMembers} عضو</div>
         </div>
         <div class="inst2-card-amt">
           <div class="a-val" style="color:var(--sav)">${fmt(toBase(totalSAR), 0)}</div>
-          <div class="a-unit">${sym}</div>
+          <div class="a-unit">هتقبض ${sym}</div>
         </div>
       </div>
+      <div style="margin:4px 0 10px"><span class="jam-turn-badge" style="color:${turnColor};background:${turnBg};border:1px solid ${turnColor}">⏰ ${turnStatus}${monthsToTurn>=0?' ('+turnMonthTxt+')':''}</span></div>
       <div class="inst2-prog"><div class="inst2-prog-fill" style="width:${pct}%;background:var(--sav)"></div></div>
-      <div class="inst2-prog-lbl">${pct}% — ${fmt(toBase(monthlySAR), 0)} ${sym} كل شهر</div>
+      <div class="inst2-prog-lbl">${pct}% خلصت · ${currentMonth} من ${j.totalMembers} شهر</div>
+      <div class="jam-detail-grid">
+        <div class="jam-detail"><div class="jd-lbl">💰 القسط الشهري</div><div class="jd-val">${fmt(toBase(monthlySAR),0)} ${sym}</div></div>
+        <div class="jam-detail"><div class="jd-lbl">✅ دفعت لحد دلوقتي</div><div class="jd-val" style="color:var(--green)">${fmt(toBase(paidSoFarSAR),0)} ${sym}</div></div>
+        <div class="jam-detail"><div class="jd-lbl">⏳ باقي عليك تدفع</div><div class="jd-val" style="color:var(--red)">${fmt(toBase(remainingToPaySAR),0)} ${sym}</div></div>
+        <div class="jam-detail"><div class="jd-lbl">🎯 ${j.received?'قبضت':'هتقبض'}</div><div class="jd-val" style="color:var(--sav)">${fmt(toBase(totalSAR),0)} ${sym}</div></div>
+      </div>
       ${monthsToTurn === 0 && !j.received ? `<div class="inst2-actions-main"><button class="inst2-btn-pay" style="background:linear-gradient(135deg,#06b6d4,#0891b2);box-shadow:0 4px 14px -4px rgba(6,182,212,.5)" onclick="claimJameya('${j.id}')">💰 قبضت دوري</button></div>` : ''}
       <div class="inst2-actions-sub">
         <button class="inst2-btn edit" onclick="editJameya('${j.id}')">✏️ تعديل</button>
@@ -27046,7 +27065,12 @@ setTimeout(() => {
       if (x.type==='income') byCur[c].inc += (x.amount||0);
       else if (x.type==='expense') byCur[c].exp += (x.amount||0);
     });
-    return { inc, exp, sav, net: inc-exp, total: liquid, liquid, debt, netWorth, byCur, incCount, expCount };
+    // دخل/مصروف الشهر الجاري
+    var _now = new Date();
+    var _ym = _now.getFullYear()+'-'+String(_now.getMonth()+1).padStart(2,'0');
+    var monthInc = t.filter(x=>x.type==='income' && !x.isTransfer && (x.date||'').slice(0,7)===_ym).reduce((a,x)=>a+(x.amountSAR||0),0);
+    var monthExp = t.filter(x=>x.type==='expense' && !x.isTransfer && (x.date||'').slice(0,7)===_ym).reduce((a,x)=>a+(x.amountSAR||0),0);
+    return { inc, exp, sav, net: inc-exp, total: liquid, liquid, debt, netWorth, byCur, incCount, expCount, monthInc, monthExp };
   }
 
   // تبديل عملة العرض في الـ Hero (ريال/جنيه) — يحفظ الاختيار
@@ -27316,6 +27340,34 @@ setTimeout(() => {
     }catch(e){ return ''; }
   }
 
+  // ── ودجت دخل/مصروف الشهر الجاري ──
+  function monthCard(){
+    try{
+      var T = calcTotals();
+      var inc = T.monthInc||0, exp = T.monthExp||0;
+      var net = inc - exp;
+      var sym = _sym ? _sym() : BASE_LABELS[baseCurrency].sym;
+      var arMonths = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+      var mName = arMonths[new Date().getMonth()];
+      // نسبة المصروف من الدخل (للشريط)
+      var pct = inc>0 ? Math.min(100, Math.round(exp/inc*100)) : (exp>0?100:0);
+      var netColor = net>=0 ? 'var(--green)' : 'var(--red)';
+      return '<div class="h2-sec-title">📅 حركة شهر '+mName+'</div>'
+        + '<div class="h2-card h2-month">'
+          + '<div class="h2-month-row">'
+            + '<div class="h2-month-cell inc"><div class="hm-lbl">📥 الدخل</div><div class="hm-val">'+_fmt(inc,0)+' '+sym+'</div></div>'
+            + '<div class="h2-month-cell exp"><div class="hm-lbl">📤 المصروف</div><div class="hm-val">'+_fmt(exp,0)+' '+sym+'</div></div>'
+          + '</div>'
+          + '<div class="h2-month-bar"><div class="h2-month-fill" style="width:'+pct+'%"></div></div>'
+          + '<div class="h2-month-foot">'
+            + '<span>صرفت '+pct+'% من دخلك</span>'
+            + '<span style="color:'+netColor+';font-weight:900">الصافي: '+(net>=0?'+':'')+_fmt(net,0)+' '+sym+'</span>'
+          + '</div>'
+        + '</div>';
+    }catch(e){ return ''; }
+  }
+
+  // ── ودجت دخل/مصروف الشهر الجاري (نهاية) ──
   function renderHomeV2(){
     var el = document.getElementById('homeContent');
     if (!el) return;
@@ -27329,6 +27381,7 @@ setTimeout(() => {
 
     // خريطة الودجت المتاحة (المفتاح → الدالة اللي بتبنيه)
     var _widgetMap = {
+      month: monthCard,
       alerts: alertsCard,
       budget: budgetCard,
       commitments: commitmentsCard,
@@ -27337,7 +27390,7 @@ setTimeout(() => {
       quick: quickActions
     };
     // الترتيب والتشغيل الافتراضي
-    var _defaultOrder = ['alerts','budget','commitments','goal','recent','quick'];
+    var _defaultOrder = ['month','alerts','budget','commitments','goal','recent','quick'];
     var _cfg;
     try{ _cfg = JSON.parse(localStorage.getItem('msarifyi_home_widgets')||'null'); }catch(e){ _cfg = null; }
     if (!_cfg || !Array.isArray(_cfg.order)){
@@ -27364,6 +27417,7 @@ setTimeout(() => {
 
   // ── تخصيص الصفحة الرئيسية (ترتيب + تشغيل/إطفاء الودجت) ──
   var _widgetLabels = {
+    month: '📅 حركة الشهر',
     alerts: '🔔 التنبيهات',
     budget: '🎯 الميزانية',
     commitments: '💳 الالتزامات',
@@ -27372,7 +27426,7 @@ setTimeout(() => {
     quick: '⚡ وصول سريع'
   };
   function _getHomeCfg(){
-    var def = { order: ['alerts','budget','commitments','goal','recent','quick'], off: [] };
+    var def = { order: ['month','alerts','budget','commitments','goal','recent','quick'], off: [] };
     var c;
     try{ c = JSON.parse(localStorage.getItem('msarifyi_home_widgets')||'null'); }catch(e){ c=null; }
     if (!c || !Array.isArray(c.order)) return def;
@@ -27750,6 +27804,25 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 }
 
 /* ═══ اختيار 3: تحسينات مستوحاة من تصميم لايت نظيف — مطبّقة على الدارك ═══ */
+/* تفاصيل الجمعية التوضيحية */
+.jam-turn-badge{display:inline-block;font-size:11px;font-weight:800;border-radius:9px;padding:4px 11px;}
+.jam-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;}
+.jam-detail{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px;}
+.jam-detail .jd-lbl{font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px;}
+.jam-detail .jd-val{font-size:14px;font-weight:900;direction:ltr;font-variant-numeric:tabular-nums;color:var(--text);}
+/* ودجت حركة الشهر الجاري */
+.h2-month-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.h2-month-cell{text-align:center;padding:10px;border-radius:14px;background:var(--card2);}
+.h2-month-cell.inc{border-top:2px solid var(--green);}
+.h2-month-cell.exp{border-top:2px solid var(--red);}
+.h2-month-cell .hm-lbl{font-size:10.5px;font-weight:800;color:var(--muted);margin-bottom:5px;}
+.h2-month-cell.inc .hm-val{color:var(--green);}
+.h2-month-cell.exp .hm-val{color:var(--red);}
+.h2-month-cell .hm-val{font-size:15px;font-weight:900;direction:ltr;font-variant-numeric:tabular-nums;}
+.h2-month-bar{height:8px;background:var(--card2);border-radius:6px;overflow:hidden;margin-bottom:8px;}
+.h2-month-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--red));transition:width .6s cubic-bezier(.34,1.2,.46,1);}
+.h2-month-foot{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);font-weight:700;}
+@media (prefers-reduced-motion: reduce){.h2-month-fill{transition:none !important;}}
 /* زرار تخصيص الصفحة الرئيسية */
 .h2-customize-btn{width:100%;margin-top:6px;background:var(--card2);border:1px dashed var(--border);border-radius:14px;padding:12px;font-family:'Cairo',sans-serif;font-size:12.5px;font-weight:800;color:var(--muted);cursor:pointer;transition:transform .14s, border-color .2s, color .2s;}
 .h2-customize-btn:active{transform:scale(.98);}
