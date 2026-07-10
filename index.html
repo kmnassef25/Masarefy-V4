@@ -4206,6 +4206,15 @@ button, .menu-row, .tx-card {
 </div>
 
 <!-- مودال إضافة ذهب للمحفظة -->
+<!-- مودال تخصيص الصفحة الرئيسية -->
+<div class="overlay" id="homeCustomizeModal" onclick="closeIfOut(event,'homeCustomizeModal')">
+  <div class="sheet" style="max-height:86vh">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="modal-title">🎛️ تخصيص الصفحة الرئيسية</div>
+    <div id="homeCustomizeContent" style="padding:0 2px"></div>
+  </div>
+</div>
+
 <div class="overlay" id="goldAddModal" onclick="closeIfOut(event,'goldAddModal')">
   <div class="sheet" style="max-height:88vh">
     <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
@@ -27231,7 +27240,8 @@ setTimeout(() => {
       <div class="h2-quick-btn" onclick="_h2open('installmentsModal','renderInstallments')"><span class="h2-quick-em">💳</span><span class="h2-quick-lbl">أقساط</span></div>
       <div class="h2-quick-btn" onclick="_h2open('jameyaModal','renderJameya')"><span class="h2-quick-em">🤝</span><span class="h2-quick-lbl">جمعيات</span></div>
       <div class="h2-quick-btn" onclick="_h2open('accountsModal','renderAccounts')"><span class="h2-quick-em">🏦</span><span class="h2-quick-lbl">محافظ</span></div>
-    </div>`;
+    </div>
+    <button class="h2-customize-btn" onclick="openHomeCustomize()">🎛️ تخصيص الصفحة الرئيسية</button>`;
   }
 
   // ── شاشة فاضية (أول استخدام) ──
@@ -27317,18 +27327,106 @@ setTimeout(() => {
       return;
     }
 
-    var parts = [
-      heroCard(T),
-      alertsCard(),
-      budgetCard(),
-      commitmentsCard(),
-      goalCard(),
-      recentCard(),
-      quickActions()
-    ].filter(Boolean);
+    // خريطة الودجت المتاحة (المفتاح → الدالة اللي بتبنيه)
+    var _widgetMap = {
+      alerts: alertsCard,
+      budget: budgetCard,
+      commitments: commitmentsCard,
+      goal: goalCard,
+      recent: recentCard,
+      quick: quickActions
+    };
+    // الترتيب والتشغيل الافتراضي
+    var _defaultOrder = ['alerts','budget','commitments','goal','recent','quick'];
+    var _cfg;
+    try{ _cfg = JSON.parse(localStorage.getItem('msarifyi_home_widgets')||'null'); }catch(e){ _cfg = null; }
+    if (!_cfg || !Array.isArray(_cfg.order)){
+      _cfg = { order: _defaultOrder.slice(), off: [] };
+    } else {
+      // ضيف أي ودجت جديد مش موجود في إعدادات المستخدم (عشان التحديثات)
+      _defaultOrder.forEach(function(k){ if (_cfg.order.indexOf(k)===-1) _cfg.order.push(k); });
+    }
+    var _off = _cfg.off || [];
+    // الهيرو دايماً أول حاجة (أساسي، مش بيتقفل)
+    var parts = [ heroCard(T) ];
+    _cfg.order.forEach(function(key){
+      if (_off.indexOf(key)!==-1) return;        // مقفول
+      var fn = _widgetMap[key];
+      if (typeof fn === 'function'){
+        var html = fn();
+        if (html) parts.push(html);
+      }
+    });
+    parts = parts.filter(Boolean);
 
     el.innerHTML = '<div class="h2-wrap">'+parts.join('')+'</div>';
   }
+
+  // ── تخصيص الصفحة الرئيسية (ترتيب + تشغيل/إطفاء الودجت) ──
+  var _widgetLabels = {
+    alerts: '🔔 التنبيهات',
+    budget: '🎯 الميزانية',
+    commitments: '💳 الالتزامات',
+    goal: '🏆 الأهداف',
+    recent: '🧾 آخر الحركات',
+    quick: '⚡ وصول سريع'
+  };
+  function _getHomeCfg(){
+    var def = { order: ['alerts','budget','commitments','goal','recent','quick'], off: [] };
+    var c;
+    try{ c = JSON.parse(localStorage.getItem('msarifyi_home_widgets')||'null'); }catch(e){ c=null; }
+    if (!c || !Array.isArray(c.order)) return def;
+    def.order.forEach(function(k){ if (c.order.indexOf(k)===-1) c.order.push(k); });
+    if (!Array.isArray(c.off)) c.off = [];
+    return c;
+  }
+  function _saveHomeCfg(c){ try{ localStorage.setItem('msarifyi_home_widgets', JSON.stringify(c)); }catch(e){} }
+
+  window.openHomeCustomize = function(){
+    var c = _getHomeCfg();
+    var rows = c.order.map(function(key, idx){
+      var on = c.off.indexOf(key)===-1;
+      return '<div class="hwc-row">'
+        + '<div class="hwc-move">'
+          + '<button class="hwc-arrow" onclick="moveHomeWidget(\''+key+'\',-1)" '+(idx===0?'disabled':'')+'>▲</button>'
+          + '<button class="hwc-arrow" onclick="moveHomeWidget(\''+key+'\',1)" '+(idx===c.order.length-1?'disabled':'')+'>▼</button>'
+        + '</div>'
+        + '<div class="hwc-name">'+(_widgetLabels[key]||key)+'</div>'
+        + '<label class="hwc-toggle"><input type="checkbox" '+(on?'checked':'')+' onchange="toggleHomeWidget(\''+key+'\')"/><span class="hwc-slider"></span></label>'
+      + '</div>';
+    }).join('');
+    var content = '<div class="hwc-intro">رتّب الأقسام بالأسهم، وشغّل/طفّي اللي تحبه. صافي الثروة بيفضل دايماً فوق.</div>'
+      + '<div class="hwc-list">'+rows+'</div>'
+      + '<button class="st2-btn" style="width:100%;margin-top:14px;background:var(--card2);border:1px solid var(--border);color:var(--muted)" onclick="resetHomeWidgets()">↺ رجّع الترتيب الافتراضي</button>';
+    var host = document.getElementById('homeCustomizeContent');
+    if (host) host.innerHTML = content;
+    var m = document.getElementById('homeCustomizeModal');
+    if (m) m.classList.add('open');
+  };
+  window.moveHomeWidget = function(key, dir){
+    var c = _getHomeCfg();
+    var i = c.order.indexOf(key);
+    if (i===-1) return;
+    var j = i + dir;
+    if (j<0 || j>=c.order.length) return;
+    var tmp = c.order[i]; c.order[i] = c.order[j]; c.order[j] = tmp;
+    _saveHomeCfg(c);
+    openHomeCustomize();       // أعد بناء المودال
+    if (typeof renderHomeV2==='function') renderHomeV2(); // حدّث الصفحة
+  };
+  window.toggleHomeWidget = function(key){
+    var c = _getHomeCfg();
+    var i = c.off.indexOf(key);
+    if (i===-1) c.off.push(key); else c.off.splice(i,1);
+    _saveHomeCfg(c);
+    if (typeof renderHomeV2==='function') renderHomeV2();
+  };
+  window.resetHomeWidgets = function(){
+    try{ localStorage.removeItem('msarifyi_home_widgets'); }catch(e){}
+    openHomeCustomize();
+    if (typeof renderHomeV2==='function') renderHomeV2();
+    if (typeof showToast==='function') showToast('↺ رجع الترتيب الافتراضي','info');
+  };
 
   // نعرّضها ونربطها
   window.renderHomeV2 = renderHomeV2;
@@ -27652,6 +27750,25 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 }
 
 /* ═══ اختيار 3: تحسينات مستوحاة من تصميم لايت نظيف — مطبّقة على الدارك ═══ */
+/* زرار تخصيص الصفحة الرئيسية */
+.h2-customize-btn{width:100%;margin-top:6px;background:var(--card2);border:1px dashed var(--border);border-radius:14px;padding:12px;font-family:'Cairo',sans-serif;font-size:12.5px;font-weight:800;color:var(--muted);cursor:pointer;transition:transform .14s, border-color .2s, color .2s;}
+.h2-customize-btn:active{transform:scale(.98);}
+.h2-customize-btn:hover{border-color:var(--accent);color:var(--accent);}
+/* مودال التخصيص */
+.hwc-intro{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px;}
+.hwc-list{display:flex;flex-direction:column;gap:8px;}
+.hwc-row{display:flex;align-items:center;gap:12px;background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:10px 12px;}
+.hwc-move{display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
+.hwc-arrow{width:26px;height:20px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+.hwc-arrow:active{background:var(--accent);color:#000;}
+.hwc-arrow:disabled{opacity:.3;cursor:default;}
+.hwc-name{flex:1;font-size:13.5px;font-weight:800;color:var(--text);}
+.hwc-toggle{position:relative;display:inline-block;width:44px;height:26px;flex-shrink:0;cursor:pointer;}
+.hwc-toggle input{opacity:0;width:0;height:0;}
+.hwc-slider{position:absolute;inset:0;background:var(--card);border:1px solid var(--border);border-radius:26px;transition:.2s;}
+.hwc-slider::before{content:'';position:absolute;height:18px;width:18px;right:3px;top:3px;background:var(--muted);border-radius:50%;transition:.2s;}
+.hwc-toggle input:checked + .hwc-slider{background:rgba(63,185,80,.25);border-color:var(--green);}
+.hwc-toggle input:checked + .hwc-slider::before{right:auto;left:3px;background:var(--green);}
 /* عناوين الأقسام أوضح وأكبر (زي "نظرة عامة") */
 .h2-sec-title{font-size:15px !important;font-weight:900 !important;margin:8px 2px 2px !important;letter-spacing:-.2px;}
 /* الكروت: حواف أكبر + ظلال ناعمة جداً (زي الكروت البيضا) */
