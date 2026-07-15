@@ -945,6 +945,9 @@ select.form-inp{padding-left:8px;}
 .gps-lbl{font-size:9.5px;color:var(--muted);font-weight:700;margin-bottom:4px;}
 .gps-val{font-size:14px;font-weight:900;color:var(--text);direction:ltr;font-variant-numeric:tabular-nums;}
 .gps-pct{text-align:center;font-size:11px;font-weight:800;margin-top:10px;direction:ltr;}
+.gps-grams{text-align:center;font-size:13px;font-weight:800;color:var(--accent);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.gps-grams b{font-size:16px;font-weight:900;}
+.gps-nohint{text-align:center;font-size:11px;font-weight:700;color:var(--muted);margin-top:10px;line-height:1.6;}
 .gold-port-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:11px;margin-bottom:8px;}
 .gold-port-item:last-child{margin-bottom:0;}
 .gpi-info{min-width:0;flex:1;}
@@ -13968,7 +13971,10 @@ function buildGoldCardHTML() {
   return `<div class="gold-card">
     <div class="gold-title">
       <span>🥇 سعر الذهب في مصر</span>
-      <button class="gold-refresh" onclick="fetchGoldPrice()">🔄 تحديث</button>
+      <div style="display:flex;gap:6px">
+        <button class="gold-refresh" onclick="setManualGoldPrice()" style="background:var(--card2)">✏️ يدوي</button>
+        <button class="gold-refresh" onclick="fetchGoldPrice()">🔄 تحديث</button>
+      </div>
     </div>
     <div class="gold-grid">
       <div class="gold-cell">
@@ -14021,7 +14027,6 @@ function buildGoldCardHTML() {
     <div class="gold-meta">
       ${hasData ? '🏛️ السعر الفوري العالمي (LBMA-derived) · السوق المحلي يضيف مصنعية + ضريبة (آخر تحديث: ' + ageStr + ')' : ageStr}
     </div>
-    ${_goldChartHTML()}
     ${_goldPortfolioHTML()}
   </div>`;
 }
@@ -14079,6 +14084,37 @@ function _goldChartHTML(){
 }
 
 // ── محفظة الذهب (مشترياتك + ربح/خسارة) ──
+// إدخال سعر الذهب يدوياً (لو التحديث التلقائي مش شغّال) — ياخد سعر جرام عيار 21 بالجنيه
+function setManualGoldPrice(){
+  try{
+    var cur = goldData ? egpPerGramKarat(21) : null;
+    var msg = 'اكتب سعر جرام الذهب عيار 21 بالجنيه المصري النهاردة'+(cur?('\n(الحالي: '+fmt(cur,0)+' ج.م)'):'');
+    var v = prompt(msg, cur?String(Math.round(cur)):'');
+    if (v===null) return;
+    var egp21 = parseFloat(v);
+    if (!egp21 || egp21<=0){ if(typeof showToast==='function') showToast('سعر مش صحيح','warning'); return; }
+    // اعكس الحساب: من egp عيار21 لـ usdPerOz
+    // egpPerGram24 = egp21 / (21/24); usdPerGram24 = egpPerGram24 / usdToEgp; usdPerOz = usdPerGram24 * GRAMS_PER_OZ
+    var usdToEgp = (rates.USD || 3.75) * (rates.EGP || 50);
+    var egpPerGram24 = egp21 / (21/24);
+    var usdPerGram24 = egpPerGram24 / usdToEgp;
+    var usdPerOz = usdPerGram24 * GRAMS_PER_OZ;
+    goldData = { usdPerOz: usdPerOz, ts: Date.now(), symbol: 'XAU/USD', source: 'يدوي' };
+    localStorage.setItem('msarifyi_gold', JSON.stringify(goldData));
+    // أعد بناء بطاقة الذهب
+    var c = document.getElementById('goldModalContent');
+    if (c && typeof buildGoldCardHTML==='function'){ c.innerHTML = buildGoldCardHTML(); setTimeout(function(){ try{updateGoldCalc();}catch(e){} },0); }
+    if (typeof showToast==='function') showToast('✅ اتحفظ السعر','success');
+  }catch(e){}
+}
+window.setManualGoldPrice = setManualGoldPrice;
+
+// تنسيق الجرامات (يشيل الأصفار الزايدة: 10.50 → 10.5، 10.00 → 10)
+function _fmtGrams(g){
+  g = parseFloat(g)||0;
+  if (g % 1 === 0) return String(g);
+  return String(Math.round(g*100)/100);
+}
 function _goldPortfolioHTML(){
   try{
     var port = JSON.parse(localStorage.getItem('msarifyi_gold_portfolio') || '[]');
@@ -14103,17 +14139,21 @@ function _goldPortfolioHTML(){
         </div>
       </div>`;
     });
+
     var totalProfit = totalValue - totalCost;
     var tpColor = totalProfit>=0 ? 'var(--green)' : 'var(--red)';
     var tpPct = totalCost>0 ? (totalProfit/totalCost*100) : 0;
+    var hasPrice = !!goldData;
     var summary = port.length ? `<div class="gold-port-summary">
+      <div class="gps-grams">🥇 إجمالي ما تملكه: <b>${toArabicDigits(_fmtGrams(totalGrams))} جرام</b></div>
       <div class="gps-row">
         <div class="gps-cell"><div class="gps-lbl">💰 التكلفة</div><div class="gps-val">${fmt(totalCost,0)}</div></div>
-        <div class="gps-cell"><div class="gps-lbl">💎 القيمة الحالية</div><div class="gps-val">${goldData?fmt(totalValue,0):'—'}</div></div>
-        <div class="gps-cell"><div class="gps-lbl">${totalProfit>=0?'📈 ربح':'📉 خسارة'}</div><div class="gps-val" style="color:${tpColor}">${goldData?((totalProfit>=0?'+':'')+fmt(totalProfit,0)):'—'}</div></div>
+        <div class="gps-cell"><div class="gps-lbl">💎 القيمة الحالية</div><div class="gps-val">${hasPrice?fmt(totalValue,0):'—'}</div></div>
+        <div class="gps-cell"><div class="gps-lbl">${totalProfit>=0?'📈 ربح':'📉 خسارة'}</div><div class="gps-val" style="color:${tpColor}">${hasPrice?((totalProfit>=0?'+':'')+fmt(totalProfit,0)):'—'}</div></div>
       </div>
-      ${goldData?`<div class="gps-pct" style="color:${tpColor}">${totalProfit>=0?'▲':'▼'} ${tpPct>=0?'+':''}${tpPct.toFixed(1)}% على إجمالي ${toArabicDigits(totalGrams)} جرام</div>`:''}
+      ${hasPrice?`<div class="gps-pct" style="color:${tpColor}">${totalProfit>=0?'▲':'▼'} ${tpPct>=0?'+':''}${tpPct.toFixed(1)}% على استثمارك</div>`:'<div class="gps-nohint">حدّث سعر الذهب فوق عشان تشوف القيمة الحالية والربح 🔄</div>'}
     </div>` : '';
+
     return `<div class="gold-port-box">
       <div class="gold-port-title">
         <span>💼 محفظة ذهبي</span>
