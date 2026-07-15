@@ -1,40 +1,27 @@
 {
-  "name": "مصاريفي - تطبيق إدارة المصاريف",
+  "name": "مصاريفي",
   "short_name": "مصاريفي",
-  "start_url": "./",
+  "description": "تطبيق إدارة المصاريف الشخصية",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0d1117",
   "theme_color": "#0d1117",
-  "orientation": "portrait",
-  "description": "تطبيق لإدارة الدخل والمصروفات بالريال السعودي والعملات الأخرى",
   "lang": "ar",
   "dir": "rtl",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
-  ],
-  "shortcuts": [
     {
-      "name": "إضافة مصروف",
-      "short_name": "مصروف",
-      "url": "./?action=add-expense",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "name": "إضافة دخل",
-      "short_name": "دخل",
-      "url": "./?action=add-income",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "بطاقات الائتمان",
-      "short_name": "البطاقات",
-      "url": "./?action=open-cards",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ],
-  "categories": ["finance", "productivity"]
+  ]
 }

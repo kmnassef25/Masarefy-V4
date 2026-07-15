@@ -1662,6 +1662,11 @@ body::after{content:'';position:fixed;left:0;right:0;bottom:0;height:env(safe-ar
 .gcr-total{display:flex;justify-content:space-between;padding-top:6px;margin-top:4px;border-top:1px solid var(--border);font-size:13px;font-weight:900;color:var(--accent)}
 .gcr-total b{font-size:15px;direction:ltr}
 .gcr-simple{font-size:13px;font-weight:700;color:var(--accent)}
+.gcr-nohint{font-size:12px;font-weight:700;color:var(--accent);text-align:center;line-height:1.6;padding:6px}
+.gold-noprice{display:flex;align-items:center;gap:11px;background:rgba(240,180,41,.1);border:1px solid rgba(240,180,41,.3);border-radius:12px;padding:12px;margin-bottom:12px}
+.gold-noprice .gnp-ic{font-size:22px;flex-shrink:0}
+.gold-noprice .gnp-txt{font-size:12px;font-weight:600;color:var(--text);line-height:1.6}
+.gold-noprice .gnp-txt b{color:var(--accent);font-weight:900}
 .gcr-simple b{font-size:15px;direction:ltr}
 
 /* Days-left-in-month indicator (V9) */
@@ -3759,6 +3764,7 @@ button, .menu-row, .tx-card {
         <input class="qe-amount-inp" id="qeAmount" type="text" inputmode="decimal" placeholder="المبلغ" style="direction:ltr" onkeydown="if(event.key==='Enter'){qeCatSave();}"/>
         <button class="qe-amount-save" onclick="qeCatSave()">✅</button>
       </div>
+      <div class="qe-last-saved" id="qeLastSaved" style="display:none"></div>
       <div class="qe-divider"><span>أو بالتفصيل</span></div>
     </div>
 
@@ -7351,11 +7357,24 @@ function qeSmartSave(){
     for (var k in known){ if (name.indexOf(k)!==-1){ cat = k; emoji = known[k]; break; } }
     if (_quickSaveExpense(cat, amount, emoji)){
       document.getElementById('qeSmart').value='';
-      var m2 = document.getElementById('modal'); if (m2) m2.classList.remove('open');
+      _qeShowLastSaved(cat, amount, emoji);
+      var si = document.getElementById('qeSmart'); if (si) si.focus();
     }
   }catch(e){}
 }
 window.qeSmartSave = qeSmartSave;
+
+// اعرض آخر حركة اتسجّلت (feedback بدل ما نقفل المودال)
+function _qeShowLastSaved(cat, amount, emoji){
+  try{
+    var host = document.getElementById('qeLastSaved');
+    if (!host) return;
+    var sym = BASE_LABELS[baseCurrency].sym;
+    host.innerHTML = '✅ اتسجّل: '+(emoji||'')+' '+cat+' — <b>'+fmt(amount,0)+' '+sym+'</b>';
+    host.style.display = 'block';
+  }catch(e){}
+}
+window._qeShowLastSaved = _qeShowLastSaved;
 
 // اختيار فئة سريعة → يظهر خانة المبلغ
 var _qePickedCat = null, _qePickedEm = '';
@@ -7377,11 +7396,11 @@ function qeCatSave(){
   if (!_qePickedCat){ return; }
   var amount = document.getElementById('qeAmount').value;
   if (_quickSaveExpense(_qePickedCat, amount, _qePickedEm)){
+    _qeShowLastSaved(_qePickedCat, parseFloat(amount), _qePickedEm);
     document.getElementById('qeAmount').value='';
     document.getElementById('qeAmountRow').style.display='none';
     document.querySelectorAll('#qeCats .qe-cat').forEach(function(b){ b.classList.remove('active'); });
     _qePickedCat = null;
-    var m = document.getElementById('modal'); if (m) m.classList.remove('open');
   }
 }
 window.qeCatSave = qeCatSave;
@@ -13969,13 +13988,7 @@ function buildGoldCardHTML() {
   const savedGrams = parseFloat(localStorage.getItem('msarifyi_gold_grams') || '0') || '';
   const savedKarat = localStorage.getItem('msarifyi_gold_karat') || '21';
   return `<div class="gold-card">
-    <div class="gold-title">
-      <span>🥇 سعر الذهب في مصر</span>
-      <div style="display:flex;gap:6px">
-        <button class="gold-refresh" onclick="setManualGoldPrice()" style="background:var(--card2)">✏️ يدوي</button>
-        <button class="gold-refresh" onclick="fetchGoldPrice()">🔄 تحديث</button>
-      </div>
-    </div>
+
     <div class="gold-grid">
       <div class="gold-cell">
         <div class="karat">عيار 24</div>
@@ -14186,7 +14199,11 @@ function updateGoldCalc() {
   if (vatSel) localStorage.setItem('msarifyi_gold_vat', String(vat));
   if (isBuyingInp) localStorage.setItem('msarifyi_gold_buying', isBuying ? '1' : '0');
 
-  if (!grams || !goldData) { result.innerHTML = ''; return; }
+  if (!grams) { result.innerHTML = ''; return; }
+  if (!goldData) {
+    result.innerHTML = '<div class="gcr-nohint">📌 محتاج سعر الذهب الأول — اضغط 🔄 تحديث أو ✏️ يدوي فوق</div>';
+    return;
+  }
   const pricePerGram = egpPerGramKarat(karat);
   const goldOnly = grams * pricePerGram;
   const makingFee = isBuying ? grams * making : 0;
@@ -28075,6 +28092,8 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 .qe-amount-inp:focus{outline:none;}
 .qe-amount-save{background:linear-gradient(135deg,var(--green),#2ea043);color:#fff;border:none;border-radius:12px;padding:0 16px;height:44px;font-size:16px;cursor:pointer;transition:transform .14s;}
 .qe-amount-save:active{transform:scale(.9);}
+.qe-last-saved{background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.3);border-radius:10px;padding:9px 12px;margin-top:10px;font-size:12px;font-weight:700;color:var(--green);text-align:center;}
+.qe-last-saved b{font-weight:900;direction:ltr;}
 .qe-divider{text-align:center;margin:14px 0 2px;position:relative;}
 .qe-divider::before{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:var(--border);}
 .qe-divider span{position:relative;background:var(--card);padding:0 12px;font-size:11px;color:var(--muted);font-weight:700;}
