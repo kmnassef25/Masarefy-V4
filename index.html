@@ -28240,6 +28240,36 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
   box-shadow:0 8px 24px -10px rgba(0,0,0,.38), 0 2px 6px rgba(0,0,0,.14) !important;
 }
 
+
+/* ═══ إصلاح تنسيق الكروت العلوية — منع خروج الأرقام + توحيد المقاسات ═══ */
+/* مسافات أريح في الرأس (تقليل الزحمة) */
+.header{padding:14px 16px 4px !important;}
+.summary-wrap{padding:2px 0 16px !important;}
+.summary{gap:12px !important;padding:2px 4px !important;}
+.sum-main,.sum-inc,.sum-exp,.sum-sav{
+  min-width:170px !important;
+  max-width:210px !important;
+  padding:16px 18px !important;
+  box-sizing:border-box !important;
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+}
+/* الأرقام: تتأقلم مع المساحة وما تخرجش */
+.sum-main .val,.sum-inc .val,.sum-exp .val,.sum-sav .val{
+  font-size:clamp(15px, 5.2vw, 22px) !important;
+  line-height:1.15 !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  max-width:100% !important;
+  letter-spacing:-.3px !important;
+}
+.sum-main .lbl,.sum-inc .lbl,.sum-exp .lbl,.sum-sav .lbl{
+  font-size:11px !important;white-space:nowrap !important;overflow:hidden !important;text-overflow:ellipsis !important;
+}
+.sum-main .sub,.sum-inc .sub,.sum-exp .sub,.sum-sav .sub{white-space:nowrap !important;}
+
 </style>
 </body>
 </html>
