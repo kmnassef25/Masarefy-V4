@@ -3561,24 +3561,25 @@ button, .menu-row, .tx-card {
 <div class="header">
   <div class="header-top">
     <div class="app-name">💵 مصاريفي</div>
-    <div style="display:flex;gap:8px;align-items:center">
+    <div class="header-actions">
+      <button class="hdr-btn" onclick="openMenu()" aria-label="القائمة">☰</button>
+      <button class="hdr-btn" onclick="openSettings()" aria-label="الإعدادات">⚙️</button>
       <button class="base-cur-chip" id="baseCurChip" onclick="openSettings()">🇸🇦 ر.س</button>
-      <button onclick="openMenu()" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:5px 10px;font-size:13px;cursor:pointer;">☰</button>
-      <button onclick="openSettings()" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:5px 10px;font-size:13px;cursor:pointer;">⚙️</button>
-      <div class="live-time">
-        <span class="dte" id="dte">--</span>
-        <span class="dte-hijri" id="dteHijri">--</span>
-      </div>
     </div>
   </div>
 
+  <div class="header-sub">
+    <div class="live-time">
+      <span class="dte" id="dte">--</span>
+      <span class="dte-hijri" id="dteHijri">--</span>
+    </div>
+    <button id="hideBalanceBtn" class="hide-balance-btn" onclick="toggleBalanceVisibility()" aria-label="إخفاء/إظهار المبالغ">
+      <span class="hb-icon">👁️</span>
+    </button>
+  </div>
+
   <!-- SUMMARY -->
-  <div style="display:flex;justify-content:flex-end;align-items:center;padding:0 16px 8px">
-  <button id="hideBalanceBtn" class="hide-balance-btn" onclick="toggleBalanceVisibility()" aria-label="إخفاء/إظهار المبالغ">
-    <span class="hb-icon">👁️</span>
-  </button>
-</div>
-<div class="summary-wrap">
+  <div class="summary-wrap">
     <div class="summary" id="summaryRow">
       <!-- filled by JS -->
     </div>
@@ -28242,6 +28243,42 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 
 
 /* ═══ إصلاح تنسيق الكروت العلوية — منع خروج الأرقام + توحيد المقاسات ═══ */
+/* ── إعادة تصميم الرأس ── */
+.header{padding:16px 16px 6px !important;}
+.header-top{display:flex !important;justify-content:space-between !important;align-items:center !important;margin-bottom:12px !important;}
+.app-name{font-size:22px !important;font-weight:900 !important;}
+.header-actions{display:flex !important;gap:8px !important;align-items:center !important;}
+/* أزرار الرأس: كلها نفس المقاس، دائرية أنيقة */
+.hdr-btn{
+  width:40px;height:40px;flex-shrink:0;
+  background:var(--card2);border:1px solid var(--border);border-radius:12px;
+  color:var(--text);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .14s, background-color .18s, border-color .18s;
+}
+.hdr-btn:active{transform:scale(.9);}
+.hdr-btn:hover{background:var(--card);border-color:var(--accent);}
+/* شيب العملة: نفس ارتفاع الأزرار */
+.header-actions .base-cur-chip{
+  height:40px;padding:0 14px;border-radius:12px;
+  background:linear-gradient(135deg,rgba(240,180,41,.15),rgba(240,180,41,.05));
+  border:1px solid rgba(240,180,41,.4);color:var(--accent);
+  font-family:'Cairo',sans-serif;font-size:14px;font-weight:800;cursor:pointer;
+  display:flex;align-items:center;gap:5px;transition:transform .14s;
+}
+.header-actions .base-cur-chip:active{transform:scale(.94);}
+/* صف التاريخ + العين */
+.header-sub{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 2px;}
+.header-sub .live-time{text-align:right;direction:rtl;}
+.header-sub .live-time .dte{font-size:12px;color:var(--muted);font-weight:700;display:inline;}
+.header-sub .live-time .dte-hijri{font-size:11px;color:var(--accent);font-weight:700;display:inline;margin-right:6px;}
+.header-sub .hide-balance-btn{
+  width:36px;height:36px;flex-shrink:0;
+  background:var(--card2);border:1px solid var(--border);border-radius:10px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;
+  transition:transform .14s;
+}
+.header-sub .hide-balance-btn:active{transform:scale(.9);}
 /* مسافات أريح في الرأس (تقليل الزحمة) */
 .header{padding:14px 16px 4px !important;}
 .summary-wrap{padding:2px 0 16px !important;}
