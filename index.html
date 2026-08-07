@@ -28243,6 +28243,65 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 
 
 /* ═══ إصلاح تنسيق الكروت العلوية — منع خروج الأرقام + توحيد المقاسات ═══ */
+/* ── تبويبات على شكل كبسولات (pills) ── */
+.tabs-nav{
+  gap:6px !important;
+  padding:10px 12px !important;
+  background:var(--bg) !important;
+  border-bottom:1px solid var(--border) !important;
+}
+.tab-btn{
+  flex:0 0 auto !important;
+  min-width:auto !important;
+  padding:8px 15px !important;
+  border-radius:20px !important;
+  border:1px solid var(--border) !important;
+  border-bottom:1px solid var(--border) !important;
+  background:var(--card2) !important;
+  color:var(--muted) !important;
+  font-size:12px !important;
+  font-weight:800 !important;
+  transition:transform .14s, background-color .2s, color .2s, border-color .2s !important;
+}
+.tab-btn:active{transform:scale(.93) !important;}
+.tab-btn.active{
+  background:linear-gradient(135deg,var(--accent),var(--accent2)) !important;
+  color:#1a1206 !important;
+  border-color:var(--accent) !important;
+  box-shadow:0 4px 14px -4px rgba(240,180,41,.5) !important;
+}
+.tab-btn.active::after{display:none !important;}
+/* ── أيقونات الحركات في دوائر ملوّنة ── */
+.tx-emoji{
+  font-size:18px !important;
+  width:42px !important;height:42px !important;
+  border-radius:50% !important;
+  display:flex !important;align-items:center !important;justify-content:center !important;
+  flex-shrink:0 !important;margin-top:0 !important;
+  background:var(--card2) !important;
+  border:1px solid var(--border) !important;
+}
+/* لون الخلفية حسب نوع الحركة */
+.tx-card.inc .tx-emoji{background:rgba(63,185,80,.13) !important;border-color:rgba(63,185,80,.25) !important;}
+.tx-card.exp .tx-emoji{background:rgba(248,81,73,.12) !important;border-color:rgba(248,81,73,.22) !important;}
+.tx-card.sav .tx-emoji{background:rgba(88,166,255,.12) !important;border-color:rgba(88,166,255,.22) !important;}
+/* ── زرار الإضافة السفلي أفخم ── */
+.bottom-bar-btn{
+  border-radius:16px !important;
+  padding:15px !important;
+  font-size:15.5px !important;
+  letter-spacing:.3px !important;
+  box-shadow:0 6px 22px -6px rgba(240,180,41,.5), inset 0 1px 0 rgba(255,255,255,.25) !important;
+  position:relative !important;
+  overflow:hidden !important;
+}
+.bottom-bar-btn::before{
+  content:'' !important;position:absolute !important;top:0;left:-60% !important;width:40% !important;height:100% !important;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent) !important;
+  transform:skewX(-20deg) !important;animation:fabShine 3.5s ease-in-out infinite !important;
+}
+@keyframes fabShine{0%,100%{left:-60%}50%{left:120%}}
+@media (prefers-reduced-motion: reduce){.bottom-bar-btn::before{animation:none !important;display:none !important;}}
 /* ── إعادة تصميم الرأس ── */
 .header{padding:16px 16px 6px !important;}
 .header-top{display:flex !important;justify-content:space-between !important;align-items:center !important;margin-bottom:12px !important;}
