@@ -6467,6 +6467,27 @@ function renderBudget() {
     return;
   }
   let h = '';
+
+  // ملخّص علوي: إجمالي الميزانية مقابل المصروف
+  const sym0 = BASE_LABELS[baseCurrency].sym;
+  let totalLimit = 0, totalSpent = 0;
+  Object.entries(budgets).forEach(([c, lim]) => { totalLimit += lim; totalSpent += (spentByCat[c]||0); });
+  const totalPct = totalLimit>0 ? Math.min(Math.round(totalSpent/totalLimit*100), 100) : 0;
+  const totalOver = totalSpent > totalLimit;
+  const totalColor = totalOver ? 'var(--red)' : totalPct>80 ? '#f0b429' : 'var(--green)';
+  // توقيت الشهر (للتوقّع) — نقارن mKey بالشهر الحالي بنفس الصيغة
+  const _now = new Date();
+  const _curYM = _now.getFullYear()+'-'+String(_now.getMonth()+1).padStart(2,'0');
+  const _isCurrentMonth = (mKey === _curYM);
+  const _dayOfMonth = _now.getDate();
+  const _daysInMonth = new Date(_now.getFullYear(), _now.getMonth()+1, 0).getDate();
+  h += `<div class="budget-summary">
+    <div class="bsum-top"><span class="bsum-lbl">📊 إجمالي الميزانية</span><span class="bsum-pct" style="color:${totalColor}">${totalPct}%</span></div>
+    <div class="bsum-vals"><span style="color:${totalColor};font-weight:900">${fmt(toBase(totalSpent),0)}</span> <span style="color:var(--muted)">من ${fmt(toBase(totalLimit),0)} ${sym0}</span></div>
+    <div class="budget-bar-bg" style="margin-top:8px"><div class="budget-bar-fill" style="width:${totalPct}%;background:${totalColor}"></div></div>
+    ${totalOver?`<div class="bsum-warn">⚠️ تجاوزت إجمالي ميزانيتك بـ ${fmt(toBase(totalSpent-totalLimit),0)} ${sym0}</div>`:`<div class="bsum-left">باقي لك ${fmt(toBase(totalLimit-totalSpent),0)} ${sym0} الشهر ده</div>`}
+  </div>`;
+
   Object.entries(budgets).sort((a,b)=>b[1]-a[1]).forEach(([cat, limitSAR]) => {
     const spent = spentByCat[cat] || 0;
     const pct = Math.min(Math.round(spent/limitSAR*100), 100);
@@ -6474,6 +6495,17 @@ function renderBudget() {
     const color = over ? 'var(--red)' : pct>80 ? '#f0b429' : 'var(--green)';
     const em = EMOJI[cat] || '💸';
     const sym = BASE_LABELS[baseCurrency].sym;
+    // توقّع التجاوز (للشهر الحالي فقط)
+    let projHtml = '';
+    if (_isCurrentMonth && !over && spent>0 && _dayOfMonth>2){
+      const dailyRate = spent / _dayOfMonth;
+      const projected = dailyRate * _daysInMonth;
+      if (projected > limitSAR){
+        // في أنهي يوم هيتجاوز؟
+        const dayHit = Math.ceil(limitSAR / dailyRate);
+        projHtml = `<div class="budget-proj">🔮 لو كمّلت بنفس المعدّل، هتتجاوز الحد يوم ${toArabicDigits(Math.min(dayHit,_daysInMonth))} (متوقّع ${fmt(toBase(projected),0)} ${sym})</div>`;
+      }
+    }
     h += `<div class="budget-card">
       <div class="budget-card-top">
         <div class="budget-cat"><div class="budget-cat-em">${em}</div><div class="budget-cat-name">${cat}</div></div>
@@ -6483,7 +6515,8 @@ function renderBudget() {
         </div>
       </div>
       <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:${pct}%;background:${color}"></div></div>
-      <div class="budget-pct ${over?'budget-over':''}">${over?'⚠️ تجاوزت الحد بـ '+fmt(toBase(spent-limitSAR),0)+' '+sym:pct+'% من الميزانية'}</div>
+      <div class="budget-pct ${over?'budget-over':''}">${over?'⚠️ تجاوزت الحد بـ '+fmt(toBase(spent-limitSAR),0)+' '+sym:pct>=80?'🔸 قربت على الحد ('+pct+'%)':pct+'% من الميزانية'}</div>
+      ${projHtml}
     </div>`;
   });
   el.innerHTML = h;
@@ -7578,25 +7611,27 @@ function exportCSV() {
   downloadBlob(blob, `masarefy_${monthKey(listYear,listMonth)}.csv`);
 }
 function exportJSON() {
-  const data = {
-    txs, savings, rates, budgets,
-    accounts, goals, debts, recurringTxs,
-    installments: typeof installments !== 'undefined' ? installments : [],
-    jameya: typeof jameya !== 'undefined' ? jameya : [],
-    occasions: typeof occasions !== 'undefined' ? occasions : [],
-    bills: typeof bills !== 'undefined' ? bills : [],
-    netWorthHistory: typeof netWorthHistory !== 'undefined' ? netWorthHistory : [],
-    creditCards: typeof creditCards !== 'undefined' ? creditCards : [],
-    customCats: typeof customCats !== 'undefined' ? customCats : [],
-    baseCurrency,
-    theme: localStorage.getItem('msarifyi_theme') || 'dark',
-    schemaVersion: 7,
-    version: 7,
-    exported: new Date().toISOString()
+  // نسخة شاملة: كل مفاتيح msarifyi_ تلقائياً (عشان ما يضيعش أي قسم)
+  const data = {};
+  let count = 0;
+  for (let i=0; i<localStorage.length; i++){
+    const k = localStorage.key(i);
+    if (k && k.indexOf('msarifyi_')===0){
+      if (k==='msarifyi_pin' || k==='msarifyi_pin_lock') continue; // نستثني القفل للأمان
+      data[k] = localStorage.getItem(k);
+      count++;
+    }
+  }
+  const backup = {
+    app: 'مصاريفي',
+    _fullBackup: true,
+    exported: new Date().toISOString(),
+    keysCount: count,
+    data: data
   };
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json;charset=utf-8'});
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json;charset=utf-8'});
   downloadBlob(blob, `masarefy_backup_${new Date().toISOString().split('T')[0]}.json`);
-  if (typeof showToast === 'function') showToast('✅ تم تصدير النسخة الاحتياطية', 'success');
+  if (typeof showToast === 'function') showToast('✅ اتصدّرت نسختك الكاملة ('+(typeof toArabicDigits==='function'?toArabicDigits(count):count)+' قسم)', 'success');
 }
 
 // ── BANK CSV IMPORT ──
@@ -7819,7 +7854,27 @@ function restoreBackup(event) {
   reader.onload = (e) => {
     try {
       const data = JSON.parse(e.target.result);
-      // Validate it's our backup format
+      // النسخة الشاملة الجديدة (كل مفاتيح msarifyi_)
+      if (data && data._fullBackup && data.data && typeof data.data==='object'){
+        const keys = Object.keys(data.data).filter(k=>k.indexOf('msarifyi_')===0);
+        if (!keys.length){ showAlert('❌ الملف فاضي', 'error'); event.target.value=''; return; }
+        const when = data.exported ? new Date(data.exported).toLocaleDateString('ar-EG') : 'غير معروف';
+        const ok = confirm('⚠️ هتستبدل كل بياناتك الحالية بالنسخة دي؟\n\nتاريخ النسخة: '+when+'\nعدد الأقسام: '+keys.length+'\n\nالبيانات الحالية هتتمسح. متأكد؟');
+        if (!ok){ event.target.value=''; return; }
+        // امسح الحالي (عدا القفل)
+        const toRemove = [];
+        for (let i=0;i<localStorage.length;i++){
+          const k = localStorage.key(i);
+          if (k && k.indexOf('msarifyi_')===0 && k!=='msarifyi_pin' && k!=='msarifyi_pin_lock') toRemove.push(k);
+        }
+        toRemove.forEach(k=>localStorage.removeItem(k));
+        keys.forEach(k=>localStorage.setItem(k, data.data[k]));
+        event.target.value='';
+        showAlert('✅ اترجّعت نسختك، بيعيد التحميل...', 'success');
+        setTimeout(()=>location.reload(), 1200);
+        return;
+      }
+      // Validate it's our backup format (القديم)
       if (!data.txs && !data.savings) {
         showAlert('❌ الملف ده مش نسخة احتياطية صحيحة', 'error');
         event.target.value = '';
@@ -18869,43 +18924,20 @@ setTimeout(() => {
   // Hook into export/restore
   const _origExportJSONV18 = window.exportJSON;
   window.exportJSON = function() {
-    // Run original first (it includes everything except v18 data)
-    // Then we patch the saved file by augmenting with v18 data via re-export
-    // The simplest path: build our own export including v18 data
+    // نسخة شاملة: كل مفاتيح msarifyi_ تلقائياً (ما يفوّتش أي قسم)
     try {
-      const data = {
-        txs: typeof txs !== 'undefined' ? txs : [],
-        savings: typeof savings !== 'undefined' ? savings : [],
-        rates, budgets,
-        accounts: typeof accounts !== 'undefined' ? accounts : [],
-        goals: typeof goals !== 'undefined' ? goals : [],
-        debts: typeof debts !== 'undefined' ? debts : [],
-        recurringTxs: typeof recurringTxs !== 'undefined' ? recurringTxs : [],
-        installments: typeof installments !== 'undefined' ? installments : [],
-        jameya: typeof jameya !== 'undefined' ? jameya : [],
-        occasions: typeof occasions !== 'undefined' ? occasions : [],
-        dualSalary: typeof dualSalary !== 'undefined' ? dualSalary : null,
-        rateMeta: typeof rateMeta !== 'undefined' ? rateMeta : {},
-        orders: typeof orders !== 'undefined' ? orders : [],
-        cars, carExpenses,                      // V18
-        weddings, weddingExpenses,              // V18
-        bills: typeof bills !== 'undefined' ? bills : [],
-        investments: typeof investments !== 'undefined' ? investments : [],
-        netWorthHistory: typeof netWorthHistory !== 'undefined' ? netWorthHistory : [],
-        priceAlerts: typeof priceAlerts !== 'undefined' ? priceAlerts : [],
-        flights: typeof flights !== 'undefined' ? flights : [],
-        creditCards: typeof creditCards !== 'undefined' ? creditCards : [],
-        travelMode: localStorage.getItem('msarifyi_travel_mode') || null,
-        ramadanMode: localStorage.getItem('msarifyi_ramadan_mode') || null,
-        hajjBudget: typeof hajjBudget !== 'undefined' ? hajjBudget : null,
-        goldHistory: safeGetLS('msarifyi_gold_history', []),
-        baseCurrency,
-        theme: localStorage.getItem('msarifyi_theme') || 'dark',
-        schemaVersion: 26,
-        version: 26,
-        exported: new Date().toISOString()
-      };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+      const data = {};
+      let count = 0;
+      for (let i=0;i<localStorage.length;i++){
+        const k = localStorage.key(i);
+        if (k && k.indexOf('msarifyi_')===0){
+          if (k==='msarifyi_pin' || k==='msarifyi_pin_lock') continue;
+          data[k] = localStorage.getItem(k);
+          count++;
+        }
+      }
+      const backup = { app:'مصاريفي', _fullBackup:true, exported:new Date().toISOString(), keysCount:count, data:data };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json;charset=utf-8' });
       if (typeof downloadBlob === 'function') {
         downloadBlob(blob, `masarefy_backup_${new Date().toISOString().split('T')[0]}.json`);
       } else {
@@ -18915,9 +18947,9 @@ setTimeout(() => {
         a.click();
         setTimeout(() => URL.revokeObjectURL(a.href), 1000);
       }
-      if (typeof showToast === 'function') showToast('✅ تم تصدير النسخة الكاملة (V18)', 'success');
+      if (typeof showToast === 'function') showToast('✅ اتصدّرت نسختك الكاملة ('+(typeof toArabicDigits==='function'?toArabicDigits(count):count)+' قسم)', 'success');
     } catch (e) {
-      console.error('Export V18 failed:', e);
+      console.error('Export failed:', e);
       if (typeof showToast === 'function') showToast('❌ فشل التصدير: ' + e.message, 'error');
     }
   };
@@ -23385,6 +23417,35 @@ setTimeout(() => {
       // Try to peek at the file before calling original
       const file = event.target.files && event.target.files[0];
       if (file) {
+        // عالج النسخة الشاملة الجديدة مباشرة
+        const _peek = new FileReader();
+        _peek.onload = (pe) => {
+          let parsed = null;
+          try { parsed = JSON.parse(pe.target.result); } catch(e){}
+          if (parsed && parsed._fullBackup && parsed.data && typeof parsed.data==='object'){
+            const keys = Object.keys(parsed.data).filter(k=>k.indexOf('msarifyi_')===0);
+            if (!keys.length){ if(typeof showAlert==='function')showAlert('❌ الملف فاضي','error'); event.target.value=''; return; }
+            const when = parsed.exported ? new Date(parsed.exported).toLocaleDateString('ar-EG') : 'غير معروف';
+            const ok = confirm('⚠️ هتستبدل كل بياناتك الحالية بالنسخة دي؟\n\nتاريخ النسخة: '+when+'\nعدد الأقسام: '+keys.length+'\n\nالبيانات الحالية هتتمسح. متأكد؟');
+            if (!ok){ event.target.value=''; return; }
+            const toRemove = [];
+            for (let i=0;i<localStorage.length;i++){
+              const k = localStorage.key(i);
+              if (k && k.indexOf('msarifyi_')===0 && k!=='msarifyi_pin' && k!=='msarifyi_pin_lock') toRemove.push(k);
+            }
+            toRemove.forEach(k=>localStorage.removeItem(k));
+            keys.forEach(k=>localStorage.setItem(k, parsed.data[k]));
+            event.target.value='';
+            if(typeof showAlert==='function')showAlert('✅ اترجّعت نسختك، بيعيد التحميل...','success');
+            setTimeout(()=>location.reload(), 1200);
+            return;
+          }
+          // مش نسخة شاملة → كمّل بالمنطق القديم
+          _continueOldRestore();
+        };
+        _peek.readAsText(file);
+
+        function _continueOldRestore(){
         // Clone the event so we can read first
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -23401,8 +23462,10 @@ setTimeout(() => {
           // original handler with the same data
         };
         reader.readAsText(file);
+        } // end _continueOldRestore
+      } else {
+        return _origRestoreBackup.apply(this, arguments);
       }
-      return _origRestoreBackup.apply(this, arguments);
     };
   }
 
@@ -27646,6 +27709,163 @@ setTimeout(() => {
   }
 
   // ── ودجت دخل/مصروف الشهر الجاري ──
+  // ── 📊 Dashboard ذكي — فهم شامل لفلوسك الشهر ده ──
+  // ── 🧠 المساعد المالي الذكي — رؤى وتحليلات ──
+  function smartAssistantCard(){
+    try{
+      var t = Array.isArray(txs)?txs:[];
+      var now = new Date();
+      var ym = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+      var sym = BASE_LABELS[baseCurrency].sym;
+      var insights = [];
+
+      // آخر 3 شهور (متوسط المصروف بالفئة)
+      var months3 = [];
+      for (var m=1; m<=3; m++){
+        var d = new Date(now.getFullYear(), now.getMonth()-m, 1);
+        months3.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
+      }
+      // مصروف الشهر الحالي بالفئة
+      var curByCat = {};
+      t.filter(function(x){ return x.type==='expense' && !x.isTransfer && (x.date||'').slice(0,7)===ym; })
+        .forEach(function(x){ var c=x.cat||'أخرى'; curByCat[c]=(curByCat[c]||0)+(x.amountSAR||0); });
+      // متوسط آخر 3 شهور بالفئة
+      var avgByCat = {};
+      Object.keys(curByCat).forEach(function(c){
+        var sum=0, cnt=0;
+        months3.forEach(function(mk){
+          var mExp = t.filter(function(x){ return x.type==='expense' && !x.isTransfer && x.cat===c && (x.date||'').slice(0,7)===mk; })
+            .reduce(function(a,x){return a+(x.amountSAR||0);},0);
+          sum+=mExp; cnt++;
+        });
+        avgByCat[c] = cnt>0 ? sum/cnt : 0;
+      });
+
+      // رؤية 1: فئة مصروفها أعلى من متوسطها بشكل ملحوظ
+      Object.keys(curByCat).forEach(function(c){
+        var cur = curByCat[c], avg = avgByCat[c];
+        if (avg>0 && cur > avg*1.25){
+          var pct = Math.round((cur-avg)/avg*100);
+          insights.push({icon:'⚠️', type:'warn', text:'مصروف '+c+' الشهر ده أعلى من متوسط آخر 3 شهور بـ '+pct+'%'});
+        }
+      });
+
+      // رؤية 2: اقتراح توفير على أكبر فئة
+      var topCat = Object.keys(curByCat).map(function(c){return {c:c,v:curByCat[c]};}).sort(function(a,b){return b.v-a.v;})[0];
+      if (topCat && topCat.v>0){
+        var cut = Math.round(topCat.v*0.2);
+        if (cut>0){
+          insights.push({icon:'💡', type:'tip', text:'لو قلّلت '+topCat.c+' بـ '+fmt(toBase(cut),0)+' '+sym+' شهريًا، توفّر '+fmt(toBase(cut*12),0)+' '+sym+' في السنة'});
+        }
+      }
+
+      // رؤية 3: نسبة الادخار
+      var inc = t.filter(function(x){return x.type==='income' && !x.isTransfer && (x.date||'').slice(0,7)===ym;}).reduce(function(a,x){return a+(x.amountSAR||0);},0);
+      var exp = Object.keys(curByCat).reduce(function(a,c){return a+curByCat[c];},0);
+      if (inc>0){
+        var saveRate = Math.round((inc-exp)/inc*100);
+        if (saveRate>=20) insights.push({icon:'🎉', type:'good', text:'ادخارك ممتاز الشهر ده ('+saveRate+'%)! استمر كده'});
+        else if (saveRate<0) insights.push({icon:'🚨', type:'warn', text:'مصروفك أكبر من دخلك الشهر ده، خلّي بالك'});
+      }
+
+      if (!insights.length) return ''; // مفيش رؤى دلوقتي
+
+      var typeColor = {warn:'var(--red)', tip:'var(--accent)', good:'var(--green)'};
+      return '<div class="dash-sec-title" style="margin-top:2px">🧠 مساعدك المالي</div>'
+        + '<div class="h2-card smart-card">'
+          + insights.map(function(ins){
+              return '<div class="smart-ins" style="border-right:3px solid '+(typeColor[ins.type]||'var(--muted)')+'">'
+                + '<span class="si-icon">'+ins.icon+'</span>'
+                + '<span class="si-text">'+ins.text+'</span>'
+              + '</div>';
+            }).join('')
+        + '</div>';
+    }catch(e){ return ''; }
+  }
+
+  // ── 🧠 المساعد المالي الذكي (نهاية) ──
+  function dashboardCard(){
+    try{
+      var t = Array.isArray(txs)?txs:[];
+      var now = new Date();
+      var ym = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+      var prevD = new Date(now.getFullYear(), now.getMonth()-1, 1);
+      var pym = prevD.getFullYear()+'-'+String(prevD.getMonth()+1).padStart(2,'0');
+      var sym = BASE_LABELS[baseCurrency].sym;
+
+      // حركات الشهر الحالي والسابق
+      var curTx = t.filter(function(x){ return !x.isTransfer && (x.date||'').slice(0,7)===ym; });
+      var prevTx = t.filter(function(x){ return !x.isTransfer && (x.date||'').slice(0,7)===pym; });
+      var inc = curTx.filter(function(x){return x.type==='income';}).reduce(function(a,x){return a+(x.amountSAR||0);},0);
+      var exp = curTx.filter(function(x){return x.type==='expense';}).reduce(function(a,x){return a+(x.amountSAR||0);},0);
+      var prevExp = prevTx.filter(function(x){return x.type==='expense';}).reduce(function(a,x){return a+(x.amountSAR||0);},0);
+      var net = inc - exp;
+      var savRate = inc>0 ? Math.round(net/inc*100) : 0;
+
+      // مقارنة المصروف بالشهر السابق
+      var expDiff = prevExp>0 ? Math.round((exp-prevExp)/prevExp*100) : null;
+
+      // أكتر 3 بنود صرف (بالفئة)
+      var byCat = {};
+      curTx.filter(function(x){return x.type==='expense';}).forEach(function(x){
+        var c = x.cat||'أخرى'; byCat[c]=(byCat[c]||0)+(x.amountSAR||0);
+      });
+      var top3 = Object.keys(byCat).map(function(c){return {cat:c,val:byCat[c]};}).sort(function(a,b){return b.val-a.val;}).slice(0,3);
+
+      // أكبر عملية صرف
+      var biggest = curTx.filter(function(x){return x.type==='expense';}).sort(function(a,b){return (b.amountSAR||0)-(a.amountSAR||0);})[0];
+
+      // متوسط الصرف اليومي + توقّع نهاية الشهر
+      var dayOfMonth = now.getDate();
+      var daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+      var dailyAvg = dayOfMonth>0 ? exp/dayOfMonth : 0;
+      var projected = dailyAvg * daysInMonth;
+
+      if (inc===0 && exp===0) return ''; // مفيش بيانات الشهر ده
+
+      var netColor = net>=0 ? 'var(--green)' : 'var(--red)';
+      // سطر المقارنة
+      var cmpHtml = '';
+      if (expDiff!==null){
+        var better = expDiff<0;
+        cmpHtml = '<div class="dash-cmp" style="color:'+(better?'var(--green)':'var(--red)')+'">'
+          + (better?'📉 ':'📈 ') + 'مصروفك '+(better?'أقل':'أعلى')+' '+Math.abs(expDiff)+'% من الشهر اللي فات'
+          + '</div>';
+      }
+
+      var top3Html = top3.length ? '<div class="dash-sec-title">🏆 أكتر 3 بنود صرف</div><div class="dash-top3">'
+        + top3.map(function(item,i){
+            var medal = ['🥇','🥈','🥉'][i];
+            var pctOfExp = exp>0 ? Math.round(item.val/exp*100) : 0;
+            return '<div class="dash-top-row"><span class="dt-rank">'+medal+'</span>'
+              + '<span class="dt-cat">'+item.cat+'</span>'
+              + '<div class="dt-bar"><div class="dt-bar-fill" style="width:'+pctOfExp+'%"></div></div>'
+              + '<span class="dt-val">'+fmt(toBase(item.val),0)+'</span></div>';
+          }).join('')
+        + '</div>' : '';
+
+      return '<div class="dash-sec-title" style="margin-top:2px">📊 لوحة فلوسك — '+ ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'][now.getMonth()] +'</div>'
+        + '<div class="h2-card dash-card">'
+          // 3 أرقام رئيسية
+          + '<div class="dash-main-row">'
+            + '<div class="dash-main"><div class="dm-lbl">💰 دخلك</div><div class="dm-val" style="color:var(--green)">'+fmt(toBase(inc),0)+'</div></div>'
+            + '<div class="dash-main"><div class="dm-lbl">💸 مصروفك</div><div class="dm-val" style="color:var(--red)">'+fmt(toBase(exp),0)+'</div></div>'
+            + '<div class="dash-main"><div class="dm-lbl">'+(net>=0?'🟢':'🔴')+' المتبقي</div><div class="dm-val" style="color:'+netColor+'">'+fmt(toBase(net),0)+'</div></div>'
+          + '</div>'
+          + cmpHtml
+          // نسبة الادخار
+          + '<div class="dash-save-row"><span>نسبة ادخارك الشهر ده</span><span class="dash-save-pct" style="color:'+(savRate>=20?'var(--green)':savRate>=0?'var(--accent)':'var(--red)')+'">'+savRate+'%</span></div>'
+          + '<div class="dash-mini-grid">'
+            + (biggest?'<div class="dash-mini"><div class="dmi-lbl">🔺 أكبر عملية</div><div class="dmi-val">'+esc(biggest.name||biggest.cat||'—')+'<br><b>'+fmt(toBase(biggest.amountSAR),0)+' '+sym+'</b></div></div>':'')
+            + '<div class="dash-mini"><div class="dmi-lbl">📅 متوسط يومي</div><div class="dmi-val"><b>'+fmt(toBase(dailyAvg),0)+' '+sym+'</b></div></div>'
+            + '<div class="dash-mini dash-mini-wide"><div class="dmi-lbl">🔮 توقّع نهاية الشهر</div><div class="dmi-val">لو كمّلت بنفس المعدّل هتصرف <b style="color:var(--accent)">'+fmt(toBase(projected),0)+' '+sym+'</b> الشهر ده</div></div>'
+          + '</div>'
+          + top3Html
+        + '</div>';
+    }catch(e){ return ''; }
+  }
+
+  // ── 📊 Dashboard ذكي (نهاية) ──
   function monthCard(){
     try{
       var T = calcTotals();
@@ -27686,6 +27906,8 @@ setTimeout(() => {
 
     // خريطة الودجت المتاحة (المفتاح → الدالة اللي بتبنيه)
     var _widgetMap = {
+      dashboard: dashboardCard,
+      assistant: smartAssistantCard,
       month: monthCard,
       alerts: alertsCard,
       budget: budgetCard,
@@ -27695,7 +27917,7 @@ setTimeout(() => {
       quick: quickActions
     };
     // الترتيب والتشغيل الافتراضي
-    var _defaultOrder = ['month','alerts','budget','commitments','goal','recent','quick'];
+    var _defaultOrder = ['dashboard','assistant','month','alerts','budget','commitments','goal','recent','quick'];
     var _cfg;
     try{ _cfg = JSON.parse(localStorage.getItem('msarifyi_home_widgets')||'null'); }catch(e){ _cfg = null; }
     if (!_cfg || !Array.isArray(_cfg.order)){
@@ -27722,6 +27944,8 @@ setTimeout(() => {
 
   // ── تخصيص الصفحة الرئيسية (ترتيب + تشغيل/إطفاء الودجت) ──
   var _widgetLabels = {
+    dashboard: '📊 لوحة فلوسك',
+    assistant: '🧠 مساعدك المالي',
     month: '📅 حركة الشهر',
     alerts: '🔔 التنبيهات',
     budget: '🎯 الميزانية',
@@ -27731,7 +27955,7 @@ setTimeout(() => {
     quick: '⚡ وصول سريع'
   };
   function _getHomeCfg(){
-    var def = { order: ['month','alerts','budget','commitments','goal','recent','quick'], off: [] };
+    var def = { order: ['dashboard','assistant','month','alerts','budget','commitments','goal','recent','quick'], off: [] };
     var c;
     try{ c = JSON.parse(localStorage.getItem('msarifyi_home_widgets')||'null'); }catch(e){ c=null; }
     if (!c || !Array.isArray(c.order)) return def;
@@ -28243,6 +28467,44 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 
 
 /* ═══ إصلاح تنسيق الكروت العلوية — منع خروج الأرقام + توحيد المقاسات ═══ */
+/* 🧠 المساعد المالي الذكي */
+.smart-card{padding:12px !important;display:flex;flex-direction:column;gap:8px;}
+.smart-ins{display:flex;align-items:flex-start;gap:10px;background:var(--card2);border-radius:11px;padding:11px 12px;}
+.smart-ins .si-icon{font-size:17px;flex-shrink:0;line-height:1.4;}
+.smart-ins .si-text{font-size:12.5px;font-weight:700;color:var(--text);line-height:1.6;}
+/* تطوير الميزانية: ملخّص + توقّع */
+.budget-summary{background:linear-gradient(135deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:16px;padding:15px;margin-bottom:14px;box-shadow:0 6px 20px -10px rgba(0,0,0,.4);}
+.budget-summary .bsum-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.budget-summary .bsum-lbl{font-size:13px;font-weight:800;color:var(--muted);}
+.budget-summary .bsum-pct{font-size:22px;font-weight:900;direction:ltr;}
+.budget-summary .bsum-vals{font-size:14px;direction:ltr;text-align:right;}
+.budget-summary .bsum-warn{font-size:12px;font-weight:800;color:var(--red);margin-top:8px;}
+.budget-summary .bsum-left{font-size:12px;font-weight:700;color:var(--muted);margin-top:8px;}
+.budget-proj{font-size:11.5px;font-weight:700;color:#f0b429;margin-top:7px;padding:7px 9px;background:rgba(240,180,41,.08);border-radius:8px;line-height:1.5;}
+/* 📊 Dashboard ذكي */
+.dash-sec-title{font-size:15px;font-weight:900;margin:8px 2px 4px;letter-spacing:-.2px;}
+.dash-card{padding:16px !important;}
+.dash-main-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+.dash-main{text-align:center;background:var(--card2);border-radius:12px;padding:11px 6px;}
+.dash-main .dm-lbl{font-size:10px;font-weight:700;color:var(--muted);margin-bottom:5px;white-space:nowrap;}
+.dash-main .dm-val{font-size:15px;font-weight:900;direction:ltr;font-variant-numeric:tabular-nums;}
+.dash-cmp{font-size:12px;font-weight:800;text-align:center;padding:8px;background:var(--card2);border-radius:10px;margin-bottom:12px;}
+.dash-save-row{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:700;color:var(--muted);padding:10px 12px;background:var(--card2);border-radius:10px;margin-bottom:12px;}
+.dash-save-pct{font-size:18px;font-weight:900;direction:ltr;}
+.dash-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;}
+.dash-mini{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 11px;}
+.dash-mini-wide{grid-column:1 / -1;}
+.dash-mini .dmi-lbl{font-size:10.5px;font-weight:700;color:var(--muted);margin-bottom:4px;}
+.dash-mini .dmi-val{font-size:12px;font-weight:600;color:var(--text);line-height:1.5;}
+.dash-mini .dmi-val b{font-size:14px;font-weight:900;direction:ltr;}
+.dash-top3{display:flex;flex-direction:column;gap:7px;margin-top:8px;}
+.dash-top-row{display:flex;align-items:center;gap:8px;}
+.dash-top-row .dt-rank{font-size:14px;flex-shrink:0;}
+.dash-top-row .dt-cat{font-size:12px;font-weight:800;flex-shrink:0;min-width:64px;}
+.dash-top-row .dt-bar{flex:1;height:8px;background:var(--card2);border-radius:5px;overflow:hidden;}
+.dash-top-row .dt-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:5px;transition:width .6s cubic-bezier(.34,1.2,.46,1);}
+.dash-top-row .dt-val{font-size:12px;font-weight:900;direction:ltr;flex-shrink:0;min-width:52px;text-align:left;}
+@media (prefers-reduced-motion: reduce){.dash-top-row .dt-bar-fill{transition:none !important;}}
 /* ── تبويبات على شكل كبسولات (pills) ── */
 .tabs-nav{
   gap:6px !important;
