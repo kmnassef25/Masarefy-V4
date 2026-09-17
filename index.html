@@ -25733,6 +25733,128 @@ setTimeout(() => {
   }
 
   // ═══════════════════════════════════════════════════════════
+  // V30: ADVICE ENGINE — per-card financial tips
+  // Mirrors the kind of analysis a human would do reading real
+  // Al Rajhi statements: minimum-only pattern, utilization, too
+  // many overlapping installments (Tabby/Tamara/Tasaheel), and
+  // total historical cost of credit (murabaha profit + fees).
+  // ═══════════════════════════════════════════════════════════
+  function computeCCAdviceTips(card, r, pd) {
+    const tips = [];
+    const cardSym = symFor(card.currency);
+
+    // 1) Total historical cost of credit (gross murabaha profit + fees charged)
+    const grossFees = (card.transactions||[]).filter(t=>t.type==='fee')
+      .reduce((s,t)=>s+Math.abs(Number(t.amount)||0),0);
+    if (grossFees > 0) {
+      tips.push({
+        icon:'💸', color:'#f59e0b',
+        title:'إجمالي تكلفة الائتمان',
+        text:`اتحصّل عليك ${fmt(grossFees)} ${cardSym} رسوم وفوائد مرابحة إجمالاً على البطاقة دي من كل الكشوفات المسجّلة عندك. ده الرقم اللي يستاهل تراجعه لو عايز تقلل التكلفة.`
+      });
+    }
+
+    // 2) Minimum-only payment pattern across recent closed periods
+    const allPeriods = listPeriods(card);
+    const closedPeriods = allPeriods.filter(p => p !== pd.currentPeriodKey);
+    const recentStmts = closedPeriods.slice(0, 3).map(p => calcStatement(card, p));
+    const minOnlyCount = recentStmts.filter(s => s.closing > 0 && s.payments > 0 && s.payments <= s.minDue * 1.2).length;
+    if (recentStmts.length >= 2 && minOnlyCount >= Math.min(2, recentStmts.length)) {
+      tips.push({
+        icon:'⚠️', color:'#ef4444',
+        title:'بتسدد قريب من الحد الأدنى بس',
+        text:`في آخر ${recentStmts.length} كشوفات، مدفوعاتك كانت قريبة من الحد الأدنى بس. البنك نفسه بيوضح في كشوفاته إن سداد الحد الأدنى بس على مبلغ ٧٠٠٠ ريال ممكن ياخد ٧٠ شهر ويكلفك ٤٬٤٢٣ ريال فوائد إضافية. أي مبلغ تزوده فوق الحد الأدنى بيقلل الفايدة فعلياً.`
+      });
+    }
+
+    // 3) Too many overlapping installment sources (BNPL + Tasaheel)
+    let linkedCount = 0;
+    try {
+      if (Array.isArray(window.installments)) {
+        linkedCount = window.installments.filter(i => i.linkedCardId===card.id && (Number(i.paidMonths)||0) < Number(i.totalMonths||0)).length;
+      }
+    } catch(e){}
+    if (linkedCount >= 3) {
+      tips.push({
+        icon:'📋', color:'#7c3aed',
+        title:'عندك أقساط كتير شغالة',
+        text:`عندك ${linkedCount} أقساط نشطة على البطاقة دي (زي تساهيل أو تابي/تمارا). كل قسط جديد بيتراكم فوق اللي قبله وبيزود الفايدة الشهرية. حاول توقف أي قسط جديد لحد ما القديم يقفل.`
+      });
+    }
+
+    // 4) Credit utilization
+    if (r.limit > 0) {
+      if (r.utilization >= 70) {
+        tips.push({
+          icon:'📈', color:'#ef4444',
+          title:'نسبة استخدام مرتفعة',
+          text:`بتستخدم ${r.utilization.toFixed(0)}% من حدك الائتماني (${fmt0(r.limit)} ${cardSym}). النسبة العالية بتزود مبلغ الفايدة الشهرية وبتقلل مرونتك في الطوارئ. حاول تنزلها تحت ٣٠-٤٠٪.`
+        });
+      } else if (r.utilization > 0 && r.utilization <= 10) {
+        tips.push({
+          icon:'✅', color:'#10b981',
+          title:'استخدام صحي',
+          text:`بتستخدم بس ${r.utilization.toFixed(0)}% من حدك الائتماني — نسبة ممتازة.`
+        });
+      }
+    }
+
+    return tips;
+  }
+  window.computeCCAdviceTips = computeCCAdviceTips;
+
+  function buildCCAdviceHTML(card, r, pd) {
+    const tips = computeCCAdviceTips(card, r, pd);
+    let html = `<div style="background:var(--card2);border-radius:14px;padding:14px;margin-bottom:14px">
+      <div style="font-weight:900;font-size:13px;margin-bottom:10px">💡 نصائح لهذه البطاقة</div>`;
+    if (tips.length === 0) {
+      html += `<div style="text-align:center;color:var(--muted);font-size:12px;padding:6px 0 12px">مفيش تنبيهات دلوقتي — استمر كده 👍</div>`;
+    } else {
+      tips.forEach(t => {
+        html += `<div style="background:var(--card);border-right:3px solid ${t.color};border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12px;line-height:1.7">
+          <div style="font-weight:900;color:${t.color};margin-bottom:3px">${t.icon} ${esc(t.title)}</div>
+          <div style="color:var(--text)">${esc(t.text)}</div>
+        </div>`;
+      });
+    }
+    html += `
+      <div style="background:var(--card);border-radius:10px;padding:12px;margin-top:2px">
+        <div style="font-weight:900;font-size:12px;margin-bottom:6px">🧮 حاسبة توفير الفايدة</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">لو دفعت مبلغ إضافي فوق الحد الأدنى، قد إيه هيقل من الفايدة التقريبية للشهر الجاي؟</div>
+        <div style="display:flex;gap:6px">
+          <input type="number" id="ccCalcExtra_${card.id}" placeholder="مبلغ إضافي" inputmode="decimal" style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:8px 10px;direction:ltr">
+          <button onclick="window.ccAdviceCalc('${card.id}')" style="background:var(--accent);color:#000;border:0;border-radius:8px;padding:8px 14px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">احسب</button>
+        </div>
+        <div id="ccCalcResult_${card.id}" style="margin-top:8px;font-size:12px"></div>
+      </div>
+    </div>`;
+    return html;
+  }
+  window.buildCCAdviceHTML = buildCCAdviceHTML;
+
+  window.ccAdviceCalc = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const r = calcCard(card);
+    const inp = document.getElementById('ccCalcExtra_'+cardId);
+    const out = document.getElementById('ccCalcResult_'+cardId);
+    if (!inp || !out) return;
+    const extra = Math.max(0, Number(inp.value)||0);
+    const cardSym = symFor(card.currency);
+    if (extra <= 0) { out.innerHTML = `<span style="color:var(--muted)">اكتب مبلغ الأول</span>`; return; }
+    const before = r.balance * (r.profitRate/100);
+    const newBalance = Math.max(0, r.balance - extra);
+    const after = newBalance * (r.profitRate/100);
+    const saved = Math.max(0, before - after);
+    out.innerHTML = `
+      <div style="display:flex;justify-content:space-between"><span>الفايدة التقريبية دلوقتي:</span><b style="direction:ltr">${fmt(before)} ${cardSym}</b></div>
+      <div style="display:flex;justify-content:space-between"><span>بعد الدفعة:</span><b style="direction:ltr">${fmt(after)} ${cardSym}</b></div>
+      <div style="display:flex;justify-content:space-between;color:var(--green);font-weight:900;border-top:1px solid var(--border);margin-top:4px;padding-top:4px"><span>التوفير الشهري التقريبي:</span><b style="direction:ltr">${fmt(saved)} ${cardSym}</b></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">* تقدير مبسّط (الرصيد × نسبة الفايدة الشهرية). حساب البنك الفعلي بيتم يوم بيوم من تاريخ كل عملية.</div>
+    `;
+  };
+
+  // ═══════════════════════════════════════════════════════════
   // CARD DETAIL SCREEN — bank statement style, single coherent view
   // ═══════════════════════════════════════════════════════════
   window.openCardDetail = function(cardId) {
@@ -25959,6 +26081,9 @@ setTimeout(() => {
           </div>
         ` : ''}
       </div>
+
+      <!-- V30: Advice engine -->
+      ${buildCCAdviceHTML(card, r, pd)}
 
       <!-- Linked installments -->
       ${linkedInsts.length > 0 ? `
