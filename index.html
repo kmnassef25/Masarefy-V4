@@ -303,7 +303,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);displ
 .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(240,180,41,.05);}
 
 /* ── SCROLL BODY ── */
-.body-scroll{flex:1;min-height:0;overflow-y:auto;padding:14px 14px 80px;scrollbar-width:none;}
+.body-scroll{flex:1;min-height:0;overflow-y:auto;padding:14px 14px calc(80px + env(safe-area-inset-bottom));scrollbar-width:none;}
 .body-scroll::-webkit-scrollbar{display:none;}
 
 /* ── DATE GROUP ── */
@@ -21011,8 +21011,8 @@ setTimeout(() => {
           const lastTx = (card.transactions||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0];
           const lastTxStr = lastTx ? `آخر حركة: ${lastTx.date||''}` : 'لا توجد حركات بعد';
 
-          return `<div class="v23-wallet-card" style="--brand-color:#e53e3e;background:linear-gradient(135deg,rgba(248,81,73,.12),rgba(248,81,73,.04));border:1px solid rgba(248,81,73,.2)"
-            onclick="if(typeof renderCreditCards==='function'){document.getElementById('creditCardsModal').classList.add('open');renderCreditCards();}" style="cursor:pointer">
+          return `<div class="v23-wallet-card" style="--brand-color:#e53e3e;background:linear-gradient(135deg,rgba(248,81,73,.12),rgba(248,81,73,.04));border:1px solid rgba(248,81,73,.2);cursor:pointer"
+            onclick="if(typeof renderCreditCards==='function'){document.getElementById('creditCardsModal').classList.add('open');renderCreditCards();}">
             <div class="v23-wallet-header">
               <div class="v23-wallet-logo" style="background:linear-gradient(135deg,#e53e3e,#c53030);color:#fff;font-size:18px">💳</div>
               <div class="v23-wallet-info">
@@ -26342,84 +26342,221 @@ setTimeout(() => {
   // 2) Calculate rewards points / cashback estimate
   // ═══════════════════════════════════════════════════════════
 
+  // ═══════════════════════════════════════════════════════════
+  // V31: BANK RECONCILIATION — REBUILT
+  // The old version only compared ONE lump balance number typed
+  // in by hand, and blindly patched the difference with a single
+  // generic "adjustment" transaction dated today. That conflates
+  // two different bank-published numbers — closing balance vs.
+  // total amount due — which don't always match (tasaheel timing),
+  // and gives zero visibility into WHICH part of the statement is
+  // actually off.
+  //
+  // New version reconciles PER STATEMENT PERIOD against the real
+  // statement fields (opening / spend / fees / payments / refunds),
+  // shows exactly which field is off, only creates a properly-typed
+  // transaction (dated inside that period) for fields that CAN be
+  // fixed that way, flags opening-balance drift as "missing entry
+  // in an earlier period" instead of faking a fix, and keeps a
+  // small history log per card so past reconciliations aren't lost
+  // inside the regular transaction list.
+  // ═══════════════════════════════════════════════════════════
+  const _reconcileState = {};
+
   window.ccAdjustSignature = function(cardId) {
     const card = findCard(cardId);
     if (!card) return;
-    const r = calcCard(card);
-    const cardSym = symFor(card.currency);
+    if (!_reconcileState[cardId]) {
+      const periods = listPeriods(card);
+      _reconcileState[cardId] = { period: periods[0] || today().slice(0,7) };
+    }
+    renderReconcileScreen(cardId);
+  };
+
+  function renderReconcileScreen(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const state = _reconcileState[cardId];
+    const stmt = calcStatement(card, state.period);
+    const recon = Array.isArray(card.reconciliations) ? card.reconciliations : [];
+    const pastForPeriod = recon.filter(x => x.period === stmt.periodKey);
+
     ensureSimpleModal();
     document.getElementById('ccSimpleTitle').textContent = '⚖️ تسوية الرصيد مع البنك';
     document.getElementById('ccSimpleBody').innerHTML = `
       <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:10px;margin-bottom:12px;font-size:11px;line-height:1.7">
-        <div style="font-weight:900;color:#f59e0b;margin-bottom:4px">⚖️ تسوية مع البنك</div>
+        <div style="font-weight:900;color:#f59e0b;margin-bottom:4px">⚖️ إيه الفرق بين الرقمين؟</div>
         <div style="color:var(--text)">
-          لو الرصيد في تطبيق البنك مختلف عن اللي في "مصاريفي"، اكتب الرقم الحقيقي
-          والبرنامج هيضيف عملية تسوية تلقائية لسد الفرق (رسوم تدبير عملة، رسوم خفية، إلخ).
+          <b>رصيد الإقفال</b> هو رصيد الحساب الفعلي اللي بتتحسب عليه فايدة الشهر الجاي.
+          <b>إجمالي المبلغ المستحق</b> رقم تاني بينشره البنك لغرض السداد، وممكن يختلف عن رصيد الإقفال بسبب توقيت أقساط تساهيل. متلخبطش بينهم.
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-lbl">📱 الرصيد الحالي في "مصاريفي"</div>
-        <input class="form-inp" value="${fmt(r.balance)} ${cardSym}" readonly style="direction:ltr;background:var(--card2);color:var(--muted)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <button onclick="window.ccReconcilePeriod('${cardId}',1)" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px">›</button>
+        <div style="text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-weight:700">تسوية شهر</div>
+          <div style="font-size:14px;font-weight:900">${formatPeriodArabic(state.period)}</div>
+        </div>
+        <button onclick="window.ccReconcilePeriod('${cardId}',-1)" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px">‹</button>
       </div>
 
-      <div class="form-row">
-        <div class="form-lbl">🏦 الرصيد في تطبيق البنك بالظبط</div>
-        <input id="ccAdjBankBal" class="form-inp" type="number" step="0.01" inputmode="decimal" placeholder="مثال: ${fmt(r.balance)}" style="direction:ltr">
-        <div style="font-size:10px;color:var(--muted);margin-top:6px">اكتب الرقم اللي ظاهر في تطبيق البنك الآن</div>
+      <div style="background:var(--card2);border-radius:10px;padding:10px;margin-bottom:12px;font-size:11px">
+        <div style="font-weight:900;margin-bottom:6px">📱 حسب "مصاريفي" للشهر ده</div>
+        <div style="display:grid;gap:4px">
+          <div style="display:flex;justify-content:space-between"><span>الرصيد الافتتاحي</span><b style="direction:ltr">${fmt(stmt.opening)}</b></div>
+          <div style="display:flex;justify-content:space-between"><span>+ إجمالي الاستخدام</span><b style="direction:ltr">${fmt(stmt.purchases)}</b></div>
+          <div style="display:flex;justify-content:space-between"><span>+ رسوم/فوائد</span><b style="direction:ltr">${fmt(stmt.fees)}</b></div>
+          <div style="display:flex;justify-content:space-between"><span>− مدفوعات</span><b style="direction:ltr">${fmt(stmt.payments)}</b></div>
+          <div style="display:flex;justify-content:space-between"><span>− مردودات/مدفوعات أخرى</span><b style="direction:ltr">${fmt(stmt.refunds)}</b></div>
+          <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:4px;margin-top:2px"><span style="font-weight:900">= رصيد الإقفال</span><b style="direction:ltr;color:var(--accent)">${fmt(stmt.closing)}</b></div>
+        </div>
       </div>
 
+      <div style="font-weight:900;font-size:12px;margin-bottom:8px">🏦 اكتب الأرقام الحقيقية من كشف البنك لنفس الشهر</div>
+      <div class="form-row"><div class="form-lbl">الرصيد الافتتاحي</div><input id="rcOpening" class="form-inp" type="number" step="0.01" value="${stmt.opening.toFixed(2)}" style="direction:ltr"></div>
+      <div class="form-row"><div class="form-lbl">إجمالي الاستخدام</div><input id="rcPurchases" class="form-inp" type="number" step="0.01" value="${stmt.purchases.toFixed(2)}" style="direction:ltr"></div>
+      <div class="form-row"><div class="form-lbl">رسوم/فوائد (هامش الربح)</div><input id="rcFees" class="form-inp" type="number" step="0.01" value="${stmt.fees.toFixed(2)}" style="direction:ltr"></div>
+      <div class="form-row"><div class="form-lbl">إجمالي السداد (مدفوعات)</div><input id="rcPayments" class="form-inp" type="number" step="0.01" value="${stmt.payments.toFixed(2)}" style="direction:ltr"></div>
+      <div class="form-row"><div class="form-lbl">مردودات/مدفوعات أخرى</div><input id="rcRefunds" class="form-inp" type="number" step="0.01" value="${stmt.refunds.toFixed(2)}" style="direction:ltr"></div>
+
       <div class="form-row">
-        <div class="form-lbl">📝 سبب الفرق (اختياري)</div>
-        <input id="ccAdjReason" class="form-inp" placeholder="مثال: رسوم تدبير عملة، اشتراك سنوي...">
+        <div class="form-lbl">إجمالي المبلغ المستحق (اختياري — للسجل بس، من غير ما يعدّل أي حركة)</div>
+        <input id="rcTotalDue" class="form-inp" type="number" step="0.01" placeholder="من كشف البنك، لو مختلف عن رصيد الإقفال" style="direction:ltr">
       </div>
 
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="save-btn" onclick="window.ccApplyAdjust('${cardId}')" style="flex:1;background:linear-gradient(135deg,#f59e0b,#d97706)">⚖️ ضبط الرصيد</button>
-        <button onclick="document.getElementById('ccSimpleModal').classList.remove('open')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700;font-family:'Cairo',sans-serif">إلغاء</button>
-      </div>
+      <button class="save-btn" onclick="window.ccReconcileCompare('${cardId}')" style="margin-top:6px">🔍 قارن</button>
+      <div id="rcResult" style="margin-top:10px"></div>
+
+      ${pastForPeriod.length ? `
+        <div style="margin-top:14px;font-size:11px">
+          <div style="font-weight:900;margin-bottom:6px">📜 تسويات سابقة على الشهر ده</div>
+          ${pastForPeriod.map(x => `
+            <div style="background:var(--card2);border-radius:8px;padding:8px;margin-bottom:6px">
+              <div style="display:flex;justify-content:space-between"><span>${x.date}</span><b style="direction:ltr;color:#f59e0b">${x.totalDiff>0?'+':''}${fmt(x.totalDiff)}</b></div>
+              ${x.note ? `<div style="color:var(--muted);margin-top:2px">${esc(x.note)}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
     `;
     document.getElementById('ccSimpleModal').classList.add('open');
-    setTimeout(() => document.getElementById('ccAdjBankBal')?.focus(), 100);
-  };
+  }
 
-  window.ccApplyAdjust = function(cardId) {
+  // dir: 1 → older period (›), -1 → newer period (‹) — same convention as the statement view above
+  window.ccReconcilePeriod = function(cardId, dir) {
     const card = findCard(cardId);
     if (!card) return;
-    const r = calcCard(card);
-    const v = document.getElementById('ccAdjBankBal').value.trim();
-    if (!v) { toast('اكتب الرصيد من البنك', 'error'); return; }
-    const bankBal = parseFloat(v);
-    if (isNaN(bankBal) || bankBal < 0) { toast('قيمة غير صحيحة', 'error'); return; }
-    const reason = document.getElementById('ccAdjReason').value.trim();
-    const diff = bankBal - r.balance;
-    if (Math.abs(diff) < 0.01) {
-      toast('الرصيد متطابق بالفعل ✅', 'success');
-      document.getElementById('ccSimpleModal').classList.remove('open');
+    const periods = listPeriods(card);
+    const state = _reconcileState[cardId];
+    if (!state || periods.length === 0) return;
+    let idx = periods.indexOf(state.period);
+    if (idx === -1) idx = 0;
+    idx += dir;
+    if (idx >= 0 && idx < periods.length) state.period = periods[idx];
+    renderReconcileScreen(cardId);
+  };
+
+  window.ccReconcileCompare = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const state = _reconcileState[cardId];
+    const stmt = calcStatement(card, state.period);
+    const get = id => parseFloat(document.getElementById(id).value) || 0;
+    const bank = {
+      opening: get('rcOpening'), purchases: get('rcPurchases'), fees: get('rcFees'),
+      payments: get('rcPayments'), refunds: get('rcRefunds')
+    };
+    const totalDueRaw = document.getElementById('rcTotalDue').value.trim();
+    const totalDue = totalDueRaw ? parseFloat(totalDueRaw) : null;
+    const cardSym = symFor(card.currency);
+
+    const FIELD_LABELS = { opening:'الرصيد الافتتاحي', purchases:'إجمالي الاستخدام', fees:'رسوم/فوائد', payments:'مدفوعات', refunds:'مردودات' };
+    const diffs = [];
+    for (const f of ['opening','purchases','fees','payments','refunds']) {
+      const d = bank[f] - stmt[f];
+      if (Math.abs(d) >= 0.01) diffs.push({ field:f, diff:d });
+    }
+
+    const out = document.getElementById('rcResult');
+    if (diffs.length === 0) {
+      out.innerHTML = `<div style="background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:10px;font-size:12px;color:var(--green);font-weight:700">✅ كل الأرقام مطابقة تمامًا لكشف البنك</div>`;
+      if (totalDue !== null && !isNaN(totalDue)) {
+        saveReconRecord(card, { period: stmt.periodKey, totalDiff:0, note:`سُجّل إجمالي المستحق من البنك: ${fmt(totalDue)} ${cardSym}` });
+        renderReconcileScreen(cardId);
+      }
       return;
     }
-    const todayStr = new Date().toISOString().slice(0,10);
-    const adjTx = {
-      id: 'adj_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
-      date: todayStr,
-      time: '12:00',
-      name: reason || (diff > 0 ? 'تسوية: فروق بنكية (رسوم/تدبير)' : 'تسوية: تعديل رصيد (مرتجع/خصم)'),
-      amount: Math.abs(diff),
-      type: diff > 0 ? 'fee' : 'refund',  // fee adds to balance, refund removes
-      category: 'تسوية',
-      cat: 'تسوية',
-      note: 'تسوية تلقائية مع البنك',
-      statementMonth: todayStr.slice(0,7),
-      adjustment: true,
-      createdAt: new Date().toISOString()
-    };
-    if (!Array.isArray(card.transactions)) card.transactions = [];
-    card.transactions.push(adjTx);
-    saveAll();
-    toast(`✅ تم ضبط الرصيد (${diff > 0 ? '+' : ''}${diff.toFixed(2)})`, 'success');
-    document.getElementById('ccSimpleModal').classList.remove('open');
-    renderCardDetail(cardId);
+
+    let html = `<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:10px;font-size:11px;margin-bottom:8px">
+      <div style="font-weight:900;color:var(--red);margin-bottom:6px">فيه فرق في ${diffs.length} ${diffs.length===1?'بند':'بنود'}:</div>`;
+    diffs.forEach(d => {
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1">
+          ${d.field==='opening' ? '' : `<input type="checkbox" class="rcFixCheck" data-field="${d.field}" data-diff="${d.diff}" checked style="width:16px;height:16px">`}
+          <span>${FIELD_LABELS[d.field]}</span>
+        </label>
+        <b style="direction:ltr;color:${d.diff>0?'var(--red)':'var(--green)'}">${d.diff>0?'+':''}${fmt(d.diff)}</b>
+      </div>`;
+      if (d.field === 'opening') {
+        html += `<div style="color:#f59e0b;font-size:10px;margin-top:2px;margin-bottom:4px">⚠ الفرق ده معناه حركة ناقصة في شهر قبل ده — روح للشهر السابق (زرار ›) وسوّي هناك، مش هنا.</div>`;
+      }
+    });
+    html += `</div>
+      <button class="save-btn" onclick="window.ccReconcileApply('${cardId}')" style="background:linear-gradient(135deg,#f59e0b,#d97706)">⚖️ أضف تسويات للبنود المحددة</button>
+    `;
+    out.innerHTML = html;
   };
+
+  window.ccReconcileApply = function(cardId) {
+    const card = findCard(cardId);
+    if (!card) return;
+    const state = _reconcileState[cardId];
+    const period = state.period;
+    const checks = Array.from(document.querySelectorAll('.rcFixCheck:checked'));
+    if (checks.length === 0) { toast('محدّدتش أي بند', 'error'); return; }
+    const TYPE_FOR_FIELD = { purchases:'purchase', fees:'fee', payments:'payment', refunds:'refund' };
+    const OPPOSITE_TYPE = { purchases:'refund', fees:'refund', payments:'refund', refunds:'payment' };
+    const NAME_FOR_FIELD = { purchases:'تسوية: مشتريات ناقصة', fees:'تسوية: رسوم/فوائد ناقصة', payments:'تسوية: سداد ناقص', refunds:'تسوية: مردود ناقص' };
+    if (!Array.isArray(card.transactions)) card.transactions = [];
+    const addedTxIds = [];
+    let totalDiff = 0;
+    checks.forEach(chk => {
+      const field = chk.dataset.field;
+      const diff = parseFloat(chk.dataset.diff);
+      // Bank shows MORE of this field than the app → add a transaction of that
+      // type. Bank shows LESS (app is ahead) → add the reversing type instead,
+      // since that usually means a duplicate or wrongly-typed entry exists.
+      const type = diff >= 0 ? TYPE_FOR_FIELD[field] : OPPOSITE_TYPE[field];
+      const amount = Math.abs(diff);
+      const tx = {
+        id: 'rc_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+        date: period + '-15',
+        time: '12:00',
+        name: NAME_FOR_FIELD[field] || 'تسوية',
+        amount, type,
+        category: 'تسوية', cat: 'تسوية',
+        note: 'تسوية بنكية — شهر ' + formatPeriodArabic(period),
+        statementMonth: period,
+        adjustment: true,
+        createdAt: new Date().toISOString()
+      };
+      card.transactions.push(tx);
+      addedTxIds.push(tx.id);
+      totalDiff += diff;
+    });
+    saveReconRecord(card, { period, totalDiff, note: `تسوية ${checks.length} ${checks.length===1?'بند':'بنود'} (${checks.map(c=>c.dataset.field).join('، ')})`, txIds: addedTxIds });
+    toast(`✅ اتضافت ${checks.length} تسوية`, 'success');
+    renderCardDetail(cardId);
+    renderReconcileScreen(cardId);
+  };
+
+  function saveReconRecord(card, rec) {
+    if (!Array.isArray(card.reconciliations)) card.reconciliations = [];
+    card.reconciliations.unshift(Object.assign({ date: today() }, rec));
+    if (card.reconciliations.length > 30) card.reconciliations.length = 30;
+    saveAll();
+  }
 
   // ─── Rewards / Cashback estimator ────────────────────
   // Different cards have different earning rates. We expose configurable
