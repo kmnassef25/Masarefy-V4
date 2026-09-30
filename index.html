@@ -38,7 +38,7 @@
     'msarifyi_travel_archive': 'أرشيف الرحلات', 'msarifyi_hajj_budget': 'ميزانية الحج', 'msarifyi_flights': 'الطيران',
     'msarifyi_bills': 'الفواتير', 'msarifyi_credit_cards': 'البطاقات', 'msarifyi_nw_history': 'صافي الثروة',
     'msarifyi_home_widgets': 'ودجات الرئيسية', 'msarifyi_theme': 'المظهر', 'msarifyi_base': 'العملة الأساسية',
-    'msarifyi_weddings': 'الأفراح', 'msarifyi_vehicles': 'المركبات', 'msarifyi_orders': 'الطلبات'
+    'msarifyi_weddings': 'الأفراح', 'msarifyi_imp_rules': 'أهمية التصنيفات', 'msarifyi_mm_cards': 'إعداد الإحصائيات', 'msarifyi_vehicles': 'المركبات', 'msarifyi_orders': 'الطلبات'
   };
   function labelOf(k) { return String(LABELS[k] || String(k).replace(PREFIX, '')).replace(/[<>&"']/g, ''); }
 
@@ -4164,6 +4164,16 @@ button, .menu-row, .tx-card {
         <option value="">— مفيش —</option>
       </select>
       <div style="font-size:10px;color:var(--muted);margin-top:4px">الحركة هتترصد كمصروف/إيداع جوه الرحلة دي</div>
+    </div>
+
+    <!-- IMPORTANCE (v44) -->
+    <div class="form-row" id="fImpRow">
+      <div class="form-lbl">⚖️ الأهمية (اختياري)</div>
+      <div style="display:flex;gap:6px">
+        <button type="button" data-imp="need" onclick="window.msFormImp('need')" style="flex:1;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:10px;padding:9px 2px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">🟢 ضروري</button>
+        <button type="button" data-imp="normal" onclick="window.msFormImp('normal')" style="flex:1;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:10px;padding:9px 2px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">🟡 عادي</button>
+        <button type="button" data-imp="skip" onclick="window.msFormImp('skip')" style="flex:1;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:10px;padding:9px 2px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">🔴 كان ممكن أستغنى</button>
+      </div>
     </div>
 
     <!-- TAGS (#27) -->
@@ -17931,6 +17941,7 @@ setTimeout(() => {
       cat: 'finance',
       items: [
         { id:'accounts', icon:'🏦', title:'المحافظ', sub:'كل أموالك في مكان واحد', modal:'accountsModal', render:'renderAccounts', countKey:'menuAccCount' },
+        { id:'moneymap', icon:'📊', title:'أين ذهبت فلوسي؟', sub:'مقارنة الشهور والسنة والأهمية', custom:'msMoneyOpen' },
         { id:'goals', icon:'🎯', title:'أهداف الادخار', sub:'وفّر للحاجات الكبيرة', modal:'goalsModal', render:'renderGoals', countKey:'menuGoalCount' },
         { id:'subs', icon:'📅', title:'الاشتراكات', sub:'Netflix, Spotify, إلخ', modal:'subsModal', render:'renderSubs', countKey:'menuSubCount' },
         { id:'bills', icon:'🏠', title:'فواتير المنزل', sub:'كهرباء، ماء، إنترنت', modal:'billsModal', render:'renderBills', countKey:'menuBillCount' }
@@ -28236,6 +28247,7 @@ setTimeout(() => {
           <div class="m-val">${_heroFmt(T.sav)}</div>
         </div>
       </div>
+      ${window.msHomeTrendHtml ? window.msHomeTrendHtml() : ''}
     </div>`;
   }
 
@@ -29572,9 +29584,9 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 /* v43: card screens scroll smoothly.
    - the full-screen backdrop blur is what made scrolling inside card sheets heavy (the whole page behind gets re-blurred), so card sheets use a plain dark backdrop
    - long lists are drawn lazily: rows outside the viewport skip layout and paint */
-#creditCardsModal,#ccDetailModal,#ccSimpleModal,#ccPdfImportModalV2,#ccSmsModal,#ccStatsModal,#ccCatModal,#ccAddModal,#ccPurchaseModal,#ccPaymentModal{
+#msMoneyMap,#creditCardsModal,#ccDetailModal,#ccSimpleModal,#ccPdfImportModalV2,#ccSmsModal,#ccStatsModal,#ccCatModal,#ccAddModal,#ccPurchaseModal,#ccPaymentModal{
   background:rgba(0,0,0,.72) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;}
-#creditCardsModal .sheet,#ccDetailModal .sheet,#ccSimpleModal .sheet,#ccPdfImportModalV2 .sheet,#ccSmsModal .sheet,#ccStatsModal .sheet,#ccCatModal .sheet,#ccAddModal .sheet,#ccPurchaseModal .sheet,#ccPaymentModal .sheet{
+#msMoneyMap .sheet,#creditCardsModal .sheet,#ccDetailModal .sheet,#ccSimpleModal .sheet,#ccPdfImportModalV2 .sheet,#ccSmsModal .sheet,#ccStatsModal .sheet,#ccCatModal .sheet,#ccAddModal .sheet,#ccPurchaseModal .sheet,#ccPaymentModal .sheet{
   box-shadow:0 -2px 14px rgba(0,0,0,.35) !important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
 .cc-row{content-visibility:auto;contain-intrinsic-size:auto 92px;}
 </style>
@@ -29793,7 +29805,7 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
     const view = drill ? rows.filter(inDrill) : rows;
     const now = total(view, per, 0), before = view.some(r => r.per === prev) ? total(view, prev, cut) : (rows.some(r => r.per === prev) ? 0 : null);
     const avg = avgPrev(view, per, 3);
-    const nav = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><button onclick="window.ccStatsMove(1)" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-family:inherit;cursor:pointer">‹</button><div style="font-weight:900">${esc(monthName(per))}${open ? ' <span style="font-size:10px;color:var(--accent)">(لسه شغال)</span>' : ''}</div><button onclick="window.ccStatsMove(-1)" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-family:inherit;cursor:pointer">›</button></div>`;
+    const nav = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><button onclick="window.ccStatsMove(-1)" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-family:inherit;cursor:pointer">›</button><div style="font-weight:900">${esc(monthName(per))}${open ? ' <span style="font-size:10px;color:var(--accent)">(لسه شغال)</span>' : ''}</div><button onclick="window.ccStatsMove(1)" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-family:inherit;cursor:pointer">‹</button></div>`;
     const head = `<div style="background:var(--card2);border-radius:12px;padding:12px;margin-bottom:10px">
       ${drill ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><button onclick="window.ccStatsBack()" style="background:var(--card);border:1px solid var(--border);color:var(--accent);border-radius:8px;padding:4px 10px;font-family:inherit;font-weight:900;cursor:pointer">↩ رجوع</button><b>${drill.type === 'cat' ? meta(drill.k).i + ' ' + esc(drill.k) : esc((rows.find(r => r.key === drill.k) || { tx: { name: drill.k } }).tx.name)}</b></div>` : ''}
       ${nav}
@@ -29824,6 +29836,361 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
     body.innerHTML = head + list + '<div style="font-size:10px;color:var(--muted);margin-top:10px;line-height:1.7">المصروف = مشتريات + رسوم − استرداد، من غير السداد. رسوم DCC محسوبة على تصنيف التاجر بتاعها. الشهر بيتحدد بالكشف اللي العملية نزلت فيه.</div>';
   }
   window.__ccStatsInternals = { catOf, mkey, spendRows, total };
+})();
+</script>
+<script id="ms-mm-v44">
+/* v44 "أين ذهبت فلوسي؟": all spending, month/year/custom, interactive SVG charts, trend chips, importance analysis.
+   Charts are plain inline SVG (no library): works offline and follows the app theme. */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const fmt0 = n => (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  const fmt2 = n => (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const pad = n => String(n).padStart(2, '0');
+  const dstr = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  const dObj = s => new Date(s + 'T00:00:00');
+  const addDays = (s, n) => { const d = dObj(s); d.setDate(d.getDate() + n); return dstr(d); };
+  const daysBetween = (a, b) => Math.round((dObj(b) - dObj(a)) / 86400000);
+  const mStart = (y, m) => new Date(y, m, 1).getFullYear() + '-' + pad(new Date(y, m, 1).getMonth() + 1) + '-01';
+  const mEnd = (y, m) => dstr(new Date(y, m + 1, 0));
+  const nowFn = () => (typeof window.msNow === 'function' ? window.msNow() : new Date());
+  const MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  const toast = (m, t) => { if (window.showToast) window.showToast(m, t || 'info'); };
+  const TXS = () => (Array.isArray(window.txs) ? window.txs : []);
+  const CARDS = () => (Array.isArray(window.creditCards) ? window.creditCards : []);
+  const baseCur = () => (typeof window.baseCurrency === 'string' ? window.baseCurrency : 'SAR');
+  const EMO = () => { try { return typeof EMOJI !== 'undefined' ? EMOJI : {}; } catch (e) { return {}; } };
+  const BL = () => { try { return typeof BASE_LABELS !== 'undefined' ? BASE_LABELS : {}; } catch (e) { return {}; } };
+  const sym = () => { const b = BL()[baseCur()]; return b ? b.sym : ''; };
+  const toBase = sar => (typeof window.toBase === 'function' ? window.toBase(sar) : sar);
+  const toSAR = (amt, cur) => (typeof window.curToSAR === 'function' ? window.curToSAR(amt, cur) : amt);
+
+  // ───────── categories: icon + a stable colour (by all-time rank, so a category keeps its colour across months)
+  const PALETTE = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#0ea5e9', '#a3e635', '#e879f9', '#64748b'];
+  const ALIAS = { 'أكل': 'مطعم' };                       // the card module says "أكل", the main app says "مطعم"
+  const EXTRA_ICON = { 'تقنية وأدوات': '💻', 'تسوق': '🛍️', 'رسوم وفوائد': '💸', 'إلكترونيات': '📱' };
+  let colorRank = {};
+  const iconOf = c => EMO()[c] || EXTRA_ICON[c] || '🏷️';
+  const colorOf = c => (colorRank[c] != null && colorRank[c] < PALETTE.length ? PALETTE[colorRank[c]] : '#94a3b8');
+
+  // ───────── importance
+  const LEVELS = [{ k: 'need', l: 'ضروري', i: '🟢', c: '#22c55e' }, { k: 'normal', l: 'عادي', i: '🟡', c: '#f59e0b' }, { k: 'skip', l: 'كان ممكن أستغنى', i: '🔴', c: '#ef4444' }];
+  const NONE = { k: 'none', l: 'غير محدد', i: '⚪', c: '#94a3b8' };
+  const lvl = k => LEVELS.find(x => x.k === k) || NONE;
+  const getRules = () => { try { const r = window.msStore ? window.msStore.getJSON('msarifyi_imp_rules', '{}') : {}; return r && typeof r === 'object' && !Array.isArray(r) ? r : {}; } catch (e) { return {}; } };
+  const setRules = r => { try { window.msStore.setRaw('msarifyi_imp_rules', JSON.stringify(r)); } catch (e) { /* ignore */ } };
+  const getCardsOn = () => { try { return (window.msStore.getRaw('msarifyi_mm_cards') || '1') !== '0'; } catch (e) { return true; } };
+
+  // ───────── data: every real expense in one list (transfers and card settlements are not spending)
+  function allRows(withCards) {
+    const rows = [], rules = getRules();
+    for (const t of TXS()) {
+      if (!t || t.type !== 'expense' || t.isTransfer) continue;
+      if (t.ccPaymentId || t.cardId || t.cat === 'سداد بطاقة') continue;
+      const sar = Number(t.amountSAR) || (t.amount ? toSAR(Number(t.amount) || 0, t.currency || 'SAR') : 0);
+      if (!sar) continue;
+      const date = String(t.date || '').slice(0, 10);
+      if (Array.isArray(t.splits) && t.splits.length && Number(t.amount) > 0) {          // one payment split across categories
+        t.splits.forEach((sp, i) => { const c = sp.cat || 'أخرى'; rows.push({ id: t.id, key: t.id + '#' + i, src: 'main', tx: t, date, cat: c, name: t.name || c, sar: sar * (Number(sp.amount) || 0) / Number(t.amount), own: t.importance || null, imp: t.importance || rules[c] || null }); });
+        continue;
+      }
+      const cat = t.cat || 'أخرى';
+      rows.push({ id: t.id, key: t.id, src: 'main', tx: t, date, cat, name: t.name || cat, sar, own: t.importance || null, imp: t.importance || rules[cat] || null });
+    }
+    if (withCards) {
+      for (const c of CARDS()) for (const t of (c.transactions || [])) {
+        if (t.type !== 'purchase' && t.type !== 'fee' && t.type !== 'refund') continue;
+        let cat = typeof window.ccCatOf === 'function' ? window.ccCatOf(c, t) : (t.category || 'أخرى');
+        if (cat === null || cat === undefined) continue;
+        cat = ALIAS[cat] || cat;
+        const amt = Math.abs(Number(t.amount) || 0) * (t.type === 'refund' ? -1 : 1);
+        if (!amt) continue;
+        rows.push({ id: t.id, key: t.id, src: 'card', card: c, tx: t, date: String(t.date || '').slice(0, 10), cat, name: t.name || cat, sar: toSAR(amt, c.currency || 'SAR'), own: t.importance || null, imp: t.importance || rules[cat] || null });
+      }
+    }
+    return rows;
+  }
+  const inR = (r, a, b) => r.date >= a && r.date <= b;
+  const sumR = (rows, a, b, f) => rows.reduce((s, r) => s + (inR(r, a, b) && (!f || f(r)) ? r.sar : 0), 0);
+
+  // ───────── periods
+  let S = { mode: 'month', y: 0, m: 0, from: '', to: '', view: 'cat', sel: null, drill: null, openRow: null, items: [], review: false, limit: 40 };
+  function initState() {
+    const n = nowFn();
+    S = { mode: 'month', y: n.getFullYear(), m: n.getMonth(), from: dstr(new Date(n.getFullYear(), n.getMonth(), 1)), to: dstr(n), view: 'cat', sel: null, drill: null, openRow: null, items: [], review: false, limit: 40 };
+  }
+  function ranges() {
+    const today = dstr(nowFn());
+    if (S.mode === 'month') {
+      const a = mStart(S.y, S.m), b = mEnd(S.y, S.m), open = a <= today && today <= b;
+      const pm = new Date(S.y, S.m - 1, 1), pa = mStart(pm.getFullYear(), pm.getMonth()), pe = mEnd(pm.getFullYear(), pm.getMonth());
+      const cutDay = open ? Math.min(nowFn().getDate(), +pe.slice(8, 10)) : +pe.slice(8, 10);
+      return { a, b, pa, pb: pa.slice(0, 8) + pad(cutDay), open, title: MONTHS[S.m] + ' ' + S.y, prevName: MONTHS[pm.getMonth()], sameDay: open };
+    }
+    if (S.mode === 'year') {
+      const a = S.y + '-01-01', b = S.y + '-12-31', open = a <= today && today <= b, pa = (S.y - 1) + '-01-01';
+      const pb = open ? (S.y - 1) + '-' + today.slice(5) : (S.y - 1) + '-12-31';
+      return { a, b, pa, pb: pb.slice(5) === '02-29' ? (S.y - 1) + '-02-28' : pb, open, title: 'سنة ' + S.y, prevName: 'سنة ' + (S.y - 1), sameDay: open };
+    }
+    const a = S.from <= S.to ? S.from : S.to, b = S.from <= S.to ? S.to : S.from, len = daysBetween(a, b) + 1;
+    return { a, b, pa: addDays(a, -len), pb: addDays(a, -1), open: false, title: a + '  ←  ' + b, prevName: 'الفترة اللي قبلها', sameDay: false };
+  }
+  function chip(cur, prev) {
+    if (prev == null) return '';
+    if (!(prev > 0)) return cur > 0 ? '<span style="color:var(--accent);font-weight:900">جديد</span>' : '';
+    const p = (cur - prev) / prev * 100, up = p > 0.5, dn = p < -0.5;
+    return `<span style="color:${up ? 'var(--red)' : dn ? 'var(--green)' : 'var(--muted)'};font-weight:900;direction:ltr;display:inline-block">${up ? '▲' : dn ? '▼' : '•'} ${Math.abs(p).toFixed(0)}%</span>`;
+  }
+  window.msTrendChip = chip;
+
+  // ───────── SVG charts
+  function donutSvg(items, total) {
+    const R = 64, C = 2 * Math.PI * R; let off = 0;
+    const parts = items.map((it, i) => {
+      const len = Math.max(0, it.v / total * C - (items.length > 1 ? 1.6 : 0));
+      const dim = S.sel != null && S.sel !== it.k;
+      const s = `<circle cx="100" cy="100" r="${R}" fill="none" stroke="${it.c}" stroke-width="${S.sel === it.k ? 34 : 26}" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 100 100)" style="cursor:pointer;opacity:${dim ? 0.3 : 1};transition:opacity .15s" onclick="msMM.pick(${i})"/>`;
+      off += it.v / total * C; return s;
+    });
+    return `<svg viewBox="0 0 200 200" width="190" height="190" style="display:block;margin:0 auto"><circle cx="100" cy="100" r="${R}" fill="none" stroke="var(--border)" stroke-width="26" opacity=".35"/>${parts.join('')}</svg>`;
+  }
+  function barsSvg(list, selKey, avg) {
+    const W = 320, H = 130, top = 16, bot = 6, n = list.length, gap = 8, bw = (W - gap * (n + 1)) / n;
+    const max = Math.max(1, ...list.map(x => x.v), avg || 0), sc = v => (H - top - bot) * v / max;
+    const bars = list.map((x, i) => {
+      const h = Math.max(x.v > 0 ? 2 : 0, sc(x.v)), xx = gap + i * (bw + gap), y = H - bot - h, on = x.key === selKey;
+      return `<g ${x.pick ? `onclick="msMM.barPick(${i})" style="cursor:pointer"` : ''}><rect x="${xx.toFixed(1)}" y="${top}" width="${bw.toFixed(1)}" height="${H - top - bot}" fill="transparent"/><rect x="${xx.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="5" fill="${on ? 'var(--accent)' : 'var(--border)'}" ${x.open ? 'opacity=".8" stroke="var(--accent)" stroke-dasharray="3 3"' : ''}/><text x="${(xx + bw / 2).toFixed(1)}" y="${Math.max(11, y - 4).toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="inherit">${x.v ? fmt0(x.v) : ''}</text></g>`;
+    }).join('');
+    const avgLine = avg ? `<line x1="0" x2="${W}" y1="${(H - bot - sc(avg)).toFixed(1)}" y2="${(H - bot - sc(avg)).toFixed(1)}" stroke="var(--muted)" stroke-dasharray="4 4" opacity=".6"/>` : '';
+    const labels = `<div style="display:flex;gap:${gap}px;padding:0 ${gap}px;direction:ltr">${list.map(x => `<div style="flex:1;min-width:0;text-align:center;font-size:10px;font-weight:${x.key === selKey ? 900 : 700};color:${x.key === selKey ? 'var(--accent)' : 'var(--muted)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(x.label)}</div>`).join('')}</div>`;
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;direction:ltr">${avgLine}${bars}</svg>${labels}`;
+  }
+  function lineSvg(cur, prev, nDays, todayDay) {
+    const W = 320, H = 130, px = 8, top = 10, bot = 16;
+    const maxV = Math.max(1, cur[cur.length - 1] || 0, prev[prev.length - 1] || 0) * 1.06;
+    const X = d => px + (W - 2 * px) * (d - 1) / Math.max(1, nDays - 1), Y = v => H - bot - (H - top - bot) * v / maxV;
+    const path = (arr, upto) => arr.slice(0, upto).map((v, i) => (i ? 'L' : 'M') + X(i + 1).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' ');
+    const upto = todayDay || cur.length;
+    const grid = [0.25, 0.5, 0.75, 1].map(f => `<line x1="${px}" x2="${W - px}" y1="${Y(maxV * f / 1.06).toFixed(1)}" y2="${Y(maxV * f / 1.06).toFixed(1)}" stroke="var(--border)" opacity=".5"/>`).join('');
+    const ticks = [1, 5, 10, 15, 20, 25, 30].filter(d => d <= nDays).map(d => `<text x="${X(d).toFixed(1)}" y="${H - 3}" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="inherit">${d}</text>`).join('');
+    const hit = Array.from({ length: nDays }, (_, i) => `<rect x="${(X(i + 1) - (W - 2 * px) / nDays / 2).toFixed(1)}" y="0" width="${((W - 2 * px) / nDays).toFixed(1)}" height="${H}" fill="transparent" onclick="msMM.day(${i + 1})" style="cursor:pointer"/>`).join('');
+    const area = upto > 1 ? `<path d="${path(cur, upto)} L ${X(upto).toFixed(1)} ${Y(0)} L ${X(1)} ${Y(0)} Z" fill="var(--accent)" opacity=".12"/>` : '';
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;direction:ltr">${grid}<path d="${path(prev, prev.length)}" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4" opacity=".8"/>${area}<path d="${path(cur, upto)}" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"/>${ticks}${hit}</svg>`;
+  }
+
+  // ───────── the modal
+  function ensureModal() {
+    let m = $('msMoneyMap'); if (m) return m;
+    m = document.createElement('div'); m.className = 'overlay'; m.id = 'msMoneyMap';
+    m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = '<div class="sheet" style="max-width:640px;max-height:96vh;margin:0 auto;padding-bottom:26px"><div class="modal-head"><div class="modal-title">📊 أين ذهبت فلوسي؟</div><button class="close-x" onclick="document.getElementById(\'msMoneyMap\').classList.remove(\'open\')">×</button></div><div id="msMMBody"></div></div>';
+    document.body.appendChild(m); return m;
+  }
+  window.msMoneyOpen = function () { initState(); ensureModal(); render(); $('msMoneyMap').classList.add('open'); };
+
+  function seg(items, cur, fn) {
+    return `<div style="display:flex;gap:4px;background:var(--card2);border-radius:10px;padding:3px;margin-bottom:8px">${items.map(([k, l]) => `<button onclick="${fn}('${k}')" style="flex:1;background:${cur === k ? 'var(--accent)' : 'transparent'};color:${cur === k ? '#000' : 'var(--text)'};border:0;border-radius:8px;padding:7px 4px;font-family:inherit;font-size:12px;font-weight:900;cursor:pointer">${l}</button>`).join('')}</div>`;
+  }
+  const navBtn = (fn, t) => `<button onclick="${fn}" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 14px;font-family:inherit;font-size:14px;cursor:pointer">${t}</button>`;
+
+  function render() {
+    const body = $('msMMBody'); if (!body) return;
+    const withCards = getCardsOn();
+    const rows = allRows(withCards), R = ranges();
+    // colour rank from all-time totals
+    const tot = {}; rows.forEach(r => { tot[r.cat] = (tot[r.cat] || 0) + r.sar; });
+    colorRank = {}; Object.keys(tot).sort((a, b) => tot[b] - tot[a]).forEach((k, i) => { colorRank[k] = i; });
+    const inRows = rows.filter(r => inR(r, R.a, R.b)), prevRows = rows.filter(r => inR(r, R.pa, R.pb));
+    const dr = S.drill;
+    const scopeIn = dr ? inRows.filter(r => r.cat === dr) : inRows, scopePrev = dr ? prevRows.filter(r => r.cat === dr) : prevRows;
+    const cur = scopeIn.reduce((s, r) => s + r.sar, 0), prev = scopePrev.reduce((s, r) => s + r.sar, 0), hasPrev = rows.some(r => inR(r, R.pa, R.pb));
+    // average of the 3 months before (month mode) / average per month so far (year mode)
+    let avgTxt = '', avgVal = null;
+    if (S.mode === 'month') {
+      const v = []; for (let i = 1; i <= 3; i++) { const d = new Date(S.y, S.m - i, 1), a = mStart(d.getFullYear(), d.getMonth()), b = mEnd(d.getFullYear(), d.getMonth()); const s = sumR(dr ? rows.filter(r => r.cat === dr) : rows, a, b); if (s > 0) v.push(s); }
+      if (v.length) { avgVal = v.reduce((a, b) => a + b, 0) / v.length; avgTxt = 'متوسط آخر ' + v.length + ' شهور'; }
+    }
+    const period = S.mode === 'custom'
+      ? `<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px"><input type="date" class="inp" value="${S.from}" onchange="msMM.range('from',this.value)" style="flex:1;direction:ltr"><span>→</span><input type="date" class="inp" value="${S.to}" onchange="msMM.range('to',this.value)" style="flex:1;direction:ltr"></div>`
+      : `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">${navBtn("msMM.move(1)", '›')}<div style="font-weight:900">${esc(R.title)}${R.open ? ' <span style="font-size:10px;color:var(--accent)">(لسه شغال)</span>' : ''}</div>${navBtn("msMM.move(-1)", '‹')}</div>`;
+    const cardsTgl = CARDS().length ? `<label style="display:flex;gap:6px;align-items:center;font-size:11px;color:var(--muted);margin-top:8px"><input type="checkbox" ${withCards ? 'checked' : ''} onchange="msMM.cards(this.checked)" style="width:16px;height:16px"> مشتريات بطاقات الائتمان مشمولة (سداد البطاقة مش بيتعد)</label>` : '';
+    const head = `<div style="background:var(--card2);border-radius:14px;padding:12px;margin-bottom:10px">
+      ${dr ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><button onclick="msMM.back()" style="background:var(--card);border:1px solid var(--border);color:var(--accent);border-radius:8px;padding:4px 10px;font-family:inherit;font-weight:900;cursor:pointer">↩ رجوع</button><b>${iconOf(dr)} ${esc(dr)}</b></div>` : ''}
+      ${period}
+      <div style="font-size:28px;font-weight:900;direction:ltr;text-align:center;margin:4px 0">${fmt0(toBase(cur))} <span style="font-size:13px">${esc(sym())}</span></div>
+      <div style="display:flex;justify-content:space-around;gap:8px;font-size:11px;color:var(--muted);text-align:center">
+        <div>${esc(R.prevName)}${R.sameDay ? ' (لنفس اليوم)' : ''}<div style="color:var(--text);font-weight:900;direction:ltr">${hasPrev ? fmt0(toBase(prev)) : '-'}</div><div>${hasPrev ? chip(cur, prev) : ''}</div></div>
+        ${avgVal != null ? `<div>${avgTxt}<div style="color:var(--text);font-weight:900;direction:ltr">${fmt0(toBase(avgVal))}</div><div>${chip(cur, avgVal)}</div></div>` : ''}
+      </div>${cardsTgl}</div>`;
+    const tabs = dr ? '' : seg([['cat', '🍩 التصنيفات'], ['time', '📈 الشهور'], ['imp', '⚖️ الأهمية']], S.view, 'msMM.view');
+    let main = '';
+    if (dr) main = drillHtml(scopeIn);
+    else if (S.view === 'cat') main = catHtml(inRows, prevRows, R, hasPrev);
+    else if (S.view === 'time') main = timeHtml(rows, R);
+    else main = impHtml(inRows, prevRows, rows, R, hasPrev);
+    body.innerHTML = (dr ? '' : seg([['month', 'شهر'], ['year', 'سنة'], ['custom', 'فترة']], S.mode, 'msMM.mode')) + head + tabs + main;
+  }
+
+  // ── tab 1: categories
+  function catHtml(inRows, prevRows, R, hasPrev) {
+    const by = (rows) => { const m = {}; rows.forEach(r => { m[r.cat] = (m[r.cat] || 0) + r.sar; }); return m; };
+    const a = by(inRows), b = by(prevRows);
+    const all = Object.keys(a).map(k => ({ k, v: a[k], p: b[k] || 0 })).filter(x => x.v > 0).sort((x, y) => y.v - x.v);
+    if (!all.length) return '<div style="text-align:center;color:var(--muted);padding:28px;font-size:12px">مفيش مصروفات في الفترة دي</div>';
+    const total = all.reduce((s, x) => s + x.v, 0);
+    const top = all.slice(0, 8).map(x => ({ k: x.k, v: x.v, c: colorOf(x.k) }));
+    const rest = all.slice(8).reduce((s, x) => s + x.v, 0); if (rest > 0) top.push({ k: '__rest', v: rest, c: '#94a3b8', label: 'باقي التصنيفات' });
+    S.items = all;
+    S.chart = top;
+    const sel = S.sel != null ? top.find(x => x.k === S.sel) : null;
+    const center = sel ? `<div style="font-size:22px">${sel.k === '__rest' ? '…' : iconOf(sel.k)}</div><div style="font-size:11px;color:var(--muted)">${esc(sel.label || sel.k)}</div><div style="font-weight:900;direction:ltr">${fmt0(toBase(sel.v))}</div><div style="font-size:10px;color:var(--muted)">${(sel.v / total * 100).toFixed(0)}%</div>` : `<div style="font-size:11px;color:var(--muted)">الإجمالي</div><div style="font-weight:900;font-size:16px;direction:ltr">${fmt0(toBase(total))}</div><div style="font-size:10px;color:var(--muted)">${all.length} تصنيف</div>`;
+    const chart = `<div style="position:relative;width:190px;margin:2px auto 10px">${donutSvg(top, total)}<div onclick="msMM.pick(-1)" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:${sel ? 'auto' : 'none'};cursor:pointer">${center}</div></div>`;
+    const list = all.map((x, i) => {
+      const pct = x.v / total * 100, on = S.sel === x.k;
+      return `<div onclick="msMM.drill(${i})" style="cursor:pointer;padding:10px 12px;${i ? 'border-top:1px solid var(--border);' : ''}${on ? 'background:' + colorOf(x.k) + '18;' : ''}font-size:12px">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div style="display:flex;align-items:center;gap:8px;min-width:0"><span style="width:30px;height:30px;border-radius:50%;background:${colorOf(x.k)}26;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${iconOf(x.k)}</span><span style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.k)}</span><span style="color:var(--muted);font-size:10px">${pct.toFixed(0)}%</span></div><div style="direction:ltr;font-weight:900;flex-shrink:0">${fmt0(toBase(x.v))}</div></div>
+        <div style="height:5px;background:var(--border);border-radius:3px;margin:7px 0 4px;overflow:hidden"><div style="height:100%;width:${pct.toFixed(1)}%;background:${colorOf(x.k)}"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted)"><span>${esc(R.prevName)}: <span style="direction:ltr;display:inline-block">${hasPrev ? fmt0(toBase(x.p)) : '-'}</span></span>${hasPrev ? chip(x.v, x.p) : ''}</div></div>`;
+    }).join('');
+    const gone = hasPrev ? Object.keys(b).filter(k => !a[k] && b[k] > 0).map(k => `${iconOf(k)} ${esc(k)}`).join('، ') : '';
+    return chart + `<div style="background:var(--card2);border-radius:12px;overflow:hidden">${list}</div>${gone ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.7">اتصرف فيها ${esc(R.prevName)} ومصرفتش الفترة دي: ${gone}</div>` : ''}<div style="font-size:10px;color:var(--muted);margin-top:8px">دوس على أي شريحة في الدائرة تبرزها، ودوس على التصنيف تشوف عملياته.</div>`;
+  }
+
+  // ── tab 2: over time
+  function timeHtml(rows, R) {
+    let list = [], selKey = '', avg = null, extra = '';
+    if (S.mode === 'month') {
+      for (let i = 5; i >= 0; i--) { const d = new Date(S.y, S.m - i, 1), a = mStart(d.getFullYear(), d.getMonth()), b = mEnd(d.getFullYear(), d.getMonth()); list.push({ key: a, label: MONTHS[d.getMonth()], v: toBase(sumR(rows, a, b)), pick: { y: d.getFullYear(), m: d.getMonth() }, open: a <= dstr(nowFn()) && dstr(nowFn()) <= b }); }
+      selKey = mStart(S.y, S.m);
+      // cumulative line: this month vs last month
+      const pm = new Date(S.y, S.m - 1, 1), nd = new Date(S.y, S.m + 1, 0).getDate(), pd = new Date(S.y, S.m, 0).getDate(), N = Math.max(nd, pd);
+      const cum = (y, m, days, cut) => { const out = []; let run = 0; for (let d = 1; d <= days; d++) { const ds = y + '-' + pad(m + 1) + '-' + pad(d); run += rows.reduce((s, r) => s + (r.date === ds ? r.sar : 0), 0); out.push(toBase(run)); } return out; };
+      const todayDay = R.open ? nowFn().getDate() : nd;
+      const c1 = cum(S.y, S.m, nd), c0 = cum(pm.getFullYear(), pm.getMonth(), pd);
+      while (c1.length < N) c1.push(c1[c1.length - 1] || 0); while (c0.length < N) c0.push(c0[c0.length - 1] || 0);
+      S.line = { c1, c0, todayDay, pname: MONTHS[pm.getMonth()], name: MONTHS[S.m] };
+      extra = `<div style="background:var(--card2);border-radius:12px;padding:10px;margin-top:10px"><div style="font-weight:900;font-size:12px;margin-bottom:4px">📈 المصروف التراكمي يوم بيوم</div><div style="display:flex;gap:12px;font-size:10px;color:var(--muted);margin-bottom:4px"><span><b style="color:var(--accent)">━</b> ${esc(MONTHS[S.m])}</span><span>┅ ${esc(MONTHS[pm.getMonth()])}</span></div>${lineSvg(c1, c0, N, todayDay)}<div id="mmDayCap" style="font-size:11px;text-align:center;color:var(--muted);min-height:16px;margin-top:4px">دوس على أي يوم في الرسمة</div></div>`;
+    } else if (S.mode === 'year') {
+      for (let m = 0; m < 12; m++) { const a = mStart(S.y, m), b = mEnd(S.y, m); list.push({ key: a, label: MONTHS[m].slice(0, 3), v: toBase(sumR(rows, a, b)), pick: { y: S.y, m }, open: a <= dstr(nowFn()) && dstr(nowFn()) <= b }); }
+      const filled = list.filter(x => x.v > 0); if (filled.length) avg = filled.reduce((s, x) => s + x.v, 0) / filled.length;
+      selKey = '';
+    } else {
+      const len = daysBetween(R.a, R.b) + 1;
+      if (len <= 62) { for (let s = R.a, i = 1; s <= R.b; s = addDays(s, 7), i++) { const e = addDays(s, 6) > R.b ? R.b : addDays(s, 6); list.push({ key: s, label: 'أ' + i, v: toBase(sumR(rows, s, e)) }); } }
+      else { const st = dObj(R.a); for (let d = new Date(st.getFullYear(), st.getMonth(), 1); dstr(d) <= R.b && list.length < 24; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) { const a = dstr(d) < R.a ? R.a : dstr(d), e0 = mEnd(d.getFullYear(), d.getMonth()), e = e0 > R.b ? R.b : e0; list.push({ key: a, label: MONTHS[d.getMonth()].slice(0, 3), v: toBase(sumR(rows, a, e)), pick: { y: d.getFullYear(), m: d.getMonth() } }); } }
+    }
+    S.bars = list;
+    if (!list.some(x => x.v > 0)) return '<div style="text-align:center;color:var(--muted);padding:28px;font-size:12px">مفيش مصروفات في الفترة دي</div>';
+    const cap = S.mode === 'month' ? 'آخر 6 شهور (دوس على شهر تفتحه)' : S.mode === 'year' ? 'شهور السنة (الخط المتقطع = المتوسط الشهري)' : 'المصروف على مدى الفترة';
+    return `<div style="background:var(--card2);border-radius:12px;padding:10px"><div style="font-weight:900;font-size:12px;margin-bottom:6px">📊 ${cap}</div>${barsSvg(list, selKey, avg)}</div>${extra}`;
+  }
+
+  // ── tab 3: importance
+  function impSplit(rows) { const m = { need: 0, normal: 0, skip: 0, none: 0 }; rows.forEach(r => { m[r.imp || 'none'] += r.sar; }); return m; }
+  function impHtml(inRows, prevRows, allR, R, hasPrev) {
+    const a = impSplit(inRows), b = impSplit(prevRows), total = a.need + a.normal + a.skip + a.none;
+    if (!(total > 0)) return '<div style="text-align:center;color:var(--muted);padding:28px;font-size:12px">مفيش مصروفات في الفترة دي</div>';
+    const tagged = a.need + a.normal + a.skip;
+    const segs = [...LEVELS, NONE].map(l => ({ l, v: a[l.k] }));
+    const bar = `<div style="display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--border);margin:8px 0">${segs.map(s => `<div style="width:${(s.v / total * 100).toFixed(2)}%;background:${s.l.c}"></div>`).join('')}</div>`;
+    const legend = segs.map(s => `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:12px;border-top:1px solid var(--border)"><span>${s.l.i} ${s.l.l}</span><span style="direction:ltr;font-weight:900">${fmt0(toBase(s.v))} <span style="color:var(--muted);font-weight:400">${(s.v / total * 100).toFixed(0)}%</span> ${hasPrev && s.l.k !== 'none' ? chip(s.v, b[s.l.k]) : ''}</span></div>`).join('');
+    const pctSkip = tagged > 0 ? a.skip / tagged * 100 : null;
+    const hero = `<div style="background:${lvl('skip').c}14;border:1px solid ${lvl('skip').c}55;border-radius:12px;padding:12px;text-align:center;margin-bottom:10px"><div style="font-size:11px;color:var(--muted)">🔴 كان ممكن تستغنى عنه</div><div style="font-size:24px;font-weight:900;direction:ltr">${fmt0(toBase(a.skip))} <span style="font-size:12px">${esc(sym())}</span></div><div style="font-size:12px;margin-top:2px">${pctSkip == null ? 'لسه ما صنّفتش حاجة' : `<b>${pctSkip.toFixed(0)}%</b> من المصروف اللي اتصنّف`} ${hasPrev && b.skip > 0 ? chip(a.skip, b.skip) : ''}</div>${a.none > 0 ? `<div style="font-size:10px;color:var(--muted);margin-top:4px">${(a.none / total * 100).toFixed(0)}% من المصروف لسه غير محدد، فالنسبة تقريبية</div>` : ''}</div>`;
+    const topSkip = inRows.filter(r => r.imp === 'skip').sort((x, y) => y.sar - x.sar).slice(0, 5);
+    const topHtml = topSkip.length ? `<div style="font-weight:900;font-size:12px;margin:12px 0 6px">🔍 أكبر حاجات كان ممكن تستغنى عنها</div><div style="background:var(--card2);border-radius:12px;overflow:hidden">${topSkip.map((r, i) => rowHtml(r, i)).join('')}</div>` : '';
+    // category defaults
+    const cats = {}; inRows.forEach(r => { cats[r.cat] = (cats[r.cat] || 0) + r.sar; });
+    const rules = getRules(), ck = Object.keys(cats).sort((x, y) => cats[y] - cats[x]).slice(0, 14);
+    S.ruleCats = ck;
+    const ruleHtml = `<div style="font-weight:900;font-size:12px;margin:14px 0 4px">⚙️ الافتراضي لكل تصنيف</div><div style="font-size:10px;color:var(--muted);margin-bottom:6px;line-height:1.7">اختار مرة واحدة والتاريخ كله يتحلل. أي عملية تقدر تغيّر أهميتها لوحدها.</div><div style="background:var(--card2);border-radius:12px;overflow:hidden">${ck.map((k, i) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:8px 10px;${i ? 'border-top:1px solid var(--border);' : ''}font-size:12px"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${iconOf(k)} ${esc(k)}</span><span style="display:flex;gap:4px;flex-shrink:0">${LEVELS.map(l => `<button onclick="msMM.rule(${i},'${l.k}')" title="${l.l}" style="width:34px;height:30px;border-radius:8px;border:1px solid ${rules[k] === l.k ? l.c : 'var(--border)'};background:${rules[k] === l.k ? l.c + '33' : 'transparent'};font-size:14px;cursor:pointer">${l.i}</button>`).join('')}</span></div>`).join('')}</div>`;
+    const untagged = inRows.filter(r => !r.imp).sort((x, y) => y.sar - x.sar);
+    const revBtn = untagged.length ? `<button onclick="msMM.review()" style="width:100%;margin-top:12px;background:var(--card2);border:1px solid var(--border);color:var(--accent);border-radius:10px;padding:11px;font-family:inherit;font-weight:900;font-size:12px;cursor:pointer">🗂️ صنّف العمليات غير المحددة (${untagged.length})</button>` : '';
+    const review = S.review ? `<div style="font-weight:900;font-size:12px;margin:12px 0 6px">الأكبر الأول (${Math.min(25, untagged.length)} من ${untagged.length})</div><div style="background:var(--card2);border-radius:12px;overflow:hidden">${untagged.slice(0, 25).map((r, i) => rowHtml(r, i, true)).join('')}</div>` : '';
+    return hero + `<div style="background:var(--card2);border-radius:12px;padding:10px">${bar}${legend}</div>${topHtml}${ruleHtml}${revBtn}${review}`;
+  }
+
+  // ── drill-down + rows
+  function impPick(r) { return `<div style="display:flex;gap:6px;padding:0 12px 10px">${LEVELS.map(l => `<button onclick="event.stopPropagation();msMM.setImp('${esc(r.src)}','${esc(r.id)}','${l.k}')" style="flex:1;border-radius:9px;border:1px solid ${r.own === l.k ? l.c : 'var(--border)'};background:${r.own === l.k ? l.c + '33' : 'transparent'};padding:7px 2px;font-family:inherit;font-size:11px;font-weight:700;color:var(--text);cursor:pointer">${l.i} ${l.l}</button>`).join('')}</div>`; }
+  function rowHtml(r, i, forceOpen) {
+    const c = colorOf(r.cat), L = lvl(r.imp), open = forceOpen || S.openRow === r.key;
+    const orig = r.src === 'card' && r.tx.origCurrency && r.tx.origCurrency !== r.card.currency ? ` · <span style="direction:ltr;display:inline-block">${fmt2(r.tx.origAmount)} ${esc(r.tx.origCurrency)}</span>` : '';
+    return `<div style="${i ? 'border-top:1px solid var(--border);' : ''}"><div onclick="msMM.row('${esc(r.key)}')" style="cursor:pointer;display:flex;justify-content:space-between;gap:8px;padding:10px 12px;font-size:12px"><div style="display:flex;gap:8px;min-width:0;align-items:center"><span style="width:30px;height:30px;border-radius:50%;background:${c}26;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">${iconOf(r.cat)}</span><div style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.name)}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(r.date)} · ${esc(r.cat)}${r.src === 'card' ? ' · 💳' : ''}${orig}${r.tx.pending ? ' · ⏳ تقديري' : ''} · <span style="color:${L.c}">${L.i}${r.imp && !r.own ? ' (افتراضي)' : ''}</span></div></div></div><div style="direction:ltr;font-weight:900;flex-shrink:0;color:${r.sar < 0 ? 'var(--green)' : 'var(--text)'}">${fmt0(toBase(r.sar))}</div></div>${open ? impPick(r) : ''}</div>`;
+  }
+  function drillHtml(rows) {
+    const items = rows.slice().sort((a, b) => b.date.localeCompare(a.date) || b.sar - a.sar);
+    if (!items.length) return '<div style="text-align:center;color:var(--muted);padding:28px;font-size:12px">مفيش عمليات في الفترة دي</div>';
+    return `<div style="background:var(--card2);border-radius:12px;overflow:hidden">${items.slice(0, S.limit).map((r, i) => rowHtml(r, i)).join('')}${items.length > S.limit ? `<button onclick="msMM.more()" style="width:100%;background:transparent;border:0;border-top:1px solid var(--border);color:var(--accent);padding:12px;font-family:inherit;font-weight:900;font-size:12px;cursor:pointer">عرض المزيد (${items.length - S.limit})</button>` : ''}</div><div style="font-size:10px;color:var(--muted);margin-top:8px">دوس على أي عملية تحدد أهميتها.</div>`;
+  }
+
+  // ───────── actions
+  function findTx(src, id) {
+    if (src === 'main') return TXS().find(t => t.id === id) || null;
+    for (const c of CARDS()) { const t = (c.transactions || []).find(x => x.id === id); if (t) return t; }
+    return null;
+  }
+  function persist(src) { try { if (src === 'main' && typeof window.saveData === 'function') window.saveData(); else if (typeof window.saveCreditCards === 'function') window.saveCreditCards(); } catch (e) { /* ignore */ } }
+  window.msMM = {
+    mode(m) { S.mode = m; S.sel = null; S.drill = null; if (m === 'custom' && !S.from) { S.from = dstr(new Date(S.y, S.m, 1)); S.to = dstr(nowFn()); } render(); },
+    view(v) { S.view = v; S.sel = null; S.review = false; render(); },
+    move(d) { if (S.mode === 'year') S.y += -d; else { const t = new Date(S.y, S.m - d, 1); S.y = t.getFullYear(); S.m = t.getMonth(); } S.sel = null; S.drill = null; render(); },
+    range(k, v) { if (v) { S[k] = v; render(); } },
+    cards(on) { try { window.msStore.setRaw('msarifyi_mm_cards', on ? '1' : '0'); } catch (e) { /* ignore */ } render(); },
+    pick(i) { const it = i >= 0 ? (S.chart || [])[i] : null; S.sel = it && S.sel !== it.k ? it.k : null; render(); },
+    drill(i) { const it = (S.items || [])[i]; if (!it) return; S.drill = it.k; S.openRow = null; S.limit = 40; render(); const b = $('msMMBody'); if (b && b.parentNode) b.parentNode.scrollTop = 0; },
+    back() { S.drill = null; S.openRow = null; render(); },
+    more() { S.limit += 40; render(); },
+    barPick(i) { const b = (S.bars || [])[i]; if (!b || !b.pick) return; S.mode = 'month'; S.y = b.pick.y; S.m = b.pick.m; S.view = 'cat'; S.sel = null; render(); },
+    day(d) { const L = S.line; const el = $('mmDayCap'); if (!L || !el) return; const v1 = L.c1[d - 1], v0 = L.c0[d - 1]; el.innerHTML = `يوم ${d}: <b>${fmt0(d > L.todayDay ? 0 : v1)}</b> ${d > L.todayDay ? '(لسه ما جاش)' : ''} · ${esc(L.pname)}: <b>${fmt0(v0)}</b>`; },
+    row(key) { S.openRow = S.openRow === key ? null : key; render(); },
+    setImp(src, id, level) { const t = findTx(src, id); if (!t) return; if (t.importance === level) delete t.importance; else t.importance = level; persist(src); render(); },
+    rule(i, level) { const k = (S.ruleCats || [])[i]; if (!k) return; const r = getRules(); if (r[k] === level) delete r[k]; else r[k] = level; setRules(r); render(); },
+    review() { S.review = !S.review; render(); }
+  };
+  window.__mmInternals = { allRows, ranges: () => ranges(), state: () => S };
+
+  // ───────── home: one line under the hero (trend vs last month, same day)
+  window.msHomeTrendHtml = function () {
+    try {
+      const rows = allRows(getCardsOn()), n = nowFn(), y = n.getFullYear(), m = n.getMonth();
+      const a = mStart(y, m), b = mEnd(y, m), pm = new Date(y, m - 1, 1), pa = mStart(pm.getFullYear(), pm.getMonth()), pe = mEnd(pm.getFullYear(), pm.getMonth());
+      const pb = pa.slice(0, 8) + pad(Math.min(n.getDate(), +pe.slice(8, 10)));
+      const cur = sumR(rows, a, b), prev = sumR(rows, pa, pb);
+      if (!(cur > 0) && !(prev > 0)) return '';
+      const hc = (window.msStore && window.msStore.getRaw('msarifyi_hero_cur')) || baseCur();
+      const conv = typeof window.sarToCur === 'function' ? window.sarToCur(cur, hc) : cur;
+      const s = (BL()[hc] && BL()[hc].sym) || '';
+      return `<div onclick="window.msMoneyOpen()" style="cursor:pointer;margin-top:10px;padding:9px 12px;border-radius:12px;background:rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px"><span>📊 مصروف الشهر ده <b style="direction:ltr;display:inline-block">${fmt0(conv)} ${esc(s)}</b></span><span style="text-align:left">${prev > 0 ? chip(cur, prev) + ' <span style="opacity:.75;font-size:10px">عن ' + esc(MONTHS[pm.getMonth()]) + ' (لنفس اليوم)</span>' : '<span style="opacity:.75;font-size:10px">اضغط للتفاصيل</span>'}</span></div>`;
+    } catch (e) { return ''; }
+  };
+
+  // ───────── importance in the add / edit form (optional row, expenses only)
+  let formImp = '';
+  function paintForm() {
+    const row = $('fImpRow'); if (!row) return;
+    row.querySelectorAll('button[data-imp]').forEach(b => { const l = lvl(b.dataset.imp), on = b.dataset.imp === formImp; b.style.borderColor = on ? l.c : 'var(--border)'; b.style.background = on ? l.c + '33' : 'transparent'; });
+  }
+  window.msFormImp = function (k) { formImp = formImp === k ? '' : k; paintForm(); };
+  function showForm(t) { const row = $('fImpRow'); if (!row) return; row.style.display = (window.txType === 'expense') ? '' : 'none'; if (t !== undefined) formImp = t || ''; paintForm(); }
+  (function hook() {
+    const oOpen = window.openModal; if (typeof oOpen === 'function') window.openModal = function () { const r = oOpen.apply(this, arguments); try { showForm(''); } catch (e) { /* ignore */ } return r; };
+    const oEdit = window.editTx; if (typeof oEdit === 'function') window.editTx = function (id) { const r = oEdit.apply(this, arguments); try { const t = TXS().find(x => x.id === id); showForm(t ? t.importance || '' : ''); } catch (e) { /* ignore */ } return r; };
+    const oSel = window.selType; if (typeof oSel === 'function') window.selType = function () { const r = oSel.apply(this, arguments); try { showForm(); } catch (e) { /* ignore */ } return r; };
+    const oSave = window.saveTx;
+    if (typeof oSave === 'function') window.saveTx = function () {
+      const editing = (typeof window.editingId !== 'undefined') && window.editingId && !window.editingIsSavings ? window.editingId : null;
+      const wasExpense = window.txType === 'expense', want = formImp;
+      const before = new Set(TXS().map(t => t.id));
+      const r = oSave.apply(this, arguments);
+      try {
+        if (wasExpense) {
+          const t = editing ? TXS().find(x => x.id === editing) : TXS().find(x => !before.has(x.id) && x.type === 'expense');
+          if (t && t.type === 'expense') { if (want) t.importance = want; else delete t.importance; if (typeof window.saveData === 'function') window.saveData(); }
+        }
+      } catch (e) { /* ignore */ }
+      return r;
+    };
+  })();
 })();
 </script>
 <script id="ms-ui-v41">
