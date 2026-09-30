@@ -17,6 +17,178 @@
 <link rel="manifest" href="manifest.json">
 
 <!-- Service Worker for PWA standalone mode -->
+<script id="ms-core-v41">
+/* v41 core: global error log + safe storage wrapper. No dependencies, runs before every other script. */
+(function () {
+  'use strict';
+  var PREFIX = 'msarifyi_';
+  // Never exported in backups and never overwritten or removed by a restore.
+  var SENSITIVE = {
+    'msarifyi_pin': 1, 'msarifyi_pin_v2': 1, 'msarifyi_pin_lock': 1,
+    'msarifyi_rates_apikey': 1, 'msarifyi_anthropic_key': 1
+  };
+  var LABELS = {
+    'msarifyi_v2': 'الحركات', 'msarifyi_savings': 'الادخار', 'msarifyi_rates': 'أسعار الصرف',
+    'msarifyi_budgets': 'الميزانيات', 'msarifyi_recurring': 'الحركات المتكررة', 'msarifyi_accounts': 'الحسابات',
+    'msarifyi_goals': 'الأهداف', 'msarifyi_debts': 'الديون', 'msarifyi_custom_cats': 'التصنيفات',
+    'msarifyi_installments': 'الأقساط', 'msarifyi_jameya': 'الجمعيات', 'msarifyi_occasions': 'المناسبات',
+    'msarifyi_dual_salary': 'الراتب المزدوج', 'msarifyi_gold': 'أسعار الذهب', 'msarifyi_gold_history': 'تاريخ الذهب',
+    'msarifyi_gold_portfolio': 'محفظة الذهب', 'msarifyi_investments': 'الاستثمارات',
+    'msarifyi_price_alerts': 'تنبيهات الأسعار', 'msarifyi_trips': 'الرحلات', 'msarifyi_travel_mode': 'وضع السفر',
+    'msarifyi_travel_archive': 'أرشيف الرحلات', 'msarifyi_hajj_budget': 'ميزانية الحج', 'msarifyi_flights': 'الطيران',
+    'msarifyi_bills': 'الفواتير', 'msarifyi_credit_cards': 'البطاقات', 'msarifyi_nw_history': 'صافي الثروة',
+    'msarifyi_home_widgets': 'ودجات الرئيسية', 'msarifyi_theme': 'المظهر', 'msarifyi_base': 'العملة الأساسية',
+    'msarifyi_weddings': 'الأفراح', 'msarifyi_vehicles': 'المركبات', 'msarifyi_orders': 'الطلبات'
+  };
+  function labelOf(k) { return String(LABELS[k] || String(k).replace(PREFIX, '')).replace(/[<>&"']/g, ''); }
+
+  // ---------- error log ----------
+  var MAX = 50, buf = [], recent = {}, toastTimes = [], pending = [];
+  function toastReady() { return typeof window.showToast === 'function' && !!document.getElementById('toastContainer'); }
+  function flushPending() {
+    if (!toastReady()) return;
+    while (pending.length) { var p = pending.shift(); window.showToast(p[0], p[1], 5000); }
+  }
+  document.addEventListener('DOMContentLoaded', function () { setTimeout(flushPending, 0); });
+
+  // dedupeKey: same key is shown at most once per 6s. force: skip the per-minute cap (used for data-loss warnings).
+  function notify(dedupeKey, text, type, force) {
+    var now = Date.now();
+    if (recent[dedupeKey] && now - recent[dedupeKey] < 6000) return;
+    recent[dedupeKey] = now;
+    if (!force) {
+      toastTimes = toastTimes.filter(function (t) { return now - t < 60000; });
+      if (toastTimes.length >= 4) return;
+      toastTimes.push(now);
+    }
+    if (toastReady()) window.showToast(text, type || 'error', 5000);
+    else if (pending.length < 5) pending.push([text, type || 'error']);
+  }
+  function push(kind, message) {
+    buf.push({ t: new Date().toISOString(), kind: String(kind), message: String(message == null ? '' : message).slice(0, 400) });
+    if (buf.length > MAX) buf.shift();
+    try { console.error('[ms:' + kind + ']', message); } catch (e) { /* ignore */ }
+  }
+  function describe(err) {
+    if (!err) return 'unknown';
+    var m = err.message || String(err);
+    var st = err.stack ? String(err.stack).split('\n').slice(1, 2).join('').trim() : '';
+    return st ? m + ' | ' + st.slice(0, 120) : m;
+  }
+  var msErrors = {
+    push: push,
+    list: function () { return buf.slice(); },
+    clear: function () { buf.length = 0; },
+    formatText: function () {
+      return buf.map(function (e) { return e.t + '  [' + e.kind + ']  ' + e.message; }).join('\n');
+    },
+    // For code that catches an error itself but still wants it in the log.
+    report: function (kind, err) { push(kind, describe(err)); }
+  };
+  window.msErrors = msErrors;
+
+  window.addEventListener('error', function (ev) {
+    if (ev && ev.target && ev.target !== window) return; // resource load errors, not script errors
+    var m = (ev && ev.message) || 'error';
+    if (/ResizeObserver loop/i.test(m)) return;
+    var where = ev && ev.filename ? String(ev.filename).split('/').pop() + ':' + ev.lineno + ':' + ev.colno : '';
+    push('error', m + (where ? ' @' + where : ''));
+    if (m === 'Script error.') return; // cross-origin script, nothing useful to show
+    notify('err:' + m, '⚠️ حصل خطأ غير متوقع. التفاصيل في الإعدادات ← سجل الأخطاء', 'error');
+  });
+  window.addEventListener('unhandledrejection', function (ev) {
+    var r = ev && ev.reason;
+    var m = (r && r.message) || String(r);
+    push('promise', describe(r));
+    notify('rej:' + m, '⚠️ حصل خطأ غير متوقع. التفاصيل في الإعدادات ← سجل الأخطاء', 'error');
+  });
+
+  // ---------- safe storage ----------
+  function isQuota(e) {
+    return !!e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014);
+  }
+  function failWrite(k, e) {
+    var q = isQuota(e);
+    push('storage', (q ? 'QuotaExceeded ' : '') + 'write ' + k + ': ' + (e && e.message));
+    if (q) {
+      notify('quota', '❌ مساحة التخزين ممتلئة. مقدرتش أحفظ (' + labelOf(k) + '). اعمل نسخة احتياطية من الإعدادات وامسح بيانات قديمة.', 'error', true);
+    } else {
+      notify('wr:' + k, '❌ فشل حفظ (' + labelOf(k) + ')', 'error', true);
+    }
+  }
+  function getRaw(k) {
+    try { return localStorage.getItem(k); } catch (e) { push('storage', 'read ' + k + ': ' + (e && e.message)); return null; }
+  }
+  function setRaw(k, v) {
+    try { localStorage.setItem(k, v); return true; } catch (e) { failWrite(k, e); return false; }
+  }
+  function remove(k) {
+    try { localStorage.removeItem(k); return true; } catch (e) { push('storage', 'remove ' + k + ': ' + (e && e.message)); return false; }
+  }
+  // Same contract as JSON.parse(localStorage.getItem(k) || defStr), but a corrupt value can no longer crash boot.
+  // The corrupt raw string is copied once to msarifyi_corrupt_<key> so it can still be recovered by hand.
+  function getJSON(k, defStr) {
+    var raw = getRaw(k);
+    try { return JSON.parse(raw || defStr); } catch (e) {
+      push('storage', 'corrupt JSON in ' + k + ': ' + (e && e.message));
+      try {
+        var bk = PREFIX + 'corrupt_' + String(k).replace(PREFIX, '');
+        if (raw && localStorage.getItem(bk) === null) localStorage.setItem(bk, raw);
+      } catch (e2) { /* best effort */ }
+      notify('corrupt:' + k, '⚠️ بيانات (' + labelOf(k) + ') كانت تالفة. اتحفظت نسخة منها وبدأت من الأول.', 'error', true);
+      return JSON.parse(defStr);
+    }
+  }
+  function set(k, val) { return setRaw(k, JSON.stringify(val)); }
+  function keys() {
+    var out = [];
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(PREFIX) === 0) out.push(k);
+      }
+    } catch (e) { push('storage', 'keys: ' + (e && e.message)); }
+    return out;
+  }
+  function isSensitive(k) { return SENSITIVE[k] === 1; }
+  function usage() {
+    var items = [], total = 0;
+    keys().forEach(function (k) {
+      var v = ''; try { v = localStorage.getItem(k) || ''; } catch (e) { /* ignore */ }
+      var b = (k.length + v.length) * 2; // UTF-16
+      total += b; items.push({ key: k, label: labelOf(k), bytes: b });
+    });
+    items.sort(function (a, b) { return b.bytes - a.bytes; });
+    return { bytes: total, count: items.length, top: items.slice(0, 5) };
+  }
+  // Replace every non-sensitive msarifyi_ key with `data[k]` for k in `ks`.
+  // If any write fails (quota), the previous values are put back and false is returned.
+  function restoreAll(data, ks) {
+    var snap = {}, old = keys().filter(function (k) { return !isSensitive(k); });
+    old.forEach(function (k) { snap[k] = getRaw(k); });
+    old.forEach(remove);
+    var written = [], ok = true;
+    for (var i = 0; i < ks.length; i++) {
+      var k = ks[i];
+      if (isSensitive(k)) continue;
+      if (!setRaw(k, data[k])) { ok = false; break; }
+      written.push(k);
+    }
+    if (!ok) {
+      written.forEach(remove);
+      Object.keys(snap).forEach(function (k) {
+        if (snap[k] !== null) { try { localStorage.setItem(k, snap[k]); } catch (e) { push('storage', 'rollback ' + k + ': ' + (e && e.message)); } }
+      });
+      push('storage', 'restore rolled back');
+    }
+    return ok;
+  }
+  window.msStore = {
+    getRaw: getRaw, setRaw: setRaw, remove: remove, getJSON: getJSON, set: set, keys: keys,
+    isSensitive: isSensitive, isQuota: isQuota, usage: usage, restoreAll: restoreAll, labelOf: labelOf
+  };
+})();
+</script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -3942,7 +4114,7 @@ button, .menu-row, .tx-card {
       <input type="file" id="fReceiptInput" accept="image/*" style="display:none" onchange="onReceiptSelect(event)"/>
       <div id="receiptArea">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-          <button type="button" class="export-btn" onclick="openReceiptCamera()">📹 كاميرا حية</button>
+          <button type="button" class="export-btn" id="receiptLiveCamBtn" onclick="openReceiptCamera()">📹 كاميرا حية</button>
           <button type="button" class="export-btn" onclick="document.getElementById('fReceiptInputCam').click()">📷 صورة فورية</button>
           <button type="button" class="export-btn" onclick="document.getElementById('fReceiptInput').click()">🖼️ من المعرض</button>
         </div>
@@ -4122,6 +4294,32 @@ button, .menu-row, .tx-card {
         <button class="st2-btn gold" onclick="document.getElementById('pdfImportInput').click()">📄 استيراد كشف حساب (PDF)</button>
         <input type="file" id="pdfImportInput" accept=".pdf,application/pdf" style="display:none" onchange="importBankPDF(event)"/>
         <button class="st2-btn" onclick="manualReconcileEntries()">🧹 تنظيف الحركات المكررة</button>
+      </div>
+    </div>
+
+    <!-- v41: قراءة الفواتير بالذكاء الاصطناعي -->
+    <div class="st2-group" id="aiReceiptSection">
+      <div class="st2-group-title">🤖 قراءة الفواتير (Anthropic)</div>
+      <div class="st2-card">
+        <div style="font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:10px">زرار "📹 كاميرا حية" بيقرا الفاتورة بـ Claude. محتاج مفتاح API من حسابك في Anthropic (من Console ← API keys على platform.claude.com). المفتاح بيتخزن على الجهاز ده بس ومش بيدخل في النسخة الاحتياطية.</div>
+        <input class="form-inp" id="aiKeyInput" type="password" autocomplete="off" placeholder="sk-ant-..." style="direction:ltr;font-family:monospace;width:100%"/>
+        <div id="aiKeyStatus" style="font-size:11px;margin:6px 0 8px;color:var(--muted)"></div>
+        <div class="st2-btn-2">
+          <button class="st2-btn primary" onclick="saveAnthropicKey()">💾 حفظ المفتاح</button>
+          <button class="st2-btn" onclick="clearAnthropicKey()">✕ مسح</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- v41: التخزين وسجل الأخطاء -->
+    <div class="st2-group" id="storageSection">
+      <div class="st2-group-title">🧰 التخزين وسجل الأخطاء</div>
+      <div class="st2-card">
+        <div id="storageUsageBox" style="font-size:11px;color:var(--muted);line-height:1.8"></div>
+        <div class="st2-btn-2" style="margin-top:8px">
+          <button class="st2-btn" onclick="copyErrorLog()">📋 نسخ سجل الأخطاء</button>
+          <button class="st2-btn" onclick="clearErrorLog()">🧹 مسح السجل</button>
+        </div>
       </div>
     </div>
   </div>
@@ -4646,7 +4844,7 @@ window.openCurrencyRates = openCurrencyRates;
     <div class="two-col">
       <div class="form-row">
         <div class="form-lbl">📅 يوم إصدار الكشف</div>
-        <input class="form-inp" id="ccStmtDay" type="number" min="1" max="28" value="25" inputmode="numeric" placeholder="25"/>
+        <input class="form-inp" id="ccStmtDay" type="number" min="1" max="31" value="25" inputmode="numeric" placeholder="25"/>
       </div>
       <div class="form-row">
         <div class="form-lbl">📅 يوم استحقاق الدفع</div>
@@ -5450,42 +5648,42 @@ var chartMonth = now.getMonth();
 var chartYear = now.getFullYear();
 
 // ── LOAD DATA ──
-var txs = JSON.parse(localStorage.getItem('msarifyi_v2') || '[]');
-var savings = JSON.parse(localStorage.getItem('msarifyi_savings') || '[]');
-var rates = JSON.parse(localStorage.getItem('msarifyi_rates') || JSON.stringify({EGP:13.50,USD:3.75,EUR:4.10}));
+var txs = msStore.getJSON('msarifyi_v2', '[]');
+var savings = msStore.getJSON('msarifyi_savings', '[]');
+var rates = msStore.getJSON('msarifyi_rates', JSON.stringify({EGP:13.50,USD:3.75,EUR:4.10}));
 // Clean up over-precise rates from old API responses
 // Keep 6 decimals internally, round only on display (#14)
 rates.EGP = Math.round(rates.EGP * 1e6) / 1e6;
 rates.USD = Math.round(rates.USD * 1e6) / 1e6;
 rates.EUR = Math.round(rates.EUR * 1e6) / 1e6;
-var budgets = JSON.parse(localStorage.getItem('msarifyi_budgets') || '{}');
-var recurringTxs = JSON.parse(localStorage.getItem('msarifyi_recurring') || '[]');
-var baseCurrency = localStorage.getItem('msarifyi_base') || 'SAR';
-var accounts = JSON.parse(localStorage.getItem('msarifyi_accounts') || 'null') || [
+var budgets = msStore.getJSON('msarifyi_budgets', '{}');
+var recurringTxs = msStore.getJSON('msarifyi_recurring', '[]');
+var baseCurrency = msStore.getRaw('msarifyi_base') || 'SAR';
+var accounts = msStore.getJSON('msarifyi_accounts', 'null') || [
   {id:'acc_cash',emoji:'💵',name:'كاش'},
   {id:'acc_bank',emoji:'🏦',name:'البنك'},
   {id:'acc_stc',emoji:'📱',name:'STC Pay'},
   {id:'acc_visa',emoji:'💳',name:'فيزا'}
 ];
-var goals = JSON.parse(localStorage.getItem('msarifyi_goals') || '[]');
-var debts = JSON.parse(localStorage.getItem('msarifyi_debts') || '[]');
+var goals = msStore.getJSON('msarifyi_goals', '[]');
+var debts = msStore.getJSON('msarifyi_debts', '[]');
 var selDebtTypeVal = 'lent';
 var pendingReceipt = null; // base64 image data for the current modal session
 
 // ── CUSTOM EXPENSE CATEGORIES ──
 // فئات مصروف يضيفها المستخدم بنفسه: [{name, emoji}]
 var customCats = [];
-try { customCats = JSON.parse(localStorage.getItem('msarifyi_custom_cats') || '[]'); if (!Array.isArray(customCats)) customCats = []; } catch(e){ customCats = []; }
-function saveCustomCats() { localStorage.setItem('msarifyi_custom_cats', JSON.stringify(customCats)); }
+try { customCats = msStore.getJSON('msarifyi_custom_cats', '[]'); if (!Array.isArray(customCats)) customCats = []; } catch(e){ customCats = []; }
+function saveCustomCats() { msStore.setRaw('msarifyi_custom_cats', JSON.stringify(customCats)); }
 // ادمج إيموجي الفئات المخصصة في خريطة EMOJI عشان تظهر صح في الحركات والتقارير والرسوم
 function mergeCustomEmojis() {
   customCats.forEach(c => { if (c && c.name) EMOJI[c.name] = c.emoji || '💸'; });
 }
 mergeCustomEmojis();
 
-function saveAccounts() { localStorage.setItem('msarifyi_accounts', JSON.stringify(accounts)); }
-function saveGoals()    { localStorage.setItem('msarifyi_goals', JSON.stringify(goals)); }
-function saveDebts()    { localStorage.setItem('msarifyi_debts', JSON.stringify(debts)); }
+function saveAccounts() { msStore.setRaw('msarifyi_accounts', JSON.stringify(accounts)); }
+function saveGoals()    { msStore.setRaw('msarifyi_goals', JSON.stringify(goals)); }
+function saveDebts()    { msStore.setRaw('msarifyi_debts', JSON.stringify(debts)); }
 
 const BASE_LABELS = {
   SAR: {sym:'ر.س', flag:'🇸🇦', name:'ريال'},
@@ -5494,11 +5692,11 @@ const BASE_LABELS = {
   EUR: {sym:'€',   flag:'🇪🇺', name:'يورو'}
 };
 
-function saveData()      { localStorage.setItem('msarifyi_v2', JSON.stringify(txs)); }
-function saveSavings()   { localStorage.setItem('msarifyi_savings', JSON.stringify(savings)); }
-function saveRates()     { localStorage.setItem('msarifyi_rates', JSON.stringify(rates)); }
-function saveBudgets()   { localStorage.setItem('msarifyi_budgets', JSON.stringify(budgets)); }
-function saveRecurring() { localStorage.setItem('msarifyi_recurring', JSON.stringify(recurringTxs)); }
+function saveData()      { msStore.setRaw('msarifyi_v2', JSON.stringify(txs)); }
+function saveSavings()   { msStore.setRaw('msarifyi_savings', JSON.stringify(savings)); }
+function saveRates()     { msStore.setRaw('msarifyi_rates', JSON.stringify(rates)); }
+function saveBudgets()   { msStore.setRaw('msarifyi_budgets', JSON.stringify(budgets)); }
+function saveRecurring() { msStore.setRaw('msarifyi_recurring', JSON.stringify(recurringTxs)); }
 
 // ── BASE CURRENCY CONVERSION ──
 // All amountSAR values are stored canonically in SAR.
@@ -5523,7 +5721,7 @@ function fmtBase(amountSAR, dec=2) {
 }
 function setBase(cur) {
   baseCurrency = cur;
-  localStorage.setItem('msarifyi_base', cur);
+  msStore.setRaw('msarifyi_base', cur);
   updateBaseChip();
   highlightBaseOpt();
   renderAll();
@@ -5548,7 +5746,7 @@ function checkRecurring() {
   const m = today.getMonth();
   const daysInMonth = new Date(y, m+1, 0).getDate();
   const key = `${y}-${String(m+1).padStart(2,'0')}`;
-  const done = JSON.parse(localStorage.getItem('msarifyi_recurring_done') || '{}');
+  const done = msStore.getJSON('msarifyi_recurring_done', '{}');
   recurringTxs.forEach(r => {
     const rKey = r.id + '_' + key;
     if (done[rKey]) return;
@@ -5564,20 +5762,20 @@ function checkRecurring() {
     });
     done[rKey] = true;
   });
-  localStorage.setItem('msarifyi_recurring_done', JSON.stringify(done));
+  msStore.setRaw('msarifyi_recurring_done', JSON.stringify(done));
   saveData();
 }
 
 // ── PWA INSTALL ──
 function checkInstallPrompt() {
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  if (!isStandalone && !localStorage.getItem('msarifyi_dismissed_install')) {
+  if (!isStandalone && !msStore.getRaw('msarifyi_dismissed_install')) {
     setTimeout(() => document.getElementById('installPrompt').classList.add('show'), 2000);
   }
 }
 function dismissInstall() {
   document.getElementById('installPrompt').classList.remove('show');
-  localStorage.setItem('msarifyi_dismissed_install', '1');
+  msStore.setRaw('msarifyi_dismissed_install', '1');
 }
 
 // ── CLOCK ──
@@ -7614,14 +7812,7 @@ function exportJSON() {
   // نسخة شاملة: كل مفاتيح msarifyi_ تلقائياً (عشان ما يضيعش أي قسم)
   const data = {};
   let count = 0;
-  for (let i=0; i<localStorage.length; i++){
-    const k = localStorage.key(i);
-    if (k && k.indexOf('msarifyi_')===0){
-      if (k==='msarifyi_pin' || k==='msarifyi_pin_lock') continue; // نستثني القفل للأمان
-      data[k] = localStorage.getItem(k);
-      count++;
-    }
-  }
+  msStore.keys().forEach(function(k){ if (msStore.isSensitive(k)) return; data[k] = msStore.getRaw(k); count++; });
   const backup = {
     app: 'مصاريفي',
     _fullBackup: true,
@@ -7856,19 +8047,13 @@ function restoreBackup(event) {
       const data = JSON.parse(e.target.result);
       // النسخة الشاملة الجديدة (كل مفاتيح msarifyi_)
       if (data && data._fullBackup && data.data && typeof data.data==='object'){
-        const keys = Object.keys(data.data).filter(k=>k.indexOf('msarifyi_')===0);
+        const keys = Object.keys(data.data).filter(k=>k.indexOf('msarifyi_')===0 && !msStore.isSensitive(k));
         if (!keys.length){ showAlert('❌ الملف فاضي', 'error'); event.target.value=''; return; }
         const when = data.exported ? new Date(data.exported).toLocaleDateString('ar-EG') : 'غير معروف';
         const ok = confirm('⚠️ هتستبدل كل بياناتك الحالية بالنسخة دي؟\n\nتاريخ النسخة: '+when+'\nعدد الأقسام: '+keys.length+'\n\nالبيانات الحالية هتتمسح. متأكد؟');
         if (!ok){ event.target.value=''; return; }
         // امسح الحالي (عدا القفل)
-        const toRemove = [];
-        for (let i=0;i<localStorage.length;i++){
-          const k = localStorage.key(i);
-          if (k && k.indexOf('msarifyi_')===0 && k!=='msarifyi_pin' && k!=='msarifyi_pin_lock') toRemove.push(k);
-        }
-        toRemove.forEach(k=>localStorage.removeItem(k));
-        keys.forEach(k=>localStorage.setItem(k, data.data[k]));
+        if (!msStore.restoreAll(data.data, keys)) { if(typeof showAlert==='function')showAlert('❌ الاستعادة فشلت (مساحة التخزين ممتلئة). بياناتك الحالية اترجعت زي ما كانت.','error'); event.target.value=''; return; }
         event.target.value='';
         showAlert('✅ اترجّعت نسختك، بيعيد التحميل...', 'success');
         setTimeout(()=>location.reload(), 1200);
@@ -7894,8 +8079,8 @@ function restoreBackup(event) {
       if (data.debts) { debts = data.debts; saveDebts(); }
       if (data.recurringTxs) { recurringTxs = data.recurringTxs; saveRecurring(); }
       if (data.customCats && Array.isArray(data.customCats)) { customCats = data.customCats; saveCustomCats(); mergeCustomEmojis(); if (typeof renderCustomCatBtns==="function") renderCustomCatBtns(); }
-      if (data.baseCurrency) { baseCurrency = data.baseCurrency; localStorage.setItem('msarifyi_base', data.baseCurrency); }
-      if (data.theme) { localStorage.setItem('msarifyi_theme', data.theme); document.documentElement.setAttribute('data-theme', data.theme); }
+      if (data.baseCurrency) { baseCurrency = data.baseCurrency; msStore.setRaw('msarifyi_base', data.baseCurrency); }
+      if (data.theme) { msStore.setRaw('msarifyi_theme', data.theme); document.documentElement.setAttribute('data-theme', data.theme); }
 
       event.target.value = '';
       document.getElementById('settingsModal').classList.remove('open');
@@ -8279,11 +8464,11 @@ function delDebt(id) {
 function toggleTheme() {
   const isLight = document.getElementById('themeToggle').checked;
   document.documentElement.setAttribute('data-theme', isLight ? 'light' : 'dark');
-  localStorage.setItem('msarifyi_theme', isLight ? 'light' : 'dark');
+  msStore.setRaw('msarifyi_theme', isLight ? 'light' : 'dark');
   _syncThemeColor();
 }
 function initTheme() {
-  const t = localStorage.getItem('msarifyi_theme') || 'dark';
+  const t = msStore.getRaw('msarifyi_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', t);
   const tt = document.getElementById('themeToggle');
   if (tt) tt.checked = t === 'light';
@@ -8363,10 +8548,10 @@ window._syncThemeColor = _syncThemeColor;
 var pinInput = '';
 var pinSetupStep = 0;
 function togglePin() {
-  if (localStorage.getItem('msarifyi_pin_v2') || localStorage.getItem('msarifyi_pin')) {
+  if (msStore.getRaw('msarifyi_pin_v2') || msStore.getRaw('msarifyi_pin')) {
     if (confirm('تعطيل القفل؟')) {
-      localStorage.removeItem('msarifyi_pin');
-      localStorage.removeItem('msarifyi_pin_v2');
+      msStore.remove('msarifyi_pin');
+      msStore.remove('msarifyi_pin_v2');
       _clearLockState();
       updatePinStatus();
     }
@@ -8393,14 +8578,14 @@ async function _pinHash(pin, saltB64) {
 }
 
 async function _verifyPin(pin) {
-  const stored = JSON.parse(localStorage.getItem('msarifyi_pin_v2') || 'null');
+  const stored = msStore.getJSON('msarifyi_pin_v2', 'null');
   if (!stored) {
     // Fallback: legacy plaintext PIN — migrate on success
-    const legacy = localStorage.getItem('msarifyi_pin');
+    const legacy = msStore.getRaw('msarifyi_pin');
     if (legacy && legacy === pin) {
       const fresh = await _pinHash(pin);
-      localStorage.setItem('msarifyi_pin_v2', JSON.stringify(fresh));
-      localStorage.removeItem('msarifyi_pin');
+      msStore.setRaw('msarifyi_pin_v2', JSON.stringify(fresh));
+      msStore.remove('msarifyi_pin');
       return true;
     }
     return false;
@@ -8411,9 +8596,9 @@ async function _verifyPin(pin) {
 }
 
 function _getLockState() {
-  return JSON.parse(localStorage.getItem('msarifyi_pin_lock') || '{"failures":0,"lockedUntil":0}');
+  return msStore.getJSON('msarifyi_pin_lock', '{"failures":0,"lockedUntil":0}');
 }
-function _setLockState(s) { localStorage.setItem('msarifyi_pin_lock', JSON.stringify(s)); }
+function _setLockState(s) { msStore.setRaw('msarifyi_pin_lock', JSON.stringify(s)); }
 
 function _isLockedOut() {
   const s = _getLockState();
@@ -8440,8 +8625,8 @@ async function setupPin() {
   if (!/^\d{4}$/.test(a)) { showToast('الرقم لازم يكون 4 أرقام','error'); return; }
   if (a !== b) { showToast('الرقمين مش زي بعض','error'); return; }
   const fresh = await _pinHash(a);
-  localStorage.setItem('msarifyi_pin_v2', JSON.stringify(fresh));
-  localStorage.removeItem('msarifyi_pin'); // clean any legacy
+  msStore.setRaw('msarifyi_pin_v2', JSON.stringify(fresh));
+  msStore.remove('msarifyi_pin'); // clean any legacy
   _clearLockState();
   document.getElementById('pinSetupModal').classList.remove('open');
   updatePinStatus();
@@ -8449,7 +8634,7 @@ async function setupPin() {
 }
 
 function updatePinStatus() {
-  const has = !!localStorage.getItem('msarifyi_pin_v2') || !!localStorage.getItem('msarifyi_pin');
+  const has = !!msStore.getRaw('msarifyi_pin_v2') || !!msStore.getRaw('msarifyi_pin');
   const s = document.getElementById('pinStatus');
   const b = document.getElementById('pinBtnTxt');
   if (s) s.textContent = has ? '✅ مفعّل' : 'معطّل';
@@ -8508,7 +8693,7 @@ async function checkPin() {
   }
 }
 function showPinLock() {
-  if (!localStorage.getItem('msarifyi_pin_v2') && !localStorage.getItem('msarifyi_pin')) return;
+  if (!msStore.getRaw('msarifyi_pin_v2') && !msStore.getRaw('msarifyi_pin')) return;
   pinInput = '';
   updatePinDots();
   buildPinPad();
@@ -8590,10 +8775,10 @@ function reconcileLinkedEntries() {
 
 // تشغيل تلقائي مرة (v2 — معيار أقوى من v1)
 (function _autoReconcile() {
-  if (localStorage.getItem('msarifyi_entries_reconciled_v2') === '1') return;
+  if (msStore.getRaw('msarifyi_entries_reconciled_v2') === '1') return;
   try {
     const n = reconcileLinkedEntries();
-    localStorage.setItem('msarifyi_entries_reconciled_v2', '1');
+    msStore.setRaw('msarifyi_entries_reconciled_v2', '1');
     if (n > 0 && typeof showToast === 'function') {
       setTimeout(() => showToast(`🧹 تم تنظيف ${n} حركة مكررة قديمة`, 'success', 4000), 1500);
     }
@@ -8693,11 +8878,11 @@ function toggleHideAmounts() {
 }
 function toggleHideAmountsSetting() {
   const checked = document.getElementById('hideAmountsToggle').checked;
-  localStorage.setItem('msarifyi_hide_amounts', checked ? '1' : '');
+  msStore.setRaw('msarifyi_hide_amounts', checked ? '1' : '');
   if (checked !== hideAmounts) toggleHideAmounts();
 }
 function initHideAmounts() {
-  if (localStorage.getItem('msarifyi_hide_amounts')) {
+  if (msStore.getRaw('msarifyi_hide_amounts')) {
     hideAmounts = false;
     toggleHideAmounts();
   }
@@ -8731,10 +8916,10 @@ window.addEventListener('offline', updateOnlineStatus);
 
 // ── AUTO LOCK ──
 var autoLockTimer = null;
-var autoLockEnabled = localStorage.getItem('msarifyi_autolock') === '1';
+var autoLockEnabled = msStore.getRaw('msarifyi_autolock') === '1';
 function resetAutoLock() {
   if (autoLockTimer) clearTimeout(autoLockTimer);
-  if (autoLockEnabled && localStorage.getItem('msarifyi_pin')) {
+  if (autoLockEnabled && msStore.getRaw('msarifyi_pin')) {
     autoLockTimer = setTimeout(() => {
       const overlay = document.getElementById('autoLockOverlay');
       if (overlay) overlay.classList.add('show');
@@ -8987,13 +9172,13 @@ renderAll();
 
 // Check for live rates on startup (once per day)
 // V26 fix: defer until all scripts loaded — fetchLiveRates is defined in a later <script> block
-const lastRateUpdate = localStorage.getItem('msarifyi_rates_last_update');
+const lastRateUpdate = msStore.getRaw('msarifyi_rates_last_update');
 const today = new Date().toDateString();
 if (lastRateUpdate !== today && navigator.onLine) {
   setTimeout(() => {
     if (typeof fetchLiveRates === 'function') {
       fetchLiveRates();
-      localStorage.setItem('msarifyi_rates_last_update', today);
+      msStore.setRaw('msarifyi_rates_last_update', today);
     }
   }, 0);
 }
@@ -9073,13 +9258,13 @@ if (lastRateUpdate !== today && navigator.onLine) {
 <script>
 
 // ── STORAGE ──
-var installments = JSON.parse(localStorage.getItem('msarifyi_installments') || '[]');
-var jameya = JSON.parse(localStorage.getItem('msarifyi_jameya') || '[]');
-var occasions = JSON.parse(localStorage.getItem('msarifyi_occasions') || '[]');
-var dualSalary = JSON.parse(localStorage.getItem('msarifyi_dual_salary') || 'null');
-var rateMeta = JSON.parse(localStorage.getItem('msarifyi_rate_meta') || '{}'); // {source, ts}
+var installments = msStore.getJSON('msarifyi_installments', '[]');
+var jameya = msStore.getJSON('msarifyi_jameya', '[]');
+var occasions = msStore.getJSON('msarifyi_occasions', '[]');
+var dualSalary = msStore.getJSON('msarifyi_dual_salary', 'null');
+var rateMeta = msStore.getJSON('msarifyi_rate_meta', '{}'); // {source, ts}
 
-function saveInstallments() { localStorage.setItem('msarifyi_installments', JSON.stringify(installments)); }
+function saveInstallments() { msStore.setRaw('msarifyi_installments', JSON.stringify(installments)); }
 
 // تنضيف تلقائي: احذف الأقساط المنتهية اللي عدّى على آخر دفعة فيها أكتر من شهرين
 function _autoCleanFinishedInstallments(){
@@ -9107,10 +9292,10 @@ function _autoCleanFinishedInstallments(){
 }
 // شغّلها مرة عند التحميل
 _autoCleanFinishedInstallments();
-function saveJameyaData() { localStorage.setItem('msarifyi_jameya', JSON.stringify(jameya)); }
-function saveOccasions() { localStorage.setItem('msarifyi_occasions', JSON.stringify(occasions)); }
-function saveDualSalary() { localStorage.setItem('msarifyi_dual_salary', JSON.stringify(dualSalary)); }
-function saveRateMeta() { localStorage.setItem('msarifyi_rate_meta', JSON.stringify(rateMeta)); }
+function saveJameyaData() { msStore.setRaw('msarifyi_jameya', JSON.stringify(jameya)); }
+function saveOccasions() { msStore.setRaw('msarifyi_occasions', JSON.stringify(occasions)); }
+function saveDualSalary() { msStore.setRaw('msarifyi_dual_salary', JSON.stringify(dualSalary)); }
+function saveRateMeta() { msStore.setRaw('msarifyi_rate_meta', JSON.stringify(rateMeta)); }
 
 // ═══════════════════════════════════════════════════════════════
 // IMPROVED RATES — multi-source fallback
@@ -9675,7 +9860,7 @@ function renderInstallments() {
   html += activeEnriched.map(cardHTML).join('');
   // المنتهية في أرشيف قابل للطي
   if (doneEnriched.length){
-    var archOpen = localStorage.getItem('msarifyi_inst_arch_open')==='1';
+    var archOpen = msStore.getRaw('msarifyi_inst_arch_open')==='1';
     html += '<div class="inst-archive">'
       + '<button class="inst-archive-toggle" onclick="toggleInstArchive()">'
         + '<span>📦 الأقساط المنتهية ('+toArabicDigits(doneEnriched.length)+')</span>'
@@ -9691,8 +9876,8 @@ function renderInstallments() {
 
 // طي/فتح أرشيف الأقساط المنتهية
 function toggleInstArchive(){
-  var cur = localStorage.getItem('msarifyi_inst_arch_open')==='1';
-  localStorage.setItem('msarifyi_inst_arch_open', cur?'0':'1');
+  var cur = msStore.getRaw('msarifyi_inst_arch_open')==='1';
+  msStore.setRaw('msarifyi_inst_arch_open', cur?'0':'1');
   if (typeof renderInstallments==='function') renderInstallments();
 }
 window.toggleInstArchive = toggleInstArchive;
@@ -10036,12 +10221,12 @@ function checkInstallmentsDue() {
   if (upcoming.length) {
     const remKey = 'msarifyi_inst_reminded';
     let reminded = {};
-    try { reminded = JSON.parse(localStorage.getItem(remKey) || '{}'); } catch(e){}
+    try { reminded = msStore.getJSON(remKey, '{}'); } catch(e){}
     const todayStr = today.toISOString().split('T')[0];
     const toRemind = upcoming.filter(u => reminded[u.inst.id] !== todayStr);
     if (toRemind.length) {
       toRemind.forEach(u => reminded[u.inst.id] = todayStr);
-      localStorage.setItem(remKey, JSON.stringify(reminded));
+      msStore.setRaw(remKey, JSON.stringify(reminded));
       const first = toRemind[0];
       const msg = toRemind.length === 1
         ? `⏰ قسط "${first.inst.name}" هيتخصم ${first.daysLeft === 0 ? 'النهاردة' : first.daysLeft === 1 ? 'بكرة' : 'بعد ' + first.daysLeft + ' أيام'} (${fmt(first.inst.monthlyPayment,0)} ${first.inst.currency})`
@@ -10908,15 +11093,15 @@ function delOccasion(id) {
 // V27: TRIPS — same model as OCCASIONS (containers + entries + tx sync)
 // ═══════════════════════════════════════════════════════════════
 
-var trips = JSON.parse(localStorage.getItem('msarifyi_trips') || '[]');
-function saveTrips() { localStorage.setItem('msarifyi_trips', JSON.stringify(trips)); }
+var trips = msStore.getJSON('msarifyi_trips', '[]');
+function saveTrips() { msStore.setRaw('msarifyi_trips', JSON.stringify(trips)); }
 
 // ── One-time migration from old travelMode + travel_archive ──
 (function _migrateTrips() {
-  if (localStorage.getItem('msarifyi_trips_migrated') === '1') return;
+  if (msStore.getRaw('msarifyi_trips_migrated') === '1') return;
   try {
-    const cur = JSON.parse(localStorage.getItem('msarifyi_travel_mode') || 'null');
-    const arc = JSON.parse(localStorage.getItem('msarifyi_travel_archive') || '[]');
+    const cur = msStore.getJSON('msarifyi_travel_mode', 'null');
+    const arc = msStore.getJSON('msarifyi_travel_archive', '[]');
     const all = [];
     if (cur) all.push(cur);
     arc.forEach(t => all.push(t));
@@ -10958,7 +11143,7 @@ function saveTrips() { localStorage.setItem('msarifyi_trips', JSON.stringify(tri
       trips.push(trip);
     });
     if (trips.length) { saveTrips(); saveData(); }
-    localStorage.setItem('msarifyi_trips_migrated', '1');
+    msStore.setRaw('msarifyi_trips_migrated', '1');
   } catch(e) { console.warn('trips migration:', e); }
 })();
 
@@ -11727,12 +11912,12 @@ window.exportJSON = function() {
     investments: typeof investments !== 'undefined' ? investments : [],
     netWorthHistory: typeof netWorthHistory !== 'undefined' ? netWorthHistory : [],
     priceAlerts: typeof priceAlerts !== 'undefined' ? priceAlerts : [],
-    travelMode: localStorage.getItem('msarifyi_travel_mode') || null,
-    ramadanMode: localStorage.getItem('msarifyi_ramadan_mode') || null,
+    travelMode: msStore.getRaw('msarifyi_travel_mode') || null,
+    ramadanMode: msStore.getRaw('msarifyi_ramadan_mode') || null,
     hajjBudget: typeof hajjBudget !== 'undefined' ? hajjBudget : null,
     goldHistory: typeof goldHistory !== 'undefined' ? goldHistory : [],
     baseCurrency,
-    theme: localStorage.getItem('msarifyi_theme') || 'dark',
+    theme: msStore.getRaw('msarifyi_theme') || 'dark',
     schemaVersion: 10,
     version: 10,
     exported: new Date().toISOString()
@@ -11786,12 +11971,12 @@ window.restoreBackup = function(event) {
       if (data.investments && typeof investments !== 'undefined') { investments = data.investments; if (typeof saveInvestments === 'function') saveInvestments(); }
       if (data.netWorthHistory && typeof netWorthHistory !== 'undefined') { netWorthHistory = data.netWorthHistory; if (typeof saveNetWorthHistory === 'function') saveNetWorthHistory(); }
       if (data.priceAlerts && typeof priceAlerts !== 'undefined') { priceAlerts = data.priceAlerts; if (typeof savePriceAlerts === 'function') savePriceAlerts(); }
-      if (data.goldHistory) { localStorage.setItem('msarifyi_gold_history', JSON.stringify(data.goldHistory)); if (typeof goldHistory !== 'undefined') goldHistory = data.goldHistory; }
-      if (data.travelMode != null) localStorage.setItem('msarifyi_travel_mode', data.travelMode);
-      if (data.ramadanMode != null) localStorage.setItem('msarifyi_ramadan_mode', data.ramadanMode);
-      if (data.hajjBudget != null) { localStorage.setItem('msarifyi_hajj_budget', JSON.stringify(data.hajjBudget)); if (typeof hajjBudget !== 'undefined') hajjBudget = data.hajjBudget; }
-      if (data.baseCurrency) { baseCurrency = data.baseCurrency; localStorage.setItem('msarifyi_base', data.baseCurrency); }
-      if (data.theme) { localStorage.setItem('msarifyi_theme', data.theme); document.documentElement.setAttribute('data-theme', data.theme); }
+      if (data.goldHistory) { msStore.setRaw('msarifyi_gold_history', JSON.stringify(data.goldHistory)); if (typeof goldHistory !== 'undefined') goldHistory = data.goldHistory; }
+      if (data.travelMode != null) msStore.setRaw('msarifyi_travel_mode', data.travelMode);
+      if (data.ramadanMode != null) msStore.setRaw('msarifyi_ramadan_mode', data.ramadanMode);
+      if (data.hajjBudget != null) { msStore.setRaw('msarifyi_hajj_budget', JSON.stringify(data.hajjBudget)); if (typeof hajjBudget !== 'undefined') hajjBudget = data.hajjBudget; }
+      if (data.baseCurrency) { baseCurrency = data.baseCurrency; msStore.setRaw('msarifyi_base', data.baseCurrency); }
+      if (data.theme) { msStore.setRaw('msarifyi_theme', data.theme); document.documentElement.setAttribute('data-theme', data.theme); }
       event.target.value = '';
       document.getElementById('settingsModal').classList.remove('open');
       showAlert('✅ تم استرداد البيانات بنجاح!', 'success');
@@ -12205,7 +12390,7 @@ function confirmPdfImport() {
 // ── BALANCE VISIBILITY TOGGLE ──
 // Use `var` (not let) so the declaration hoists — applyBalanceVisibility might
 // be called from renderAll which runs early (before this line is reached) (#fix)
-var balanceHidden = localStorage.getItem('msarifyi_balance_hidden') === '1';
+var balanceHidden = msStore.getRaw('msarifyi_balance_hidden') === '1';
 // Apply hidden state immediately on init so values are blurred from the start
 setTimeout(() => { try { applyBalanceVisibility(); } catch(e) {} }, 0);
 
@@ -12243,7 +12428,7 @@ function applyBalanceVisibility() {
 
 function toggleBalanceVisibility() {
   balanceHidden = !balanceHidden;
-  localStorage.setItem('msarifyi_balance_hidden', balanceHidden ? '1' : '0');
+  msStore.setRaw('msarifyi_balance_hidden', balanceHidden ? '1' : '0');
   applyBalanceVisibility();
   if (typeof showToast === 'function') {
     showToast(balanceHidden ? '🔒 المبالغ مخفية' : '👁️ المبالغ ظاهرة', 'info');
@@ -12564,12 +12749,12 @@ function detectBadHabits() {
 }
 
 // ── BILLS TRACKER ──
-var bills = JSON.parse(localStorage.getItem('msarifyi_bills') || '[]');
+var bills = msStore.getJSON('msarifyi_bills', '[]');
 var selBillTypeVal = 'electricity';
 const BILL_EMOJI = {electricity:'⚡',water:'💧',internet:'🌐',gas:'🔥',phone:'📱',other:'📋'};
 const BILL_NAMES = {electricity:'كهرباء',water:'مياه',internet:'إنترنت',gas:'غاز',phone:'هاتف',other:'أخرى'};
 
-function saveBills() { localStorage.setItem('msarifyi_bills', JSON.stringify(bills)); }
+function saveBills() { msStore.setRaw('msarifyi_bills', JSON.stringify(bills)); }
 function selBillType(btn, type) {
   document.querySelectorAll('#billTypeRow .pay-cur-btn').forEach(b=>b.classList.remove('sar-s'));
   btn.classList.add('sar-s');
@@ -12654,19 +12839,19 @@ function setSeason(season, btn) {
   document.querySelectorAll('#seasonModal .base-cur-opt').forEach(b=>b.classList.remove('sel'));
   if (btn) btn.classList.add('sel');
   document.documentElement.setAttribute('data-season', season);
-  localStorage.setItem('msarifyi_season', season);
+  msStore.setRaw('msarifyi_season', season);
   updateSeasonLabel();
   updateSeasonParticles(season);
   document.getElementById('seasonModal').classList.remove('open');
   showToast(season ? `✨ تم تطبيق ثيم ${season==='ramadan'?'رمضان':season==='eid'?'العيد':'الشتاء'}` : '🌑 تم تطبيق الثيم الافتراضي', 'success');
 }
 function updateSeasonLabel() {
-  const season = localStorage.getItem('msarifyi_season') || '';
+  const season = msStore.getRaw('msarifyi_season') || '';
   const el = document.getElementById('menuSeasonLbl');
   if (el) el.textContent = season ? (season==='ramadan'?'🌙 رمضان':season==='eid'?'🎊 العيد':'❄️ الشتاء') : 'اختر ثيم الموسم';
 }
 function openSeasonTheme() {
-  const season = localStorage.getItem('msarifyi_season') || '';
+  const season = msStore.getRaw('msarifyi_season') || '';
   document.querySelectorAll('#seasonModal .base-cur-opt').forEach(btn => {
     btn.classList.toggle('sel', btn.dataset.season === season);
   });
@@ -12695,7 +12880,7 @@ function updateSeasonParticles(season) {
   }
 }
 function initSeason() {
-  const season = localStorage.getItem('msarifyi_season') || '';
+  const season = msStore.getRaw('msarifyi_season') || '';
   if (season) { document.documentElement.setAttribute('data-season', season); updateSeasonParticles(season); }
   updateSeasonLabel();
 }
@@ -12705,6 +12890,10 @@ var receiptStream = null;
 var _receiptModalOpener = null; // track which modal triggered camera
 
 async function openReceiptCamera() {
+  if (typeof getAnthropicKey === 'function' && !getAnthropicKey()) {
+    showToast('🔑 ضيف مفتاح Anthropic من الإعدادات عشان الكاميرا الحية تقرا الفاتورة', 'warning', 5000);
+    return;
+  }
   _receiptModalOpener = 'txModal';
   const overlay = document.getElementById('receiptCamera');
   overlay.style.display = 'flex';
@@ -12744,44 +12933,97 @@ function handleReceiptUpload(event) {
   reader.readAsDataURL(file);
   event.target.value = '';
 }
+// Model id from the Claude API models table. Sonnet 5 has adaptive thinking on by default, so it is disabled below
+// (receipt OCR needs no reasoning, and thinking tokens would count against max_tokens).
+var RECEIPT_AI_MODEL = 'claude-sonnet-5';
 async function processReceiptWithAI(imageData) {
-  // Show loading
   const overlay = document.getElementById('receiptCamera');
   const loading = document.getElementById('receiptLoading');
+  const video = document.getElementById('receiptVideo');
+  const finish = () => {
+    overlay.style.display = 'none';
+    loading.style.display = 'none';
+    if (video) video.style.display = '';
+  };
+  const keepImage = () => {
+    pendingReceipt = imageData;
+    if (typeof renderReceiptPreview === 'function') renderReceiptPreview();
+  };
+
+  const apiKey = (typeof getAnthropicKey === 'function') ? getAnthropicKey() : '';
+  if (!apiKey) {
+    keepImage();
+    showToast('🔑 الصورة اتحفظت. ضيف مفتاح Anthropic من الإعدادات عشان الفاتورة تتقرا تلقائي', 'warning', 5000);
+    return;
+  }
+
   overlay.style.display = 'flex';
   loading.style.display = 'flex';
-  video && (video.style.display = 'none');
+  if (video) video.style.display = 'none';
 
   try {
     const base64 = imageData.split(',')[1];
     const mediaType = imageData.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 500,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-            { type: 'text', text: 'اقرأ هذه الفاتورة أو الإيصال واستخرج منها: الاسم أو وصف المنتج/الخدمة، والمبلغ الإجمالي المدفوع بالأرقام فقط. أجب بـJSON فقط بهذا الشكل: {"name":"...","amount":0,"currency":"SAR","category":"..."} حيث category هي إحدى: مطعم، سوبرماركت، مواصلات، فاتورة، تسوق، ترفيه، صحة، تعليم، أخرى. لا تكتب أي شيء آخر غير JSON.' }
-          ]
-        }]
-      })
-    });
-    const data = await response.json();
-    const text = data.content?.map(c=>c.text||'').join('') || '';
-    const clean = text.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(clean);
+    let response;
+    try {
+      response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: RECEIPT_AI_MODEL,
+          max_tokens: 1024,
+          thinking: { type: 'disabled' },
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+              { type: 'text', text: 'اقرأ هذه الفاتورة أو الإيصال واستخرج منها: الاسم أو وصف المنتج/الخدمة، والمبلغ الإجمالي المدفوع بالأرقام فقط. أجب بـJSON فقط بهذا الشكل: {"name":"...","amount":0,"currency":"SAR","category":"..."} حيث category هي إحدى: مطعم، سوبرماركت، مواصلات، فاتورة، تسوق، ترفيه، صحة، تعليم، أخرى. لا تكتب أي شيء آخر غير JSON.' }
+            ]
+          }]
+        })
+      });
+    } catch (netErr) {
+      const ne = new Error('network: ' + (netErr && netErr.message));
+      ne.kind = 'network';
+      throw ne;
+    }
 
-    overlay.style.display = 'none';
-    loading.style.display = 'none';
+    if (!response.ok) {
+      let detail = '';
+      try { const j = await response.json(); detail = (j && j.error && j.error.message) || ''; } catch (_) { /* no body */ }
+      const he = new Error('HTTP ' + response.status + (detail ? ' - ' + detail : ''));
+      he.status = response.status;
+      throw he;
+    }
+
+    const data = await response.json();
+    const text = (data.content || []).filter(c => c && c.type === 'text').map(c => c.text || '').join('');
+    const BT = String.fromCharCode(96);
+    let clean = text.replace(new RegExp(BT + BT + BT + '(?:json)?', 'gi'), '').trim();
+    const s = clean.indexOf('{'), e = clean.lastIndexOf('}');
+    if (s >= 0 && e > s) clean = clean.slice(s, e + 1);
+    let parsed;
+    try { parsed = JSON.parse(clean); } catch (pe) {
+      const pr = new Error('parse: ' + (pe && pe.message));
+      pr.kind = 'parse';
+      throw pr;
+    }
+
+    finish();
 
     // Fill the form
     if (parsed.name) document.getElementById('fName').value = parsed.name;
-    if (parsed.amount) document.getElementById('fAmount').value = parsed.amount;
+    if (parsed.amount) {
+      // the amount input is #fAmt (the old code wrote to a non-existent #fAmount and threw here)
+      const amtEl = document.getElementById('fAmt');
+      if (amtEl) { amtEl.value = parsed.amount; amtEl.dispatchEvent(new Event('input', { bubbles: true })); }
+    }
     // Try to set category
     if (parsed.category) {
       const catBtns = document.querySelectorAll('#expCatGrid .cat-btn');
@@ -12796,14 +13038,18 @@ async function processReceiptWithAI(imageData) {
     renderReceiptPreview();
     showToast('✅ تم قراءة الفاتورة بنجاح!', 'success');
 
-  } catch(e) {
-    overlay.style.display = 'none';
-    loading.style.display = 'none';
-    // Still set image even if AI failed
-    pendingReceipt = imageData;
-    if (typeof renderReceiptPreview === 'function') renderReceiptPreview();
-    showToast('⚠️ تم حفظ الصورة — لم يتمكن AI من القراءة', 'warning');
-    console.error('Receipt AI error:', e);
+  } catch (e) {
+    finish();
+    keepImage(); // the photo is still attached even if the AI read failed
+    let msg = '⚠️ الصورة اتحفظت. القراءة التلقائية فشلت';
+    if (e.kind === 'network') msg = '⚠️ الصورة اتحفظت. مفيش اتصال بالإنترنت';
+    else if (e.kind === 'parse') msg = '⚠️ الصورة اتحفظت. مقدرتش أفهم الفاتورة، اكتب البيانات بإيدك';
+    else if (e.status === 401 || e.status === 403) msg = '🔑 مفتاح Anthropic غلط أو مالوش صلاحية. راجعه من الإعدادات (الصورة اتحفظت)';
+    else if (e.status === 429) msg = '⏳ عدّيت حد الطلبات. جرب بعد شوية (الصورة اتحفظت)';
+    else if (e.status === 400 && /credit|balance/i.test(e.message)) msg = '💳 رصيد حسابك في Anthropic خلص (الصورة اتحفظت)';
+    else if (e.status >= 500) msg = '⚠️ سيرفر Anthropic مشغول. جرب تاني بعد شوية (الصورة اتحفظت)';
+    showToast(msg, 'warning', 5000);
+    if (window.msErrors) msErrors.report('receipt-ai', e);
   }
 }
 
@@ -13026,14 +13272,14 @@ renderBills && renderBills();
 // ── Schema migration (#15 of suggestions: data versioning) ──
 (function migrateSchema() {
   const SCHEMA = 7;
-  const stored = parseInt(localStorage.getItem('msarifyi_schema_version') || '0');
+  const stored = parseInt(msStore.getRaw('msarifyi_schema_version') || '0');
   if (stored >= SCHEMA) return;
   // Forward-only migrations
   if (stored < 7) {
     // v7: add tags, splits, refundOf, pending fields (always optional, nothing to do)
     // Migrate legacy plaintext PIN done lazily on first verify
   }
-  localStorage.setItem('msarifyi_schema_version', String(SCHEMA));
+  msStore.setRaw('msarifyi_schema_version', String(SCHEMA));
 })();
 
 // ── Replacement for showAlert(, 'warning') — async-friendly toast popups (#13) ──
@@ -13209,8 +13455,8 @@ function renderAnomaliesCard() {
 // ═══════════════════════════════════════════════════════════════
 // FEATURE #24 — NET WORTH OVER TIME
 // ═══════════════════════════════════════════════════════════════
-var netWorthHistory = JSON.parse(localStorage.getItem('msarifyi_nw_history') || '[]');
-function saveNetWorthHistory() { localStorage.setItem('msarifyi_nw_history', JSON.stringify(netWorthHistory)); }
+var netWorthHistory = msStore.getJSON('msarifyi_nw_history', '[]');
+function saveNetWorthHistory() { msStore.setRaw('msarifyi_nw_history', JSON.stringify(netWorthHistory)); }
 
 function snapshotNetWorth() {
   const today = new Date();
@@ -13499,7 +13745,7 @@ function checkRecurringV2() {
   if (!recurringTxs.length) return;
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
-  const done = JSON.parse(localStorage.getItem('msarifyi_recurring_v2_done') || '{}');
+  const done = msStore.getJSON('msarifyi_recurring_v2_done', '{}');
   let added = 0;
 
   recurringTxs.forEach(r => {
@@ -13546,7 +13792,7 @@ function checkRecurringV2() {
   });
 
   if (added > 0) {
-    localStorage.setItem('msarifyi_recurring_v2_done', JSON.stringify(done));
+    msStore.setRaw('msarifyi_recurring_v2_done', JSON.stringify(done));
     saveData();
   }
 }
@@ -13554,46 +13800,11 @@ function checkRecurringV2() {
 // ═══════════════════════════════════════════════════════════════
 // FEATURE #29 — INVESTMENT TRACKING (gold, stocks, crypto)
 // ═══════════════════════════════════════════════════════════════
-var investments = JSON.parse(localStorage.getItem('msarifyi_investments') || '[]');
-function saveInvestments() { localStorage.setItem('msarifyi_investments', JSON.stringify(investments)); }
+var investments = msStore.getJSON('msarifyi_investments', '[]');
+function saveInvestments() { msStore.setRaw('msarifyi_investments', JSON.stringify(investments)); }
 
-function addInvestment() {
-  const type = prompt('نوع الاستثمار: ذهب، أسهم، عملة رقمية؟');
-  if (!type) return;
-  const name = prompt('الاسم (مثال: ذهب 21، سهم أرامكو، بيتكوين):');
-  if (!name) return;
-  const qty = parseFloat(prompt('الكمية (جرامات/أسهم/وحدات):'));
-  if (!qty) return;
-  const cost = parseFloat(prompt('سعر الوحدة وقت الشراء بالريال:'));
-  if (!cost) return;
-  investments.push({
-    id: 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
-    type, name, qty,
-    avgCost: cost,
-    currentPrice: cost,
-    addedAt: new Date().toISOString()
-  });
-  saveInvestments();
-  renderInvestments();
-}
 
-function delInvestment(id) {
-  if (!confirm('حذف هذا الاستثمار؟')) return;
-  investments = investments.filter(i => i.id !== id);
-  saveInvestments();
-  renderInvestments();
-}
 
-function updateInvestmentPrice(id) {
-  const inv = investments.find(i => i.id === id);
-  if (!inv) return;
-  const np = parseFloat(prompt('السعر الحالي للوحدة بالريال:', inv.currentPrice));
-  if (!np) return;
-  inv.currentPrice = np;
-  inv.priceUpdatedAt = new Date().toISOString();
-  saveInvestments();
-  renderInvestments();
-}
 
 function renderInvestments() {
   const el = document.getElementById('investList');
@@ -13745,11 +13956,11 @@ function exportPrintReport() {
 // ═══════════════════════════════════════════════════════════════
 (function v7Init() {
   // Take a net-worth snapshot once per day
-  const lastSnap = localStorage.getItem('msarifyi_nw_last_snap');
+  const lastSnap = msStore.getRaw('msarifyi_nw_last_snap');
   const todayStr = new Date().toDateString();
   if (lastSnap !== todayStr) {
     try { snapshotNetWorth(); } catch(e) { console.warn('nw snapshot:', e); }
-    localStorage.setItem('msarifyi_nw_last_snap', todayStr);
+    msStore.setRaw('msarifyi_nw_last_snap', todayStr);
   }
 
   // Run V2 recurring check (handles weekly/biweekly/yearly)
@@ -13965,7 +14176,7 @@ renderIslamicOccasionCard = function() {
 // the international reference spot — local Egyptian retail price differs by
 // شعبة الذهب (Gold Division) margin + manufacturing fee + VAT.
 const GRAMS_PER_OZ = 31.1034768;
-var goldData = JSON.parse(localStorage.getItem('msarifyi_gold') || 'null');
+var goldData = msStore.getJSON('msarifyi_gold', 'null');
 
 async function fetchGoldPrice() {
   try {
@@ -13983,13 +14194,13 @@ async function fetchGoldPrice() {
       symbol: data.symbol || 'XAU/USD',
       source: 'السعر الفوري العالمي (LBMA-derived)'
     };
-    localStorage.setItem('msarifyi_gold', JSON.stringify(goldData));
+    msStore.setRaw('msarifyi_gold', JSON.stringify(goldData));
     // سجّل تاريخ السعر للشارت (نحتفظ بآخر 60 نقطة)
     try{
-      var hist = JSON.parse(localStorage.getItem('msarifyi_gold_history') || '[]');
+      var hist = msStore.getJSON('msarifyi_gold_history', '[]');
       hist.push({ p: usdPerOz, t: Date.now() });
       if (hist.length > 60) hist = hist.slice(-60);
-      localStorage.setItem('msarifyi_gold_history', JSON.stringify(hist));
+      msStore.setRaw('msarifyi_gold_history', JSON.stringify(hist));
     }catch(e){}
     renderGoldCard(); // re-render with fresh data
     if (typeof showToast === 'function') showToast('✅ تم تحديث سعر الذهب', 'success');
@@ -14047,9 +14258,9 @@ function saveGoldHolding(){
     var karat = karatBtn ? (parseInt(karatBtn.dataset.karat)||21) : 21;
     var buyPrice = parseFloat(document.getElementById('goldAddPrice').value);
     if (!buyPrice || buyPrice<=0){ if(typeof showToast==='function') showToast('اكتب سعر شراء صحيح','warning'); return; }
-    var port = JSON.parse(localStorage.getItem('msarifyi_gold_portfolio') || '[]');
+    var port = msStore.getJSON('msarifyi_gold_portfolio', '[]');
     port.push({ id: 'g'+Date.now(), grams: grams, karat: karat, buyPrice: buyPrice, date: new Date().toISOString().slice(0,10) });
-    localStorage.setItem('msarifyi_gold_portfolio', JSON.stringify(port));
+    msStore.setRaw('msarifyi_gold_portfolio', JSON.stringify(port));
     // اقفل المودال وأعد بناء البطاقة
     var m = document.getElementById('goldAddModal'); if (m) m.classList.remove('open');
     var c = document.getElementById('goldModalContent');
@@ -14063,9 +14274,9 @@ window.saveGoldHolding = saveGoldHolding;
 // حذف مشترى ذهب
 function delGoldHolding(id){
   try{
-    var port = JSON.parse(localStorage.getItem('msarifyi_gold_portfolio') || '[]');
+    var port = msStore.getJSON('msarifyi_gold_portfolio', '[]');
     port = port.filter(function(x){ return x.id !== id; });
-    localStorage.setItem('msarifyi_gold_portfolio', JSON.stringify(port));
+    msStore.setRaw('msarifyi_gold_portfolio', JSON.stringify(port));
     var c = document.getElementById('goldModalContent');
     if (c && typeof buildGoldCardHTML==='function') c.innerHTML = buildGoldCardHTML();
     if (typeof renderGoldCard==='function') renderGoldCard();
@@ -14100,8 +14311,8 @@ function buildGoldCardHTML() {
     ageMin < 60 ? `من ${toArabicDigits(ageMin)} دقيقة` :
     `من ${toArabicDigits(Math.floor(ageMin/60))} ساعة`;
   const fmtPrice = (v) => v == null ? '—' : fmt(v, 0);
-  const savedGrams = parseFloat(localStorage.getItem('msarifyi_gold_grams') || '0') || '';
-  const savedKarat = localStorage.getItem('msarifyi_gold_karat') || '21';
+  const savedGrams = parseFloat(msStore.getRaw('msarifyi_gold_grams') || '0') || '';
+  const savedKarat = msStore.getRaw('msarifyi_gold_karat') || '21';
   return `<div class="gold-card">
 
     <div class="gold-grid">
@@ -14134,19 +14345,19 @@ function buildGoldCardHTML() {
       <div class="gold-calc-extra">
         <div class="gca-row">
           <label>🔧 المصنعية (ج.م/جرام)</label>
-          <input type="number" step="1" inputmode="decimal" id="goldMakingInp" placeholder="0" value="${parseFloat(localStorage.getItem('msarifyi_gold_making') || '0') || ''}" oninput="updateGoldCalc()">
+          <input type="number" step="1" inputmode="decimal" id="goldMakingInp" placeholder="0" value="${parseFloat(msStore.getRaw('msarifyi_gold_making') || '0') || ''}" oninput="updateGoldCalc()">
         </div>
         <div class="gca-row">
           <label>🧾 ضريبة على المصنعية</label>
           <select id="goldVatSel" onchange="updateGoldCalc()">
-            <option value="0" ${(localStorage.getItem('msarifyi_gold_vat')||'14')==='0'?'selected':''}>بدون</option>
-            <option value="14" ${(localStorage.getItem('msarifyi_gold_vat')||'14')==='14'?'selected':''}>١٤٪ (مصر)</option>
-            <option value="15" ${(localStorage.getItem('msarifyi_gold_vat')||'14')==='15'?'selected':''}>١٥٪ (السعودية)</option>
-            <option value="5"  ${(localStorage.getItem('msarifyi_gold_vat')||'14')==='5'?'selected':''}>٥٪ (الإمارات)</option>
+            <option value="0" ${(msStore.getRaw('msarifyi_gold_vat')||'14')==='0'?'selected':''}>بدون</option>
+            <option value="14" ${(msStore.getRaw('msarifyi_gold_vat')||'14')==='14'?'selected':''}>١٤٪ (مصر)</option>
+            <option value="15" ${(msStore.getRaw('msarifyi_gold_vat')||'14')==='15'?'selected':''}>١٥٪ (السعودية)</option>
+            <option value="5"  ${(msStore.getRaw('msarifyi_gold_vat')||'14')==='5'?'selected':''}>٥٪ (الإمارات)</option>
           </select>
         </div>
         <label class="gca-toggle">
-          <input type="checkbox" id="goldIsBuying" ${localStorage.getItem('msarifyi_gold_buying') === '1' ? 'checked' : ''} onchange="updateGoldCalc()"/>
+          <input type="checkbox" id="goldIsBuying" ${msStore.getRaw('msarifyi_gold_buying') === '1' ? 'checked' : ''} onchange="updateGoldCalc()"/>
           <span>أنا بشتري (ضيف مصنعية وضريبة)</span>
         </label>
       </div>
@@ -14162,7 +14373,7 @@ function buildGoldCardHTML() {
 // ── شارت حركة سعر الذهب ──
 function _goldChartHTML(){
   try{
-    var hist = JSON.parse(localStorage.getItem('msarifyi_gold_history') || '[]');
+    var hist = msStore.getJSON('msarifyi_gold_history', '[]');
     // ضيف النقطة الحالية لو موجودة
     if (goldData && goldData.usdPerOz){
       if (!hist.length || hist[hist.length-1].p !== goldData.usdPerOz){
@@ -14228,7 +14439,7 @@ function setManualGoldPrice(){
     var usdPerGram24 = egpPerGram24 / usdToEgp;
     var usdPerOz = usdPerGram24 * GRAMS_PER_OZ;
     goldData = { usdPerOz: usdPerOz, ts: Date.now(), symbol: 'XAU/USD', source: 'يدوي' };
-    localStorage.setItem('msarifyi_gold', JSON.stringify(goldData));
+    msStore.setRaw('msarifyi_gold', JSON.stringify(goldData));
     // أعد بناء بطاقة الذهب
     var c = document.getElementById('goldModalContent');
     if (c && typeof buildGoldCardHTML==='function'){ c.innerHTML = buildGoldCardHTML(); setTimeout(function(){ try{updateGoldCalc();}catch(e){} },0); }
@@ -14245,7 +14456,7 @@ function _fmtGrams(g){
 }
 function _goldPortfolioHTML(){
   try{
-    var port = JSON.parse(localStorage.getItem('msarifyi_gold_portfolio') || '[]');
+    var port = msStore.getJSON('msarifyi_gold_portfolio', '[]');
     var curK21 = goldData ? egpPerGramKarat(21) : null; // سعر البيع الحالي عيار 21 (مرجع)
     var rows = '';
     var totalCost = 0, totalValue = 0, totalGrams = 0;
@@ -14301,8 +14512,8 @@ function updateGoldCalc() {
   const grams = parseFloat(inp.value) || 0;
   const karat = parseInt(sel.value);
   // Persist
-  localStorage.setItem('msarifyi_gold_grams', String(grams));
-  localStorage.setItem('msarifyi_gold_karat', String(karat));
+  msStore.setRaw('msarifyi_gold_grams', String(grams));
+  msStore.setRaw('msarifyi_gold_karat', String(karat));
 
   const makingInp = document.getElementById('goldMakingInp');
   const vatSel = document.getElementById('goldVatSel');
@@ -14310,9 +14521,9 @@ function updateGoldCalc() {
   const making = makingInp ? (parseFloat(makingInp.value) || 0) : 0;
   const vat = vatSel ? (parseFloat(vatSel.value) || 0) : 0;
   const isBuying = isBuyingInp ? isBuyingInp.checked : false;
-  if (makingInp) localStorage.setItem('msarifyi_gold_making', String(making));
-  if (vatSel) localStorage.setItem('msarifyi_gold_vat', String(vat));
-  if (isBuyingInp) localStorage.setItem('msarifyi_gold_buying', isBuying ? '1' : '0');
+  if (makingInp) msStore.setRaw('msarifyi_gold_making', String(making));
+  if (vatSel) msStore.setRaw('msarifyi_gold_vat', String(vat));
+  if (isBuyingInp) msStore.setRaw('msarifyi_gold_buying', isBuying ? '1' : '0');
 
   if (!grams) { result.innerHTML = ''; return; }
   if (!goldData) {
@@ -14443,8 +14654,8 @@ function openGoldPage() {
 // ═══════════════════════════════════════════════════════════════
 
 // ═══════════════ FEATURE: GOLD HISTORICAL CHART ═══════════════
-var goldHistory = JSON.parse(localStorage.getItem('msarifyi_gold_history') || '[]');
-function saveGoldHistory() { localStorage.setItem('msarifyi_gold_history', JSON.stringify(goldHistory)); }
+var goldHistory = msStore.getJSON('msarifyi_gold_history', '[]');
+function saveGoldHistory() { msStore.setRaw('msarifyi_gold_history', JSON.stringify(goldHistory)); }
 
 // Hook into existing fetchGoldPrice to save snapshots
 const _origFetchGoldPrice = fetchGoldPrice;
@@ -14513,38 +14724,10 @@ function buildGoldChartHTML() {
 }
 
 // ═══════════════ FEATURE: PRICE ALERTS ═══════════════
-var priceAlerts = JSON.parse(localStorage.getItem('msarifyi_price_alerts') || '[]');
-function savePriceAlerts() { localStorage.setItem('msarifyi_price_alerts', JSON.stringify(priceAlerts)); }
+var priceAlerts = msStore.getJSON('msarifyi_price_alerts', '[]');
+function savePriceAlerts() { msStore.setRaw('msarifyi_price_alerts', JSON.stringify(priceAlerts)); }
 
-function addPriceAlert() {
-  const type = prompt('نوع التنبيه:\n1 = ذهب عيار 21\n2 = ذهب عيار 24\n3 = الدولار (USD/EGP)\n4 = اليورو (EUR/EGP)\n5 = الريال (SAR/EGP)\n\nاكتب الرقم:');
-  if (!type || !['1','2','3','4','5'].includes(type)) return;
-  const direction = prompt('متى نبهنّك؟\n1 = لما السعر يبقى أعلى من الهدف\n2 = لما السعر يبقى أقل من الهدف\n\nاكتب الرقم:');
-  if (!direction || !['1','2'].includes(direction)) return;
-  const target = parseFloat(prompt('السعر المستهدف بالجنيه:'));
-  if (!target) return;
 
-  const typeNames = {'1':'ذهب 21', '2':'ذهب 24', '3':'دولار', '4':'يورو', '5':'ريال'};
-  priceAlerts.push({
-    id: 'pa_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
-    type: type,
-    typeName: typeNames[type],
-    direction: direction === '1' ? 'above' : 'below',
-    target,
-    triggered: false,
-    createdAt: new Date().toISOString()
-  });
-  savePriceAlerts();
-  renderPriceAlerts();
-  showAlert('✅ تم إنشاء التنبيه', 'success');
-}
-
-function delPriceAlert(id) {
-  if (!confirm('حذف التنبيه؟')) return;
-  priceAlerts = priceAlerts.filter(a => a.id !== id);
-  savePriceAlerts();
-  renderPriceAlerts();
-}
 
 function checkPriceAlerts() {
   if (!priceAlerts.length) return;
@@ -14646,53 +14829,15 @@ function requestNotificationPermission() {
 
 // ═══════════════ FEATURE: TRAVEL MODE ═══════════════
 function getTravelMode() {
-  const raw = localStorage.getItem('msarifyi_travel_mode');
+  const raw = msStore.getRaw('msarifyi_travel_mode');
   return raw ? JSON.parse(raw) : null;
 }
 function saveTravelMode(t) {
-  if (t) localStorage.setItem('msarifyi_travel_mode', JSON.stringify(t));
-  else localStorage.removeItem('msarifyi_travel_mode');
+  if (t) msStore.setRaw('msarifyi_travel_mode', JSON.stringify(t));
+  else msStore.remove('msarifyi_travel_mode');
 }
 
-function startTravelMode() {
-  const country = prompt('وجهة السفر (مثال: تركيا، الإمارات):');
-  if (!country) return;
-  const currency = prompt('عملة الوجهة:\nUSD = دولار\nEUR = يورو\nEGP = جنيه مصري\nSAR = ريال سعودي\nTRY = ليرة تركية\nAED = درهم إماراتي\n\n(لو غير مدعومة استخدم USD)') || 'USD';
-  const dailyBudget = parseFloat(prompt(`ميزانيتك اليومية بـ${currency}:`)) || 0;
-  const days = parseInt(prompt('عدد أيام الرحلة:')) || 7;
 
-  const travel = {
-    active: true,
-    country,
-    currency: currency.toUpperCase(),
-    dailyBudget,
-    totalBudget: dailyBudget * days,
-    days,
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + days*86400000).toISOString().split('T')[0],
-    transactions: []
-  };
-  saveTravelMode(travel);
-  showAlert(`✈️ بدأت رحلة ${country}! بالتوفيق`, 'success');
-  renderHome();
-  renderTravelCard();
-}
-
-function endTravelMode() {
-  const t = getTravelMode();
-  if (!t) return;
-  if (!confirm('إنهاء وضع السفر؟ هتتخسر الإحصائيات لو ما عملتش حفظ')) return;
-  t.active = false;
-  t.endedAt = new Date().toISOString();
-  saveTravelMode(t);
-  // Also archive
-  const archive = JSON.parse(localStorage.getItem('msarifyi_travel_archive') || '[]');
-  archive.unshift(t);
-  localStorage.setItem('msarifyi_travel_archive', JSON.stringify(archive.slice(0, 20)));
-  saveTravelMode(null);
-  showAlert(`✅ انتهت الرحلة. إجمالي ${t.transactions.length} حركة`, 'success');
-  renderHome();
-}
 
 function renderTravelCard() {
   const home = document.getElementById('homeContent');
@@ -14808,10 +14953,10 @@ function quickAddRamadan(category) {
 }
 
 // ═══════════════ FEATURE: HAJJ/UMRAH BUDGET ═══════════════
-var hajjBudget = JSON.parse(localStorage.getItem('msarifyi_hajj_budget') || 'null');
+var hajjBudget = msStore.getJSON('msarifyi_hajj_budget', 'null');
 function saveHajjBudget() {
-  if (hajjBudget) localStorage.setItem('msarifyi_hajj_budget', JSON.stringify(hajjBudget));
-  else localStorage.removeItem('msarifyi_hajj_budget');
+  if (hajjBudget) msStore.setRaw('msarifyi_hajj_budget', JSON.stringify(hajjBudget));
+  else msStore.remove('msarifyi_hajj_budget');
 }
 
 const HAJJ_CATEGORIES = [
@@ -14825,38 +14970,7 @@ const HAJJ_CATEGORIES = [
   {key: 'other', name: '💵 مصاريف أخرى', emoji: '💵'}
 ];
 
-function setupHajjBudget() {
-  const type = prompt('نوع الرحلة:\n1 = حج\n2 = عمرة\n\nاكتب الرقم:');
-  if (!type || !['1','2'].includes(type)) return;
-  const targetDate = prompt('تاريخ الرحلة (مثال: 2026-06-15):');
-  if (!targetDate || !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
-    showAlert('تاريخ غير صحيح', 'error');
-    return;
-  }
-  const total = parseFloat(prompt('الميزانية الإجمالية المتوقعة بالـ' + BASE_LABELS[baseCurrency].name + ':'));
-  if (!total) return;
 
-  hajjBudget = {
-    id: 'hajj_' + Date.now(),
-    type: type === '1' ? 'حج' : 'عمرة',
-    targetDate,
-    totalBudget: total,
-    breakdown: HAJJ_CATEGORIES.reduce((acc, c) => { acc[c.key] = 0; return acc; }, {}),
-    saved: 0,
-    createdAt: new Date().toISOString()
-  };
-  saveHajjBudget();
-  renderHajjBudget();
-  openHajjBudget();
-}
-
-function delHajjBudget() {
-  if (!confirm('حذف ميزانية الحج/العمرة؟')) return;
-  hajjBudget = null;
-  saveHajjBudget();
-  document.getElementById('hajjModal')?.classList.remove('open');
-  renderHome();
-}
 
 function updateHajjAllocation(key, amount) {
   if (!hajjBudget) return;
@@ -14865,30 +14979,6 @@ function updateHajjAllocation(key, amount) {
   renderHajjBudget();
 }
 
-function addToHajjSavings() {
-  if (!hajjBudget) return;
-  const amt = parseFloat(prompt(`أضف للمدخرات (${BASE_LABELS[baseCurrency].name}):`));
-  if (!amt) return;
-  hajjBudget.saved = (hajjBudget.saved || 0) + amt;
-  saveHajjBudget();
-  // Also create a savings transaction
-  savings.unshift({
-    id: 'hajj_sav_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
-    type: 'savings',
-    name: hajjBudget.type === 'حج' ? '🕋 ادخار الحج' : '🕌 ادخار العمرة',
-    amount: amt,
-    currency: baseCurrency,
-    rate: 1,
-    amountSAR: baseCurrency === 'SAR' ? amt : amt * (rates.EGP || 1),
-    cat: hajjBudget.type === 'حج' ? 'حج' : 'عمرة',
-    date: new Date().toISOString().split('T')[0],
-    time: new Date().toTimeString().slice(0,5),
-    note: 'ادخار رحلة ' + hajjBudget.type
-  });
-  saveSavings();
-  renderHajjBudget();
-  showAlert('✅ تم إضافة المبلغ', 'success');
-}
 
 function renderHajjBudget() {
   const el = document.getElementById('hajjBody');
@@ -14990,13 +15080,13 @@ const _origSaveTx = window.saveTx;
 // We don't override saveTx itself, but we add a post-save hook via a flag.
 // The cleaner approach: when user picks "عيدية" category in expense/income,
 // suggest using the occasions modal once.
-let _eidiyaHintShown = localStorage.getItem('msarifyi_eidiya_hint_shown') === '1';
+let _eidiyaHintShown = msStore.getRaw('msarifyi_eidiya_hint_shown') === '1';
 
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-cat="عيدية"]');
   if (!btn || _eidiyaHintShown) return;
   _eidiyaHintShown = true;
-  localStorage.setItem('msarifyi_eidiya_hint_shown', '1');
+  msStore.setRaw('msarifyi_eidiya_hint_shown', '1');
   setTimeout(() => {
     if (typeof showToast === 'function') {
       showToast('💡 تقدر تتبع العيدية بتفاصيل أكتر من قائمة "العيدية والمناسبات"', 'info', 6000);
@@ -15167,8 +15257,8 @@ function selProvider(btn) {
 //    (defined earlier as a regular function, no override needed) ──
 
 // ═══════════════ FEATURE: FLIGHT TICKETS ═══════════════
-var flights = JSON.parse(localStorage.getItem('msarifyi_flights') || '[]');
-function saveFlights() { localStorage.setItem('msarifyi_flights', JSON.stringify(flights)); }
+var flights = msStore.getJSON('msarifyi_flights', '[]');
+function saveFlights() { msStore.setRaw('msarifyi_flights', JSON.stringify(flights)); }
 
 function openFlightsHub() {
   let m = document.getElementById('flightsModal');
@@ -15649,9 +15739,9 @@ async function endTravelMode() {
   t.active = false;
   t.endedAt = new Date().toISOString();
   saveTravelMode(t);
-  const archive = JSON.parse(localStorage.getItem('msarifyi_travel_archive') || '[]');
+  const archive = msStore.getJSON('msarifyi_travel_archive', '[]');
   archive.unshift(t);
-  localStorage.setItem('msarifyi_travel_archive', JSON.stringify(archive.slice(0, 20)));
+  msStore.setRaw('msarifyi_travel_archive', JSON.stringify(archive.slice(0, 20)));
   saveTravelMode(null);
   showAlert(`✅ انتهت الرحلة. إجمالي ${t.transactions.length} حركة`, 'success');
   if (typeof renderHome === 'function') renderHome();
@@ -15878,8 +15968,8 @@ async function updateInvestmentPrice(id) {
 (function v15Init() {
 
   // ── STORAGE ──
-  window.orders = JSON.parse(localStorage.getItem('msarifyi_orders') || '[]');
-  window.saveOrders = function() { localStorage.setItem('msarifyi_orders', JSON.stringify(orders)); };
+  window.orders = msStore.getJSON('msarifyi_orders', '[]');
+  window.saveOrders = function() { msStore.setRaw('msarifyi_orders', JSON.stringify(orders)); };
 
   // ── STORE METADATA ──
   const STORE_LABELS = {
@@ -16401,12 +16491,12 @@ async function updateInvestmentPrice(id) {
       investments: typeof investments !== 'undefined' ? investments : [],
       netWorthHistory: typeof netWorthHistory !== 'undefined' ? netWorthHistory : [],
       priceAlerts: typeof priceAlerts !== 'undefined' ? priceAlerts : [],
-      travelMode: localStorage.getItem('msarifyi_travel_mode') || null,
-      ramadanMode: localStorage.getItem('msarifyi_ramadan_mode') || null,
+      travelMode: msStore.getRaw('msarifyi_travel_mode') || null,
+      ramadanMode: msStore.getRaw('msarifyi_ramadan_mode') || null,
       hajjBudget: typeof hajjBudget !== 'undefined' ? hajjBudget : null,
       goldHistory: typeof goldHistory !== 'undefined' ? goldHistory : [],
       baseCurrency,
-      theme: localStorage.getItem('msarifyi_theme') || 'dark',
+      theme: msStore.getRaw('msarifyi_theme') || 'dark',
       schemaVersion: 15,
       version: 15,
       exported: new Date().toISOString()
@@ -16458,12 +16548,12 @@ async function updateInvestmentPrice(id) {
         if (data.investments && typeof investments !== 'undefined') { investments = data.investments; if (typeof saveInvestments === 'function') saveInvestments(); }
         if (data.netWorthHistory && typeof netWorthHistory !== 'undefined') { netWorthHistory = data.netWorthHistory; if (typeof saveNetWorthHistory === 'function') saveNetWorthHistory(); }
         if (data.priceAlerts && typeof priceAlerts !== 'undefined') { priceAlerts = data.priceAlerts; if (typeof savePriceAlerts === 'function') savePriceAlerts(); }
-        if (data.goldHistory) { localStorage.setItem('msarifyi_gold_history', JSON.stringify(data.goldHistory)); if (typeof goldHistory !== 'undefined') goldHistory = data.goldHistory; }
-        if (data.travelMode != null) localStorage.setItem('msarifyi_travel_mode', data.travelMode);
-        if (data.ramadanMode != null) localStorage.setItem('msarifyi_ramadan_mode', data.ramadanMode);
-        if (data.hajjBudget != null) { localStorage.setItem('msarifyi_hajj_budget', JSON.stringify(data.hajjBudget)); if (typeof hajjBudget !== 'undefined') hajjBudget = data.hajjBudget; }
-        if (data.baseCurrency) { baseCurrency = data.baseCurrency; localStorage.setItem('msarifyi_base', data.baseCurrency); }
-        if (data.theme) { localStorage.setItem('msarifyi_theme', data.theme); document.documentElement.setAttribute('data-theme', data.theme); }
+        if (data.goldHistory) { msStore.setRaw('msarifyi_gold_history', JSON.stringify(data.goldHistory)); if (typeof goldHistory !== 'undefined') goldHistory = data.goldHistory; }
+        if (data.travelMode != null) msStore.setRaw('msarifyi_travel_mode', data.travelMode);
+        if (data.ramadanMode != null) msStore.setRaw('msarifyi_ramadan_mode', data.ramadanMode);
+        if (data.hajjBudget != null) { msStore.setRaw('msarifyi_hajj_budget', JSON.stringify(data.hajjBudget)); if (typeof hajjBudget !== 'undefined') hajjBudget = data.hajjBudget; }
+        if (data.baseCurrency) { baseCurrency = data.baseCurrency; msStore.setRaw('msarifyi_base', data.baseCurrency); }
+        if (data.theme) { msStore.setRaw('msarifyi_theme', data.theme); document.documentElement.setAttribute('data-theme', data.theme); }
         event.target.value = '';
         document.getElementById('settingsModal').classList.remove('open');
         showAlert('✅ تم استرداد البيانات بنجاح!', 'success');
@@ -16520,12 +16610,12 @@ setTimeout(() => {
   // Storage for optional API key
   function getApiKeyConfig() {
     try {
-      return JSON.parse(localStorage.getItem('msarifyi_rates_apikey') || 'null');
+      return msStore.getJSON('msarifyi_rates_apikey', 'null');
     } catch(e) { return null; }
   }
   function setApiKeyConfig(cfg) {
-    if (cfg) localStorage.setItem('msarifyi_rates_apikey', JSON.stringify(cfg));
-    else localStorage.removeItem('msarifyi_rates_apikey');
+    if (cfg) msStore.setRaw('msarifyi_rates_apikey', JSON.stringify(cfg));
+    else msStore.remove('msarifyi_rates_apikey');
   }
   window.getApiKeyConfig = getApiKeyConfig;
   window.setApiKeyConfig = setApiKeyConfig;
@@ -17046,7 +17136,7 @@ setTimeout(() => {
   };
   window.safeLSGet = function(key, fallback = null) {
     try {
-      const v = localStorage.getItem(key);
+      const v = msStore.getRaw(key);
       if (v === null) return fallback;
       try { return JSON.parse(v); } catch { return v; }
     } catch (e) {
@@ -17057,7 +17147,7 @@ setTimeout(() => {
   window.safeLSSet = function(key, value) {
     try {
       const s = typeof value === 'string' ? value : JSON.stringify(value);
-      localStorage.setItem(key, s);
+      msStore.setRaw(key, s);
       return true;
     } catch (e) {
       console.warn('localStorage write failed:', key, e);
@@ -18046,12 +18136,12 @@ setTimeout(() => {
       weddings: weddings || [],
       weddingItems: weddingItems || [],
       // metadata
-      travelMode: localStorage.getItem('msarifyi_travel_mode') || null,
-      ramadanMode: localStorage.getItem('msarifyi_ramadan_mode') || null,
+      travelMode: msStore.getRaw('msarifyi_travel_mode') || null,
+      ramadanMode: msStore.getRaw('msarifyi_ramadan_mode') || null,
       hajjBudget: typeof hajjBudget !== 'undefined' ? hajjBudget : null,
       goldHistory: typeof goldHistory !== 'undefined' ? goldHistory : [],
       baseCurrency: typeof baseCurrency !== 'undefined' ? baseCurrency : 'SAR',
-      theme: localStorage.getItem('msarifyi_theme') || 'dark',
+      theme: msStore.getRaw('msarifyi_theme') || 'dark',
       schemaVersion: 17,
       version: 17,
       exported: new Date().toISOString()
@@ -18102,7 +18192,7 @@ setTimeout(() => {
   // ─────────────────────────────────────────────────────────────
   function safeGetLS(key, defaultVal) {
     try {
-      const raw = localStorage.getItem(key);
+      const raw = msStore.getRaw(key);
       if (raw == null) return defaultVal;
       return JSON.parse(raw);
     } catch (e) {
@@ -18112,7 +18202,7 @@ setTimeout(() => {
   }
   function safeSetLS(key, val) {
     try {
-      localStorage.setItem(key, JSON.stringify(val));
+      msStore.setRaw(key, JSON.stringify(val));
       return true;
     } catch (e) {
       // Quota exceeded or storage disabled
@@ -18928,14 +19018,7 @@ setTimeout(() => {
     try {
       const data = {};
       let count = 0;
-      for (let i=0;i<localStorage.length;i++){
-        const k = localStorage.key(i);
-        if (k && k.indexOf('msarifyi_')===0){
-          if (k==='msarifyi_pin' || k==='msarifyi_pin_lock') continue;
-          data[k] = localStorage.getItem(k);
-          count++;
-        }
-      }
+      msStore.keys().forEach(function(k){ if (msStore.isSensitive(k)) return; data[k] = msStore.getRaw(k); count++; });
       const backup = { app:'مصاريفي', _fullBackup:true, exported:new Date().toISOString(), keysCount:count, data:data };
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json;charset=utf-8' });
       if (typeof downloadBlob === 'function') {
@@ -22215,12 +22298,12 @@ setTimeout(() => {
   // ── STORAGE ──
   let creditCards = [];
   try {
-    creditCards = JSON.parse(localStorage.getItem('msarifyi_credit_cards') || '[]');
+    creditCards = msStore.getJSON('msarifyi_credit_cards', '[]');
     if (!Array.isArray(creditCards)) creditCards = [];
   } catch(e) { creditCards = []; }
 
   function saveCreditCards() {
-    try { localStorage.setItem('msarifyi_credit_cards', JSON.stringify(creditCards)); }
+    try { msStore.setRaw('msarifyi_credit_cards', JSON.stringify(creditCards)); }
     catch(e) { console.warn('Failed to save credit cards', e); }
   }
 
@@ -22589,7 +22672,7 @@ setTimeout(() => {
     const last4 = document.getElementById('ccLast4').value.trim().replace(/\D/g,'').slice(0,4);
     const creditLimit = parseFloat(document.getElementById('ccLimit').value);
     const currency = document.getElementById('ccCurrency').value;
-    const statementDay = Math.min(28, Math.max(1, parseInt(document.getElementById('ccStmtDay').value) || 25));
+    const statementDay = Math.min(31, Math.max(1, parseInt(document.getElementById('ccStmtDay').value) || 25));
     const dueDay = Math.min(28, Math.max(1, parseInt(document.getElementById('ccDueDay').value) || 15));
     const interestRate = parseFloat(document.getElementById('ccRate').value) || 2.20;
     const minPaymentPct = parseFloat(document.getElementById('ccMinPct').value) || 5;
@@ -23423,18 +23506,12 @@ setTimeout(() => {
           let parsed = null;
           try { parsed = JSON.parse(pe.target.result); } catch(e){}
           if (parsed && parsed._fullBackup && parsed.data && typeof parsed.data==='object'){
-            const keys = Object.keys(parsed.data).filter(k=>k.indexOf('msarifyi_')===0);
+            const keys = Object.keys(parsed.data).filter(k=>k.indexOf('msarifyi_')===0 && !msStore.isSensitive(k));
             if (!keys.length){ if(typeof showAlert==='function')showAlert('❌ الملف فاضي','error'); event.target.value=''; return; }
             const when = parsed.exported ? new Date(parsed.exported).toLocaleDateString('ar-EG') : 'غير معروف';
             const ok = confirm('⚠️ هتستبدل كل بياناتك الحالية بالنسخة دي؟\n\nتاريخ النسخة: '+when+'\nعدد الأقسام: '+keys.length+'\n\nالبيانات الحالية هتتمسح. متأكد؟');
             if (!ok){ event.target.value=''; return; }
-            const toRemove = [];
-            for (let i=0;i<localStorage.length;i++){
-              const k = localStorage.key(i);
-              if (k && k.indexOf('msarifyi_')===0 && k!=='msarifyi_pin' && k!=='msarifyi_pin_lock') toRemove.push(k);
-            }
-            toRemove.forEach(k=>localStorage.removeItem(k));
-            keys.forEach(k=>localStorage.setItem(k, parsed.data[k]));
+            if (!msStore.restoreAll(parsed.data, keys)) { if(typeof showAlert==='function')showAlert('❌ الاستعادة فشلت (مساحة التخزين ممتلئة). بياناتك الحالية اترجعت زي ما كانت.','error'); event.target.value=''; return; }
             event.target.value='';
             if(typeof showAlert==='function')showAlert('✅ اترجّعت نسختك، بيعيد التحميل...','success');
             setTimeout(()=>location.reload(), 1200);
@@ -23568,9 +23645,6 @@ setTimeout(() => {
     badge.classList.toggle('zero', count === 0);
   }
 
-  function toArabicDigits(n) {
-    return String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
-  }
 
   // Try injecting at multiple times to catch all init scenarios
   function tryInjectV17() {
@@ -24814,6 +24888,316 @@ setTimeout(() => {
   };
 
   // ─────────────────────────────────────────────────────
+  // v42 - NBE (البنك الأهلي المصري) CREDIT CARD STATEMENT PARSER
+  // Facts it relies on (verified against 4 real statements):
+  //  • "مبلغ الحركة" is the EGP amount actually billed; "مدين/دائن" hold the amount in the ORIGINAL currency.
+  //  • A row belongs to the statement it appears in (statements close on the last day of the month).
+  //  • "DCC Markup Fees-*" rows are a separate 3% fee line for a foreign merchant billed in EGP.
+  //  • STRIPE-Z.AI "RLOP n OF m" rows are an installment plan; header "credit total" is unreliable.
+  //  • Totals are re-computed from rows and checked against the closing balance.
+  // The parser is order-agnostic: it uses text patterns and x/y geometry, not Arabic header wording.
+  // ─────────────────────────────────────────────────────
+  const NBE_MONTHS = {
+    'يناير':1,'فبراير':2,'مارس':3,'ابريل':4,'مايو':5,'يونيو':6,'يونيه':6,'يونيا':6,'يوليو':7,'يوليه':7,'اغسطس':8,'سبتمبر':9,
+    'اكتوبر':10,'نوفمبر':11,'ديسمبر':12
+  };
+  const NBE_CCY = /^(EGP|USD|EUR|SAR|GBP|AED|QAR|KWD|CHF|JPY|CNY|CAD|AUD|TRY)$/;
+  function nbeNorm(s) {
+    return normDigits(String(s == null ? '' : s).normalize('NFKC').replace(/\u066B/g, '.').replace(/\u066C/g, ','))
+      .replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '')
+      .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+      .replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه');
+  }
+  const nbeRev = (s) => Array.from(s).reverse().join('');
+  // does text contain the Arabic keyword (in normal or visual/reversed order)?
+  function nbeHas(text, kw) { const n = nbeNorm(text).replace(/\s+/g, ''); return n.includes(kw) || n.includes(nbeRev(kw)); }
+  function nbeMonthOf(tok) {
+    const n = nbeNorm(tok).replace(/[^\u0621-\u064A]/g, '');
+    if (!n) return 0;
+    return NBE_MONTHS[n] || NBE_MONTHS[nbeRev(n)] || 0;
+  }
+  const nbeIso = (y, m, d) => `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  // all dates found in a string, e.g. "31 يوليو 2026" or "2026 يوليو 31" or 31/07/2026
+  function nbeFindDates(text) {
+    const out = [];
+    const toks = nbeNorm(text).split(/\s+/).filter(Boolean);
+    for (let i = 0; i < toks.length; i++) {
+      const mo = nbeMonthOf(toks[i]);
+      if (!mo) continue;
+      const a = toks[i - 1] || '', b = toks[i + 1] || '';
+      let d = null, y = null;
+      if (/^\d{4}$/.test(a) && /^\d{1,2}$/.test(b)) { y = +a; d = +b; }
+      else if (/^\d{1,2}$/.test(a) && /^\d{4}$/.test(b)) { d = +a; y = +b; }
+      if (d && y && d >= 1 && d <= 31 && y > 2000 && y < 2100) out.push(nbeIso(y, mo, d));
+    }
+    if (!out.length) { const p = parseDate(text); if (p) out.push(p); }
+    return out;
+  }
+  const nbeIsNum = (t) => /^-?\d+(?:\.\d+)?$/.test(t) || /^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/.test(t);
+  const nbeNum = (t) => parseFloat(String(t).replace(/,/g, ''));
+  const nbeR2 = (n) => Math.round(n * 100) / 100;
+
+  function nbeLooksLike(pages) {
+    const txt = [].concat(...pages).map(r => r.text).join('\n');
+    if (/DCC MARKUP FEES|EB-00CC|CARD PAYMENT:|PAYMENT:\d{10,}/i.test(txt)) return true;
+    return nbeHas(txt, 'بطاقات') && nbeHas(txt, 'ائتمان') && nbeHas(txt, 'كشف') && /\d{6}\*{4,}\d{4}|\d{6}\*+\d{4}/.test(txt);
+  }
+
+  // cluster the items of one page into visual lines by raw y
+  function nbeLines(rows) {
+    const items = [];
+    for (const r of rows) for (const it of r.items) {
+      const t = nbeNorm(it.text).trim();
+      if (t) items.push({ x: it.x, y: it.y, w: it.width || 0, raw: it.text, t });
+    }
+    items.sort((a, b) => b.y - a.y);
+    const lines = [];
+    for (const it of items) {
+      const last = lines[lines.length - 1];
+      if (last && Math.abs(last.y - it.y) <= 2.2) { last.items.push(it); last.y = (last.y * (last.items.length - 1) + it.y) / last.items.length; }
+      else lines.push({ y: it.y, items: [it] });
+    }
+    lines.forEach(l => { l.items.sort((a, b) => a.x - b.x); l.text = l.items.map(i => i.t).join(' '); });
+    return lines;
+  }
+
+  function parseNBE(pages) {
+    const warnings = [];
+    const result = { bank: 'nbe', currency: 'EGP', summary: {}, transactions: [], installments: [], rawHeader: '', warnings };
+    const rowsOut = [];
+    let hdrLines = [];       // header (summary) lines from page 1
+    let colX = null;         // x centers of the debit / credit / amount columns
+
+    pages.forEach((pageRows, pIdx) => {
+      const lines = nbeLines(pageRows);
+      // table header line: contains several column-title words
+      const kws = ['مدين', 'دائن', 'الوصف', 'النشر', 'المعامله', 'الموافقه', 'الحركه'];
+      const hIdx = lines.findIndex(l => kws.filter(k => nbeHas(l.text, k)).length >= 3);
+      if (hIdx >= 0 && !colX) {
+        const cx = (it) => it.x + it.w / 2;
+        const find = (kw, excl) => { const it = lines[hIdx].items.find(i => nbeHas(i.t, kw) && !(excl && nbeHas(i.t, excl))); return it ? cx(it) : null; };
+        colX = { debit: find('مدين'), credit: find('دائن'), amount: find('مبلغ') };
+      }
+      const isAnchor = (l, i) => {
+        if (/as of|\d{1,2}:\d{2}:\d{2}/i.test(l.text)) return false;
+        if (hIdx >= 0 && i <= hIdx) return false;
+        const ds = nbeFindDates(l.text);
+        const hasCcy = l.items.some(it => NBE_CCY.test(it.t));
+        return ds.length >= 2 || (ds.length >= 1 && hasCcy);
+      };
+      const anchorIdx = []; lines.forEach((l, i) => { if (isAnchor(l, i)) anchorIdx.push(i); });
+      if (pIdx === 0) {
+        const firstBoundary = hIdx >= 0 ? hIdx : (anchorIdx.length ? anchorIdx[0] : lines.length);
+        hdrLines = lines.slice(0, firstBoundary);
+      }
+      // description-only lines → nearest anchor
+      const ys = anchorIdx.map(i => lines[i].y);
+      const gaps = []; for (let k = 1; k < ys.length; k++) gaps.push(ys[k - 1] - ys[k]);
+      gaps.sort((a, b) => a - b);
+      const med = gaps.length ? gaps[Math.floor(gaps.length / 2)] : 30;
+      const thr = Math.max(12, 0.55 * med);
+      const extra = anchorIdx.map(() => []);
+      lines.forEach((l, i) => {
+        if (anchorIdx.includes(i)) return;
+        if (hIdx >= 0 && i <= hIdx) return;
+        if (!anchorIdx.length || i < anchorIdx[0] - 4 && hIdx < 0) return;
+        if (/page\s*no|as of/i.test(l.text)) return;
+        if (nbeFindDates(l.text).length) return;
+        if (l.items.some(it => NBE_CCY.test(it.t) || nbeIsNum(it.t))) return;
+        if (!/[A-Za-z]/.test(l.text)) return;
+        let best = -1, bd = 1e9;
+        anchorIdx.forEach((ai, k) => { const d = Math.abs(lines[ai].y - l.y); if (d < bd) { bd = d; best = k; } });
+        if (best >= 0 && bd <= thr) extra[best].push(l);
+      });
+
+      anchorIdx.forEach((ai, k) => {
+        const L = lines[ai];
+        const dateItems = [], rest = [];
+        L.items.forEach(it => { (nbeFindDates(it.t).length && nbeMonthOf(it.t.split(/\s+/).find(nbeMonthOf) || '') ? dateItems : rest).push(it); });
+        // dates: earliest = transaction date, latest = posting date (posting is never before the transaction)
+        let ds = []; dateItems.forEach(it => ds = ds.concat(nbeFindDates(it.t)));
+        if (!ds.length) ds = nbeFindDates(L.text);
+        ds.sort();
+        const txnDate = ds[0], postDate = ds[ds.length - 1] || ds[0];
+        let ccy = null; const nums = []; const descItems = [];
+        rest.forEach(it => {
+          if (NBE_CCY.test(it.t)) { if (!ccy) ccy = it.t; return; }
+          if (nbeIsNum(it.t)) { nums.push(it); return; }
+          descItems.push(it);
+        });
+        // authorization code: 6-digit integer (amounts without decimals have < 6 digits here)
+        let auth = '';
+        const authIdx = nums.findIndex(n => /^\d{6}$/.test(n.t));
+        if (authIdx >= 0) auth = nums.splice(authIdx, 1)[0].t;
+        // amounts: billed EGP amount vs original-currency amount, and debit/credit side
+        const cx = (it) => it.x + it.w / 2;
+        let egp = null, orig = null, side = null;
+        if (colX && nums.length) {
+          nums.forEach(n => {
+            const c = cx(n);
+            const cand = [['debit', colX.debit], ['credit', colX.credit], ['amount', colX.amount]].filter(a => a[1] != null);
+            cand.sort((a, b) => Math.abs(c - a[1]) - Math.abs(c - b[1]));
+            const col = cand[0] && cand[0][0];
+            if (col === 'amount') egp = nbeNum(n.t);
+            else if (col === 'debit') { orig = nbeNum(n.t); side = 'D'; }
+            else if (col === 'credit') { orig = nbeNum(n.t); side = 'C'; }
+          });
+        }
+        if (egp == null || orig == null) {           // fallback without column geometry
+          const vals = nums.map(n => nbeNum(n.t));
+          if (vals.length >= 2) { egp = Math.max(...vals); orig = Math.min(...vals); }
+          else if (vals.length === 1) { egp = orig = vals[0]; }
+        }
+        if (egp == null) egp = orig;
+        if (orig == null) orig = egp;
+        // description: same-line items + wrapped lines above/below
+        const parts = [];
+        const pieces = [{ y: L.y, items: descItems }].concat(extra[k]);
+        pieces.sort((a, b) => b.y - a.y);
+        pieces.forEach(p => parts.push(p.items.slice().sort((a, b) => a.x - b.x).map(i => i.t).join(' ')));
+        const description = parts.join(' ').replace(/\s+/g, ' ').trim();
+        const D = description.toUpperCase();
+        if (!side) side = /PAYMENT/.test(D) && !/^DCC/.test(D) ? 'C' : 'D';
+        let type = 'purchase', tag = '';
+        if (/^DCC MARKUP FEES/.test(D)) { type = 'fee'; tag = 'dcc'; }
+        else if (/^INTEREST\b/.test(D)) { type = 'fee'; tag = 'interest'; }
+        else if (/STAMP TAX/.test(D)) { type = 'fee'; tag = 'stamp'; }
+        else if (/^(ANNUAL FEE|LATE PAYMENT|OVER ?LIMIT|SMS|SERVICE CHARGE|VAT|CASH ADVANCE FEE|ISSUANCE)/.test(D)) { type = 'fee'; tag = 'fee'; }
+        else if (side === 'C') type = /PAYMENT/.test(D) ? 'payment' : 'refund';
+        const origCcy = ccy || 'EGP';
+        const tx = {
+          date: txnDate, postDate, description, amount: nbeR2(egp), type, tag,
+          origAmount: nbeR2(orig), origCurrency: origCcy, authCode: auth || ''
+        };
+        if (origCcy !== 'EGP' && orig > 0) tx.fxRate = Math.round((egp / orig) * 10000) / 10000;
+        const rl = D.match(/RLOP\s+(\d+)\s+OF\s+(\d+)/);
+        if (rl && side === 'D') tx.installment = { n: +rl[1], total: +rl[2] };
+        rowsOut.push(tx);
+      });
+    });
+
+    // ── DCC fee → parent purchase (same posting date, fee ≈ 3% of the parent, merchant key matches)
+    rowsOut.forEach((t, i) => {
+      if (t.tag !== 'dcc') return;
+      const hint = t.description.replace(/^DCC MARKUP FEES-/i, '').toUpperCase();
+      const key = hint.split(/\s+/).slice(0, 2).join(' ');
+      const cands = rowsOut.map((p, j) => ({ p, j })).filter(o => o.p.type === 'purchase' && o.p.postDate === t.postDate && o.p.description.toUpperCase().startsWith(key.split(' ')[0]));
+      let best = cands.find(o => Math.abs(o.p.amount * 0.03 - t.amount) <= 0.02 && (key.split(' ')[1] ? o.p.description.toUpperCase().includes(key.split(' ')[1]) : true))
+              || cands.find(o => Math.abs(o.p.amount * 0.03 - t.amount) <= 0.02) || cands[0];
+      if (best) t.parentIdx = best.j;
+    });
+
+    // ── header summary: label-based, positional fallback
+    const cardLine = hdrLines.find(l => /\*{3,}/.test(l.text));
+    const cardNumber = cardLine ? ((cardLine.items.find(i => /\*{3,}/.test(i.t)) || {}).t || '') : '';
+    const last4 = (cardNumber.match(/(\d{4})\s*$/) || [])[1] || '';
+    const valueLines = hdrLines.filter(l => !/\*{3,}/.test(l.text) && !/as of|\d{1,2}:\d{2}:\d{2}/i.test(l.text) && !/page\s*no/i.test(l.text));
+    const cells = [];  // {line, x, type, v}
+    valueLines.forEach((l, li) => {
+      l.items.forEach(it => {
+        const ds = nbeFindDates(it.t);
+        if (ds.length && Array.from(it.t.split(/\s+/)).some(nbeMonthOf)) cells.push({ li, x: it.x, w: it.w, type: 'date', v: ds[0], t: it.t });
+        else if (nbeIsNum(it.t)) cells.push({ li, x: it.x, w: it.w, type: 'num', v: nbeNum(it.t), t: it.t });
+        else cells.push({ li, x: it.x, w: it.w, type: 'label', t: it.t });
+      });
+    });
+    const S = { opening: null, closing: null, credit: null, debit: null, due: null, limit: null, minpay: null, stmt: null };
+    // label-based: value sits on the left of its label (RTL)
+    const rules = [
+      ['opening', t => nbeHas(t, 'افتتاح')], ['closing', t => nbeHas(t, 'ختام')],
+      ['credit', t => nbeHas(t, 'مجموع') && nbeHas(t, 'ائتمان')], ['debit', t => nbeHas(t, 'مجموع') && nbeHas(t, 'خصم')],
+      ['due', t => nbeHas(t, 'استحقاق')], ['limit', t => nbeHas(t, 'الحد') && nbeHas(t, 'ائتمان') && !nbeHas(t, 'مجموع')],
+      ['minpay', t => nbeHas(t, 'ادني')], ['stmt', t => nbeHas(t, 'تاريخ') && nbeHas(t, 'الكشف')]
+    ];
+    cells.filter(c => c.type === 'label').forEach(lab => {
+      const rule = rules.find(r => S[r[0]] == null && r[1](lab.t)); if (!rule) return;
+      const vals = cells.filter(c => c.li === lab.li && c.type !== 'label');
+      const left = vals.filter(c => c.x + c.w <= lab.x + 2).sort((a, b) => (lab.x - (a.x + a.w)) - (lab.x - (b.x + b.w)))[0];
+      const right = vals.filter(c => c.x >= lab.x + lab.w - 2).sort((a, b) => a.x - b.x)[0];
+      const v = left || right; if (v) S[rule[0]] = v.v;
+    });
+    if (Object.values(S).some(v => v == null)) {          // positional fallback (fixed RTL 4×2 template)
+      const seq = []; const byLine = {};
+      cells.filter(c => c.type !== 'label').forEach(c => { (byLine[c.li] = byLine[c.li] || []).push(c); });
+      Object.keys(byLine).map(Number).sort((a, b) => a - b).forEach(li => byLine[li].sort((a, b) => b.x - a.x).forEach(c => seq.push(c)));
+      const keys = ['opening', 'closing', 'credit', 'debit', 'due', 'limit', 'minpay', 'stmt'];
+      if (seq.length === 8 && seq[4].type === 'date' && seq[7].type === 'date') keys.forEach((k, i) => { if (S[k] == null) S[k] = seq[i].v; });
+    }
+
+    // ── recompute from rows + reconcile
+    let D = 0, C = 0, purchases = 0, fees = 0;
+    rowsOut.forEach(t => {
+      if (t.type === 'payment' || t.type === 'refund') C += t.amount; else { D += t.amount; if (t.type === 'fee') fees += t.amount; else purchases += t.amount; }
+    });
+    D = nbeR2(D); C = nbeR2(C);
+    const stmtDate = S.stmt || (rowsOut.length ? rowsOut.map(t => t.postDate).sort().pop() : null);
+    const statementMonth = stmtDate ? stmtDate.slice(0, 7) : null;
+    const expectedClosing = S.opening != null ? nbeR2(S.opening + D - C) : null;
+    const reconciled = expectedClosing != null && S.closing != null && Math.abs(expectedClosing - S.closing) < 0.015;
+    if (!rowsOut.length) warnings.push('ما لقيتش عمليات في الملف. جرّب "نسخ بيانات التشخيص".');
+    if (S.closing == null) warnings.push('ما قدرتش أقرا الرصيد الختامي من رأس الكشف.');
+    else if (!reconciled && expectedClosing != null) warnings.push(`مجموع العمليات مش بيطابق الرصيد الختامي (المتوقع ${expectedClosing.toFixed(2)} والكشف ${S.closing.toFixed(2)}). راجع العمليات قبل الاستيراد.`);
+    if (S.debit != null && Math.abs(S.debit - D) > 0.015) warnings.push(`إجمالي المدين في الرأس ${S.debit.toFixed(2)} ومجموع الصفوف ${D.toFixed(2)}.`);
+    const creditExtra = S.credit != null ? nbeR2(S.credit - C) : null;
+    if (creditExtra != null && Math.abs(creditExtra) > 0.015) warnings.push(`"مجموعه الائتمان" في الرأس أكبر من المدفوعات المدرجة بـ ${creditExtra.toFixed(2)} (معروف في كشوف الأهلي مع الأقساط). الحساب بيتم من الصفوف.`);
+
+    result.summary = {
+      statementMonth, statementDate: stmtDate, cardNumber, last4,
+      openingBalance: S.opening, closingBalance: S.closing, totalAmountDue: S.closing,
+      minAmount: S.minpay, dueDate: S.due, creditLimit: S.limit,
+      totalSpend: nbeR2(purchases), fees: nbeR2(fees), totalPayments: C, totalDebits: D,
+      headerCreditTotal: S.credit, headerDebitTotal: S.debit, expectedClosing, reconciled
+    };
+    result.transactions = rowsOut;
+    // installment plans that are still running (n < total) → same shape the Tasaheel importer uses
+    rowsOut.forEach(t => {
+      if (!t.installment || t.installment.n >= t.installment.total) return;
+      const merchant = t.description.replace(/\s*RLOP\s+\d+\s+OF\s+\d+/i, '').replace(/\s+/g, ' ').trim();
+      const left = t.installment.total - t.installment.n;
+      result.installments.push({
+        merchant, serial: 'RLOP-' + merchant.replace(/[^A-Z0-9]/gi, '').slice(0, 16).toUpperCase(),
+        txAmount: nbeR2(t.amount * t.installment.total), monthlyAmount: t.amount, monthlyFee: 0, totalMonthly: t.amount,
+        remainingMonths: left, remainingAmount: nbeR2(t.amount * left), date: t.date
+      });
+    });
+    result.debugLines = [].concat(...pages).map(r => r.text).slice(0, 160);
+    return result;
+  }
+
+  window.parseNbePdf = async function (file) { return parseNBE(await extractPDFRows(file)); };
+  // one entry point for the importer: pick the parser by the selected card's bank, or by what the PDF looks like
+  window.parseStatementPdf = async function (file, cardId) {
+    const pages = await extractPDFRows(file);
+    const card = (window.creditCards || []).find(c => c.id === cardId);
+    const bankKey = card ? (card.bankPreset || card.bank || '') : '';
+    if (bankKey === 'nbe' || nbeLooksLike(pages)) return parseNBE(pages);
+    return parseAlRajhi(pages);
+  };
+  window.__nbeParseRows = parseNBE; // for tests
+
+  // ─── NBE preview helpers (used by renderStep2) ───
+  function nbeRowBadges(tx, result) {
+    const bits = [];
+    if (tx.origCurrency && tx.origCurrency !== 'EGP') bits.push(`${fmt(tx.origAmount)} ${tx.origCurrency}${tx.fxRate ? ' @ ' + tx.fxRate : ''}`);
+    if (tx.installment) bits.push(`🔁 قسط ${tx.installment.n} من ${tx.installment.total}`);
+    if (tx.tag === 'dcc') { const p = (result.transactions || [])[tx.parentIdx]; bits.push('↳ رسوم DCC' + (p ? ' على ' + String(p.description).split(/\s+/)[0] : '')); }
+    if (tx.postDate && tx.postDate !== tx.date) bits.push('نُشرت ' + tx.postDate);
+    const card = (window.creditCards || []).find(c => c.id === _v2CardId);
+    if (card && tx.type === 'purchase' && typeof window.ccMatchPendingSms === 'function' && window.ccMatchPendingSms(card, tx)) bits.push('🔗 هتتربط برسالة SMS متسجلة');
+    return bits.length ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;direction:rtl">${bits.map(b => esc(b)).join(' · ')}</div>` : '';
+  }
+  function nbeExtrasHtml(result) {
+    const s = result.summary || {}, ws = result.warnings || [];
+    const debugBtn = `<div style="margin-top:8px"><button onclick="window._ccPdfV2CopyDebug()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:11px;font-family:inherit;font-weight:700;cursor:pointer">📋 نسخ بيانات التشخيص</button></div>`;
+    const ok = !!s.reconciled;
+    const head = ok
+      ? `<div style="background:#10b98120;border:1px solid #10b98150;border-radius:10px;padding:10px;margin-bottom:12px;font-size:12px;line-height:1.7">✅ الأرقام بتتطابق: <span style="direction:ltr;display:inline-block">${fmt(s.openingBalance)} + ${fmt(s.totalDebits)} − ${fmt(s.totalPayments)} = ${fmt(s.closingBalance)}</span>${s.statementDate ? `<div style="color:var(--muted);font-size:11px">تاريخ الكشف: ${esc(s.statementDate)}</div>` : ''}</div>`
+      : `<div style="background:#ef444420;border:1px solid #ef444450;border-radius:10px;padding:10px;margin-bottom:12px;font-size:12px;line-height:1.7">⚠️ الأرقام مش متطابقة. راجع العمليات قبل الاستيراد.${debugBtn}</div>`;
+    const notes = ws.length ? `<div style="font-size:10px;color:var(--muted);line-height:1.7;margin-bottom:12px">${ws.map(w => (/مجموعه الائتمان/.test(w) ? 'ℹ️ ' : '⚠️ ') + esc(w)).join('<br>')}</div>` : '';
+    return head + notes;
+  }
+
+  // ─────────────────────────────────────────────────────
   // REPLACE PDF IMPORT MODAL with smarter version
   // ─────────────────────────────────────────────────────
   function ensureBetterPdfModal() {
@@ -24843,7 +25227,7 @@ setTimeout(() => {
     body.innerHTML = `
       <div style="background:linear-gradient(135deg,#7c3aed20,#4f46e520);border:1px solid #7c3aed40;border-radius:12px;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.7">
         <b>📌 ازاي بيشتغل:</b><br>
-        • نزّل كشف البطاقة PDF من تطبيق البنك (الراجحي / SNB / غيرهم)<br>
+        • نزّل كشف البطاقة PDF من تطبيق البنك (الراجحي / SNB / الأهلي المصري / غيرهم)<br>
         • البرنامج يقرأ الكشف ويستخرج: <b>الرصيد المستحق، الحد الأدنى، تاريخ الاستحقاق، كل العمليات، والأقساط (تساهيل)</b><br>
         • تراجع وتعدل وتختار قبل ما يحفظ
       </div>
@@ -24859,7 +25243,6 @@ setTimeout(() => {
     `;
   }
 
-  function esc(s) { return String(s||'').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'})[c]); }
 
   let _v2Parsed = null;
   let _v2CardId = null;
@@ -24871,7 +25254,7 @@ setTimeout(() => {
     statusEl.innerHTML = '<div style="display:inline-block;padding:10px"><div style="font-size:24px">⏳</div><div>جاري تحليل الكشف...</div></div>';
     _v2CardId = document.getElementById('ccPdfV2Card').value;
     try {
-      const result = await window.parseAlRajhiPdf(file);
+      const result = await window.parseStatementPdf(file, _v2CardId);
       _v2Parsed = result;
       renderStep2(result);
     } catch(e) {
@@ -24889,7 +25272,7 @@ setTimeout(() => {
     const s = result.summary || {};
     const txs = result.transactions || [];
     const insts = result.installments || [];
-    const bankName = result.bank === 'alrajhi' ? 'مصرف الراجحي' :
+    const bankName = result.bank === 'nbe' ? 'البنك الأهلي المصري' : result.bank === 'alrajhi' ? 'مصرف الراجحي' :
                      result.bank === 'snb' ? 'البنك الأهلي السعودي' : 'بنك آخر';
 
     const purchases = txs.filter(t => t.type === 'purchase');
@@ -24907,7 +25290,7 @@ setTimeout(() => {
           </div>
           <div style="text-align:left">
             <div style="font-size:9px;opacity:.85">إجمالي المستحق</div>
-            <div style="font-size:18px;font-weight:900;direction:ltr">${fmt(s.totalAmountDue||0)} <span style="font-size:11px">SAR</span></div>
+            <div style="font-size:18px;font-weight:900;direction:ltr">${fmt(s.totalAmountDue||0)} <span style="font-size:11px">${result.currency||'SAR'}</span></div>
           </div>
         </div>
       </div>
@@ -24936,6 +25319,7 @@ setTimeout(() => {
         </div>
       ` : ''}
 
+      ${result.bank === 'nbe' ? nbeExtrasHtml(result) : ''}
       <!-- Transactions to import -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <div style="font-weight:900;font-size:13px">العمليات (${txs.length})</div>
@@ -24948,7 +25332,7 @@ setTimeout(() => {
         ${txs.length === 0 ? '<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">⚠ لم يتم استخراج عمليات</div>' :
           txs.map((tx, idx) => {
             const typeColor = tx.type==='payment'?'var(--green)':(tx.type==='fee'?'#f59e0b':(tx.type==='refund'?'var(--green)':'var(--red)'));
-            const typeLabel = tx.type==='payment'?'سداد':(tx.type==='fee'?'مرابحة':(tx.type==='refund'?'استرداد':(tx.type==='plan_credit'?'تحويل قسط ↘':(tx.type==='plan_debit'?'تحويل قسط ↗':'شراء'))));
+            const typeLabel = tx.type==='payment'?'سداد':(tx.type==='fee'?(result.bank==='nbe'?'رسوم/فايدة':'مرابحة'):(tx.type==='refund'?'استرداد':(tx.type==='plan_credit'?'تحويل قسط ↘':(tx.type==='plan_debit'?'تحويل قسط ↗':'شراء'))));
             const typeIcon = tx.type==='payment'?'💵':(tx.type==='fee'?'💸':(tx.type==='refund'?'↩':(tx.type==='plan_credit'||tx.type==='plan_debit'?'↔':'🛒')));
             // Skip "Move To Payment Plan" rows from default selection (they're internal moves)
             const defaultChecked = (tx.type !== 'plan_credit' && tx.type !== 'plan_debit') ? 'checked' : '';
@@ -24961,7 +25345,7 @@ setTimeout(() => {
                   <span style="font-size:10px;color:var(--muted)">${tx.date}</span>
                 </div>
                 <input type="text" class="ccPdfV2Desc" data-idx="${idx}" value="${esc(tx.description)}" style="width:100%;background:transparent;border:none;color:var(--text);font-family:inherit;font-size:12px;padding:0;font-weight:700">
-                <div style="text-align:left;color:${typeColor};direction:ltr;font-weight:900;font-size:13px;margin-top:2px">${tx.type==='payment'||tx.type==='refund'?'+':''}${fmt(tx.amount)} SAR</div>
+                ${result.bank === 'nbe' ? nbeRowBadges(tx, result) : ''}<div style="text-align:left;color:${typeColor};direction:ltr;font-weight:900;font-size:13px;margin-top:2px">${tx.type==='payment'||tx.type==='refund'?'+':''}${fmt(tx.amount)} ${result.currency||'SAR'}</div>
               </div>
             </div>
           `;}).join('')
@@ -25014,6 +25398,8 @@ setTimeout(() => {
     if (!card) { alert('بطاقة غير موجودة'); return; }
     if (!Array.isArray(card.transactions)) card.transactions = [];
 
+    const isNbe = _v2Parsed.bank === 'nbe';
+
     // Update card summary if we got it
     const s = _v2Parsed.summary;
     if (s.creditLimit && (!card.limit || card.limit === 0)) card.limit = s.creditLimit;
@@ -25024,9 +25410,17 @@ setTimeout(() => {
         card.dueDay = d.getDate();
       } catch(e) {}
     }
+    if (isNbe) {
+      // NBE: statement closes on the last day of the month, due on the 25th of the next month, billed in EGP
+      card.bank = card.bankPreset = 'nbe';
+      card.stmtDay = card.statementDay = 31;
+      if (s.dueDate) card.dueDay = parseInt(String(s.dueDate).slice(8, 10), 10) || 25;
+      card.currency = _v2Parsed.currency || 'EGP';
+      if (s.creditLimit) { card.limit = s.creditLimit; card.creditLimit = s.creditLimit; }
+    }
 
     // Import selected transactions
-    let txAdded = 0;
+    let txAdded = 0, txMatched = 0;
     document.querySelectorAll('.ccPdfV2Tx').forEach(cb => {
       if (!cb.checked) return;
       const idx = parseInt(cb.dataset.idx);
@@ -25042,16 +25436,44 @@ setTimeout(() => {
       else if (tx.type === 'fee') { txType = 'fee'; category = 'فايدة/رسوم'; }
       else if (tx.type === 'refund') { txType = 'refund'; category = 'استرداد'; }
       else if (tx.type === 'plan_credit' || tx.type === 'plan_debit') { txType = 'plan_move'; category = 'تحويل لقسط'; }
+      if (isNbe && tx.tag === 'dcc') category = 'رسوم DCC';
+      else if (isNbe && tx.tag === 'interest') category = 'فايدة';
+      else if (isNbe && tx.tag === 'stamp') category = 'ضريبة دمغة';
 
-      // Dedupe: skip if same date+amount+description already exists
+      // NBE extras (undefined for other banks, so their records are unchanged)
+      const extra = {};
+      if (isNbe) {
+        extra.postDate = tx.postDate;
+        if (tx.origCurrency) { extra.origCurrency = tx.origCurrency; extra.origAmount = tx.origAmount; }
+        if (tx.fxRate) extra.fxRate = tx.fxRate;
+        if (tx.authCode) extra.authCode = tx.authCode;
+        if (tx.installment) extra.installment = tx.installment;
+        if (tx.tag) extra.feeKind = tx.tag;
+      }
+
+      // NBE: a charge that was first recorded from the SMS is corrected in place instead of duplicated
+      if (isNbe && txType === 'purchase' && typeof window.ccMatchPendingSms === 'function') {
+        const pend = window.ccMatchPendingSms(card, tx);
+        if (pend) {
+          Object.assign(pend, extra, {
+            name: desc, amount: tx.amount, date: tx.date, statementMonth: s.statementMonth || pend.statementMonth,
+            pending: false, smsEstimate: false, importedFromPdf: true, note: 'اتصححت من كشف PDF (كانت من رسالة SMS)'
+          });
+          txMatched++;
+          return;
+        }
+      }
+
+      // Dedupe: skip if same date+amount+description already exists (NBE rows also compare the auth code)
       const exists = card.transactions.find(t =>
         t.date === tx.date &&
         Math.abs(t.amount - tx.amount) < 0.01 &&
-        (t.name||'').substring(0,20) === desc.substring(0,20)
+        (t.name||'').substring(0,20) === desc.substring(0,20) &&
+        (!isNbe || !tx.authCode || !t.authCode || t.authCode === tx.authCode)
       );
       if (exists) return;
 
-      card.transactions.push({
+      card.transactions.push(Object.assign({
         id: 'cctx_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
         date: tx.date,
         time: '12:00',
@@ -25063,9 +25485,20 @@ setTimeout(() => {
         importedFromPdf: true,
         statementMonth: s.statementMonth || null,
         createdAt: new Date().toISOString()
-      });
+      }, extra));
       txAdded++;
     });
+
+    // NBE: keep the statement's own figures (min payment, due date, closing) — they beat any estimate
+    if (isNbe && s.statementMonth) {
+      card.statements = card.statements || {};
+      card.statements[s.statementMonth] = {
+        opening: s.openingBalance, closing: s.closingBalance, minDue: s.minAmount, dueDate: s.dueDate,
+        stmtDate: s.statementDate, limit: s.creditLimit, debitTotal: s.totalDebits, paymentsTotal: s.totalPayments,
+        interest: (_v2Parsed.transactions || []).filter(t => t.tag === 'interest').reduce((a, t) => a + t.amount, 0),
+        reconciled: !!s.reconciled, importedAt: new Date().toISOString()
+      };
+    }
 
     // Import selected installments
     let instAdded = 0;
@@ -25084,16 +25517,16 @@ setTimeout(() => {
         const totalMonths = (inst.remainingMonths || 0) + Math.ceil((inst.txAmount - inst.remainingAmount) / inst.monthlyAmount) || 6;
         installments.push({
           id: 'inst_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
-          name: inst.merchant + ' (تساهيل)',
+          name: inst.merchant + (isNbe ? ' (تقسيط)' : ' (تساهيل)'),
           provider: 'bank',
           totalAmount: inst.txAmount,
           monthlyPayment: inst.totalMonthly,
           totalMonths: totalMonths,
           paidMonths: totalMonths - (inst.remainingMonths || totalMonths),
           startDate: inst.date,
-          currency: 'SAR',
+          currency: isNbe ? (_v2Parsed.currency || 'EGP') : 'SAR',
           category: 'بطاقة ائتمان',
-          note: `Tasaheel #${inst.serial||''} — رسوم شهرية: ${fmt(inst.monthlyFee)}`,
+          note: isNbe ? `قسط من كشف الأهلي المصري ${inst.serial||''}` : `Tasaheel #${inst.serial||''} — رسوم شهرية: ${fmt(inst.monthlyFee)}`,
           linkedCardId: _v2CardId,
           tasaheelSerial: inst.serial,
           createdAt: new Date().toISOString()
@@ -25105,7 +25538,7 @@ setTimeout(() => {
 
     if (typeof window.saveCreditCards === 'function') window.saveCreditCards();
 
-    const msg = `✅ تم: ${txAdded} عملية${instAdded?'، '+instAdded+' قسط':''}`;
+    const msg = `✅ تم: ${txAdded} عملية${txMatched?'، '+txMatched+' اتصححت من رسايل SMS':''}${instAdded?'، '+instAdded+' قسط':''}`;
     if (window.showToast) window.showToast(msg, 'success');
     else alert(msg);
 
@@ -25115,6 +25548,15 @@ setTimeout(() => {
     // Refresh views
     if (typeof window.openCardDetail === 'function') window.openCardDetail(_v2CardId);
     if (typeof window.renderInstallments === 'function') window.renderInstallments();
+  };
+
+  // NBE: copy the raw extracted lines so a failed read can be debugged without re-uploading the file
+  window._ccPdfV2CopyDebug = function() {
+    const txt = (_v2Parsed && _v2Parsed.debugLines ? _v2Parsed.debugLines.join('\n') : '');
+    if (!txt) { if (window.showToast) window.showToast('مفيش بيانات تشخيص', 'info'); return; }
+    const done = ok => { if (window.showToast) window.showToast(ok ? '✅ اتنسخت بيانات التشخيص' : '❌ مقدرتش أنسخ', ok ? 'success' : 'error'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => done(true), () => done(false));
+    else { try { const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); done(document.execCommand('copy')); ta.remove(); } catch(e) { done(false); } }
   };
 
   // Override the existing openCardPdfImport
@@ -25423,6 +25865,18 @@ setTimeout(() => {
   //   - dueDate: next payment deadline (statement close + due-day offset)
   //   - daysUntilDue: countdown
   //   - totalOutstanding: full balance owed if customer wants to pay everything
+  // v42: latest imported statement (NBE). Min due left = statement min − payments made after the statement date.
+  function nbeStmtDue(card) {
+    const st = card.statements; if (!st) return null;
+    const key = Object.keys(st).sort().pop(); const rec = key ? st[key] : null;
+    if (!rec || !(Number(rec.minDue) >= 0) || rec.minDue === null) return null;
+    let paid = 0;
+    for (const t of (card.transactions || [])) {
+      if (t.type === 'payment' && rec.stmtDate && String(t.date) > String(rec.stmtDate)) paid += Math.abs(Number(t.amount) || 0);
+    }
+    return { key, rec, paidSince: paid, minDueLeft: Math.max(0, Number(rec.minDue) - paid) };
+  }
+
   function calcPaymentDue(card) {
     const r = calcCard(card);
     const periods = listPeriods(card);
@@ -25461,7 +25915,8 @@ setTimeout(() => {
     // Allow manual override stored on the card (`card.manualMinDue`)
     const manualOverride = (typeof card.manualMinDue === 'number' && card.manualMinDue > 0)
       ? card.manualMinDue : null;
-    const minimumDue = manualOverride !== null ? manualOverride : autoMinDue;
+    const stmtDue = nbeStmtDue(card);
+    const minimumDue = manualOverride !== null ? manualOverride : (stmtDue ? stmtDue.minDueLeft : autoMinDue);
 
     // Due date: statement closes on `stmtDay` (or `statementDay`), payment due
     // `dueDay` of the FOLLOWING month. Example: stmtDay=25, dueDay=15 →
@@ -25489,6 +25944,11 @@ setTimeout(() => {
       }
     } catch(e) {}
 
+    if (stmtDue && stmtDue.rec.dueDate && /^\d{4}-\d{2}-\d{2}$/.test(stmtDue.rec.dueDate)) {
+      const dp = stmtDue.rec.dueDate.split('-').map(Number);
+      dueDateObj = new Date(dp[0], dp[1] - 1, dp[2]);
+      daysUntilDue = Math.ceil((dueDateObj.getTime() - todayMs) / (24*60*60*1000));
+    }
     return {
       totalOutstanding: r.balance,
       pastDue,
@@ -25499,6 +25959,8 @@ setTimeout(() => {
       autoMinDue,
       manualMinDue: manualOverride,
       minimumDue,
+      minSource: manualOverride !== null ? 'manual' : (stmtDue ? 'statement' : 'auto'),
+      stmtKey: stmtDue ? stmtDue.key : null,
       dueDate: dueDateObj ? dueDateObj.toISOString().slice(0,10) : null,
       dueDateText: dueDateObj
         ? `${dueDateObj.getDate()}/${dueDateObj.getMonth()+1}/${dueDateObj.getFullYear()}`
@@ -25999,7 +26461,7 @@ setTimeout(() => {
                 ${pd.manualMinDue !== null ? `<div style="font-size:9px;opacity:.85">(يدوي)</div>` : ''}
               </div>
               <div style="text-align:left">
-                <div style="font-size:18px;font-weight:900;direction:ltr">${fmt(pd.minimumDue)} <span style="font-size:11px">${cardSym}</span></div>
+                <div style="font-size:18px;font-weight:900;direction:ltr">${fmt(pd.minimumDue)} <span style="font-size:11px">${cardSym}</span></div>${pd.minSource==='statement'?`<div style="font-size:9px;opacity:.8">من كشف ${pd.stmtKey}</div>`:''}
               </div>
             </div>
 
@@ -26025,12 +26487,14 @@ setTimeout(() => {
         </div>
       `}
 
+      ${window.nbeCardInfoHtml ? window.nbeCardInfoHtml(card) : ''}
       <!-- Action buttons -->
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:10px">
         <button onclick="window.ccActionPurchase('${cardId}')" style="background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">🛒 مشترى</button>
         <button onclick="window.ccActionPayment('${cardId}')" style="background:var(--card2);color:var(--green);border:1px solid var(--border);border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">💵 سداد</button>
         <button onclick="window.openCardPdfImport('${cardId}')" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📄 رفع PDF</button>
         <button onclick="window.openCardReport('${cardId}')" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📊 تقرير</button>
+        <button onclick="window.ccSmsOpen('${cardId}')" style="grid-column:span 2;background:var(--card2);color:var(--accent);border:1px solid var(--border);border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📩 تسجيل رسالة خصم (SMS)</button>
       </div>
 
       <!-- Signature/Pro buttons: bank-balance adjustment + rewards -->
@@ -26144,6 +26608,9 @@ setTimeout(() => {
                     <span>${tx.date||''}</span>
                     ${tx.category?`<span>• ${esc(tx.category)}</span>`:''}
                     ${tx.importedFromPdf?`<span style="color:#7c3aed">• PDF</span>`:''}
+                     ${tx.pending?`<span style="color:#f59e0b">• ⏳ تقديري</span>`:''}
+                     ${tx.origCurrency && tx.origCurrency!==card.currency?`<span style="direction:ltr">• ${fmt(tx.origAmount)} ${tx.origCurrency}${tx.fxRate?' @'+tx.fxRate:''}</span>`:''}
+                     ${tx.installment?`<span>• 🔁 ${tx.installment.n}/${tx.installment.total}</span>`:''}
                   </div>
                 </div>
                 <div style="text-align:left;flex-shrink:0">
@@ -27704,9 +28171,9 @@ setTimeout(() => {
   }
 
   // تبديل عملة العرض في الـ Hero (ريال/جنيه) — يحفظ الاختيار
-  function _heroCur(){ return localStorage.getItem('msarifyi_hero_cur') || baseCurrency; }
+  function _heroCur(){ return msStore.getRaw('msarifyi_hero_cur') || baseCurrency; }
   window._setHeroCur = function(c){
-    localStorage.setItem('msarifyi_hero_cur', c);
+    msStore.setRaw('msarifyi_hero_cur', c);
     if (typeof renderHomeV2==='function') renderHomeV2();
   };
   // حوّل مبلغ SAR لعملة العرض المختارة في الـ Hero
@@ -28181,7 +28648,7 @@ setTimeout(() => {
     // الترتيب والتشغيل الافتراضي
     var _defaultOrder = ['dashboard','assistant','month','alerts','budget','commitments','goal','recent','quick'];
     var _cfg;
-    try{ _cfg = JSON.parse(localStorage.getItem('msarifyi_home_widgets')||'null'); }catch(e){ _cfg = null; }
+    try{ _cfg = msStore.getJSON('msarifyi_home_widgets', 'null'); }catch(e){ _cfg = null; }
     if (!_cfg || !Array.isArray(_cfg.order)){
       _cfg = { order: _defaultOrder.slice(), off: [] };
     } else {
@@ -28219,13 +28686,13 @@ setTimeout(() => {
   function _getHomeCfg(){
     var def = { order: ['dashboard','assistant','month','alerts','budget','commitments','goal','recent','quick'], off: [] };
     var c;
-    try{ c = JSON.parse(localStorage.getItem('msarifyi_home_widgets')||'null'); }catch(e){ c=null; }
+    try{ c = msStore.getJSON('msarifyi_home_widgets', 'null'); }catch(e){ c=null; }
     if (!c || !Array.isArray(c.order)) return def;
     def.order.forEach(function(k){ if (c.order.indexOf(k)===-1) c.order.push(k); });
     if (!Array.isArray(c.off)) c.off = [];
     return c;
   }
-  function _saveHomeCfg(c){ try{ localStorage.setItem('msarifyi_home_widgets', JSON.stringify(c)); }catch(e){} }
+  function _saveHomeCfg(c){ try{ msStore.setRaw('msarifyi_home_widgets', JSON.stringify(c)); }catch(e){} }
 
   window.openHomeCustomize = function(){
     var c = _getHomeCfg();
@@ -28267,7 +28734,7 @@ setTimeout(() => {
     if (typeof renderHomeV2==='function') renderHomeV2();
   };
   window.resetHomeWidgets = function(){
-    try{ localStorage.removeItem('msarifyi_home_widgets'); }catch(e){}
+    try{ msStore.remove('msarifyi_home_widgets'); }catch(e){}
     openHomeCustomize();
     if (typeof renderHomeV2==='function') renderHomeV2();
     if (typeof showToast==='function') showToast('↺ رجع الترتيب الافتراضي','info');
@@ -28891,5 +29358,289 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 .sum-main .sub,.sum-inc .sub,.sum-exp .sub,.sum-sav .sub{white-space:nowrap !important;}
 
 </style>
+<script id="ms-nbe-v42">
+/* v42 NBE support: SMS charge notifications, statement info, card preset. Injected before </body>. */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const fmt = (n, d = 2) => (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const r2 = n => Math.round(n * 100) / 100;
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const toast = (m, t) => { if (window.showToast) window.showToast(m, t || 'info'); else alert(m); };
+  const findCard = id => (window.creditCards || []).find(c => c.id === id);
+  const norm = s => String(s == null ? '' : s).normalize('NFKC')
+    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+    .replace(/\u066B/g, '.').replace(/\u066C/g, ',').replace(/[\u200E\u200F\u202A-\u202E]/g, '');
+  const num = s => parseFloat(String(s).replace(/,/g, ''));
+
+  // ───────── SMS: "تم خصم USD 114 من بطاقة الائتمان رقم 1231 عند ANTHROPIC CLAUD يوم 09-23 الساعة 17:07 المتاح 8857.63 جم والمتبقي ... بما يعادل 8531.75 جم"
+  function parseNbeSms(raw, now) {
+    now = now || new Date();
+    const t = norm(raw).replace(/\s+/g, ' ').trim();
+    const m = t.match(/(?:خصم|سحب)\s+([A-Za-z]{3}|جم|ج\.م)\s+([\d,]+(?:\.\d+)?)\s+من\s+.{0,30}?رقم\s+\**(\d{4})\s+عند\s+(.+?)\s+يوم\s+(\d{1,2})[-/](\d{1,2})(?:[-/](\d{2,4}))?\s+(?:الساعة\s+)?(\d{1,2}:\d{2})/);
+    if (!m) return { ok: false };
+    let ccy = m[1].toUpperCase(); if (ccy === 'جم' || ccy === 'ج.م') ccy = 'EGP';
+    let a = +m[5], b = +m[6], mo, d;
+    if (a > 12) { d = a; mo = b; } else { mo = a; d = b; }          // NBE writes MM-DD; DD-MM only if the first part cannot be a month
+    if (mo < 1 || mo > 12 || d < 1 || d > 31) return { ok: false };
+    let y = m[7] ? (+m[7] < 100 ? 2000 + +m[7] : +m[7]) : now.getFullYear();
+    const hhmm = m[8].padStart(5, '0');
+    if (!m[7]) { const cand = new Date(y, mo - 1, d, +hhmm.slice(0, 2), +hhmm.slice(3)); if (cand - now > 2 * 86400000) y -= 1; }
+    const av = t.match(/المتاح\s+([\d,]+(?:\.\d+)?)/);
+    const fx = t.match(/بما\s+يعادل\s+([\d,]+(?:\.\d+)?)/);
+    const date = `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const merchant = m[4].replace(/\s+/g, ' ').trim();
+    const amount = num(m[2]);
+    return {
+      ok: true, ccy, amount, last4: m[3], merchant, date, time: hhmm,
+      avail: av ? num(av[1]) : null, fxRemaining: fx ? num(fx[1]) : null,
+      key: [ccy, amount, date, hhmm, merchant.toUpperCase().replace(/[^A-Z0-9]/g, '')].join('|')
+    };
+  }
+  window.parseNbeSms = parseNbeSms;
+
+  // the last real conversion rate seen on this card's statements, else the app's own rates
+  function estimateEgp(card, ccy, amount) {
+    if (ccy === 'EGP') return { egp: amount, src: '' };
+    const seen = (card.transactions || []).filter(t => t.origCurrency === ccy && t.fxRate)
+      .sort((x, y) => String(y.postDate || y.date).localeCompare(String(x.postDate || x.date)))[0];
+    if (seen) return { egp: r2(amount * seen.fxRate), src: `بسعر آخر كشف (${seen.fxRate})` };
+    try {
+      const R = window.rates || {};
+      const egpPerSar = Number(R.EGP);
+      const toSar = ccy === 'SAR' ? 1 : Number(R[ccy]);
+      if (egpPerSar > 0 && toSar > 0) return { egp: r2(amount * toSar * egpPerSar), src: 'بأسعار التطبيق (تقريبي)' };
+    } catch (e) { /* ignore */ }
+    return { egp: null, src: '' };
+  }
+
+  // a charge recorded from an SMS is matched to its statement row: same currency + original amount, date within 4 days, merchant prefix
+  window.ccMatchPendingSms = function (card, tx) {
+    const key = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const dK = key(tx.description);
+    const t0 = new Date(tx.date + 'T00:00:00').getTime();
+    return (card.transactions || []).find(t => {
+      if (!t.pending || !t.smsKey) return false;
+      if ((t.origCurrency || 'EGP') !== (tx.origCurrency || 'EGP')) return false;
+      if (Math.abs((t.origAmount || 0) - (tx.origAmount || 0)) > 0.011) return false;
+      if (Math.abs(new Date(t.date + 'T00:00:00').getTime() - t0) > 4 * 86400000) return false;
+      const nK = key(t.name), n8 = nK.slice(0, 8);
+      return n8.length >= 4 && (dK.startsWith(n8) || nK.startsWith(dK.slice(0, 8)));
+    }) || null;
+  };
+
+  // ───────── modal
+  let S = { cardId: null, p: null };
+  function ensureModal() {
+    let m = $('ccSmsModal'); if (m) return m;
+    m = document.createElement('div'); m.className = 'overlay'; m.id = 'ccSmsModal';
+    m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = `<div class="sheet" style="max-width:600px;max-height:94vh;display:flex;flex-direction:column;margin:0 auto">
+      <div class="modal-head" style="flex-shrink:0"><div class="modal-title">📩 تسجيل رسالة خصم</div>
+        <button class="close-x" onclick="document.getElementById('ccSmsModal').classList.remove('open')">×</button></div>
+      <div class="modal-body" style="overflow-y:auto;flex:1" id="ccSmsBody"></div></div>`;
+    document.body.appendChild(m); return m;
+  }
+  window.ccSmsOpen = function (cardId) {
+    const card = findCard(cardId); if (!card) return;
+    S = { cardId, p: null };
+    ensureModal();
+    $('ccSmsBody').innerHTML = `
+      <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:10px">الصق رسالة الخصم اللي بتيجيلك من البنك. بتتسجل فورًا بعملتها الأصلية، وبتتصحح بالجنيه لما ترفع الكشف.</div>
+      <textarea id="ccSmsText" class="inp" rows="5" placeholder="تم خصم USD 114 من بطاقة الائتمان رقم 1231 عند ..." style="width:100%;direction:rtl;font-family:inherit"></textarea>
+      <button class="save-btn" style="width:100%;margin-top:10px" onclick="window.ccSmsParse()">🔍 تحليل الرسالة</button>
+      <div id="ccSmsPreview" style="margin-top:12px"></div>`;
+    $('ccSmsModal').classList.add('open');
+  };
+  window.ccSmsParse = function () {
+    const card = findCard(S.cardId); if (!card) return;
+    const p = parseNbeSms(($('ccSmsText') || {}).value || '');
+    const box = $('ccSmsPreview');
+    if (!p.ok) { S.p = null; box.innerHTML = '<div style="color:var(--red);font-size:12px">❌ الرسالة مش بصيغة رسايل الأهلي المصري. الصق النص كامل.</div>'; return; }
+    S.p = p;
+    const est = estimateEgp(card, p.ccy, p.amount);
+    const dup = (card.transactions || []).some(t => t.smsKey === p.key);
+    const mismatch = card.last4 && p.last4 && card.last4 !== p.last4;
+    box.innerHTML = `
+      ${mismatch ? `<div style="color:var(--red);font-size:12px;margin-bottom:8px">⚠️ الرسالة لكارت آخره ${esc(p.last4)} وبطاقتك آخرها ${esc(card.last4)}.</div>` : ''}
+      ${dup ? '<div style="color:#f59e0b;font-size:12px;margin-bottom:8px">⚠️ الرسالة دي متسجلة قبل كده.</div>' : ''}
+      <div style="background:var(--card2);border-radius:10px;padding:10px;font-size:12px;line-height:1.9;margin-bottom:10px">
+        <div>التاجر: <b>${esc(p.merchant)}</b></div>
+        <div>المبلغ: <b style="direction:ltr;display:inline-block">${fmt(p.amount)} ${esc(p.ccy)}</b></div>
+        <div>التاريخ: <b>${esc(p.date)} ${esc(p.time)}</b></div>
+        ${p.avail != null ? `<div>المتاح بعد العملية: <b>${fmt(p.avail)}</b></div>` : ''}
+        ${p.fxRemaining != null ? `<div>المتبقي من حد العملة الأجنبية الشهري: <b>${fmt(p.fxRemaining)}</b></div>` : ''}
+      </div>
+      <label class="lab" style="display:block;font-weight:900;margin-bottom:4px">الاسم</label>
+      <input id="ccSmsName" class="inp" value="${esc(p.merchant)}" style="margin-bottom:8px">
+      <label class="lab" style="display:block;font-weight:900;margin-bottom:4px">المبلغ بالجنيه ${p.ccy === 'EGP' ? '' : '(تقديري لحد ما الكشف ينزل)'}</label>
+      <input id="ccSmsEgp" class="inp" type="number" step="0.01" inputmode="decimal" value="${est.egp == null ? '' : est.egp}" style="direction:ltr;margin-bottom:4px">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:10px">${esc(est.src)}</div>
+      <button class="save-btn" style="width:100%;background:linear-gradient(135deg,#10b981,#059669)" onclick="window.ccSmsSave()">✅ تسجيل</button>`;
+  };
+  window.ccSmsSave = function () {
+    const card = findCard(S.cardId), p = S.p; if (!card || !p) return;
+    if ((card.transactions || []).some(t => t.smsKey === p.key)) { toast('الرسالة دي متسجلة قبل كده', 'info'); return; }
+    if (card.last4 && p.last4 && card.last4 !== p.last4 && !confirm('الرسالة لكارت آخره ' + p.last4 + ' مش كارتك. تسجّلها برضه؟')) return;
+    const egp = parseFloat(($('ccSmsEgp') || {}).value);
+    if (!(egp > 0)) { toast('اكتب المبلغ بالجنيه', 'error'); return; }
+    const name = (($('ccSmsName') || {}).value || p.merchant).trim() || p.merchant;
+    const foreign = p.ccy !== (card.currency || 'EGP');
+    const tx = {
+      id: 'cctx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+      date: p.date, time: p.time, name, amount: r2(egp), category: 'أخرى', type: 'purchase',
+      note: foreign ? 'من رسالة SMS. المبلغ بالجنيه تقديري لحد ما الكشف ينزل' : 'من رسالة SMS',
+      pending: true, smsEstimate: foreign, smsKey: p.key, origCurrency: p.ccy, origAmount: p.amount,
+      statementMonth: p.date.slice(0, 7), createdAt: new Date().toISOString()
+    };
+    if (!Array.isArray(card.transactions)) card.transactions = [];
+    card.transactions.push(tx);
+    const at = p.date + ' ' + p.time;
+    if (!card.sms || String(card.sms.at || '') <= at) card.sms = { avail: p.avail, fxRemaining: p.fxRemaining, at, txId: tx.id };
+    if (typeof window.saveCreditCards === 'function') window.saveCreditCards();
+    $('ccSmsModal').classList.remove('open');
+    toast('✅ اتسجلت العملية', 'success');
+    if (typeof window.openCardDetail === 'function') window.openCardDetail(S.cardId);
+  };
+
+  // ───────── info block inside the card detail
+  function latestStatement(card) {
+    const st = card.statements; if (!st) return null;
+    const k = Object.keys(st).sort().pop(); return k ? { key: k, rec: st[k] } : null;
+  }
+  window.nbeCardInfoHtml = function (card) {
+    const cur = card.currency === 'EGP' ? 'ج.م' : (card.currency || '');
+    const rows = [];
+    const ls = latestStatement(card);
+    if (ls) {
+      const r = ls.rec;
+      rows.push(`<div>🧾 آخر كشف (${esc(ls.key)}): رصيد <b>${fmt(r.closing)}</b> · حد أدنى <b>${fmt(r.minDue)}</b> · استحقاق <b>${esc(r.dueDate || '-')}</b>${r.interest > 0 ? ` · فايدة اتحسبت <b>${fmt(r.interest)}</b>` : ''}</div>`);
+    }
+    if (card.sms) {
+      if (card.sms.avail != null) rows.push(`<div>📩 آخر رسالة (${esc(card.sms.at)}): المتاح <b>${fmt(card.sms.avail)}</b> ${cur}</div>`);
+      if (card.sms.fxRemaining != null) rows.push(`<div>🌍 المتبقي من حد العملة الأجنبية الشهري: <b>${fmt(card.sms.fxRemaining)}</b> ${cur}</div>`);
+    }
+    const pend = (card.transactions || []).filter(t => t.pending && t.smsKey).length;
+    if (pend) rows.push(`<div>⏳ ${pend} عملية من رسايل SMS مبالغها تقديرية وهتتصحح لما ترفع الكشف</div>`);
+    if (!rows.length) return '';
+    return `<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px;font-size:11px;line-height:1.9;color:var(--muted)">${rows.join('')}</div>`;
+  };
+
+  // ───────── NBE preset when the bank is picked in the add-card form
+  const bank = $('ccBank');
+  if (bank) bank.addEventListener('change', function () {
+    if (bank.value !== 'nbe') return;
+    if ($('ccCurrency')) $('ccCurrency').value = 'EGP';
+    if ($('ccStmtDay')) $('ccStmtDay').value = '31';
+    if ($('ccDueDay')) $('ccDueDay').value = '25';
+    if ($('ccMinPct')) $('ccMinPct').value = '5';
+    toast('ضبطت إعدادات الأهلي المصري: الكشف آخر الشهر والاستحقاق يوم 25', 'info');
+  });
+
+  // one-time: an existing NBE card that still has the generic defaults (statement 25 / due 15) gets the real ones
+  (function migrate() {
+    const cards = window.creditCards || []; let changed = false;
+    cards.forEach(c => {
+      if ((c.bank || c.bankPreset) !== 'nbe' || c._nbePreset) return;
+      const sd = Number(c.stmtDay || c.statementDay) || 25, dd = Number(c.dueDay) || 15;
+      if (sd === 25 && dd === 15) { c.stmtDay = c.statementDay = 31; c.dueDay = 25; }
+      c._nbePreset = 1; changed = true;
+    });
+    if (changed && typeof window.saveCreditCards === 'function') window.saveCreditCards();
+  })();
+})();
+</script>
+<script id="ms-ui-v41">
+/* v41 UI glue: Anthropic key setting, storage usage, error log buttons. Injected before </body>. */
+(function () {
+  'use strict';
+  var KEY = 'msarifyi_anthropic_key';
+  function t(msg, type) { if (typeof window.showToast === 'function') window.showToast(msg, type || 'info', 4000); }
+  function el(id) { return document.getElementById(id); }
+
+  window.getAnthropicKey = function () {
+    var k = msStore.getRaw(KEY);
+    return k ? String(k).trim() : '';
+  };
+
+  window.refreshReceiptAiButton = function () {
+    var b = el('receiptLiveCamBtn');
+    if (!b) return;
+    var has = !!window.getAnthropicKey();
+    b.style.opacity = has ? '' : '.55';
+    b.title = has ? '' : 'محتاج مفتاح Anthropic من الإعدادات';
+  };
+
+  window.refreshAiKeyUi = function () {
+    var s = el('aiKeyStatus');
+    if (!s) return;
+    var k = window.getAnthropicKey();
+    s.textContent = k ? '✅ المفتاح مفعّل (ينتهي بـ ' + k.slice(-4) + ')' : 'مفيش مفتاح. زرار الكاميرا الحية مش هيقرا الفواتير.';
+    s.style.color = k ? 'var(--green)' : 'var(--muted)';
+  };
+
+  window.saveAnthropicKey = function () {
+    var inp = el('aiKeyInput');
+    var v = inp ? String(inp.value || '').trim() : '';
+    if (!v) { t('الصق المفتاح الأول', 'error'); return; }
+    if (v.indexOf('sk-ant-') !== 0) { t('المفتاح لازم يبدأ بـ sk-ant-', 'error'); return; }
+    if (!msStore.setRaw(KEY, v)) return;
+    inp.value = '';
+    window.refreshAiKeyUi();
+    window.refreshReceiptAiButton();
+    t('✅ اتحفظ المفتاح', 'success');
+  };
+
+  window.clearAnthropicKey = function () {
+    msStore.remove(KEY);
+    var inp = el('aiKeyInput'); if (inp) inp.value = '';
+    window.refreshAiKeyUi();
+    window.refreshReceiptAiButton();
+    t('✅ اتمسح المفتاح', 'success');
+  };
+
+  window.refreshStorageUi = function () {
+    var box = el('storageUsageBox');
+    if (!box) return;
+    var u = msStore.usage();
+    var esc2 = typeof window.esc === 'function' ? window.esc : function (s) { return String(s); };
+    var top = u.top.map(function (i) { return esc2(i.label) + ' ' + Math.max(1, Math.round(i.bytes / 1024)) + 'KB'; }).join(' · ');
+    box.innerHTML = 'المستخدم: <b style="color:var(--text)">' + Math.round(u.bytes / 1024) + ' KB</b> في ' + u.count +
+      ' مفتاح (الحد حوالي ٥٠٠٠ KB حسب المتصفح)<br>الأكبر: ' + (top || '-') +
+      '<br>أخطاء مسجّلة: <b style="color:var(--text)">' + msErrors.list().length + '</b>';
+  };
+
+  window.copyErrorLog = function () {
+    var txt = msErrors.formatText();
+    if (!txt) { t('السجل فاضي', 'info'); return; }
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      var ok = false; try { ok = document.execCommand('copy'); } catch (e) { /* ignore */ }
+      ta.remove();
+      t(ok ? '✅ اتنسخ السجل' : '❌ مقدرتش أنسخ', ok ? 'success' : 'error');
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function () { t('✅ اتنسخ السجل', 'success'); }, fallback);
+    } else fallback();
+  };
+
+  window.clearErrorLog = function () {
+    msErrors.clear();
+    window.refreshStorageUi();
+    t('✅ اتمسح السجل', 'success');
+  };
+
+  var _open = window.openSettings;
+  window.openSettings = function () {
+    var r = _open ? _open.apply(this, arguments) : undefined;
+    try { window.refreshAiKeyUi(); window.refreshStorageUi(); } catch (e) { msErrors.report('settings-ui', e); }
+    return r;
+  };
+
+  window.refreshReceiptAiButton();
+})();
+</script>
 </body>
 </html>
