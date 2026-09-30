@@ -1,4 +1,4 @@
-const APP_VERSION = 'v36.1.0';
+const APP_VERSION = 'v47.0.0';
 const CACHE_NAME = 'masarefy-' + APP_VERSION;
 const URLS_TO_CACHE = [
   './', './index.html', './manifest.json',
@@ -30,8 +30,10 @@ self.addEventListener('fetch', (e) => {
                  (e.request.headers.get('accept') || '').includes('text/html');
 
   if (isHTML) {
+    // Network first, and always ask the server whether the page changed ('no-cache' = revalidate).
+    // Without it the browser's own HTTP cache can keep handing out an old index.html.
     e.respondWith(
-      fetch(e.request)
+      fetch(e.request, { cache: 'no-cache' })
         .then(r => {
           if (r && r.status === 200) {
             const copy = r.clone();

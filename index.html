@@ -30262,6 +30262,41 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
   })();
 })();
 </script>
+<script id="ms-update-v47">
+/* v47: pick up a new version when the app comes back to the foreground.
+   On iPhone a home-screen app that is only switched away keeps the old page alive, so nothing re-checks the server.
+   - asks the service worker to look for a new sw.js (its own activation already reloads the page)
+   - also compares the server's ETag / Last-Modified of index.html with the one this page was loaded with, so an
+     index.html-only deploy is noticed too
+   Never reloads while a sheet is open (unsaved input), at most one check every 10 minutes. */
+(function () {
+  'use strict';
+  var THROTTLE = 10 * 60 * 1000, last = Date.now(), base = null, busy = false;
+  function sig(res) { return res && (res.headers.get('etag') || res.headers.get('last-modified')) || null; }
+  function head() {
+    try { return fetch('./index.html', { method: 'HEAD', cache: 'no-cache' }).then(sig, function () { return null; }); }
+    catch (e) { return Promise.resolve(null); }
+  }
+  function sheetOpen() { try { return !!document.querySelector('.overlay.open'); } catch (e) { return false; } }
+  function check(force) {
+    if (busy) return Promise.resolve('busy');
+    if (!force && Date.now() - last < THROTTLE) return Promise.resolve('throttled');
+    if (sheetOpen()) return Promise.resolve('sheet-open');
+    last = Date.now(); busy = true;
+    try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) navigator.serviceWorker.getRegistration().then(function (r) { if (r && r.update) return r.update(); }).catch(function () {}); } catch (e) { /* ignore */ }
+    return head().then(function (s) {
+      busy = false;
+      if (!s) return 'no-signature';
+      if (base === null) { base = s; return 'baseline'; }
+      if (s !== base) { if (sheetOpen()) return 'sheet-open'; base = s; try { window.location.reload(); } catch (e) { /* ignore */ } return 'reload'; }
+      return 'same';
+    }, function () { busy = false; return 'error'; });
+  }
+  window.msCheckUpdate = check;
+  head().then(function (s) { if (base === null) base = s; });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(false); });
+})();
+</script>
 <style id="ms-closefix-v46">.v19-close-btn[data-dup]{display:none !important;}</style>
 <script id="ms-closefix-v46-js">
 /* v46: one close button per sheet.
