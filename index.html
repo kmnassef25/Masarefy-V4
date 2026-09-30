@@ -38,7 +38,7 @@
     'msarifyi_travel_archive': 'أرشيف الرحلات', 'msarifyi_hajj_budget': 'ميزانية الحج', 'msarifyi_flights': 'الطيران',
     'msarifyi_bills': 'الفواتير', 'msarifyi_credit_cards': 'البطاقات', 'msarifyi_nw_history': 'صافي الثروة',
     'msarifyi_home_widgets': 'ودجات الرئيسية', 'msarifyi_theme': 'المظهر', 'msarifyi_base': 'العملة الأساسية',
-    'msarifyi_weddings': 'الأفراح', 'msarifyi_imp_rules': 'أهمية التصنيفات', 'msarifyi_mm_cards': 'إعداد الإحصائيات', 'msarifyi_vehicles': 'المركبات', 'msarifyi_orders': 'الطلبات'
+    'msarifyi_weddings': 'الأفراح', 'msarifyi_imp_rules': 'أهمية التصنيفات', 'msarifyi_mm_cards': 'إعداد الإحصائيات', 'msarifyi_cat_colors': 'ألوان التصنيفات', 'msarifyi_cat_map': 'دمج التصنيفات', 'msarifyi_cat_undo': 'تراجع الدمج', 'msarifyi_vehicles': 'المركبات', 'msarifyi_orders': 'الطلبات'
   };
   function labelOf(k) { return String(LABELS[k] || String(k).replace(PREFIX, '')).replace(/[<>&"']/g, ''); }
 
@@ -5658,6 +5658,42 @@ var chartMonth = now.getMonth();
 var chartYear = now.getFullYear();
 
 // ── LOAD DATA ──
+// ── v45 helpers: progress ring, category colours, category remap (merged categories) ──
+var _msJsonCache = {};
+function _msReadMap(key) {
+  try {
+    var raw = msStore.getRaw(key) || '';
+    var c = _msJsonCache[key];
+    if (c && c.raw === raw) return c.obj;
+    var obj = raw ? JSON.parse(raw) : {};
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) obj = {};
+    _msJsonCache[key] = { raw: raw, obj: obj };
+    return obj;
+  } catch (e) { return {}; }
+}
+function msCatColor(cat) {
+  var c = _msReadMap('msarifyi_cat_colors')[cat];
+  return (typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c)) ? c : null;
+}
+function msCatRemap(cat) {
+  var m = _msReadMap('msarifyi_cat_map'), n = 0;
+  while (m[cat] && typeof m[cat] === 'string' && m[cat] !== cat && n++ < 6) cat = m[cat];
+  return cat;
+}
+// pct may exceed 100 (the label shows the real number, the arc stops at a full circle)
+function msRing(pct, color, size, stroke, label) {
+  size = size || 64; stroke = stroke || 7;
+  var real = Math.max(0, Math.round(Number(pct) || 0));
+  var p = Math.min(100, real);
+  var r = (size - stroke) / 2, c = 2 * Math.PI * r, h = size / 2;
+  var arc = p > 0
+    ? '<circle cx="' + h + '" cy="' + h + '" r="' + r.toFixed(2) + '" fill="none" stroke="' + color + '" stroke-width="' + stroke + '" stroke-linecap="round" stroke-dasharray="' + c.toFixed(2) + '" stroke-dashoffset="' + (c * (1 - p / 100)).toFixed(2) + '" transform="rotate(-90 ' + h + ' ' + h + ')"/>'
+    : '';
+  var txt = label == null ? real + '%' : label;
+  return '<svg class="ms-ring" data-pct="' + real + '" width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" style="flex-shrink:0;direction:ltr">' +
+    '<circle cx="' + h + '" cy="' + h + '" r="' + r.toFixed(2) + '" fill="none" stroke="var(--border)" stroke-width="' + stroke + '" opacity=".55"/>' + arc +
+    '<text x="' + h + '" y="' + h + '" text-anchor="middle" dominant-baseline="central" font-size="' + Math.round(size * (real >= 100 ? 0.23 : 0.27)) + '" font-weight="900" fill="' + color + '" font-family="inherit">' + txt + '</text></svg>';
+}
 var txs = msStore.getJSON('msarifyi_v2', '[]');
 var savings = msStore.getJSON('msarifyi_savings', '[]');
 var rates = msStore.getJSON('msarifyi_rates', JSON.stringify({EGP:13.50,USD:3.75,EUR:4.10}));
@@ -6692,8 +6728,13 @@ function renderBudget() {
   h += `<div class="budget-summary">
     <div class="bsum-top"><span class="bsum-lbl">📊 إجمالي الميزانية</span><span class="bsum-pct" style="color:${totalColor}">${totalPct}%</span></div>
     <div class="bsum-vals"><span style="color:${totalColor};font-weight:900">${fmt(toBase(totalSpent),0)}</span> <span style="color:var(--muted)">من ${fmt(toBase(totalLimit),0)} ${sym0}</span></div>
-    <div class="budget-bar-bg" style="margin-top:8px"><div class="budget-bar-fill" style="width:${totalPct}%;background:${totalColor}"></div></div>
-    ${totalOver?`<div class="bsum-warn">⚠️ تجاوزت إجمالي ميزانيتك بـ ${fmt(toBase(totalSpent-totalLimit),0)} ${sym0}</div>`:`<div class="bsum-left">باقي لك ${fmt(toBase(totalLimit-totalSpent),0)} ${sym0} الشهر ده</div>`}
+    <div style="display:flex;align-items:center;gap:14px;margin-top:8px">
+      ${window.msRing ? msRing(totalLimit>0 ? Math.round(totalSpent/totalLimit*100) : 0, totalColor, 84, 9) : ''}
+      <div style="flex:1;min-width:0">
+        ${window.msRing ? '' : `<div class="budget-bar-bg" style="margin-bottom:8px"><div class="budget-bar-fill" style="width:${totalPct}%;background:${totalColor}"></div></div>`}
+        ${totalOver?`<div class="bsum-warn">⚠️ تجاوزت إجمالي ميزانيتك بـ ${fmt(toBase(totalSpent-totalLimit),0)} ${sym0}</div>`:`<div class="bsum-left">باقي لك ${fmt(toBase(totalLimit-totalSpent),0)} ${sym0} الشهر ده</div>`}
+      </div>
+    </div>
   </div>`;
 
   Object.entries(budgets).sort((a,b)=>b[1]-a[1]).forEach(([cat, limitSAR]) => {
@@ -6722,9 +6763,13 @@ function renderBudget() {
           <div class="budget-limit">من ${fmt(toBase(limitSAR),0)} ${sym}</div>
         </div>
       </div>
-      <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:${pct}%;background:${color}"></div></div>
-      <div class="budget-pct ${over?'budget-over':''}">${over?'⚠️ تجاوزت الحد بـ '+fmt(toBase(spent-limitSAR),0)+' '+sym:pct>=80?'🔸 قربت على الحد ('+pct+'%)':pct+'% من الميزانية'}</div>
-      ${projHtml}
+      <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+        ${window.msRing ? msRing(Math.round(spent/limitSAR*100), color, 62, 7) : `<div class="budget-bar-bg" style="flex:1"><div class="budget-bar-fill" style="width:${pct}%;background:${color}"></div></div>`}
+        <div style="flex:1;min-width:0">
+          <div class="budget-pct ${over?'budget-over':''}">${over?'⚠️ تجاوزت الحد بـ '+fmt(toBase(spent-limitSAR),0)+' '+sym:pct>=80?'🔸 قربت على الحد ('+pct+'%)':pct+'% من الميزانية'}</div>
+          ${projHtml}
+        </div>
+      </div>
     </div>`;
   });
   el.innerHTML = h;
@@ -8340,8 +8385,10 @@ function renderGoals() {
         </div>
         <div class="feat-amt">${fmt(toBase(current),0)} / ${fmt(toBase(g.target),0)} ${sym}</div>
       </div>
-      <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:${pct}%;background:var(--sav)"></div></div>
-      <div class="budget-pct">${pct}% — باقي ${fmt(toBase(remaining),0)} ${sym}</div>
+      <div style="display:flex;align-items:center;gap:12px;margin:8px 0">
+        ${window.msRing ? msRing(pct, pct>=100 ? 'var(--green)' : 'var(--sav)', 70, 8) : `<div class="budget-bar-bg" style="flex:1"><div class="budget-bar-fill" style="width:${pct}%;background:var(--sav)"></div></div>`}
+        <div class="budget-pct" style="flex:1">${pct>=100 ? '🎉 الهدف اتحقق' : pct+'% — باقي '+fmt(toBase(remaining),0)+' '+sym}</div>
+      </div>
       ${monthlyNeeded}
       <div class="feat-actions">
         <button class="feat-mini-btn success" onclick="addToGoal('${g.id}')">＋ إضافة</button>
@@ -17979,6 +18026,7 @@ setTimeout(() => {
       section: '🛠️ أدوات',
       cat: 'tools',
       items: [
+        { id:'catmgr', icon:'🏷️', title:'إدارة التصنيفات', sub:'ألوان ودمج التصنيفات', custom:'msCatOpen' },
         { id:'calc', icon:'🔄', title:'حاسبة العملات', sub:'حوّل بسرعة', modal:'calcModal', render:'openCalc' },
         { id:'dualSal', icon:'💼', title:'الراتب بعملتين', sub:'لو بتقبض من بلدين', modal:'dualSalaryModal', render:'renderDualSalary', countKey:'menuDualSal' },
         { id:'wrapped', icon:'🎵', title:'تقرير السنة', sub:'ملخص سنوي احتفالي', custom:'showWrappedReport' },
@@ -28275,15 +28323,15 @@ setTimeout(() => {
       rows.forEach(r=>{
         var color = r.pct>=100?'#f85149':r.pct>=80?'#f0883e':'#3fb950';
         var w = Math.min(r.pct,100);
-        html += `<div class="h2-bud-row">
-          <div class="h2-bud-head">
-            <span class="h2-bud-emoji">${_emoji(r.cat)}</span>
-            <span class="h2-bud-name">${_esc(r.cat)}</span>
-            <span class="h2-bud-nums">${_fmt(_toBase(r.spent),0)} / ${_fmt(_toBase(r.limit),0)} ${_sym()}</span>
-          </div>
-          <div style="display:flex;align-items:center">
-            <div class="h2-bud-bar" style="flex:1"><div class="h2-bud-fill" style="width:${w}%;background:${color}"></div></div>
-            <span class="h2-bud-pct" style="color:${color}">${r.pct}%</span>
+        html += `<div class="h2-bud-row" style="display:flex;align-items:center;gap:12px">
+          ${window.msRing ? msRing(r.pct, color, 48, 6) : ''}
+          <div style="flex:1;min-width:0">
+            <div class="h2-bud-head">
+              <span class="h2-bud-emoji">${_emoji(r.cat)}</span>
+              <span class="h2-bud-name">${_esc(r.cat)}</span>
+              <span class="h2-bud-nums">${_fmt(_toBase(r.spent),0)} / ${_fmt(_toBase(r.limit),0)} ${_sym()}</span>
+            </div>
+            ${window.msRing ? '' : `<div style="display:flex;align-items:center"><div class="h2-bud-bar" style="flex:1"><div class="h2-bud-fill" style="width:${w}%;background:${color}"></div></div><span class="h2-bud-pct" style="color:${color}">${r.pct}%</span></div>`}
           </div>
         </div>`;
       });
@@ -28346,13 +28394,18 @@ setTimeout(() => {
       var sym = _sym();
       var html = '<div class="h2-sec-title">🎯 أقرب هدف</div>';
       html += `<div class="h2-card tap" onclick="_h2open('goalsModal','renderGoals')">
-        <div class="h2-goal-head">
-          <span style="font-size:18px">${top.emoji||'🎯'}</span>
-          <span class="h2-goal-name">${_esc(top.name||'هدف')}</span>
-          <span class="h2-goal-pct">${pct}%</span>
+        <div style="display:flex;align-items:center;gap:14px">
+          ${window.msRing ? msRing(pct, 'var(--accent)', 64, 8) : ''}
+          <div style="flex:1;min-width:0">
+            <div class="h2-goal-head">
+              <span style="font-size:18px">${top.emoji||'🎯'}</span>
+              <span class="h2-goal-name">${_esc(top.name||'هدف')}</span>
+              ${window.msRing ? '' : `<span class="h2-goal-pct">${pct}%</span>`}
+            </div>
+            ${window.msRing ? '' : `<div class="h2-bud-bar"><div class="h2-bud-fill" style="width:${Math.min(pct,100)}%;background:linear-gradient(90deg,var(--accent),var(--accent2))"></div></div>`}
+            <div style="font-size:11px;color:var(--muted);margin-top:7px;direction:ltr;text-align:right">${_fmt(top.current||0,0)} / ${_fmt(top.target||0,0)} ${sym}</div>
+          </div>
         </div>
-        <div class="h2-bud-bar"><div class="h2-bud-fill" style="width:${Math.min(pct,100)}%;background:linear-gradient(90deg,var(--accent),var(--accent2))"></div></div>
-        <div style="font-size:11px;color:var(--muted);margin-top:7px;direction:ltr;text-align:right">${_fmt(top.current||0,0)} / ${_fmt(top.target||0,0)} ${sym}</div>
       </div>`;
       return html;
     }catch(e){ return ''; }
@@ -29584,9 +29637,9 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 /* v43: card screens scroll smoothly.
    - the full-screen backdrop blur is what made scrolling inside card sheets heavy (the whole page behind gets re-blurred), so card sheets use a plain dark backdrop
    - long lists are drawn lazily: rows outside the viewport skip layout and paint */
-#msMoneyMap,#creditCardsModal,#ccDetailModal,#ccSimpleModal,#ccPdfImportModalV2,#ccSmsModal,#ccStatsModal,#ccCatModal,#ccAddModal,#ccPurchaseModal,#ccPaymentModal{
+#msCatMgr,#msMoneyMap,#creditCardsModal,#ccDetailModal,#ccSimpleModal,#ccPdfImportModalV2,#ccSmsModal,#ccStatsModal,#ccCatModal,#ccAddModal,#ccPurchaseModal,#ccPaymentModal{
   background:rgba(0,0,0,.72) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;}
-#msMoneyMap .sheet,#creditCardsModal .sheet,#ccDetailModal .sheet,#ccSimpleModal .sheet,#ccPdfImportModalV2 .sheet,#ccSmsModal .sheet,#ccStatsModal .sheet,#ccCatModal .sheet,#ccAddModal .sheet,#ccPurchaseModal .sheet,#ccPaymentModal .sheet{
+#msCatMgr .sheet,#msMoneyMap .sheet,#creditCardsModal .sheet,#ccDetailModal .sheet,#ccSimpleModal .sheet,#ccPdfImportModalV2 .sheet,#ccSmsModal .sheet,#ccStatsModal .sheet,#ccCatModal .sheet,#ccAddModal .sheet,#ccPurchaseModal .sheet,#ccPaymentModal .sheet{
   box-shadow:0 -2px 14px rgba(0,0,0,.35) !important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
 .cc-row{content-visibility:auto;contain-intrinsic-size:auto 92px;}
 </style>
@@ -29619,7 +29672,11 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
     { n: 'سفر', i: '✈️', c: '#3b82f6' }, { n: 'إلكترونيات', i: '📱', c: '#a855f7' }, { n: 'رسوم وفوائد', i: '💸', c: '#f97316' },
     { n: 'أخرى', i: '📦', c: '#94a3b8' }
   ];
-  const meta = n => CATS.find(c => c.n === n) || { n, i: '🏷️', c: '#94a3b8' };
+  const meta = n => {
+    const b = CATS.find(c => c.n === n) || { n, i: (typeof EMOJI !== 'undefined' && EMOJI[n]) || '🏷️', c: '#94a3b8' };
+    const u = typeof window.msCatColor === 'function' ? window.msCatColor(n) : null;
+    return u ? { n: b.n, i: b.i, c: u } : b;
+  };
   // defaults by merchant name. They are guesses; the user's own choice always wins and is remembered.
   const BUILTIN = [
     [/APPLE\.COM\/BILL|ITUNES|ICLOUD|GOOGLE\s*ONE|YOUTUBE|NETFLIX|SPOTIFY|SHAHID|DISNEY|ANGHAMI|\bOSN\b|MICROSOFT\s*\*?\s*(365|OFFICE)|ADOBE|CANVA|DROPBOX|NOTION/, 'اشتراكات'],
@@ -29649,7 +29706,7 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
   }
   function builtin(name) { const u = String(name || '').toUpperCase(); for (const [re, n] of BUILTIN) if (re.test(u)) return n; return null; }
   // null = not spending (payments, plan moves)
-  function catOf(card, tx) {
+  function catOfRaw(card, tx) {
     const t = tx.type;
     if (t === 'payment' || t === 'plan_move') return null;
     if (t === 'fee') {
@@ -29661,6 +29718,8 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
     if (manualEntry && tx.category && !GENERIC.has(tx.category)) return tx.category;
     return ruleFor(card, mkey(tx.name)) || builtin(tx.name) || (tx.category && !GENERIC.has(tx.category) ? tx.category : null) || 'أخرى';
   }
+  // a category the user merged away keeps resolving to its target
+  function catOf(card, tx) { const r = catOfRaw(card, tx); return r === null || r === undefined ? r : (typeof window.msCatRemap === 'function' ? window.msCatRemap(r) : r); }
   window.ccCatOf = catOf;
   window.ccAutoCategory = function (card, name) { return ruleFor(card, mkey(name)) || builtin(name) || null; };
 
@@ -29872,7 +29931,7 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
   const EXTRA_ICON = { 'تقنية وأدوات': '💻', 'تسوق': '🛍️', 'رسوم وفوائد': '💸', 'إلكترونيات': '📱' };
   let colorRank = {};
   const iconOf = c => EMO()[c] || EXTRA_ICON[c] || '🏷️';
-  const colorOf = c => (colorRank[c] != null && colorRank[c] < PALETTE.length ? PALETTE[colorRank[c]] : '#94a3b8');
+  const colorOf = c => (typeof window.msCatColor === 'function' && window.msCatColor(c)) || (colorRank[c] != null && colorRank[c] < PALETTE.length ? PALETTE[colorRank[c]] : '#94a3b8');
 
   // ───────── importance
   const LEVELS = [{ k: 'need', l: 'ضروري', i: '🟢', c: '#22c55e' }, { k: 'normal', l: 'عادي', i: '🟡', c: '#f59e0b' }, { k: 'skip', l: 'كان ممكن أستغنى', i: '🔴', c: '#ef4444' }];
@@ -30054,7 +30113,7 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted)"><span>${esc(R.prevName)}: <span style="direction:ltr;display:inline-block">${hasPrev ? fmt0(toBase(x.p)) : '-'}</span></span>${hasPrev ? chip(x.v, x.p) : ''}</div></div>`;
     }).join('');
     const gone = hasPrev ? Object.keys(b).filter(k => !a[k] && b[k] > 0).map(k => `${iconOf(k)} ${esc(k)}`).join('، ') : '';
-    return chart + `<div style="background:var(--card2);border-radius:12px;overflow:hidden">${list}</div>${gone ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.7">اتصرف فيها ${esc(R.prevName)} ومصرفتش الفترة دي: ${gone}</div>` : ''}<div style="font-size:10px;color:var(--muted);margin-top:8px">دوس على أي شريحة في الدائرة تبرزها، ودوس على التصنيف تشوف عملياته.</div>`;
+    return chart + `<div style="background:var(--card2);border-radius:12px;overflow:hidden">${list}</div>${gone ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.7">اتصرف فيها ${esc(R.prevName)} ومصرفتش الفترة دي: ${gone}</div>` : ''}<div style="font-size:10px;color:var(--muted);margin-top:8px">دوس على أي شريحة في الدائرة تبرزها، ودوس على التصنيف تشوف عملياته.</div><button onclick="window.msCatOpen()" style="width:100%;margin-top:12px;background:var(--card2);border:1px solid var(--border);color:var(--accent);border-radius:10px;padding:11px;font-family:inherit;font-weight:900;font-size:12px;cursor:pointer">🏷️ إدارة التصنيفات (ألوان ودمج)</button>`;
   }
 
   // ── tab 2: over time
@@ -30147,7 +30206,13 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
     rule(i, level) { const k = (S.ruleCats || [])[i]; if (!k) return; const r = getRules(); if (r[k] === level) delete r[k]; else r[k] = level; setRules(r); render(); },
     review() { S.review = !S.review; render(); }
   };
-  window.__mmInternals = { allRows, ranges: () => ranges(), state: () => S };
+  // default palette (by all-time rank) for places that show a category outside the Money Map
+  function defaultColors() {
+    const rows = allRows(getCardsOn()), tot = {}; rows.forEach(r => { tot[r.cat] = (tot[r.cat] || 0) + r.sar; });
+    const out = {}; Object.keys(tot).sort((a, b) => tot[b] - tot[a]).forEach((k, i) => { out[k] = i < PALETTE.length ? PALETTE[i] : '#94a3b8'; }); return out;
+  }
+  window.__mmRefresh = function () { const m = $('msMoneyMap'); if (m && m.classList.contains('open')) render(); };
+  window.__mmInternals = { allRows, ranges: () => ranges(), state: () => S, defaultColors };
 
   // ───────── home: one line under the hero (trend vs last month, same day)
   window.msHomeTrendHtml = function () {
@@ -30185,12 +30250,282 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
       try {
         if (wasExpense) {
           const t = editing ? TXS().find(x => x.id === editing) : TXS().find(x => !before.has(x.id) && x.type === 'expense');
-          if (t && t.type === 'expense') { if (want) t.importance = want; else delete t.importance; if (typeof window.saveData === 'function') window.saveData(); }
+          if (t && t.type === 'expense') {
+            if (want) t.importance = want; else delete t.importance;
+            if (typeof window.msCatRemap === 'function') { t.cat = window.msCatRemap(t.cat); if (Array.isArray(t.splits)) t.splits.forEach(sp => { sp.cat = window.msCatRemap(sp.cat); }); }   // a merged-away category lands in its target
+            if (typeof window.saveData === 'function') window.saveData();
+          }
         }
       } catch (e) { /* ignore */ }
       return r;
     };
   })();
+})();
+</script>
+<style id="ms-closefix-v46">.v19-close-btn[data-dup]{display:none !important;}</style>
+<script id="ms-closefix-v46-js">
+/* v46: one close button per sheet.
+   The v19 script adds a floating X to every sheet, even those that already have their own X in the header,
+   so the wallets screen, the control center and every new screen showed two. The floating one sits right under
+   the status bar where taps are unreliable. It is hidden whenever the sheet has its own close button.
+   Delete buttons that also show an X (tx-del, bill-del, ...) are NOT close buttons and are never counted. */
+(function () {
+  'use strict';
+  const OWN_CLASS = /(^|\s)(close-x|v22-close-x|v20-close-btn|sheet-close-btn)(\s|$)/;
+  const GLYPH = /^[✕×✖]$/;
+  const CLOSES = /classList\.remove\(\s*['"]open['"]\s*\)/;
+
+  function isOwnClose(b) {
+    if (b.classList.contains('v19-close-btn')) return false;
+    const cls = b.className && b.className.baseVal === undefined ? String(b.className) : '';
+    if (OWN_CLASS.test(cls)) return true;
+    if (b.getAttribute('aria-label') === 'إغلاق') return true;
+    if (/del|danger|remove/i.test(cls)) return false;
+    return GLYPH.test((b.textContent || '').trim()) && CLOSES.test(b.getAttribute('onclick') || '');
+  }
+  function hasOwnClose(sheet) {
+    const bs = sheet.querySelectorAll('button');
+    for (let i = 0; i < bs.length; i++) if (isOwnClose(bs[i])) return true;
+    return false;
+  }
+  function dedupe(overlay) {
+    overlay.querySelectorAll('.sheet, .settings-sheet').forEach(sheet => {
+      const v = sheet.querySelector('.v19-close-btn');
+      if (!v) return;
+      if (hasOwnClose(sheet)) v.setAttribute('data-dup', '1'); else v.removeAttribute('data-dup');
+    });
+  }
+  window.msDedupeClose = dedupe;
+
+  const mo = new MutationObserver(list => {
+    for (const m of list) {
+      const o = m.target;
+      if (o.classList && o.classList.contains('overlay') && o.classList.contains('open')) {
+        dedupe(o);
+        setTimeout(() => dedupe(o), 300);      // some screens build their header right after opening
+        setTimeout(() => dedupe(o), 1200);
+      }
+    }
+  });
+  function attach() {
+    document.querySelectorAll('.overlay').forEach(o => {
+      if (o.__msCf) return;
+      o.__msCf = 1;
+      mo.observe(o, { attributes: true, attributeFilter: ['class'] });
+      if (o.classList.contains('open')) dedupe(o);
+    });
+  }
+  attach();
+  new MutationObserver(list => {
+    for (const m of list) for (const n of m.addedNodes) {
+      if (n.nodeType === 1 && ((n.classList && n.classList.contains('overlay')) || (n.querySelector && n.querySelector('.overlay')))) { attach(); return; }
+    }
+  }).observe(document.body, { childList: true, subtree: true });
+  window.addEventListener('load', attach);
+})();
+</script>
+<script id="ms-cats-v45">
+/* v45 إدارة التصنيفات: لون لكل تصنيف + دمج تصنيف في تصنيف تاني (مع تراجع). */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const fmt0 = n => (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  const toast = (m, t) => { if (window.showToast) window.showToast(m, t || 'info'); };
+  const TXS = () => (Array.isArray(window.txs) ? window.txs : []);
+  const CARDS = () => (Array.isArray(window.creditCards) ? window.creditCards : []);
+  const store = () => window.msStore;
+  const readJSON = (k, d) => { try { const v = store().getJSON(k, JSON.stringify(d)); return v && typeof v === 'object' ? v : d; } catch (e) { return d; } };
+  const writeJSON = (k, v) => { try { store().setRaw(k, JSON.stringify(v)); } catch (e) { /* ignore */ } };
+  const toBase = sar => (typeof window.toBase === 'function' ? window.toBase(sar) : sar);
+  const toSAR = (amt, cur) => (typeof window.curToSAR === 'function' ? window.curToSAR(amt, cur) : amt);
+  const EMO = () => { try { return typeof EMOJI !== 'undefined' ? EMOJI : {}; } catch (e) { return {}; } };
+  const EXTRA_ICON = { 'تقنية وأدوات': '💻', 'تسوق': '🛍️', 'رسوم وفوائد': '💸', 'إلكترونيات': '📱' };
+  const iconOf = c => EMO()[c] || EXTRA_ICON[c] || '🏷️';
+  const SWATCHES = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#a3e635', '#22c55e', '#14b8a6', '#0ea5e9', '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e', '#64748b', '#94a3b8'];
+  const HEX = /^#[0-9a-fA-F]{6}$/;
+  const PROTECTED = new Set(['تحويل', 'ادخار', 'سداد بطاقة']);      // not spending categories, never merged
+
+  // ───────── what categories exist and how much is in each
+  function cardCat(c, t) { if (typeof window.ccCatOf !== 'function') return t.category || 'أخرى'; return window.ccCatOf(c, t); }
+  function inventory() {
+    const m = new Map(); const get = k => { if (!m.has(k)) m.set(k, { k, n: 0, sar: 0, cards: 0 }); return m.get(k); };
+    for (const t of TXS()) {
+      if (!t || t.type !== 'expense' || t.isTransfer || t.ccPaymentId || t.cardId || PROTECTED.has(t.cat)) continue;
+      const sar = Number(t.amountSAR) || 0;
+      if (Array.isArray(t.splits) && t.splits.length && Number(t.amount) > 0) t.splits.forEach(sp => { const g = get(sp.cat || 'أخرى'); g.n++; g.sar += sar * (Number(sp.amount) || 0) / Number(t.amount); });
+      else { const g = get(t.cat || 'أخرى'); g.n++; g.sar += sar; }
+    }
+    for (const c of CARDS()) for (const t of (c.transactions || [])) {
+      if (t.type !== 'purchase' && t.type !== 'fee' && t.type !== 'refund') continue;
+      const k = cardCat(c, t); if (k === null || k === undefined) continue;
+      const g = get(k); g.n++; g.cards++; g.sar += toSAR((t.type === 'refund' ? -1 : 1) * Math.abs(Number(t.amount) || 0), c.currency || 'SAR');
+    }
+    for (const k of Object.keys(window.budgets || {})) get(k);
+    (window.customCats || []).forEach(c => { if (c && c.name) get(c.name); });
+    return [...m.values()].filter(x => x.k && !PROTECTED.has(x.k)).sort((a, b) => b.sar - a.sar);
+  }
+  const colorNow = k => (typeof window.msCatColor === 'function' ? window.msCatColor(k) : null);
+  let defMap = {};
+  const defColor = k => defMap[k] || '#94a3b8';
+
+  // ───────── colours
+  window.msCatSetColor = function (cat, hex) {
+    if (hex && !HEX.test(hex)) return false;
+    const m = Object.assign({}, readJSON('msarifyi_cat_colors', {}));
+    if (hex) m[cat] = hex.toLowerCase(); else delete m[cat];
+    writeJSON('msarifyi_cat_colors', m); return true;
+  };
+
+  // ───────── merge
+  function snapshotAndMerge(from, to) {
+    const snap = { from, to, at: new Date().toISOString(), main: [], rec: [], cards: [], budgets: {}, imp: {}, colors: {}, mapOld: readJSON('msarifyi_cat_map', {}), custom: { removed: null, added: null, emoji: null } };
+    let nMain = 0, nCard = 0;
+    for (const t of TXS()) {
+      if (!t || t.type !== 'expense' || t.isTransfer) continue;
+      const hit = t.cat === from, sp = Array.isArray(t.splits) && t.splits.some(s => s.cat === from);
+      if (!hit && !sp) continue;
+      snap.main.push({ id: t.id, cat: t.cat, splits: sp ? JSON.parse(JSON.stringify(t.splits)) : null });
+      if (hit) t.cat = to;
+      if (sp) t.splits.forEach(s => { if (s.cat === from) s.cat = to; });
+      nMain++;
+    }
+    for (const r of (window.recurringTxs || [])) if (r && r.type === 'expense' && r.cat === from) { snap.rec.push({ id: r.id, cat: r.cat }); r.cat = to; }
+    for (const c of CARDS()) for (const t of (c.transactions || [])) {
+      if (t.type !== 'purchase' && t.type !== 'refund') continue;
+      if (cardCat(c, t) !== from) continue;
+      snap.cards.push({ cid: c.id, id: t.id, category: t.category, cat: t.cat, manual: t.catManual });
+      t.category = to; t.cat = to; t.catManual = true; nCard++;
+    }
+    // budgets: a merged category keeps one budget (the two limits add up)
+    const b = window.budgets || {};
+    if (b[from] != null) { snap.budgets = { from: b[from], to: b[to] == null ? null : b[to] }; b[to] = (Number(b[to]) || 0) + (Number(b[from]) || 0); delete b[from]; }
+    // importance + colours: the target wins, the source fills in when the target has nothing
+    const rules = readJSON('msarifyi_imp_rules', {});
+    if (rules[from] != null) { snap.imp = { from: rules[from], to: rules[to] == null ? null : rules[to] }; if (rules[to] == null) rules[to] = rules[from]; delete rules[from]; writeJSON('msarifyi_imp_rules', rules); }
+    const colors = readJSON('msarifyi_cat_colors', {});
+    if (colors[from] != null) { snap.colors = { from: colors[from], to: colors[to] == null ? null : colors[to] }; if (colors[to] == null) colors[to] = colors[from]; delete colors[from]; writeJSON('msarifyi_cat_colors', colors); }
+    // the target needs an icon; a custom source category disappears
+    const cc = window.customCats || [], emo = EMO();
+    const ci = cc.findIndex(x => x && x.name === from);
+    if (ci >= 0) { snap.custom.removed = cc[ci]; cc.splice(ci, 1); }
+    if (!emo[to] && !cc.some(x => x && x.name === to)) { const e = (snap.custom.removed && snap.custom.removed.emoji) || emo[from] || EXTRA_ICON[from] || '🏷️'; cc.push({ name: to, emoji: e }); snap.custom.added = to; snap.custom.emoji = e; }
+    if (snap.custom.removed && emo[from] === snap.custom.removed.emoji) { snap.custom.emojiWas = emo[from]; delete emo[from]; }
+    if (typeof window.saveCustomCats === 'function') window.saveCustomCats();
+    if (typeof window.mergeCustomEmojis === 'function') window.mergeCustomEmojis();
+    // future auto-categorisation (card merchants, forms) follows the merge
+    const map = readJSON('msarifyi_cat_map', {});
+    Object.keys(map).forEach(k => { if (map[k] === from) map[k] = to; });
+    map[from] = to; delete map[to];
+    writeJSON('msarifyi_cat_map', map);
+    persistAll();
+    snap.counts = { main: nMain, cards: nCard };
+    return snap;
+  }
+  function persistAll() {
+    try { if (typeof window.saveData === 'function') window.saveData(); } catch (e) { /* ignore */ }
+    try { if (typeof window.saveCreditCards === 'function') window.saveCreditCards(); } catch (e) { /* ignore */ }
+    try { if (typeof window.saveBudgets === 'function') window.saveBudgets(); } catch (e) { /* ignore */ }
+    try { if (typeof window.saveRecurring === 'function') window.saveRecurring(); } catch (e) { /* ignore */ }
+  }
+  window.msCatMerge = function (from, to) {
+    from = String(from || '').trim(); to = String(to || '').trim();
+    if (!from || !to || from === to) return null;
+    if (PROTECTED.has(from) || PROTECTED.has(to)) return null;
+    const snap = snapshotAndMerge(from, to);
+    writeJSON('msarifyi_cat_undo', snap);
+    return snap;
+  };
+  window.msCatUndo = function () {
+    const s = readJSON('msarifyi_cat_undo', null); if (!s || !s.from) return false;
+    const byId = new Map(TXS().map(t => [t.id, t]));
+    (s.main || []).forEach(o => { const t = byId.get(o.id); if (!t) return; t.cat = o.cat; if (o.splits) t.splits = o.splits; });
+    const rec = new Map((window.recurringTxs || []).map(r => [r.id, r])); (s.rec || []).forEach(o => { const r = rec.get(o.id); if (r) r.cat = o.cat; });
+    (s.cards || []).forEach(o => { const c = CARDS().find(x => x.id === o.cid); const t = c && (c.transactions || []).find(x => x.id === o.id); if (!t) return; if (o.category === undefined) delete t.category; else t.category = o.category; if (o.cat === undefined) delete t.cat; else t.cat = o.cat; if (o.manual === undefined) delete t.catManual; else t.catManual = o.manual; });
+    const b = window.budgets || {};
+    if (s.budgets && s.budgets.from != null) { b[s.from] = s.budgets.from; if (s.budgets.to == null) delete b[s.to]; else b[s.to] = s.budgets.to; }
+    const rules = readJSON('msarifyi_imp_rules', {});
+    if (s.imp && s.imp.from != null) { rules[s.from] = s.imp.from; if (s.imp.to == null) delete rules[s.to]; else rules[s.to] = s.imp.to; writeJSON('msarifyi_imp_rules', rules); }
+    const colors = readJSON('msarifyi_cat_colors', {});
+    if (s.colors && s.colors.from != null) { colors[s.from] = s.colors.from; if (s.colors.to == null) delete colors[s.to]; else colors[s.to] = s.colors.to; writeJSON('msarifyi_cat_colors', colors); }
+    const cc = window.customCats || [], emo = EMO();
+    if (s.custom && s.custom.added) { const i = cc.findIndex(x => x && x.name === s.custom.added); if (i >= 0) cc.splice(i, 1); delete emo[s.custom.added]; }
+    if (s.custom && s.custom.removed) { cc.push(s.custom.removed); if (s.custom.emojiWas) emo[s.from] = s.custom.emojiWas; }
+    if (typeof window.saveCustomCats === 'function') window.saveCustomCats();
+    if (typeof window.mergeCustomEmojis === 'function') window.mergeCustomEmojis();
+    if (s.mapOld && Object.keys(s.mapOld).length) writeJSON('msarifyi_cat_map', s.mapOld); else { try { store().remove('msarifyi_cat_map'); } catch (e) { /* ignore */ } }
+    persistAll();
+    try { store().remove('msarifyi_cat_undo'); } catch (e) { /* ignore */ }
+    return true;
+  };
+
+  // ───────── UI
+  let S = { view: 'list', cat: null, target: null, flash: '' };
+  function ensure() {
+    let m = $('msCatMgr'); if (m) return m;
+    m = document.createElement('div'); m.className = 'overlay stacked'; m.id = 'msCatMgr';
+    m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = '<div class="sheet" style="max-width:640px;max-height:94vh;margin:0 auto;padding-bottom:26px"><div class="modal-head"><div class="modal-title">🏷️ إدارة التصنيفات</div><button class="close-x" onclick="document.getElementById(\'msCatMgr\').classList.remove(\'open\')">×</button></div><div id="msCatBody"></div></div>';
+    document.body.appendChild(m); return m;
+  }
+  window.msCatOpen = function () { S = { view: 'list', cat: null, target: null, flash: '' }; ensure(); render(); $('msCatMgr').classList.add('open'); };
+  const dot = (k, sz) => `<span style="display:inline-block;width:${sz || 14}px;height:${sz || 14}px;border-radius:50%;background:${colorNow(k) || defColor(k)};flex-shrink:0"></span>`;
+  function refreshOthers() {
+    try { if (typeof window.renderAll === 'function') window.renderAll(); } catch (e) { /* ignore */ }
+    try { if (window.__mmRefresh) window.__mmRefresh(); } catch (e) { /* ignore */ }
+  }
+  function render() {
+    const body = $('msCatBody'); if (!body) return;
+    try { defMap = (window.__mmInternals && window.__mmInternals.defaultColors) ? window.__mmInternals.defaultColors() : {}; } catch (e) { defMap = {}; }
+    const inv = inventory();
+    if (S.view === 'color') return renderColor(body);
+    if (S.view === 'merge') return renderMerge(body, inv);
+    const undo = readJSON('msarifyi_cat_undo', null);
+    const undoBar = undo && undo.from ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:#f59e0b18;border:1px solid #f59e0b55;border-radius:10px;padding:9px 12px;margin-bottom:10px;font-size:12px"><span>آخر دمج: <b>${esc(undo.from)}</b> ← <b>${esc(undo.to)}</b></span><button onclick="msCatUi.undo()" style="background:transparent;border:1px solid #f59e0b;color:#f59e0b;border-radius:8px;padding:5px 10px;font-family:inherit;font-weight:900;font-size:12px;cursor:pointer">↩ تراجع</button></div>` : '';
+    const flash = S.flash ? `<div style="background:#22c55e18;border:1px solid #22c55e55;border-radius:10px;padding:9px 12px;margin-bottom:10px;font-size:12px">${esc(S.flash)}</div>` : '';
+    const rows = inv.map((x, i) => `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;${i ? 'border-top:1px solid var(--border);' : ''}font-size:12px"><button onclick="msCatUi.color(${i})" title="اللون" style="width:34px;height:34px;border-radius:50%;border:2px solid ${colorNow(x.k) || defColor(x.k)};background:${(colorNow(x.k) || defColor(x.k))}30;font-size:16px;cursor:pointer;flex-shrink:0">${iconOf(x.k)}</button><div style="flex:1;min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.k)}</div><div style="font-size:10px;color:var(--muted)">${x.n} عملية${x.cards ? ' (منها ' + x.cards + ' كارت)' : ''} · <span style="direction:ltr;display:inline-block">${fmt0(toBase(x.sar))}</span></div></div><button onclick="msCatUi.color(${i})" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-family:inherit;font-size:11px;cursor:pointer">🎨 لون</button><button onclick="msCatUi.merge(${i})" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-family:inherit;font-size:11px;cursor:pointer">🔀 دمج</button></div>`).join('');
+    S.inv = inv.map(x => x.k);
+    body.innerHTML = flash + undoBar + (inv.length ? `<div style="background:var(--card2);border-radius:12px;overflow:hidden">${rows}</div>` : '<div style="text-align:center;color:var(--muted);padding:28px;font-size:12px">مفيش تصنيفات لسه</div>') + '<div style="font-size:10px;color:var(--muted);margin-top:10px;line-height:1.8">اللون بيظهر في الرسومات. الدمج بينقل كل مصروفات التصنيف (وكروت الائتمان وحصصها في المصروف المقسّم والميزانية) للتصنيف التاني، وتقدر تتراجع عن آخر دمج.</div>';
+  }
+  function renderColor(body) {
+    const k = S.cat, cur = colorNow(k);
+    body.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><button onclick="msCatUi.back()" style="background:var(--card2);border:1px solid var(--border);color:var(--accent);border-radius:8px;padding:5px 10px;font-family:inherit;font-weight:900;cursor:pointer">↩ رجوع</button><b>${iconOf(k)} ${esc(k)}</b></div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:12px">${SWATCHES.map((c, i) => `<button onclick="msCatUi.swatch(${i})" style="aspect-ratio:1;border-radius:50%;background:${c};border:${cur === c ? '3px solid var(--text)' : '2px solid transparent'};cursor:pointer"></button>`).join('')}</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><span style="font-size:12px">لون تاني:</span><input type="color" id="msCatPick" value="${cur || defColor(k)}" style="width:54px;height:36px;border:0;background:none;padding:0"><button onclick="msCatUi.custom()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 12px;font-family:inherit;font-size:12px;cursor:pointer">استخدمه</button></div>
+      <button onclick="msCatUi.reset()" style="width:100%;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:10px;font-family:inherit;font-size:12px;cursor:pointer">رجّع اللون التلقائي</button>`;
+  }
+  function renderMerge(body, inv) {
+    const from = S.cat, info = inv.find(x => x.k === from) || { n: 0, sar: 0, cards: 0 };
+    const others = inv.filter(x => x.k !== from);
+    const t = S.target;
+    const chips = others.map((x, i) => `<button onclick="msCatUi.target(${i})" style="background:${t === x.k ? 'var(--accent)' : 'var(--card2)'};color:${t === x.k ? '#000' : 'var(--text)'};border:1px solid ${t === x.k ? 'var(--accent)' : 'var(--border)'};border-radius:10px;padding:8px 10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">${iconOf(x.k)} ${esc(x.k)}</button>`).join('');
+    S.others = others.map(x => x.k);
+    body.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><button onclick="msCatUi.back()" style="background:var(--card2);border:1px solid var(--border);color:var(--accent);border-radius:8px;padding:5px 10px;font-family:inherit;font-weight:900;cursor:pointer">↩ رجوع</button><b>🔀 دمج ${iconOf(from)} ${esc(from)}</b></div>
+      <div style="background:var(--card2);border-radius:12px;padding:10px;font-size:12px;margin-bottom:10px">هتتنقل <b>${info.n}</b> عملية${info.cards ? ` (منها ${info.cards} من الكروت)` : ''} بإجمالي <b style="direction:ltr;display:inline-block">${fmt0(toBase(info.sar))}</b> للتصنيف اللي تختاره.</div>
+      <div style="font-weight:900;font-size:12px;margin-bottom:6px">انقلها إلى:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">${chips || '<span style="color:var(--muted);font-size:12px">مفيش تصنيف تاني</span>'}</div>
+      <input id="msCatNew" class="inp" placeholder="أو اكتب اسم تصنيف جديد" oninput="msCatUi.typed()" style="width:100%;margin-bottom:12px">
+      <button id="msCatGo" onclick="msCatUi.go()" class="save-btn" style="width:100%;${t ? '' : 'opacity:.5'}">${t ? 'دمج ' + esc(from) + ' ← ' + esc(t) : 'اختار التصنيف الأول'}</button>`;
+  }
+  window.msCatUi = {
+    color(i) { S.cat = (S.inv || [])[i]; if (!S.cat) return; S.view = 'color'; render(); },
+    merge(i) { S.cat = (S.inv || [])[i]; if (!S.cat) return; S.view = 'merge'; S.target = null; render(); },
+    back() { S.view = 'list'; render(); },
+    swatch(i) { if (window.msCatSetColor(S.cat, SWATCHES[i])) { S.flash = ''; afterColor(); } },
+    custom() { const v = ($('msCatPick') || {}).value; if (window.msCatSetColor(S.cat, v)) afterColor(); },
+    reset() { window.msCatSetColor(S.cat, null); afterColor(); },
+    target(i) { S.target = (S.others || [])[i] || null; const n = $('msCatNew'); const keep = n ? n.value : ''; render(); if ($('msCatNew')) $('msCatNew').value = ''; void keep; },
+    typed() { const v = (($('msCatNew') || {}).value || '').trim(); S.target = v || null; const b = $('msCatGo'); if (b) { b.style.opacity = v ? '' : '.5'; b.textContent = v ? 'دمج ' + S.cat + ' ← ' + v : 'اختار التصنيف الأول'; } },
+    go() {
+      const to = S.target; if (!to) { toast('اختار التصنيف اللي هتنقل له', 'error'); return; }
+      if (PROTECTED.has(to)) { toast('التصنيف ده مش للمصروفات العادية', 'error'); return; }
+      const from = S.cat, snap = window.msCatMerge(from, to); if (!snap) return;
+      S = { view: 'list', cat: null, target: null, flash: `✅ اتدمج "${from}" في "${to}" (${snap.counts.main + snap.counts.cards} عملية)` };
+      render(); refreshOthers();
+    },
+    undo() { if (window.msCatUndo()) { S.flash = '↩ اتراجع عن الدمج'; render(); refreshOthers(); } }
+  };
+  function afterColor() { S.view = 'list'; render(); refreshOthers(); }
 })();
 </script>
 <script id="ms-ui-v41">
