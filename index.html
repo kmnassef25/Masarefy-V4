@@ -25439,6 +25439,7 @@ setTimeout(() => {
       if (isNbe && tx.tag === 'dcc') category = 'رسوم DCC';
       else if (isNbe && tx.tag === 'interest') category = 'فايدة';
       else if (isNbe && tx.tag === 'stamp') category = 'ضريبة دمغة';
+      if (txType === 'purchase' && category === 'أخرى' && window.ccAutoCategory) category = window.ccAutoCategory(card, desc) || category;
 
       // NBE extras (undefined for other banks, so their records are unchanged)
       const extra = {};
@@ -26005,7 +26006,7 @@ setTimeout(() => {
   }
 
   // عرّض دوال حساب البطاقات عشان التوزيع الشهري (في closure تاني) يوصلها
-  try{ window.calcCard = calcCard; window.calcPaymentDue = calcPaymentDue; window.CARDS = CARDS; }catch(e){}
+  try{ window.calcCard = calcCard; window.calcPaymentDue = calcPaymentDue; window.CARDS = CARDS; window.ccNormalizePeriodKey = normalizePeriodKey; }catch(e){}
 
   // List of available statement periods (based on existing tx data)
   function listPeriods(card) {
@@ -26364,13 +26365,9 @@ setTimeout(() => {
     } catch(e) {}
     const instMonthly = linkedInsts.reduce((s,i) => s + (Number(i.monthlyPayment)||0), 0);
 
-    // Decide which transactions to show based on view filter
-    let txsToShow;
-    if (state.view === 'period') {
-      txsToShow = stmt.items.slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
-    } else {
-      txsToShow = (card.transactions||[]).slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
-    }
+    // Decide which transactions to show based on view filter (v43: only the first page is drawn)
+    const txsToShow = ccTxsFor(card, state);
+    { const lk = state.view + '|' + state.period; if (state._lk !== lk || !state.limit) { state._lk = lk; state.limit = CC_PAGE; } }
 
     root.innerHTML = `
       <!-- Card visual at top -->
@@ -26487,6 +26484,7 @@ setTimeout(() => {
         </div>
       `}
 
+      ${window.ccSpendSummaryHtml ? window.ccSpendSummaryHtml(card) : ''}
       ${window.nbeCardInfoHtml ? window.nbeCardInfoHtml(card) : ''}
       <!-- Action buttons -->
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:10px">
@@ -26494,6 +26492,7 @@ setTimeout(() => {
         <button onclick="window.ccActionPayment('${cardId}')" style="background:var(--card2);color:var(--green);border:1px solid var(--border);border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">💵 سداد</button>
         <button onclick="window.openCardPdfImport('${cardId}')" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📄 رفع PDF</button>
         <button onclick="window.openCardReport('${cardId}')" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📊 تقرير</button>
+        <button onclick="window.ccStatsOpen('${cardId}')" style="grid-column:span 2;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📊 المصروفات ومقارنة الشهور</button>
         <button onclick="window.ccSmsOpen('${cardId}')" style="grid-column:span 2;background:var(--card2);color:var(--accent);border:1px solid var(--border);border-radius:10px;padding:11px;font-weight:900;font-family:inherit;font-size:12px;cursor:pointer">📩 تسجيل رسالة خصم (SMS)</button>
       </div>
 
@@ -26587,43 +26586,14 @@ setTimeout(() => {
           <button onclick="window.ccSwitchView('${cardId}','all')" style="background:${state.view==='all'?'var(--accent)':'transparent'};color:${state.view==='all'?'#000':'var(--text)'};border:0;border-radius:6px;padding:4px 10px;font-weight:700;font-size:10px;font-family:inherit;cursor:pointer">الكل</button>
         </div>
       </div>
-      <div style="background:var(--card2);border-radius:12px;overflow:hidden">
+      <div id="ccTxList" style="background:var(--card2);border-radius:12px;overflow:hidden">
         ${txsToShow.length === 0 ? `
           <div style="text-align:center;padding:30px 20px;color:var(--muted)">
             <div style="font-size:32px;margin-bottom:6px">📭</div>
             <div style="font-size:12px">لا توجد عمليات</div>
           </div>
-        ` : txsToShow.map((tx, idx) => {
-          const tt = TX_TYPES[tx.type] || TX_TYPES.purchase;
-          return `
-            <div style="padding:10px 12px;${idx>0?'border-top:1px solid var(--border);':''}font-size:12px">
-              <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
-                <div style="flex:1;min-width:0">
-                  <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:${tt.color}">
-                    <span>${tt.icon}</span>
-                    <span style="color:var(--muted);font-size:10px;font-weight:700">${tt.label}</span>
-                  </div>
-                  <div style="font-weight:700;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(tx.name||'-')}</div>
-                  <div style="display:flex;gap:8px;font-size:10px;color:var(--muted);margin-top:2px">
-                    <span>${tx.date||''}</span>
-                    ${tx.category?`<span>• ${esc(tx.category)}</span>`:''}
-                    ${tx.importedFromPdf?`<span style="color:#7c3aed">• PDF</span>`:''}
-                     ${tx.pending?`<span style="color:#f59e0b">• ⏳ تقديري</span>`:''}
-                     ${tx.origCurrency && tx.origCurrency!==card.currency?`<span style="direction:ltr">• ${fmt(tx.origAmount)} ${tx.origCurrency}${tx.fxRate?' @'+tx.fxRate:''}</span>`:''}
-                     ${tx.installment?`<span>• 🔁 ${tx.installment.n}/${tx.installment.total}</span>`:''}
-                  </div>
-                </div>
-                <div style="text-align:left;flex-shrink:0">
-                  <div style="color:${tt.color};direction:ltr;font-weight:900;font-size:13px">${tt.sign}${fmt(Math.abs(Number(tx.amount)||0))}</div>
-                </div>
-              </div>
-              <div style="display:flex;gap:4px;margin-top:6px">
-                <button onclick="event.stopPropagation();window.ccEditTx('${cardId}','${tx.id}')" style="flex:1;background:transparent;color:var(--accent);border:1px solid var(--border);border-radius:6px;padding:4px;font-size:10px;font-family:inherit;font-weight:700;cursor:pointer">✏️ تعديل</button>
-                <button onclick="event.stopPropagation();window.ccDeleteTx('${cardId}','${tx.id}')" style="flex:1;background:transparent;color:var(--red);border:1px solid var(--border);border-radius:6px;padding:4px;font-size:10px;font-family:inherit;font-weight:700;cursor:pointer">🗑 حذف</button>
-              </div>
-            </div>
-          `;
-        }).join('')}
+        ` : txsToShow.slice(0, state.limit).map((tx, idx) => txRowHtml(card, cardId, tx, idx)).join('')}
+        ${txsToShow.length > state.limit ? `<button id="ccMoreBtn" onclick="window.ccShowMoreTx('${cardId}')" style="width:100%;background:transparent;border:0;border-top:1px solid var(--border);color:var(--accent);padding:12px;font-family:inherit;font-weight:900;font-size:12px;cursor:pointer">عرض المزيد (${txsToShow.length - state.limit})</button>` : ''}
       </div>
 
       <!-- Card actions footer -->
@@ -26665,6 +26635,52 @@ setTimeout(() => {
     if (idx > 0) s.period = periods[idx - 1];
     renderCardDetail(cardId);
   };
+  // v43: one row template shared by the first page and "show more"
+  const CC_PAGE = 25;
+  function ccTxsFor(card, state) {
+    const src_ = state.view === 'period' ? calcStatement(card, state.period).items : (card.transactions||[]);
+    return src_.slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  }
+  function txRowHtml(card, cardId, tx, idx) {
+    const tt = TX_TYPES[tx.type] || TX_TYPES.purchase;
+    return `
+            <div class="cc-row" style="padding:10px 12px;${idx>0?'border-top:1px solid var(--border);':''}font-size:12px">
+              <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:${tt.color}">
+                    <span>${tt.icon}</span>
+                    <span style="color:var(--muted);font-size:10px;font-weight:700">${tt.label}</span>
+                  </div>
+                  <div style="font-weight:700;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(tx.name||'-')}</div>
+                  <div style="display:flex;gap:8px;font-size:10px;color:var(--muted);margin-top:2px">
+                    <span>${tx.date||''}</span>
+                    ${window.ccCatChip ? window.ccCatChip(card, cardId, tx) : (tx.category?`<span>• ${esc(tx.category)}</span>`:'')}
+                    ${tx.importedFromPdf?`<span style="color:#7c3aed">• PDF</span>`:''}
+                     ${tx.pending?`<span style="color:#f59e0b">• ⏳ تقديري</span>`:''}
+                     ${tx.origCurrency && tx.origCurrency!==card.currency?`<span style="direction:ltr">• ${fmt(tx.origAmount)} ${tx.origCurrency}${tx.fxRate?' @'+tx.fxRate:''}</span>`:''}
+                     ${tx.installment?`<span>• 🔁 ${tx.installment.n}/${tx.installment.total}</span>`:''}
+                  </div>
+                </div>
+                <div style="text-align:left;flex-shrink:0">
+                  <div style="color:${tt.color};direction:ltr;font-weight:900;font-size:13px">${tt.sign}${fmt(Math.abs(Number(tx.amount)||0))}</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:4px;margin-top:6px">
+                <button onclick="event.stopPropagation();window.ccEditTx('${cardId}','${tx.id}')" style="flex:1;background:transparent;color:var(--accent);border:1px solid var(--border);border-radius:6px;padding:4px;font-size:10px;font-family:inherit;font-weight:700;cursor:pointer">✏️ تعديل</button>
+                <button onclick="event.stopPropagation();window.ccDeleteTx('${cardId}','${tx.id}')" style="flex:1;background:transparent;color:var(--red);border:1px solid var(--border);border-radius:6px;padding:4px;font-size:10px;font-family:inherit;font-weight:700;cursor:pointer">🗑 حذف</button>
+              </div>
+            </div>
+          `;
+  }
+  window.ccShowMoreTx = function(cardId) {
+    const card = findCard(cardId), st = _detailState[cardId]; if (!card || !st) return;
+    const list = ccTxsFor(card, st), from = st.limit || CC_PAGE;
+    st.limit = Math.min(list.length, from + CC_PAGE);
+    const btn = document.getElementById('ccMoreBtn'); if (!btn) return;
+    btn.insertAdjacentHTML('beforebegin', list.slice(from, st.limit).map((tx, i) => txRowHtml(card, cardId, tx, from + i)).join(''));
+    if (st.limit >= list.length) btn.remove(); else btn.textContent = 'عرض المزيد (' + (list.length - st.limit) + ')';
+  };
+
   window.ccSwitchView = function(cardId, view) {
     const s = _detailState[cardId];
     if (s) { s.view = view; renderCardDetail(cardId); }
@@ -27172,7 +27188,8 @@ setTimeout(() => {
       </div>
       <div class="form-row">
         <div class="form-lbl">📂 الفئة</div>
-        <input id="ccEditCat" class="form-inp" value="${esc(tx.category||tx.cat||'')}" placeholder="مثال: مأكولات، تسوق...">
+        ${window.ccCatSelectHtml && (tx.type==='purchase'||tx.type==='refund') ? window.ccCatSelectHtml('ccEditCat', window.ccCatOf(card, tx) || tx.category || 'أخرى') : `<input id="ccEditCat" class="form-inp" value="${esc(tx.category||tx.cat||'')}" placeholder="مثال: مأكولات، تسوق...">`}
+        ${(tx.type==='purchase'||tx.type==='refund') ? `<label style="display:flex;gap:8px;align-items:center;font-size:11px;margin-top:6px"><input type="checkbox" id="ccEditLearn" checked style="width:16px;height:16px"> طبّق التصنيف على كل عمليات نفس التاجر</label>` : ''}
       </div>
       <div class="form-row">
         <div class="form-lbl">📝 ملاحظات (اختياري)</div>
@@ -27200,6 +27217,7 @@ setTimeout(() => {
     if (!newName) { toast('اكتب اسم العملية', 'error'); return; }
     if (isNaN(newAmt) || newAmt <= 0) { toast('مبلغ غير صحيح', 'error'); return; }
     if (!newDate) { toast('اختر تاريخ', 'error'); return; }
+    if (window.ccLearnCategory) window.ccLearnCategory(card, tx, newCat, !!(document.getElementById('ccEditLearn') || {}).checked);
     tx.type = newType;
     tx.name = newName;
     tx.amount = newAmt;
@@ -27208,7 +27226,7 @@ setTimeout(() => {
     tx.category = newCat;
     tx.cat = newCat;
     tx.note = newNote;
-    tx.statementMonth = newDate.slice(0,7);
+    if (!(tx.importedFromPdf || tx.postDate)) tx.statementMonth = newDate.slice(0,7);   // v43: imported rows keep the statement they belong to
     tx.editedAt = new Date().toISOString();
     saveAll();
     toast('✅ تم التعديل', 'success');
@@ -29488,7 +29506,7 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
     const foreign = p.ccy !== (card.currency || 'EGP');
     const tx = {
       id: 'cctx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-      date: p.date, time: p.time, name, amount: r2(egp), category: 'أخرى', type: 'purchase',
+      date: p.date, time: p.time, name, amount: r2(egp), category: (window.ccAutoCategory && window.ccAutoCategory(card, name)) || 'أخرى', type: 'purchase',
       note: foreign ? 'من رسالة SMS. المبلغ بالجنيه تقديري لحد ما الكشف ينزل' : 'من رسالة SMS',
       pending: true, smsEstimate: foreign, smsKey: p.key, origCurrency: p.ccy, origAmount: p.amount,
       statementMonth: p.date.slice(0, 7), createdAt: new Date().toISOString()
@@ -29548,6 +29566,264 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
     });
     if (changed && typeof window.saveCreditCards === 'function') window.saveCreditCards();
   })();
+})();
+</script>
+<style id="ms-cc-perf-v43">
+/* v43: card screens scroll smoothly.
+   - the full-screen backdrop blur is what made scrolling inside card sheets heavy (the whole page behind gets re-blurred), so card sheets use a plain dark backdrop
+   - long lists are drawn lazily: rows outside the viewport skip layout and paint */
+#creditCardsModal,#ccDetailModal,#ccSimpleModal,#ccPdfImportModalV2,#ccSmsModal,#ccStatsModal,#ccCatModal,#ccAddModal,#ccPurchaseModal,#ccPaymentModal{
+  background:rgba(0,0,0,.72) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;}
+#creditCardsModal .sheet,#ccDetailModal .sheet,#ccSimpleModal .sheet,#ccPdfImportModalV2 .sheet,#ccSmsModal .sheet,#ccStatsModal .sheet,#ccCatModal .sheet,#ccAddModal .sheet,#ccPurchaseModal .sheet,#ccPaymentModal .sheet{
+  box-shadow:0 -2px 14px rgba(0,0,0,.35) !important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+.cc-row{content-visibility:auto;contain-intrinsic-size:auto 92px;}
+</style>
+<script id="ms-cc-stats-v43">
+/* v43 card spending: what each transaction was for, month-by-month comparison, drill-down. */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const fmt = (n, d = 2) => (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmt0 = n => fmt(n, 0);
+  const r2 = n => Math.round(n * 100) / 100;
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const findCard = id => (window.creditCards || []).find(c => c.id === id);
+  const toast = (m, t) => { if (window.showToast) window.showToast(m, t || 'info'); };
+  const MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  const monthName = k => MONTHS[+k.slice(5, 7) - 1] + ' ' + k.slice(0, 4);
+  const shortMonth = k => MONTHS[+k.slice(5, 7) - 1];
+  const nowFn = () => (typeof window.ccStatsNow === 'function' ? window.ccStatsNow() : new Date());
+  const keyOf = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  const curKey = () => keyOf(nowFn());
+  const shiftKey = (k, n) => { const d = new Date(+k.slice(0, 4), +k.slice(5, 7) - 1 + n, 1); return keyOf(d); };
+  const symOf = c => (c.currency === 'EGP' ? 'ج.م' : c.currency === 'USD' ? '$' : c.currency === 'EUR' ? '€' : 'ر.س');
+  const perOf = t => (window.ccNormalizePeriodKey ? window.ccNormalizePeriodKey(t.statementMonth, t.date) : String(t.date || '').slice(0, 7));
+
+  // ───────── categories
+  const CATS = [
+    { n: 'اشتراكات', i: '🔁', c: '#8b5cf6' }, { n: 'تقنية وأدوات', i: '💻', c: '#0ea5e9' }, { n: 'تسوق', i: '🛍️', c: '#f59e0b' },
+    { n: 'أكل', i: '🍽️', c: '#ef4444' }, { n: 'مواصلات', i: '🚗', c: '#14b8a6' }, { n: 'بنزين', i: '⛽', c: '#64748b' },
+    { n: 'فواتير', i: '📄', c: '#22c55e' }, { n: 'ترفيه', i: '🎬', c: '#ec4899' }, { n: 'صحة', i: '💊', c: '#10b981' },
+    { n: 'سفر', i: '✈️', c: '#3b82f6' }, { n: 'إلكترونيات', i: '📱', c: '#a855f7' }, { n: 'رسوم وفوائد', i: '💸', c: '#f97316' },
+    { n: 'أخرى', i: '📦', c: '#94a3b8' }
+  ];
+  const meta = n => CATS.find(c => c.n === n) || { n, i: '🏷️', c: '#94a3b8' };
+  // defaults by merchant name. They are guesses; the user's own choice always wins and is remembered.
+  const BUILTIN = [
+    [/APPLE\.COM\/BILL|ITUNES|ICLOUD|GOOGLE\s*ONE|YOUTUBE|NETFLIX|SPOTIFY|SHAHID|DISNEY|ANGHAMI|\bOSN\b|MICROSOFT\s*\*?\s*(365|OFFICE)|ADOBE|CANVA|DROPBOX|NOTION/, 'اشتراكات'],
+    [/ANTHROPIC|CLAUD|OPENAI|CHATGPT|CURSOR|GITHUB|RAILWAY|SPACESHIP|NAMECHEAP|GODADDY|CLOUDFLARE|DIGITALOCEAN|VERCEL|HEROKU|SUPABASE|NETLIFY|HETZNER|\bOVH\b|Z\.AI|ZHIPU|\bAWS\b|AMAZON WEB|JETBRAINS|FIGMA/, 'تقنية وأدوات'],
+    [/STEAM|PLAYSTATION|XBOX|NINTENDO|EPIC GAMES|CINEMA|\bVOX\b|ROCKSTAR|RIOT GAMES/, 'ترفيه'],
+    [/TALABAT|ELMENUS|MCDONALD|\bKFC\b|BURGER|PIZZA|STARBUCKS|\bCOSTA\b|CAFE|COFFEE|RESTAURANT|BAKERY|SUSHI|DOMINO|HUNGERSTATION|MRSOOL|ZOMATO|DELIVEROO/, 'أكل'],
+    [/\bNOON\b|AMAZON|JUMIA|CARREFOUR|SPINNEYS|ALIEXPRESS|SHEIN|IKEA|\bB\.?TECH\b|\bRAYA\b|SOUQ|\bTEMU\b|ZARA|DEFACTO|LC WAIKIKI|SEOUDI|GOURMET/, 'تسوق'],
+    [/UBER|CAREEM|INDRIVE|\bDIDI\b|SWVL|\bBOLT\b/, 'مواصلات'],
+    [/WATANYA|MISR PETROLEUM|CHILLOUT|MOBIL|\bSHELL\b|TOTALENERGIES|EMARAT|PETROL|GAS STATION|\bTAQA\b/, 'بنزين'],
+    [/VODAFONE|ORANGE|ETISALAT|\bTE ?DATA\b|FAWRY|ELECTRICITY|UTILIT/, 'فواتير'],
+    [/BOOKING\.COM|AIRBNB|EGYPTAIR|EMIRATES|FLYNAS|AIR ARABIA|AIRLINES?|HOTEL|EXPEDIA|SKYSCANNER|KAYAK|SAUDIA|QATAR AIR|TURKISH AIR/, 'سفر'],
+    [/PHARM|SEIF|EZABY|CLINIC|HOSPITAL|LABORATOR|MEDICAL|DENTAL|VEZEETA/, 'صحة']
+  ];
+  const GENERIC = new Set(['', 'أخرى', 'اخرى', 'مستورد', 'سداد', 'استرداد', 'فايدة/رسوم', 'رسوم DCC', 'فايدة', 'ضريبة دمغة', 'تحويل لقسط']);
+
+  function mkey(name) {
+    let s = String(name || '').toUpperCase().replace(/^\s*DCC MARKUP FEES\s*-\s*/, '');
+    s = s.replace(/^(WL|SQ|TST|SP|PP|PAYPAL)\s*\*\s*/, '').split('*')[0];
+    const tok = (s.trim().split(/\s+/)[0] || '');
+    return tok.replace(/[^A-Z0-9.\/\u0621-\u064A-]/g, '').slice(0, 24);
+  }
+  function ruleFor(card, key) {
+    if (!key) return null;
+    if (card.catRules && card.catRules[key]) return card.catRules[key];
+    for (const c of (window.creditCards || [])) if (c !== card && c.catRules && c.catRules[key]) return c.catRules[key];
+    return null;
+  }
+  function builtin(name) { const u = String(name || '').toUpperCase(); for (const [re, n] of BUILTIN) if (re.test(u)) return n; return null; }
+  // null = not spending (payments, plan moves)
+  function catOf(card, tx) {
+    const t = tx.type;
+    if (t === 'payment' || t === 'plan_move') return null;
+    if (t === 'fee') {
+      if (tx.feeKind === 'dcc' || /^\s*DCC MARKUP FEES/i.test(tx.name || '')) return ruleFor(card, mkey(tx.name)) || builtin(tx.name) || 'أخرى';   // the fee follows its merchant
+      return 'رسوم وفوائد';
+    }
+    if (tx.catManual && tx.category) return tx.category;
+    const manualEntry = !(tx.importedFromPdf || tx.smsKey);
+    if (manualEntry && tx.category && !GENERIC.has(tx.category)) return tx.category;
+    return ruleFor(card, mkey(tx.name)) || builtin(tx.name) || (tx.category && !GENERIC.has(tx.category) ? tx.category : null) || 'أخرى';
+  }
+  window.ccCatOf = catOf;
+  window.ccAutoCategory = function (card, name) { return ruleFor(card, mkey(name)) || builtin(name) || null; };
+
+  // ───────── data
+  function spendRows(card) {
+    const out = [];
+    for (const tx of (card.transactions || [])) {
+      const cat = catOf(card, tx); if (cat === null) continue;
+      out.push({ tx, cat, amt: (tx.type === 'refund' ? -1 : 1) * Math.abs(Number(tx.amount) || 0), per: perOf(tx), day: +String(tx.date || '').slice(8, 10) || 0, key: mkey(tx.name) });
+    }
+    return out;
+  }
+  const total = (rows, per, cut) => r2(rows.reduce((s, r) => s + (r.per === per && (!cut || r.day <= cut) ? r.amt : 0), 0));
+  function group(rows, per, cut, by) {
+    const m = new Map();
+    for (const r of rows) { if (r.per !== per || (cut && r.day > cut)) continue; const k = by(r); const g = m.get(k) || { k, amt: 0, n: 0, label: '' }; g.amt += r.amt; g.n++; if (!g.label) g.label = r.tx.name; m.set(k, g); }
+    return m;
+  }
+  function avgPrev(rows, per, n) {
+    const vals = []; for (let i = 1; i <= n; i++) { const k = shiftKey(per, -i); if (rows.some(r => r.per === k)) vals.push(total(rows, k, 0)); }
+    return vals.length ? r2(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+  }
+  function deltaChip(cur, prev) {
+    if (prev == null) return '';
+    if (!(prev > 0)) return cur > 0 ? '<span style="color:var(--accent);font-weight:900">جديد</span>' : '';
+    const p = (cur - prev) / prev * 100, up = p > 0.5, dn = p < -0.5;
+    return `<span style="color:${up ? 'var(--red)' : dn ? 'var(--green)' : 'var(--muted)'};font-weight:900;direction:ltr;display:inline-block">${up ? '▲' : dn ? '▼' : '•'} ${Math.abs(p).toFixed(0)}%</span>`;
+  }
+
+  // ───────── small pieces used by the card detail
+  window.ccCatChip = function (card, cardId, tx) {
+    card = card || findCard(cardId);
+    const cat = catOf(card, tx);
+    if (cat === null) return tx.category ? `<span>• ${esc(tx.category)}</span>` : '';
+    const m = meta(cat);
+    return `<span onclick="event.stopPropagation();window.ccPickCat('${cardId}','${tx.id}')" style="color:${m.c};background:${m.c}22;border-radius:8px;padding:0 6px;font-weight:700;cursor:pointer">${m.i} ${esc(cat)}</span>`;
+  };
+  window.ccCatSelectHtml = function (id, current) {
+    const opts = CATS.map(c => c.n); if (current && !opts.includes(current)) opts.unshift(current);
+    return `<select id="${id}" class="form-inp">${opts.map(n => `<option value="${esc(n)}" ${n === current ? 'selected' : ''}>${meta(n).i} ${esc(n)}</option>`).join('')}</select>`;
+  };
+  window.ccSpendSummaryHtml = function (card) {
+    const rows = spendRows(card); if (!rows.length) return '';
+    const per = rows.reduce((m, r) => (r.per > m ? r.per : m), '');
+    const cur = curKey(); const open = per === cur;
+    const cut = open ? nowFn().getDate() : 0; const prev = shiftKey(per, -1);
+    const now = total(rows, per, 0); if (!(now > 0)) return '';
+    const before = rows.some(r => r.per === prev) ? total(rows, prev, cut) : null;
+    return `<div onclick="window.ccStatsOpen('${card.id}')" style="cursor:pointer;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px;font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div><div style="font-weight:900">📊 مصروف ${esc(monthName(per))}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">${before != null ? `${esc(shortMonth(prev))}${open ? ' (لنفس اليوم)' : ''}: ${fmt0(before)} ${symOf(card)}` : 'اضغط للتفاصيل'}</div></div>
+      <div style="text-align:left"><div style="font-weight:900;direction:ltr">${fmt0(now)} ${symOf(card)}</div><div style="font-size:11px">${before != null ? deltaChip(now, before) : ''}</div></div></div>`;
+  };
+
+  // ───────── learning + picking a category
+  window.ccLearnCategory = function (card, tx, cat, applyAll) {
+    cat = String(cat || '').trim(); if (!cat) return;
+    if (tx.type !== 'purchase' && tx.type !== 'refund') return;
+    if (cat === catOf(card, tx) && !tx.catManual) return;             // unchanged, nothing to learn
+    tx.category = cat; tx.cat = cat; tx.catManual = true;
+    if (applyAll) {
+      const k = mkey(tx.name);
+      if (k) {
+        card.catRules = card.catRules || {}; card.catRules[k] = cat;
+        for (const t of (card.transactions || [])) if (t !== tx && (t.type === 'purchase' || t.type === 'refund') && !t.catManual && mkey(t.name) === k) { t.category = cat; t.cat = cat; }
+      }
+    }
+  };
+  let P = { cardId: null, txId: null };
+  function ensureCatModal() {
+    let m = $('ccCatModal'); if (m) return m;
+    m = document.createElement('div'); m.className = 'overlay stacked'; m.id = 'ccCatModal';
+    m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = `<div class="sheet" style="max-width:600px;margin:0 auto"><div class="modal-head"><div class="modal-title">🏷️ الفلوس دي راحت فين؟</div><button class="close-x" onclick="document.getElementById('ccCatModal').classList.remove('open')">×</button></div><div id="ccCatBody"></div></div>`;
+    document.body.appendChild(m); return m;
+  }
+  window.ccPickCat = function (cardId, txId) {
+    const card = findCard(cardId); const tx = card && (card.transactions || []).find(t => t.id === txId); if (!tx) return;
+    P = { cardId, txId }; ensureCatModal();
+    const cur = catOf(card, tx); const k = mkey(tx.name);
+    $('ccCatBody').innerHTML = `
+      <div style="font-size:12px;margin-bottom:10px"><b>${esc(tx.name)}</b> <span style="color:var(--muted);direction:ltr;display:inline-block">${fmt(Math.abs(tx.amount))} ${symOf(card)}</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">${CATS.filter(c => c.n !== 'رسوم وفوائد').map((c, i) => `<button onclick="window.ccPickCatDo(${i})" style="background:${c.n === cur ? c.c + '33' : 'var(--card2)'};border:1px solid ${c.n === cur ? c.c : 'var(--border)'};color:var(--text);border-radius:10px;padding:10px 4px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer">${c.i}<br>${esc(c.n)}</button>`).join('')}</div>
+      <input id="ccCatCustom" class="inp" placeholder="أو اكتب تصنيف تاني" style="width:100%;margin-bottom:8px">
+      <label style="display:flex;gap:8px;align-items:center;font-size:12px;margin-bottom:10px"><input type="checkbox" id="ccCatAll" checked style="width:18px;height:18px"> كل عمليات "${esc(k || tx.name)}"</label>
+      <button class="save-btn" style="width:100%" onclick="window.ccPickCatDo(-1)">حفظ التصنيف المكتوب</button>`;
+    $('ccCatModal').classList.add('open');
+  };
+  window.ccPickCatDo = function (i) {
+    const card = findCard(P.cardId); const tx = card && (card.transactions || []).find(t => t.id === P.txId); if (!tx) return;
+    const list = CATS.filter(c => c.n !== 'رسوم وفوائد');
+    const cat = i >= 0 ? list[i].n : (($('ccCatCustom') || {}).value || '').trim();
+    if (!cat) { toast('اختار تصنيف أو اكتبه', 'error'); return; }
+    window.ccLearnCategory(card, tx, cat, !!($('ccCatAll') || {}).checked);
+    if (typeof window.saveCreditCards === 'function') window.saveCreditCards();
+    $('ccCatModal').classList.remove('open');
+    toast('✅ اتحفظ. هيتطبق على العمليات الجاية من نفس التاجر', 'success');
+    if ($('ccStatsModal') && $('ccStatsModal').classList.contains('open')) render();
+    if ($('ccDetailModal') && $('ccDetailModal').classList.contains('open') && typeof window.openCardDetail === 'function') window.openCardDetail(P.cardId);
+  };
+
+  // ───────── stats modal
+  let S = { cardId: null, per: null, view: 'cat', drill: null };
+  function ensureStatsModal() {
+    let m = $('ccStatsModal'); if (m) return m;
+    m = document.createElement('div'); m.className = 'overlay stacked'; m.id = 'ccStatsModal';
+    m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = `<div class="sheet" style="max-width:600px;max-height:94vh;margin:0 auto"><div class="modal-head"><div class="modal-title">📊 مصروفات الكارت</div><button class="close-x" onclick="document.getElementById('ccStatsModal').classList.remove('open')">×</button></div><div id="ccStatsBody"></div></div>`;
+    document.body.appendChild(m); return m;
+  }
+  window.ccStatsOpen = function (cardId) {
+    const card = findCard(cardId); if (!card) return;
+    const rows = spendRows(card);
+    S = { cardId, per: rows.reduce((m, r) => (r.per > m ? r.per : m), '') || curKey(), view: 'cat', drill: null };
+    ensureStatsModal(); render(); $('ccStatsModal').classList.add('open');
+  };
+  window.ccStatsPick = k => { S.per = k; render(); };
+  window.ccStatsMove = d => { S.per = shiftKey(S.per, d); render(); };
+  window.ccStatsView = v => { S.view = v; S.drill = null; render(); };
+  window.ccStatsDrill = (type, k) => { S.drill = { type, k }; render(); const b = $('ccStatsBody'); if (b && b.parentNode) b.parentNode.scrollTop = 0; };
+  window.ccStatsBack = () => { S.drill = null; render(); };
+
+  function barsHtml(rows, per, pick) {
+    const cur = curKey(); const vals = [];
+    for (let i = 5; i >= 0; i--) { const k = shiftKey(per, -i); vals.push({ k, v: pick(k), open: k === cur }); }
+    const max = Math.max(1, ...vals.map(x => Math.max(0, x.v)));
+    return `<div style="display:flex;align-items:flex-end;gap:6px;height:116px;margin:8px 0 4px">${vals.map(x => {
+      const on = x.k === per, h = Math.max(2, Math.round(Math.max(0, x.v) / max * 80));
+      return `<button onclick="window.ccStatsPick('${x.k}')" style="flex:1;min-width:0;background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-family:inherit"><span style="font-size:9px;color:var(--muted);direction:ltr">${x.v ? fmt0(x.v) : ''}</span><span style="width:100%;height:${h}px;margin-top:2px;border-radius:6px 6px 2px 2px;background:${on ? 'var(--accent)' : 'var(--border)'};${x.open ? 'opacity:.75;border:1px dashed var(--accent);box-sizing:border-box;' : ''}"></span><span style="font-size:10px;margin-top:4px;color:${on ? 'var(--accent)' : 'var(--muted)'};font-weight:${on ? 900 : 700}">${shortMonth(x.k)}</span></button>`;
+    }).join('')}</div>`;
+  }
+  function txLine(card, r) {
+    const t = r.tx, m = meta(r.cat);
+    const orig = t.origCurrency && t.origCurrency !== card.currency ? `<span style="direction:ltr;display:inline-block">${fmt(t.origAmount)} ${esc(t.origCurrency)}</span>` : '';
+    return `<div onclick="window.ccPickCat('${card.id}','${t.id}')" style="cursor:pointer;display:flex;justify-content:space-between;gap:8px;padding:9px 10px;border-top:1px solid var(--border);font-size:12px"><div style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.name)}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(t.date || '')} · <span style="color:${m.c}">${m.i} ${esc(r.cat)}</span> ${orig ? '· ' + orig : ''}${t.pending ? ' · ⏳ تقديري' : ''}</div></div><div style="direction:ltr;font-weight:900;color:${r.amt < 0 ? 'var(--green)' : 'var(--text)'};flex-shrink:0">${r.amt < 0 ? '-' : ''}${fmt(Math.abs(r.amt))}</div></div>`;
+  }
+  function render() {
+    const card = findCard(S.cardId), body = $('ccStatsBody'); if (!card || !body) return;
+    const rows = spendRows(card), per = S.per, sym = symOf(card);
+    const open = per === curKey(), cut = open ? nowFn().getDate() : 0, prev = shiftKey(per, -1);
+    const drill = S.drill;
+    const inDrill = r => drill && (drill.type === 'cat' ? r.cat === drill.k : r.key === drill.k);
+    const view = drill ? rows.filter(inDrill) : rows;
+    const now = total(view, per, 0), before = view.some(r => r.per === prev) ? total(view, prev, cut) : (rows.some(r => r.per === prev) ? 0 : null);
+    const avg = avgPrev(view, per, 3);
+    const nav = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><button onclick="window.ccStatsMove(1)" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-family:inherit;cursor:pointer">‹</button><div style="font-weight:900">${esc(monthName(per))}${open ? ' <span style="font-size:10px;color:var(--accent)">(لسه شغال)</span>' : ''}</div><button onclick="window.ccStatsMove(-1)" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-family:inherit;cursor:pointer">›</button></div>`;
+    const head = `<div style="background:var(--card2);border-radius:12px;padding:12px;margin-bottom:10px">
+      ${drill ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><button onclick="window.ccStatsBack()" style="background:var(--card);border:1px solid var(--border);color:var(--accent);border-radius:8px;padding:4px 10px;font-family:inherit;font-weight:900;cursor:pointer">↩ رجوع</button><b>${drill.type === 'cat' ? meta(drill.k).i + ' ' + esc(drill.k) : esc((rows.find(r => r.key === drill.k) || { tx: { name: drill.k } }).tx.name)}</b></div>` : ''}
+      ${nav}
+      <div style="font-size:26px;font-weight:900;direction:ltr;text-align:center;margin:6px 0">${fmt(now)} <span style="font-size:12px">${sym}</span></div>
+      <div style="display:flex;justify-content:space-around;font-size:11px;color:var(--muted);text-align:center;gap:6px">
+        <div>${esc(shortMonth(prev))}${open ? ' (لنفس اليوم)' : ''}<div style="color:var(--text);font-weight:900;direction:ltr">${before == null ? '-' : fmt0(before)}</div><div>${before == null ? '' : deltaChip(now, before)}</div></div>
+        <div>متوسط آخر 3 شهور<div style="color:var(--text);font-weight:900;direction:ltr">${avg == null ? '-' : fmt0(avg)}</div><div>${avg == null ? '' : deltaChip(now, avg)}</div></div>
+      </div>
+      ${barsHtml(view, per, k => total(view, k, 0))}
+    </div>`;
+    let list = '';
+    if (drill) {
+      const items = view.filter(r => r.per === per).sort((a, b) => String(b.tx.date).localeCompare(String(a.tx.date)));
+      list = items.length ? `<div style="background:var(--card2);border-radius:12px;overflow:hidden">${items.slice(0, 80).map(r => txLine(card, r)).join('').replace('border-top:1px solid var(--border);', '')}</div><div style="font-size:10px;color:var(--muted);margin-top:6px">اضغط على أي عملية علشان تغيّر تصنيفها</div>` : '<div style="text-align:center;color:var(--muted);padding:24px;font-size:12px">مفيش عمليات في الشهر ده</div>';
+    } else {
+      const byCat = S.view === 'cat';
+      const by = byCat ? (r => r.cat) : (r => r.key || r.tx.name);
+      const a = group(rows, per, 0, by), b = group(rows, prev, cut, by);
+      const keys = new Set([...a.keys(), ...b.keys()]);
+      const arr = [...keys].map(k => ({ k, cur: a.has(k) ? a.get(k).amt : 0, prev: b.has(k) ? b.get(k).amt : 0, n: a.has(k) ? a.get(k).n : 0, label: (a.get(k) || b.get(k)).label })).sort((x, y) => (y.cur - x.cur) || (y.prev - x.prev));
+      const sum = arr.reduce((s, x) => s + Math.max(0, x.cur), 0) || 1;
+      const tabs = `<div style="display:flex;gap:4px;background:var(--card2);border-radius:8px;padding:2px;margin-bottom:8px">${[['cat', 'حسب التصنيف'], ['mer', 'حسب التاجر']].map(([v, l]) => `<button onclick="window.ccStatsView('${v}')" style="flex:1;background:${S.view === v ? 'var(--accent)' : 'transparent'};color:${S.view === v ? '#000' : 'var(--text)'};border:0;border-radius:6px;padding:6px;font-family:inherit;font-size:12px;font-weight:900;cursor:pointer">${l}</button>`).join('')}</div>`;
+      list = tabs + `<div style="background:var(--card2);border-radius:12px;overflow:hidden">${arr.length ? arr.slice(0, 40).map((x, i) => {
+        const m = byCat ? meta(x.k) : { i: '🏪', c: '#94a3b8' }; const pct = Math.max(0, x.cur) / sum * 100;
+        return `<div onclick="window.ccStatsDrill('${byCat ? 'cat' : 'mer'}','${esc(x.k)}')" style="cursor:pointer;padding:10px 12px;${i ? 'border-top:1px solid var(--border);' : ''}font-size:12px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div style="min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.i} ${esc(byCat ? x.k : x.label)} <span style="color:var(--muted);font-size:10px;font-weight:400">${x.n ? '· ' + x.n : ''}</span></div><div style="direction:ltr;font-weight:900;flex-shrink:0">${fmt(x.cur)}</div></div><div style="height:5px;background:var(--border);border-radius:3px;margin:6px 0 4px;overflow:hidden"><div style="height:100%;width:${pct.toFixed(1)}%;background:${m.c}"></div></div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted)"><span>${esc(shortMonth(prev))}: <span style="direction:ltr;display:inline-block">${fmt0(x.prev)}</span></span>${deltaChip(x.cur, x.prev)}</div></div>`;
+      }).join('') : '<div style="text-align:center;color:var(--muted);padding:24px;font-size:12px">مفيش مصروفات في الشهر ده</div>'}</div>`;
+    }
+    body.innerHTML = head + list + '<div style="font-size:10px;color:var(--muted);margin-top:10px;line-height:1.7">المصروف = مشتريات + رسوم − استرداد، من غير السداد. رسوم DCC محسوبة على تصنيف التاجر بتاعها. الشهر بيتحدد بالكشف اللي العملية نزلت فيه.</div>';
+  }
+  window.__ccStatsInternals = { catOf, mkey, spendRows, total };
 })();
 </script>
 <script id="ms-ui-v41">
