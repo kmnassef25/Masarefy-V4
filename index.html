@@ -8980,7 +8980,20 @@ renderAll();
 // ═══════════════════════════════════════════════════════════════
 
 // ── TOAST SYSTEM ──
+// v60: messages about things the app does on its own (fetching prices, connection changes, reminders, tips) are never shown as popups.
+// Failures are still written to the error log (Settings) so nothing is lost; confirmations of what the user just did are unchanged.
+var MS_QUIET = [
+  /جاري جلب الأسعار/, /تم التحديث من /, /^✅ .+ · سعر /, /كل المصادر فشلت/,       // exchange rates
+  /تحديث سعر الذهب/,                                                           // gold price
+  /أنت offline/, /رجعت online/,                                                // connection
+  /^⏰ (قسط|عندك \d+ أقساط)/,                                                  // installment reminder (the home strip shows it)
+  /^💡 /                                                                       // tips
+];
+var MS_QUIET_LOG = /كل المصادر فشلت|فشل تحديث/;
+function msIsQuiet(msg) { var s = String(msg == null ? '' : msg); for (var i = 0; i < MS_QUIET.length; i++) { if (MS_QUIET[i].test(s)) { if (MS_QUIET_LOG.test(s)) { try { if (window.msErrors && window.msErrors.push) window.msErrors.push('quiet', s); } catch (e) { /* ignore */ } } return true; } } return false; }
+window.msIsQuiet = msIsQuiet;
 function showToast(msg, type='info', duration=3000) {
+  if (msIsQuiet(msg)) return;
   const container = document.getElementById('toastContainer');
   if (!container) return;
   const toast = document.createElement('div');
@@ -28235,20 +28248,20 @@ setTimeout(() => {
   pointer-events:none;
 }
 .h2-hero-lbl{font-size:13px;color:var(--accent);font-weight:600;letter-spacing:.3px;display:flex;align-items:center;gap:6px;}
-.h2-hero-val{font-size:34px;font-weight:600;color:#fff;direction:ltr;text-align:right;margin:6px 0 2px;letter-spacing:-.5px;font-variant-numeric:tabular-nums;text-shadow:0 2px 8px rgba(0,0,0,.4);}
+.h2-hero-val{font-size:34px;font-weight:600;color:var(--text);direction:ltr;text-align:right;margin:6px 0 2px;letter-spacing:-.5px;font-variant-numeric:tabular-nums;text-shadow:0 2px 8px rgba(0,0,0,.4);}
 .h2-hero-sub{font-size:13px;color:var(--muted);font-weight:600;}
 .h2-hero-debt{font-size:11px;color:#ff9b94;font-weight:600;margin-top:3px;}
 .h2-cur-switch{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
 .h2-cur-btn{flex:1;min-width:54px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:7px 4px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .16s cubic-bezier(.34,1.2,.46,1);}
 .h2-cur-btn:active{transform:scale(.94);}
-.h2-cur-btn.on{background:rgba(240,180,41,.18);border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
+.h2-cur-btn.on{background:rgba(240,180,41,.18);border-color:var(--accent);color:var(--text);box-shadow:0 0 0 1px var(--accent);}
 .h2-alerts{display:flex;flex-direction:column;gap:8px;}
 .h2-alert{display:flex;align-items:center;gap:10px;border-radius:12px;padding:11px 13px;}
 .h2-alert-em{font-size:16px;flex-shrink:0;}
 .h2-alert-txt{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--text);}
 .h2-alert-sub{font-size:13px;font-weight:600;direction:ltr;flex-shrink:0;font-variant-numeric:tabular-nums;}
 .h2-hero-row{display:flex;gap:10px;margin-top:16px;}
-.h2-hero-mini{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:11px 12px;}
+.h2-hero-mini{flex:1;background:var(--card2);border:0.5px solid var(--border);border-radius:12px;padding:11px 12px;}
 .h2-hero-mini .m-lbl{font-size:11px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:4px;}
 .h2-hero-mini .m-val{font-size:16px;font-weight:600;direction:ltr;text-align:right;margin-top:3px;font-variant-numeric:tabular-nums;}
 .h2-hero-mini.inc .m-val{color:var(--green);}
@@ -28412,7 +28425,7 @@ setTimeout(() => {
       var lbl = (BASE_LABELS[cur]&&BASE_LABELS[cur].flag||'')+' '+(BASE_LABELS[cur]&&BASE_LABELS[cur].sym||cur);
       return `<button class="h2-cur-btn${on?' on':''}" onclick="_setHeroCur('${cur}')">${lbl}</button>`;
     }).join('');
-    var nwColor = T.netWorth>=0 ? '#fff' : '#ff7b72';
+    var nwColor = T.netWorth>=0 ? 'var(--text)' : 'var(--red)';
     var debtLine = T.debt>0 ? `<div class="h2-hero-debt">− ديون: ${_heroFmt(T.debt)}</div>` : '';
     return `
     <div class="h2-hero">
@@ -28892,7 +28905,7 @@ setTimeout(() => {
     });
     parts = parts.filter(Boolean);
 
-    el.innerHTML = '<div class="h2-wrap">'+(window.msNowStripHtml ? window.msNowStripHtml() : '')+parts.join('')+'</div>';
+    el.innerHTML = '<div class="h2-wrap">'+(parts[0]||'')+(window.msNowStripHtml ? window.msNowStripHtml() : '')+parts.slice(1).join('')+'</div>';   // v60: hero first, then the strip
   }
 
   // ── تخصيص الصفحة الرئيسية (ترتيب + تشغيل/إطفاء الودجت) ──
@@ -30962,6 +30975,7 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 .tx-act.danger{color:var(--red);}
 </style>
 <style id="ms-nav-v57">
+.h2-cur-btn.on{color:var(--text) !important;}
 /* bottom edge: padding for the home indicator only when the page reaches the screen edge (js sets --ms-sab); leftover strip painted in the bar colour */
 body{padding-bottom:var(--ms-sab, env(safe-area-inset-bottom, 0px)) !important;}
 body::after{height:var(--ms-sab, env(safe-area-inset-bottom, 0px)) !important;}
@@ -31009,6 +31023,9 @@ b,strong,th,h1,h2,h3,h4{font-weight:600;}
 .tab-btn .ic{width:1.15em;height:1.15em;}
 .h2-sec-title .ic{color:var(--accent);}
 .modal-title .ic,.st2-group-title .ic{color:var(--accent);}
+</style>
+<style id="ms-home-v60">
+#msNowStrip{margin:14px 0 12px !important;}
 </style>
 <style id="ms-safe-v54">
 /* v54: a sheet is at most (overlay height - status bar - 24px) tall, so its title and close button are never under the status bar / dynamic island */
