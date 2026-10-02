@@ -7268,19 +7268,24 @@ function viewReceipt(dataUrl) {
 // ── CALCULATOR ──
 // Safely evaluate math expressions like "50+30+15.5" or "100-20*3/2"
 function safeEval(expr) {
-  // Convert unicode operators (×, ÷) and Arabic digits to ASCII
-  let clean = String(expr)
-    .replace(/×/g, '*')
-    .replace(/÷/g, '/')
-    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
-    .trim();
-  if (!/^[0-9+\-*/.() \s]+$/.test(clean)) return null;
-  try {
-    // eslint-disable-next-line no-new-func
-    const result = Function('"use strict"; return (' + clean + ')')();
-    if (typeof result !== 'number' || !isFinite(result)) return null;
-    return result;
-  } catch (e) { return null; }
+  // v68: a small arithmetic parser (+ - * / ( ) and decimals). No eval and no Function: the page's security policy blocks both,
+  // which made every expression such as 50+30 fail and (because saveTx fell back to parseFloat) save only the first number.
+  const raw0 = String(expr).replace(/×/g, '*').replace(/÷/g, '/').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).trim();
+  if (/[\d.)]\s+[\d.(]/.test(raw0)) return null;      // two numbers with only a space between them ("5 5") are not one number
+  const clean = raw0.replace(/\s+/g, '');
+  if (!clean || !/^[0-9+\-*/.()]+$/.test(clean)) return null;
+  let i = 0;
+  function expr_() { let v = term_(); while (i < clean.length && (clean[i] === '+' || clean[i] === '-')) { const op = clean[i++]; const r = term_(); if (v === null || r === null) return null; v = op === '+' ? v + r : v - r; } return v; }
+  function term_() { let v = factor_(); while (i < clean.length && (clean[i] === '*' || clean[i] === '/')) { const op = clean[i++]; const r = factor_(); if (v === null || r === null) return null; v = op === '*' ? v * r : v / r; } return v; }
+  function factor_() {
+    if (clean[i] === '+') { i++; return factor_(); }
+    if (clean[i] === '-') { i++; const v = factor_(); return v === null ? null : -v; }
+    if (clean[i] === '(') { i++; const v = expr_(); if (clean[i] !== ')') return null; i++; return v; }
+    const m = /^(\d+\.?\d*|\.\d+)/.exec(clean.slice(i)); if (!m) return null; i += m[0].length; return parseFloat(m[0]);
+  }
+  const result = expr_();
+  if (result === null || i !== clean.length || typeof result !== 'number' || !isFinite(result)) return null;
+  return result;
 }
 // ── ARABIC/PERSIAN DIGIT NORMALIZER ──
 // لو الكيبورد بيكتب أرقام عربية-هندية (٠١٢٣) أو فارسية (۰۱۲۳)، نحوّلها لإنجليزية (0123)
@@ -7546,7 +7551,8 @@ function _quickSaveExpense(cat, amount, emoji){
 
 function saveTx() {
   const rawAmt = document.getElementById('fAmt').value;
-  const amt = safeEval(rawAmt) ?? parseFloat(rawAmt);
+  const _norm = normalizeDigits(rawAmt);
+  const amt = safeEval(rawAmt) ?? (/^\s*-?\d*\.?\d+\s*$/.test(_norm) ? parseFloat(_norm) : NaN);   // v68: never save a truncated number
   const date=document.getElementById('fDate').value;
   const time=document.getElementById('fTime').value;
   const note=document.getElementById('fNote').value.trim();
@@ -30579,7 +30585,8 @@ body[data-view="home"] .tabs-nav{display:none !important;}
 .has-ic .ic:first-child{margin-inline-end:6px;}
 b,strong,th,h1,h2,h3,h4{font-weight:600;}
 *,*::before,*::after{box-shadow:none !important;text-shadow:none !important;}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+:where(button,a,[role="button"],summary):focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;}
 .header.ms-onerow .header-actions,.header.ms-onerow .header-sub{display:none !important;}
 .header.ms-onerow .header-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:10px;}
 .header.ms-onerow .live-time{background:none !important;border:0 !important;padding:0 !important;display:flex;flex-direction:column;align-items:flex-end;gap:0;font-size:13px;color:var(--muted);line-height:1.4;}
@@ -30784,6 +30791,18 @@ b,strong,th,h1,h2,h3,h4{font-weight:600;}
 .ms-dot.turn{background:none;border:0;color:var(--warn);}
 .ms-dot .ic{width:16px;height:16px;}
 .ms-dot.turn.paid .ic,.ms-dot.turn.cur .ic{color:var(--warn);}
+</style>
+<style id="ms-fix-v67">
+/* v67: calculator keys, amount field, sheet top gap, save button alignment (all seen on the phone) */
+.ms-amt .amt-ops{display:none;}
+.ms-amt:focus-within .amt-ops,.ms-amt.ms-focus .amt-ops{display:grid !important;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;justify-content:stretch;margin-top:10px;}
+.ms-amt .amt-op-btn{height:40px;min-width:0;padding:0 !important;white-space:nowrap;background:var(--card2) !important;border:0.5px solid var(--border) !important;border-radius:8px !important;font-size:16px !important;color:var(--text) !important;display:flex;align-items:center;justify-content:center;}
+.ms-amt .amt-op-btn:active{background:var(--accent) !important;color:#0d1117 !important;}
+.ms-amt .amt-op-clr{font-size:13px !important;color:var(--red) !important;}
+.ms-amt-inp,.ms-amt-inp:focus,.ms-amt-inp:focus-visible{outline:none !important;box-shadow:none !important;}
+.handle{padding:10px 30px;margin:0 auto 8px;}
+.v19-handle-zone{padding:2px 0 6px;}
+.ms-foot{margin:0;}
 </style>
 <style id="ms-safe-v54">
 /* v54: a sheet is at most (overlay height - status bar - 24px) tall, so its title and close button are never under the status bar / dynamic island */
