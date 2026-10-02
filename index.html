@@ -4624,10 +4624,9 @@ window.openCurrencyRates = openCurrencyRates;
 <div class="overlay" id="installmentsModal" onclick="closeIfOut(event,'installmentsModal')">
   <div class="sheet">
     <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
-    <div class="modal-title">💳 الأقساط</div>
-    <p class="modal-hint">سجّل أقساطك وهيتخصموا تلقائياً كل شهر</p>
+    <div class="ms-sheet-head"><div class="modal-title">الأقساط</div></div>
     <div id="installmentsList"></div>
-    <div class="section-divider">
+    <div class="section-divider ms-addbox" id="instAddBox">
       <div class="subsection-label">إضافة قسط جديد</div>
       <div class="form-row">
         <div class="form-lbl">💳 موفّر التقسيط</div>
@@ -4950,10 +4949,9 @@ window.openCurrencyRates = openCurrencyRates;
 <div class="overlay" id="jameyaModal" onclick="closeIfOut(event,'jameyaModal')">
   <div class="sheet">
     <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
-    <div class="modal-title">🤝 الجمعية</div>
-    <p class="modal-hint">سجّل جمعيتك — التطبيق هيتابع متى تدفع ومتى تقبض</p>
+    <div class="ms-sheet-head"><div class="modal-title">الجمعية</div></div>
     <div id="jameyaList"></div>
-    <div class="section-divider">
+    <div class="section-divider ms-addbox" id="jamAddBox">
       <div class="subsection-label">إضافة جمعية جديدة</div>
       <div class="form-row"><input class="form-inp" id="jamName" placeholder="مثال: جمعية الشغل، جمعية العيلة..."/></div>
       <div class="two-col">
@@ -9602,6 +9600,7 @@ function renderInstallments() {
   const el = document.getElementById('installmentsList');
   if (!el) return;
   if (!installments.length) {
+    { const ab = document.getElementById('instAddBox'); if (ab) ab.classList.add('open'); }
     // لو مفيش أقساط بس فيه بطاقات ائتمان ليها مستحقات → اعرض التوزيع بتاعها
     var _ccCards = (typeof CARDS==='function') ? CARDS() : (window.creditCards||[]);
     var _hasCC = false;
@@ -9644,157 +9643,80 @@ function renderInstallments() {
     break;
   }
 
-  let html = `<div class="inst2-hero">
-    <div class="inst2-hero-top">
-      <div class="inst2-hero-lbl">💳 إجمالي الأقساط المتبقية</div>
-      <div class="inst2-hero-chip">${active.length} قسط نشط</div>
-    </div>
-    <div class="inst2-hero-val">${fmt(toBase(totalDebtSAR),0)} ${sym}</div>
-    <div class="inst2-hero-bar"><div class="inst2-hero-bar-fill" style="width:${overallPct}%"></div></div>
-    <div class="inst2-hero-sub">${overallPct}% مدفوع من إجمالي ${fmt(toBase(totalOriginalSAR),0)} ${sym}</div>
-  </div>
-
-  <div class="inst2-stats">
-    <div class="inst2-stat monthly">
-      <div class="s-lbl">📅 شهرياً</div>
-      <div class="s-val">${fmt(toBase(totalMonthlySAR),0)} ${sym}</div>
-    </div>
-    <div class="inst2-stat paid">
-      <div class="s-lbl">✅ المدفوع</div>
-      <div class="s-val">${fmt(toBase(totalPaidSAR),0)} ${sym}</div>
-    </div>
-    <div class="inst2-stat left">
-      <div class="s-lbl">⏳ المتبقي</div>
-      <div class="s-val">${fmt(toBase(totalDebtSAR),0)} ${sym}</div>
-    </div>
+  // v65: one summary card, one list. The numbers appear once (the old version repeated "paid / remaining / total" in the card, three tiles, the next-due strip and every installment).
+  const money = (sar, d) => fmt(toBase(sar), d == null ? 0 : d) + ' ' + sym;
+  const ratioNote = (function () {
+    try {
+      const n = new Date(); const ym = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
+      const income = (typeof txs !== 'undefined' ? txs : []).filter(t => t.type === 'income' && !t.isTransfer && (t.date || '').slice(0, 7) === ym).reduce((s, t) => s + (t.amountSAR || 0), 0);
+      if (!income || totalMonthlySAR <= 0) return '';
+      const r = Math.round(totalMonthlySAR / income * 100);
+      const [word, color] = r <= 20 ? ['وده مريح جدًا', 'var(--green)'] : r <= 36 ? ['وده كويس', 'var(--green)'] : r <= 50 ? ['خلي بالك ما تزودش', 'var(--warn)'] : ['وده ضغط كبير على ميزانيتك', 'var(--red)'];
+      return '<div class="ms-hero-note" style="color:' + color + '">تمثل ' + toArabicDigits(r) + '% من دخلك، ' + word + '</div>';
+    } catch (e) { return ''; }
+  })();
+  let html = `<div class="ms-hero" id="msInstHero">
+    <div class="ms-hero-lbl">المتبقي عليك</div>
+    <div class="ms-hero-val">${money(totalDebtSAR)}</div>
+    <div class="ms-bar"><div class="ms-bar-fill" style="width:${overallPct}%"></div></div>
+    <div class="ms-hero-line"><span>دفعت ${money(totalPaidSAR)} من ${money(totalOriginalSAR)}</span><span>${money(totalMonthlySAR)} كل شهر</span></div>
+    ${ratioNote}
   </div>`;
 
-  // مؤشر صحة مالية: نسبة الأقساط الشهرية من الدخل الشهري
-  html += (function(){
-    try{
-      // احسب الدخل الشهري مباشرة من txs (calcTotals مش متاحة في السكوب ده)
-      var now = new Date();
-      var ym = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-      var monthlyIncome = (typeof txs!=='undefined'?txs:[])
-        .filter(function(t){ return t.type==='income' && !t.isTransfer && (t.date||'').slice(0,7)===ym; })
-        .reduce(function(s,t){ return s + (t.amountSAR||0); }, 0);
-      if (!monthlyIncome || totalMonthlySAR<=0) return '';
-      var ratio = Math.round(totalMonthlySAR / monthlyIncome * 100);
-      var barPct = Math.min(ratio, 100);
-      var status, color, msg;
-      if (ratio <= 20){ status='ممتاز'; color='var(--green)'; msg='أقساطك في حدود مريحة جدًا 👌'; }
-      else if (ratio <= 36){ status='كويس'; color='var(--accent)'; msg='نسبة صحية، بس خلي بالك ما تزودش'; }
-      else if (ratio <= 50){ status='تحذير'; color='#f59e0b'; msg='أقساطك بقت كبيرة، حاول ما تزودش أقساط جديدة ⚠️'; }
-      else { status='خطر'; color='var(--red)'; msg='أقساطك أكبر من نص دخلك! ده ضغط كبير على ميزانيتك 🚨'; }
-      return '<div class="inst2-health">'
-        + '<div class="ih-top">'
-          + '<span class="ih-title">📊 نسبة الأقساط من دخلك</span>'
-          + '<span class="ih-badge" style="color:'+color+';background:'+color+'22;border:1px solid '+color+'">'+status+'</span>'
-        + '</div>'
-        + '<div class="ih-ratio" style="color:'+color+'">'+toArabicDigits(ratio)+'%</div>'
-        + '<div class="ih-bar"><div class="ih-bar-fill" style="width:'+barPct+'%;background:'+color+'"></div>'
-          + '<div class="ih-bar-safe" title="الحد الآمن 36%"></div>'
-        + '</div>'
-        + '<div class="ih-msg">'+msg+'</div>'
-      + '</div>';
-    }catch(e){ return ''; }
-  })();
-
-  if (nextDue) {
-    const lbl = _instStatusLabel(nextDue.info, sym);
-    html += `<div class="inst2-next">
-      <span class="inst2-next-icon">⏰</span>
-      <div class="inst2-next-txt">
-        <div class="inst2-next-name">${esc(nextDue.name)}</div>
-        <div class="inst2-next-meta">القسط القادم · ${lbl.text.replace(/^[^\s]+\s/,'')}</div>
-      </div>
-      <div class="inst2-next-amt">${fmt(toBase(nextDue.amt),0)} ${sym}</div>
-    </div>`;
-  }
-
-  // ── التوزيع الشهري: كل شهر قادم وإجمالي الأقساط المستحقة فيه ──
-  html += _instMonthlyBreakdown(active, sym, today);
-
-  // Render each installment card (sorted)
-  // افصل النشط عن المنتهي (الأرشيف)
-  const activeEnriched = enriched.filter(({inst}) => (inst.paidMonths||0) < inst.totalMonths);
-  const doneEnriched = enriched.filter(({inst}) => (inst.paidMonths||0) >= inst.totalMonths);
-
-  const cardHTML = ({ inst, info }) => {
-    const paid = inst.paidMonths || 0;
-    const remaining = inst.totalMonths - paid;
+  const activeEnriched = enriched.filter(({ inst }) => (inst.paidMonths || 0) < inst.totalMonths);
+  const doneEnriched = enriched.filter(({ inst }) => (inst.paidMonths || 0) >= inst.totalMonths);
+  const rowHTML = ({ inst, info }) => {
+    const paid = inst.paidMonths || 0; const remaining = inst.totalMonths - paid;
     const pct = Math.min(Math.round(paid / inst.totalMonths * 100), 100);
-    const monthlySAR = curToSAR(inst.monthlyPayment, inst.currency);
-    const remainingSAR = monthlySAR * remaining;
-    const isDone = paid >= inst.totalMonths;
-    const lbl = _instStatusLabel(info, sym);
-    // Provider badge (V11) — new scoped classes
-    let providerBadge = '';
-    if (inst.provider === 'tabby') providerBadge = '<span class="inst2-prov tabby">tabby</span>';
-    else if (inst.provider === 'tamara') providerBadge = '<span class="inst2-prov tamara">tamara</span>';
-    else if (inst.provider === 'bank') providerBadge = '<span class="inst2-prov bank">🏦 بنك</span>';
-    else if (inst.provider === 'dealer') providerBadge = '<span class="inst2-prov dealer">🏪 محل</span>';
-    // لوجوهات المزوّدين الحقيقية (نص بخط الشركة المميز بدل القلب)
-    const providerLogo = (function(p){
+    const monthlySAR = curToSAR(inst.monthlyPayment, inst.currency); const remainingSAR = monthlySAR * remaining;
+    const isDone = paid >= inst.totalMonths; const lbl = _instStatusLabel(info, sym);
+    const dueTxt = isDone ? 'خلصت' : lbl.text.replace(/^[^\s]+\s/, '');
+    const dueColor = isDone ? 'var(--green)' : lbl.color;
+    const logo = (function (p) {
       if (p === 'tabby') return '<span class="inst2-logo logo-tabby">tabby</span>';
       if (p === 'tamara') return '<span class="inst2-logo logo-tamara">tamara</span>';
       if (p === 'bank') return '<span class="inst2-logo logo-bank">🏦</span>';
       if (p === 'dealer') return '<span class="inst2-logo logo-dealer">🏪</span>';
-      return '<span class="inst2-logo logo-default">💳</span>';
+      return '<span class="inst2-logo logo-default">' + (window.msIcon ? window.msIcon('calendar-time') : '💳') + '</span>';
     })(inst.provider);
-    const statusBadge = `<span class="inst2-badge" style="color:${lbl.color};background:${lbl.bg};border:1px solid ${lbl.color}">${lbl.text}</span>`;
-    // Show "ادفع" only if not done AND not already paid this month (otherwise the button is misleading)
-    const canPay = !isDone && info.status !== 'paid';
-    const canEarly = !isDone && remaining > 1;
-    const feesLine = (inst.fees && inst.fees > 0) ? `<div class="inst2-card-fees">💸 فوائد/رسوم: ${fmt(inst.fees,0)} ${inst.currency} (إجمالي ${fmt(inst.totalAmount + inst.fees,0)} ${inst.currency})</div>` : '';
-    const stateClass = isDone ? 'done' : (info.status==='paid' ? 'paid' : '');
-    return `<div class="inst2-card ${stateClass}">
-      <div class="inst2-card-head">
-        <span class="inst2-card-em prov-${esc(inst.provider)||'default'}">${providerLogo}</span>
-        <div class="inst2-card-info">
-          <div class="inst2-card-name">${esc(inst.name)} ${providerBadge}</div>
-          <div class="inst2-card-meta">${inst.store ? '🛍️ ' + esc(inst.store) + ' · ' : ''}${paid} / ${inst.totalMonths} شهر · يوم ${inst.day} من كل شهر</div>
-          ${feesLine}
-          <div>${statusBadge}</div>
-        </div>
-        <div class="inst2-card-amt">
-          <div class="a-val">${fmt(toBase(monthlySAR), 0)}</div>
-          <div class="a-unit">${sym}/شهر</div>
+    const canPay = !isDone && info.status !== 'paid'; const canEarly = !isDone && remaining > 1;
+    const fees = (inst.fees && inst.fees > 0) ? `<div class="ms-kv"><span>فوائد ورسوم</span><span>${fmt(inst.fees, 0)} ${esc(inst.currency)}</span></div>` : '';
+    return `<div class="ms-item ${isDone ? 'done' : ''}" data-id="${esc(inst.id)}">
+      <div class="ms-item-row" role="button" tabindex="0" onclick="msItemToggle(this)">
+        <span class="ms-item-ic">${logo}</span>
+        <div class="ms-item-main">
+          <div class="ms-item-l1"><span class="ms-item-name">${esc(inst.name)}</span><span class="ms-item-amt">${money(monthlySAR)}</span></div>
+          <div class="ms-item-l2"><span>${paid} من ${inst.totalMonths} شهر${inst.store ? ' · ' + esc(inst.store) : ''}</span><span style="color:${dueColor}">${dueTxt}</span></div>
+          <div class="ms-bar sm"><div class="ms-bar-fill" style="width:${pct}%${isDone ? ';background:var(--green)' : ''}"></div></div>
         </div>
       </div>
-      <div class="inst2-prog"><div class="inst2-prog-fill" style="width:${pct}%;background:${isDone?'var(--green)':'var(--accent)'}"></div></div>
-      <div class="inst2-prog-lbl">${pct}% — متبقي ${fmt(toBase(remainingSAR), 0)} ${sym}${remaining>0?` (${remaining} قسط)`:''}</div>
-      <div class="jam-detail-grid">
-        <div class="jam-detail"><div class="jd-lbl">💰 القسط الشهري</div><div class="jd-val">${fmt(toBase(monthlySAR),0)} ${sym}</div></div>
-        <div class="jam-detail"><div class="jd-lbl">✅ دفعت (${paid} قسط)</div><div class="jd-val" style="color:var(--green)">${fmt(toBase(monthlySAR*paid),0)} ${sym}</div></div>
-        <div class="jam-detail"><div class="jd-lbl">⏳ باقي (${remaining} قسط)</div><div class="jd-val" style="color:var(--red)">${fmt(toBase(remainingSAR),0)} ${sym}</div></div>
-        <div class="jam-detail"><div class="jd-lbl">📦 إجمالي القسط</div><div class="jd-val" style="color:var(--accent)">${fmt(toBase(monthlySAR*inst.totalMonths),0)} ${sym}</div></div>
-      </div>
-      ${canPay?`<div class="inst2-actions-main"><button class="inst2-btn-pay" onclick="payInstallmentNow('${inst.id}')">💰 ادفع قسط النهاردة</button></div>`:''}
-      <div class="inst2-actions-sub">
-        ${canEarly?`<button class="inst2-btn early" onclick="payInstallmentEarly('${inst.id}')">⚡ دفع مبكر</button>`:''}
-        ${!isDone?`<button class="inst2-btn settle" onclick="settleInstallment('${inst.id}')">🏁 تسوية</button>`:''}
-        <button class="inst2-btn" onclick="showInstHistory('${inst.id}')">📜 السجل</button>
-        <button class="inst2-btn edit" onclick="editInstallment('${inst.id}')">✏️ تعديل</button>
-        <button class="inst2-btn del" onclick="delInstallment('${inst.id}')">🗑️ حذف</button>
+      <div class="ms-item-body">
+        <div class="ms-kv"><span>دفعت (${paid} قسط)</span><span>${money(monthlySAR * paid)}</span></div>
+        <div class="ms-kv"><span>باقي (${remaining} قسط)</span><span>${money(remainingSAR)}</span></div>
+        <div class="ms-kv"><span>إجمالي القسط</span><span>${money(monthlySAR * inst.totalMonths)}</span></div>
+        ${fees}
+        <div class="ms-kv"><span>يوم الخصم</span><span>${inst.day} من كل شهر</span></div>
+        ${canPay ? `<button type="button" class="ms-primary" onclick="payInstallmentNow('${inst.id}')">ادفع قسط النهاردة</button>` : ''}
+        <div class="ms-acts">
+          ${canEarly ? `<button type="button" class="ms-act" onclick="payInstallmentEarly('${inst.id}')">دفع مبكر</button>` : ''}
+          ${!isDone ? `<button type="button" class="ms-act" onclick="settleInstallment('${inst.id}')">تسوية</button>` : ''}
+          <button type="button" class="ms-act" onclick="showInstHistory('${inst.id}')">السجل</button>
+          <button type="button" class="ms-act" onclick="editInstallment('${inst.id}')">تعديل</button>
+          <button type="button" class="ms-act danger" onclick="delInstallment('${inst.id}')">حذف</button>
+        </div>
       </div>
     </div>`;
   };
-
-  // النشطة تظهر عادي
-  html += activeEnriched.map(cardHTML).join('');
-  // المنتهية في أرشيف قابل للطي
-  if (doneEnriched.length){
-    var archOpen = msStore.getRaw('msarifyi_inst_arch_open')==='1';
-    html += '<div class="inst-archive">'
-      + '<button class="inst-archive-toggle" onclick="toggleInstArchive()">'
-        + '<span>📦 الأقساط المنتهية ('+toArabicDigits(doneEnriched.length)+')</span>'
-        + '<span class="inst-arch-chev">'+(archOpen?'▲':'▼')+'</span>'
-      + '</button>'
-      + '<div class="inst-archive-body" style="display:'+(archOpen?'block':'none')+'">'
-        + doneEnriched.map(cardHTML).join('')
-      + '</div>'
-    + '</div>';
+  html += `<div class="ms-list-h"><span>حسب أقرب موعد</span><button type="button" class="ms-addlink" onclick="msToggleAdd('instAddBox')">${window.msIcon ? window.msIcon('plus') : '+'} إضافة قسط</button></div>`;
+  if (activeEnriched.length) html += `<div class="ms-list">${activeEnriched.map(rowHTML).join('')}</div>`;
+  const monthsHtml = _instMonthlyBreakdown(active, sym, today);
+  if (monthsHtml) {
+    const mOpen = msStore.getRaw('msarifyi_inst_months_open') === '1';
+    html += `<div class="ms-exp2 ${mOpen ? 'open' : ''}" id="msInstMonths"><button type="button" class="ms-exp2-h" onclick="msInstMonthsToggle()"><span><span class="t">الأشهر الجاية</span><span class="s">${money(totalMonthlySAR)} كل شهر</span></span>${window.msIcon ? window.msIcon('chevron-left') : ''}</button><div class="ms-exp2-b">${monthsHtml}</div></div>`;
+  }
+  if (doneEnriched.length) {
+    const archOpen = msStore.getRaw('msarifyi_inst_arch_open') === '1';
+    html += `<div class="ms-exp2 ${archOpen ? 'open' : ''}"><button type="button" class="ms-exp2-h" onclick="toggleInstArchive()"><span><span class="t">الأقساط المنتهية</span><span class="s">${toArabicDigits(doneEnriched.length)}</span></span>${window.msIcon ? window.msIcon('chevron-left') : ''}</button><div class="ms-exp2-b"><div class="ms-list">${doneEnriched.map(rowHTML).join('')}</div></div></div>`;
   }
   el.innerHTML = html;
 }
@@ -10172,172 +10094,80 @@ function checkInstallmentsDue() {
 // ═══════════════════════════════════════════════════════════════
 
 // خط زمني لأدوار الجمعيات — دورك جاي إمتى في كل جمعية
-function _jameyaTimeline(active, sym, today){
-  try{
-    if (!active || !active.length) return '';
-    var now = today || new Date();
-    var rows = active.map(function(j){
-      var start = new Date(j.startDate);
-      var myTurnDate = new Date(start);
-      myTurnDate.setMonth(myTurnDate.getMonth() + j.myTurn - 1);
-      var monthsToTurn = (myTurnDate.getFullYear() - now.getFullYear())*12 + (myTurnDate.getMonth() - now.getMonth());
-      var totalGet = curToSAR(j.monthlyAmount * j.totalMembers, j.currency);
-      var arMonths = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-      var turnMonthLbl = arMonths[myTurnDate.getMonth()] + ' ' + myTurnDate.getFullYear();
-      // نسبة التقدّم نحو الدور (كام عضو خلص من إجمالي حتى دورك)
-      var pct = j.myTurn>0 ? Math.min(100, Math.round(((j.totalMembers - Math.max(0,monthsToTurn)) / j.totalMembers)*100)) : 0;
-      var statusTxt, statusColor, statusBg;
-      if (monthsToTurn < 0){ statusTxt='✓ قبضت'; statusColor='var(--green)'; statusBg='var(--green-dim)'; }
-      else if (monthsToTurn === 0){ statusTxt='🎉 دورك الشهر ده!'; statusColor='#06b6d4'; statusBg='rgba(6,182,212,.15)'; }
-      else { statusTxt='بعد '+monthsToTurn+' شهر'; statusColor='var(--muted)'; statusBg='var(--card2)'; }
-      return '<div class="jam-tl-row">'
-        + '<div class="jam-tl-head">'
-          + '<div class="jam-tl-name">🤝 '+esc(j.name)+'</div>'
-          + '<div class="jam-tl-amt">'+fmt(toBase(totalGet),0)+' '+sym+'</div>'
-        + '</div>'
-        + '<div class="jam-tl-bar"><div class="jam-tl-fill" style="width:'+pct+'%"></div><div class="jam-tl-marker" style="right:'+pct+'%"></div></div>'
-        + '<div class="jam-tl-foot">'
-          + '<span class="jam-tl-status" style="color:'+statusColor+';background:'+statusBg+'">'+statusTxt+'</span>'
-          + '<span class="jam-tl-date">'+(monthsToTurn>=0? ('دورك: '+turnMonthLbl) : '')+'</span>'
-        + '</div>'
-      + '</div>';
-    }).join('');
-    return '<div class="jam-tl">'
-      + '<div class="jam-tl-title">📅 مواعيد أدوارك</div>'
-      + rows
-      + '</div>';
-  }catch(e){ return ''; }
-}
-
 function renderJameya() {
   const el = document.getElementById('jameyaList');
   if (!el) return;
   if (!jameya.length) {
     el.innerHTML = `<div class="empty"><div class="empty-icon">🤝</div>لا توجد جمعيات</div>`;
+    const ab = document.getElementById('jamAddBox'); if (ab) ab.classList.add('open');
     return;
   }
-  const sym = BASE_LABELS[baseCurrency].sym;
-  const today = new Date();
-
-  // ── Summary calculations ──
-  const active = jameya.filter(j => {
-    const start = new Date(j.startDate);
-    const elapsed = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth()) + 1;
-    return elapsed <= j.totalMembers;
-  });
-
-  let totalMonthlySAR = 0;
-  let totalToReceiveSAR = 0;     // total amount you'll receive when your turn comes (across all jameyas)
-  let totalPaidSoFarSAR = 0;     // total paid into all jameyas so far
-  let nextTurnInfo = null;        // closest upcoming turn
-
-  active.forEach(j => {
+  // v65: the next turn is the headline; every jameya is one row with its own month timeline (no tiles, no separate "next" strip, no separate timeline block)
+  const sym = BASE_LABELS[baseCurrency].sym; const today = new Date();
+  const money = (sar) => fmt(toBase(sar), 0) + ' ' + sym;
+  const arMonths = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const curKey = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+  const info = jameya.map(j => {
     const start = new Date(j.startDate);
     const elapsed = Math.max(0, (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth()) + 1);
-    const currentMonth = Math.min(elapsed, j.totalMembers);
-    const monthlySAR = curToSAR(j.monthlyAmount, j.currency);
-    const totalGetSAR = monthlySAR * j.totalMembers;
-    totalMonthlySAR += monthlySAR;
-    totalPaidSoFarSAR += monthlySAR * currentMonth;
-    if (!j.received) totalToReceiveSAR += totalGetSAR;
-    const monthsToTurn = j.myTurn - elapsed;
-    if (monthsToTurn >= 0 && (!nextTurnInfo || monthsToTurn < nextTurnInfo.months)) {
-      nextTurnInfo = {name: j.name, months: monthsToTurn, amount: totalGetSAR};
-    }
+    const currentMonth = Math.min(elapsed, j.totalMembers); const isDone = elapsed > j.totalMembers;
+    const turnDate = new Date(start); turnDate.setMonth(turnDate.getMonth() + j.myTurn - 1);
+    const monthsToTurn = (turnDate.getFullYear() - today.getFullYear()) * 12 + (turnDate.getMonth() - today.getMonth());
+    const months = (typeof window.getJameyaMonthsList === 'function') ? window.getJameyaMonthsList(j) : [];
+    const log = Array.isArray(j.paidMonthsLog) ? j.paidMonthsLog : [];
+    const paidCount = months.length ? months.filter(m => log.includes(m)).length : log.length;
+    const monthlySAR = curToSAR(j.monthlyAmount, j.currency); const totalSAR = monthlySAR * j.totalMembers;
+    return { j, elapsed, currentMonth, isDone, turnDate, monthsToTurn, months, log, paidCount, monthlySAR, totalSAR };
   });
-
-  let html = `<div class="inst2-hero" style="background:linear-gradient(135deg,#0a2a2e 0%,#0d1f22 55%,#0d1719 100%);border-color:rgba(6,182,212,.3)">
-    <div class="inst2-hero-top">
-      <div class="inst2-hero-lbl" style="color:#5eead4">🤝 إجمالي الجمعيات (هتقبض)</div>
-      <div class="inst2-hero-chip">${active.length} جمعية نشطة</div>
-    </div>
-    <div class="inst2-hero-val">${fmt(toBase(totalToReceiveSAR),0)} ${sym}</div>
-    <div class="inst2-hero-sub">دفعت لحد دلوقتي ${fmt(toBase(totalPaidSoFarSAR),0)} ${sym}</div>
-  </div>
-
-  <div class="inst2-stats">
-    <div class="inst2-stat monthly">
-      <div class="s-lbl">📅 شهرياً</div>
-      <div class="s-val">${fmt(toBase(totalMonthlySAR),0)} ${sym}</div>
-    </div>
-    <div class="inst2-stat paid">
-      <div class="s-lbl">💰 دفعت</div>
-      <div class="s-val">${fmt(toBase(totalPaidSoFarSAR),0)} ${sym}</div>
-    </div>
-    <div class="inst2-stat" style="--dummy:0">
-      <div class="s-lbl" style="color:#5eead4">🎯 هتقبض</div>
-      <div class="s-val" style="color:#5eead4">${fmt(toBase(totalToReceiveSAR),0)} ${sym}</div>
-    </div>
-  </div>`;
-
-  if (nextTurnInfo) {
-    const turnLabel = nextTurnInfo.months === 0 ? '🎉 الشهر ده!' : `بعد ${nextTurnInfo.months} شهر`;
-    html += `<div class="inst2-next" style="background:linear-gradient(135deg,#06b6d4,#0891b2);color:#04252a;box-shadow:0 6px 20px -8px rgba(6,182,212,.6)">
-      <span class="inst2-next-icon">⏰</span>
-      <div class="inst2-next-txt">
-        <div class="inst2-next-name">${esc(nextTurnInfo.name)}</div>
-        <div class="inst2-next-meta">أقرب دور · ${turnLabel}</div>
-      </div>
-      <div class="inst2-next-amt">${fmt(toBase(nextTurnInfo.amount),0)} ${sym}</div>
-    </div>`;
+  const paidAllSAR = info.reduce((s, x) => s + x.monthlySAR * x.paidCount, 0);
+  const upcoming = info.filter(x => !x.isDone && !x.j.received && x.monthsToTurn >= 0).sort((a, b) => a.monthsToTurn - b.monthsToTurn)[0];
+  const activeCount = info.filter(x => !x.isDone).length;
+  let head;
+  if (upcoming) {
+    const when = upcoming.monthsToTurn === 0 ? 'الشهر ده' : 'بعد ' + upcoming.monthsToTurn + ' شهر';
+    head = `<div class="ms-hero-lbl">دورك الجاي</div><div class="ms-hero-val">${when}</div><div class="ms-hero-line one">هتقبض <b>${money(upcoming.totalSAR)}</b> من ${esc(upcoming.j.name)} (${arMonths[upcoming.turnDate.getMonth()]})</div>`;
+  } else {
+    head = `<div class="ms-hero-lbl">الجمعيات</div><div class="ms-hero-val">${activeCount ? 'مفيش دور جاي' : 'كلها خلصت'}</div>`;
   }
+  let html = `<div class="ms-hero" id="msJamHero">${head}<div class="ms-hero-note muted">دفعت لحد دلوقتي ${money(paidAllSAR)} في ${toArabicDigits(info.length)} ${info.length === 1 ? 'جمعية' : info.length === 2 ? 'جمعيتين' : 'جمعيات'}</div></div>`;
 
-  // خط زمني للأدوار — دورك جاي إمتى في كل جمعية
-  html += _jameyaTimeline(active, sym, today);
-
-  html += jameya.map(j => {
-    const start = new Date(j.startDate);
-    const monthsElapsed = Math.max(0, (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth()) + 1);
-    const currentMonth = Math.min(monthsElapsed, j.totalMembers);
-    const isDone = monthsElapsed > j.totalMembers;
-    const totalGet = j.monthlyAmount * j.totalMembers;
-    const myTurnDate = new Date(start);
-    myTurnDate.setMonth(myTurnDate.getMonth() + j.myTurn - 1);
-    const monthsToTurn = (myTurnDate.getFullYear() - today.getFullYear()) * 12 + (myTurnDate.getMonth() - today.getMonth());
-    const turnStatus = monthsToTurn > 0 ? `باقي ${monthsToTurn} شهر لدورك` : monthsToTurn === 0 ? '🎉 الشهر ده دورك!' : `قبضت من ${-monthsToTurn} شهر`;
-    const totalSAR = curToSAR(totalGet, j.currency);
-    const monthlySAR = curToSAR(j.monthlyAmount, j.currency);
-    const pct = Math.min(Math.round(currentMonth / j.totalMembers * 100), 100);
-    // تفاصيل توضيحية
-    const paidSoFar = j.monthlyAmount * currentMonth;              // اللي دفعته لحد دلوقتي
-    const remainingToPay = j.monthlyAmount * (j.totalMembers - currentMonth); // باقي عليك تدفعه
-    const paidSoFarSAR = curToSAR(paidSoFar, j.currency);
-    const remainingToPaySAR = curToSAR(remainingToPay, j.currency);
-    const arMonths = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-    const turnMonthTxt = arMonths[myTurnDate.getMonth()] + ' ' + myTurnDate.getFullYear();
-    // حالة الدور (لون)
-    let turnColor, turnBg;
-    if (monthsToTurn < 0){ turnColor='var(--green)'; turnBg='var(--green-dim)'; }
-    else if (monthsToTurn === 0){ turnColor='#06b6d4'; turnBg='rgba(6,182,212,.15)'; }
-    else { turnColor='var(--accent)'; turnBg='rgba(240,180,41,.12)'; }
-    return `<div class="inst2-card ${isDone?'done':''}">
-      <div class="inst2-card-head">
-        <span class="inst2-card-em prov-default" style="background:linear-gradient(135deg,#06b6d4,#0891b2)">🤝</span>
-        <div class="inst2-card-info">
-          <div class="inst2-card-name">${esc(j.name)} ${isDone?'<span style="font-size:11px;color:var(--green)">✓ خلصت</span>':''}</div>
-          <div class="inst2-card-meta">دورك رقم ${j.myTurn} من ${j.totalMembers} · ${j.totalMembers} عضو</div>
-        </div>
-        <div class="inst2-card-amt">
-          <div class="a-val" style="color:var(--sav)">${fmt(toBase(totalSAR), 0)}</div>
-          <div class="a-unit">هتقبض ${sym}</div>
-        </div>
+  const rowHTML = (x) => {
+    const { j } = x;
+    const turnTxt = x.monthsToTurn < 0 ? '' : x.monthsToTurn === 0 ? 'دورك الشهر ده' : 'دورك الشهر ' + j.myTurn;
+    const status = x.monthsToTurn < 0 || j.received ? `<span style="color:var(--green)">قبضت ${money(x.totalSAR)}</span>` : `<span>${turnTxt}</span>`;
+    const dots = x.months.map((m, i) => {
+      const paid = x.log.includes(m); const isTurn = i === j.myTurn - 1; const cur = m === curKey; const past = m < curKey;
+      const cls = (paid ? 'paid' : cur ? 'cur' : past ? 'missed' : 'next') + (isTurn ? ' turn' : '');
+      return `<span class="ms-dot ${cls}">${isTurn ? (window.msIcon ? window.msIcon('star') : '★') : ''}</span>`;
+    }).join('');
+    const remainingToPay = Math.max(0, j.totalMembers - x.paidCount);
+    const payLabel = x.paidCount >= j.totalMembers ? 'مكتمل (' + toArabicDigits(x.paidCount) + '/' + toArabicDigits(j.totalMembers) + ')' : 'تسجيل الدفع (' + toArabicDigits(x.paidCount) + '/' + toArabicDigits(j.totalMembers) + ')';
+    return `<div class="ms-item ${x.isDone ? 'done' : ''}" data-id="${esc(j.id)}">
+      <div class="ms-item-row col" role="button" tabindex="0" onclick="msItemToggle(this)">
+        <div class="ms-item-l1"><span class="ms-item-name">${esc(j.name)}</span><span class="ms-item-amt">${money(x.monthlySAR)} شهريًا</span></div>
+        <div class="ms-item-l2"><span>الشهر ${x.currentMonth} من ${j.totalMembers}</span>${status}</div>
+        <div class="ms-dots">${dots}</div>
       </div>
-      <div style="margin:4px 0 10px"><span class="jam-turn-badge" style="color:${turnColor};background:${turnBg};border:1px solid ${turnColor}">⏰ ${turnStatus}${monthsToTurn>=0?' ('+turnMonthTxt+')':''}</span></div>
-      <div class="inst2-prog"><div class="inst2-prog-fill" style="width:${pct}%;background:var(--sav)"></div></div>
-      <div class="inst2-prog-lbl">${pct}% خلصت · ${currentMonth} من ${j.totalMembers} شهر</div>
-      <div class="jam-detail-grid">
-        <div class="jam-detail"><div class="jd-lbl">💰 القسط الشهري</div><div class="jd-val">${fmt(toBase(monthlySAR),0)} ${sym}</div></div>
-        <div class="jam-detail"><div class="jd-lbl">✅ دفعت لحد دلوقتي</div><div class="jd-val" style="color:var(--green)">${fmt(toBase(paidSoFarSAR),0)} ${sym}</div></div>
-        <div class="jam-detail"><div class="jd-lbl">⏳ باقي عليك تدفع</div><div class="jd-val" style="color:var(--red)">${fmt(toBase(remainingToPaySAR),0)} ${sym}</div></div>
-        <div class="jam-detail"><div class="jd-lbl">🎯 ${j.received?'قبضت':'هتقبض'}</div><div class="jd-val" style="color:var(--sav)">${fmt(toBase(totalSAR),0)} ${sym}</div></div>
-      </div>
-      ${monthsToTurn === 0 && !j.received ? `<div class="inst2-actions-main"><button class="inst2-btn-pay" style="background:linear-gradient(135deg,#06b6d4,#0891b2);box-shadow:0 4px 14px -4px rgba(6,182,212,.5)" onclick="claimJameya('${j.id}')">💰 قبضت دوري</button></div>` : ''}
-      <div class="inst2-actions-sub">
-        <button class="inst2-btn edit" onclick="editJameya('${j.id}')">✏️ تعديل</button>
-        <button class="inst2-btn del" onclick="delJameyaItem('${j.id}')">🗑️ حذف</button>
+      <div class="ms-item-body">
+        <div class="ms-kv"><span>دفعت (${toArabicDigits(x.paidCount)} شهر)</span><span>${money(x.monthlySAR * x.paidCount)}</span></div>
+        <div class="ms-kv"><span>باقي عليك (${toArabicDigits(remainingToPay)} شهر)</span><span>${money(x.monthlySAR * remainingToPay)}</span></div>
+        <div class="ms-kv"><span>${j.received ? 'قبضت' : 'هتقبض'}</span><span>${money(x.totalSAR)}</span></div>
+        ${x.monthsToTurn === 0 && !j.received ? `<button type="button" class="ms-primary" onclick="claimJameya('${j.id}')">اقبض الجمعية دلوقتي</button>` : ''}
+        <div class="ms-acts">
+          <button type="button" class="ms-act v22-jam-pay-btn" onclick="openJameyaPaymentModal('${j.id}')">${payLabel}</button>
+          <button type="button" class="ms-act" onclick="editJameya('${j.id}')">تعديل</button>
+          <button type="button" class="ms-act danger" onclick="delJameyaItem('${j.id}')">حذف</button>
+        </div>
       </div>
     </div>`;
-  }).join('');
+  };
+  const act = info.filter(x => !x.isDone), done = info.filter(x => x.isDone);
+  html += `<div class="ms-list-h"><span>جمعياتي</span><button type="button" class="ms-addlink" onclick="msToggleAdd('jamAddBox')">${window.msIcon ? window.msIcon('plus') : '+'} إضافة جمعية</button></div>`;
+  if (act.length) html += `<div class="ms-list">${act.map(rowHTML).join('')}</div>`;
+  if (done.length) {
+    const open = msStore.getRaw('msarifyi_jam_done_open') === '1';
+    html += `<div class="ms-exp2 ${open ? 'open' : ''}" id="msJamDone"><button type="button" class="ms-exp2-h" onclick="msJamDoneToggle()"><span><span class="t">الجمعيات المنتهية</span><span class="s">${toArabicDigits(done.length)}</span></span>${window.msIcon ? window.msIcon('chevron-left') : ''}</button><div class="ms-exp2-b"><div class="ms-list">${done.map(rowHTML).join('')}</div></div></div>`;
+  }
   el.innerHTML = html;
 }
 
@@ -30894,10 +30724,66 @@ b,strong,th,h1,h2,h3,h4{font-weight:600;}
 <style id="ms-nav-v64">
 /* v64: from "المزيد" a sheet shows ONE control, "رجوع إلى المزيد", instead of an X that closes everything */
 .overlay[data-ms-back] .v19-close-btn,.overlay[data-ms-back] .v22-close-x,.overlay[data-ms-back] .sheet-close-btn,.overlay[data-ms-back] .close-x,.overlay[data-ms-back] .ms-x{display:none !important;}
-.ms-back{display:none;position:absolute;top:12px;left:12px;z-index:5;align-items:center;gap:4px;height:36px;padding:0 12px 0 8px;background:var(--card2);border:0.5px solid var(--border);border-radius:999px;color:var(--text);font-family:inherit;font-size:13px;cursor:pointer;}
+.ms-back{display:none;position:absolute;top:12px;right:14px;z-index:5;align-items:center;gap:4px;height:36px;padding:0 12px 0 8px;background:var(--card2);border:0.5px solid var(--border);border-radius:999px;color:var(--text);font-family:inherit;font-size:13px;cursor:pointer;}
 .overlay[data-ms-back] .ms-back{display:inline-flex;}
 .ms-back .ic{width:18px;height:18px;transform:rotate(180deg);color:var(--accent);}
 .overlay .sheet,.overlay .settings-sheet{position:relative;}
+</style>
+<style id="ms-inst-v65">
+/* v65: installments and jameya share one look: a summary card, rows that open, one add box behind "+" */
+.ms-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 12px;}
+.ms-sheet-head .modal-title{flex:1;text-align:center;margin:0;font-size:16px;font-weight:600;}
+.ms-addlink{display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:var(--accent);font-family:inherit;font-size:13px;cursor:pointer;padding:4px 0;}
+.ms-addlink .ic{width:16px;height:16px;}
+.ms-list-h{display:flex;align-items:center;justify-content:space-between;}
+.ms-addbox{display:none;}.ms-addbox.open{display:block;}
+.ms-hero{background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;}
+.ms-hero-lbl{font-size:13px;color:var(--muted);}
+.ms-hero-val{font-size:28px;font-weight:600;line-height:1.3;}
+.ms-bar{height:6px;border-radius:3px;background:var(--border);margin:10px 0 8px;overflow:hidden;}
+.ms-bar.sm{height:4px;margin:8px 0 0;}
+.ms-bar-fill{height:100%;border-radius:inherit;background:var(--accent);margin-inline-start:0;}
+.ms-hero-line{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted);flex-wrap:wrap;}
+.ms-hero-line.one{display:block;margin-top:2px;color:var(--text);}
+.ms-hero-line b{font-weight:600;}
+.ms-hero-note{font-size:13px;margin-top:8px;}
+.ms-hero-note.muted{color:var(--muted);}
+.ms-list-h{font-size:13px;color:var(--muted);margin:0 4px 6px;}
+.ms-list{background:var(--card2);border-radius:12px;margin-bottom:12px;overflow:hidden;}
+.ms-item + .ms-item{border-top:0.5px solid var(--border);}
+.ms-item-row{display:flex;align-items:center;gap:12px;padding:12px;cursor:pointer;}
+.ms-item-row.col{display:block;}
+.ms-item-ic{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;background:rgba(240,180,41,.14);color:var(--accent);}
+.ms-item-ic .ic{width:20px;height:20px;}
+.ms-item-main{flex:1;min-width:0;}
+.ms-item-l1,.ms-item-l2{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+.ms-item-name{font-size:13px;font-weight:600;}
+.ms-item-amt{font-size:13px;font-weight:600;white-space:nowrap;}
+.ms-item-l2{font-size:13px;color:var(--muted);margin-top:2px;}
+.ms-item-body{display:none;padding:2px 12px 12px;border-top:0.5px dashed var(--border);}
+.ms-item.open .ms-item-body{display:block;}
+.ms-kv{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;color:var(--muted);}
+.ms-kv span:last-child{color:var(--text);font-weight:600;}
+.ms-primary{display:block;width:100%;height:44px;margin:8px 0;border:0;border-radius:12px;background:var(--accent);color:#0d1117;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;}
+.ms-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.ms-act{flex:1 1 auto;padding:8px 10px;background:none;border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;cursor:pointer;}
+.ms-act.danger{color:var(--red);}
+.ms-exp2{background:var(--card2);border-radius:12px;margin-bottom:12px;overflow:hidden;}
+.ms-exp2-h{display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px;background:none;border:0;color:var(--text);font-family:inherit;text-align:right;cursor:pointer;}
+.ms-exp2-h .t{display:block;font-size:13px;font-weight:600;}
+.ms-exp2-h .s{display:block;font-size:13px;color:var(--muted);}
+.ms-exp2-h .ic{width:18px;height:18px;color:var(--muted);transform:rotate(-90deg);transition:transform .15s;}
+.ms-exp2.open .ms-exp2-h .ic{transform:rotate(90deg);}
+.ms-exp2-b{display:none;padding:0 0 8px;}.ms-exp2.open .ms-exp2-b{display:block;}
+.ms-exp2-b .ms-list{margin:0;border-radius:0;}
+.ms-dots{display:flex;gap:4px;align-items:center;margin-top:10px;flex-wrap:wrap;}
+.ms-dot{width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--border);}
+.ms-dot.paid{background:var(--accent);}
+.ms-dot.cur{background:none;border:1.5px solid var(--accent);}
+.ms-dot.missed{background:none;border:1.5px solid var(--red);}
+.ms-dot.turn{background:none;border:0;color:var(--warn);}
+.ms-dot .ic{width:16px;height:16px;}
+.ms-dot.turn.paid .ic,.ms-dot.turn.cur .ic{color:var(--warn);}
 </style>
 <style id="ms-safe-v54">
 /* v54: a sheet is at most (overlay height - status bar - 24px) tall, so its title and close button are never under the status bar / dynamic island */
@@ -31289,6 +31175,24 @@ body.ms-modal-open .season-particle,body.ms-modal-open .skeleton,body.ms-modal-o
   function scan() { document.querySelectorAll('.overlay').forEach(watch); }
   scan();
   new MutationObserver(function (ms) { for (const m of ms) m.addedNodes.forEach(function (n) { if (n.nodeType === 1) { if (n.classList && n.classList.contains('overlay')) watch(n); else if (n.querySelectorAll) n.querySelectorAll('.overlay').forEach(watch); } }); }).observe(document.body, { childList: true });
+})();
+</script>
+<script id="ms-inst65">
+/* v65: expanders and the "+" add boxes of the installments and jameya sheets */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  window.msItemToggle = function (row) { const it = row && row.closest ? row.closest('.ms-item') : null; if (it) it.classList.toggle('open'); };
+  window.msInstMonthsToggle = function () { const e = $('msInstMonths'); if (!e) return; e.classList.toggle('open'); try { msStore.setRaw('msarifyi_inst_months_open', e.classList.contains('open') ? '1' : '0'); } catch (x) { /* ignore */ } };
+  window.msJamDoneToggle = function () { const e = $('msJamDone'); if (!e) return; e.classList.toggle('open'); try { msStore.setRaw('msarifyi_jam_done_open', e.classList.contains('open') ? '1' : '0'); } catch (x) { /* ignore */ } };
+  window.msToggleAdd = function (id) { const b = $(id); if (!b) return; b.classList.toggle('open'); if (b.classList.contains('open')) { setTimeout(() => { try { b.scrollIntoView({ behavior: 'smooth', block: 'start' }); const i = b.querySelector('input'); if (i) i.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }, 30); } };
+  // closing the add box after a successful save
+  const origSaveInst = window.saveInstallment;
+  if (typeof origSaveInst === 'function') window.saveInstallment = function () { const n = installments.length; const r = origSaveInst.apply(this, arguments); try { if (installments.length > n) { const b = $('instAddBox'); if (b) b.classList.remove('open'); } } catch (e) { /* ignore */ } return r; };
+  const origSaveJam = window.saveJameyaItem;
+  if (typeof origSaveJam === 'function') window.saveJameyaItem = function () { const n = jameya.length; const r = origSaveJam.apply(this, arguments); try { if (jameya.length > n) { const b = $('jamAddBox'); if (b) b.classList.remove('open'); } } catch (e) { /* ignore */ } return r; };
+  // opening either sheet starts with the add box closed (unless the list is empty: the render opens it)
+  ['installmentsModal', 'jameyaModal'].forEach(id => { const m = $(id); if (!m) return; let was = m.classList.contains('open'); new MutationObserver(() => { const now = m.classList.contains('open'); const opened = now && !was; was = now; if (opened) { const b = $(id === 'installmentsModal' ? 'instAddBox' : 'jamAddBox'); if (b) b.classList.remove('open'); setTimeout(() => { const fn = id === 'installmentsModal' ? window.renderInstallments : window.renderJameya; if (typeof fn === 'function') fn(); }, 0); } }).observe(m, { attributes: true, attributeFilter: ['class'] }); });
 })();
 </script>
 <script id="ms-vp57">
