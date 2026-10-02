@@ -4365,6 +4365,8 @@ button, .menu-row, .tx-card {
       <div class="st2-group-title">🧰 التخزين وسجل الأخطاء</div>
       <div class="st2-card">
         <div id="storageUsageBox" style="font-size:11px;color:var(--muted);line-height:1.8"></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px">📱 قياس الشاشة (للتشخيص)</div>
+        <div id="msVpDiag" style="font-size:11px;color:var(--muted);direction:ltr;text-align:left;line-height:1.7"></div>
         <div class="st2-btn-2" style="margin-top:8px">
           <button class="st2-btn" onclick="copyErrorLog()">📋 نسخ سجل الأخطاء</button>
           <button class="st2-btn" onclick="clearErrorLog()">🧹 مسح السجل</button>
@@ -6476,7 +6478,7 @@ function buildFilterChips(list) {
   const cats = ['الكل', ...new Set(list.map(t=>t.cat).filter(Boolean))];
   const wrap = document.getElementById('filterChips');
   wrap.innerHTML = cats.map(c =>
-    `<button class="filter-chip${c===filterCat?' active':''}" data-filter-cat="${esc(c)}">${esc(c)}</button>`
+    `<button class="filter-chip${c===filterCat?' active':''}" data-filter-cat="${esc(c)}">${c==='الكل'?'كل الفئات':esc(c)}</button>`
   ).join('');
 }
 function setFilter(cat) {
@@ -28427,7 +28429,7 @@ setTimeout(() => {
       var rows = keys.map(k=>({cat:k, limit:b[k], spent:spent[k]||0, pct:Math.round(((spent[k]||0)/b[k])*100)}))
                      .sort((a,b)=>b.pct-a.pct).slice(0,3);
       if (!rows.length) return '';
-      var html = '<div class="h2-sec-title">📊 الميزانيات <span class="see-all" onclick="showTab(\'budget\',document.querySelector(\'.tab-btn\'))">الكل ›</span></div>';
+      var html = '<div class="h2-sec-title">📊 الميزانيات <span class="see-all" onclick="showTab(\'budget\',document.querySelector(\'.tab-btn\'))">كل الميزانيات ›</span></div>';
       html += '<div class="h2-card">';
       rows.forEach(r=>{
         var color = r.pct>=100?'#f85149':r.pct>=80?'#f59e0b':'#3fb950';
@@ -28526,7 +28528,7 @@ setTimeout(() => {
       var t = (Array.isArray(txs)?txs:[]).filter(x=>!x.isTransfer);
       if (!t.length) return '';
       var sorted = t.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
-      var html = '<div class="h2-sec-title">🧾 آخر الحركات <span class="see-all" onclick="showTab(\'all\',document.querySelector(\'.tab-btn\'))">الكل ›</span></div>';
+      var html = '<div class="h2-sec-title">🧾 آخر الحركات <span class="see-all" onclick="showTab(\'all\',document.querySelector(\'.tab-btn\'))">كل الحركات ›</span></div>';
       html += '<div class="h2-card">';
       sorted.forEach(t=>{
         var isInc = t.type==='income';
@@ -28833,7 +28835,7 @@ setTimeout(() => {
       month: monthCard,
       alerts: alertsCard,
       budget: budgetCard,
-      commitments: commitmentsCard,
+      commitments: function(){ return window.msNowStripHtml ? '' : commitmentsCard(); },   // v57: the strip at the top replaces it
       goal: goalCard,
       recent: recentCard,
       quick: quickActions
@@ -30930,6 +30932,24 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 .tx-act{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;background:var(--card2);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:inherit;font-size:16px;font-weight:700;padding:0 14px;margin-bottom:8px;cursor:pointer;}
 .tx-act.danger{color:var(--red);}
 </style>
+<style id="ms-nav-v57">
+/* bottom edge: padding for the home indicator only when the page reaches the screen edge (js sets --ms-sab); leftover strip painted in the bar colour */
+body{padding-bottom:var(--ms-sab, env(safe-area-inset-bottom, 0px)) !important;}
+body::after{height:var(--ms-sab, env(safe-area-inset-bottom, 0px)) !important;}
+.bottom-bar.ms-nav{padding-bottom:calc(6px + var(--ms-sab, env(safe-area-inset-bottom, 0px))) !important;}
+.body-scroll{padding-bottom:calc(84px + var(--ms-sab, env(safe-area-inset-bottom, 0px))) !important;}
+.bottom-bar::after{content:'';position:absolute;left:0;right:0;top:100%;height:160px;background:var(--card);pointer-events:none;}
+html.ms-vgap{background:var(--card);}
+.header-sub-vp{display:none;}
+/* v57: every destination has ONE button.
+   primary navigation = the bottom bar (home, transactions, add, cards, more); the header keeps settings and the hide-amounts eye;
+   the tab row is only a filter bar and only exists inside the transactions area; the totals are shown once (home card / period summary) */
+.header .hdr-btn[onclick="openMenu()"],#baseCurChip{display:none !important;}
+.tabs-nav .tab-btn[onclick*="'home'"],.tabs-nav .tab-btn[onclick*="'all'"]{display:none !important;}
+body[data-view="home"] .tabs-nav{display:none !important;}
+.summary-wrap{display:none !important;}
+#menuModal [onclick*="'creditCardsModal'"]{display:none !important;}
+</style>
 <style id="ms-safe-v54">
 /* v54: a sheet is at most (overlay height - status bar - 24px) tall, so its title and close button are never under the status bar / dynamic island */
 .overlay .sheet{max-height:calc(100% - env(safe-area-inset-top, 0px) - 24px) !important;}
@@ -31131,6 +31151,38 @@ body.ms-modal-open .season-particle,body.ms-modal-open .skeleton,body.ms-modal-o
   };
 })();
 </script>
+<script id="ms-vp57">
+/* v57: the page area on some iPhones ends above the bottom edge of the screen (innerHeight is shorter than the screen).
+   Measure it, give the home-indicator padding only when the page really reaches the edge, and paint the leftover strip in the bar's colour. */
+(function () {
+  'use strict';
+  const root = document.documentElement;
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;left:0;bottom:0;width:0;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none';
+  document.body.appendChild(probe);
+  function measure() {
+    const safe = (typeof window.__msSafeBottom === 'number') ? window.__msSafeBottom : (probe.getBoundingClientRect().height || 0);   // __msSafeBottom: test hook
+    const standalone = !!(window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches));
+    const portrait = window.innerWidth < window.innerHeight;
+    const tall = Math.max(window.screen ? window.screen.height : 0, window.screen ? window.screen.width : 0);
+    const gap = (standalone && portrait && tall > 0) ? Math.max(0, Math.round(tall - window.innerHeight)) : 0;
+    const pad = standalone ? Math.max(0, Math.round(safe - gap)) : Math.round(safe);
+    root.style.setProperty('--ms-sab', pad + 'px');
+    root.classList.toggle('ms-vgap', gap > 8);
+    window.__msViewport = { inner: window.innerHeight, innerW: window.innerWidth, screenH: window.screen ? window.screen.height : null, screenW: window.screen ? window.screen.width : null, visual: window.visualViewport ? Math.round(window.visualViewport.height) : null, safeBottom: Math.round(safe), standalone: standalone, gap: gap, pad: pad, dpr: window.devicePixelRatio };
+    const el = document.getElementById('msVpDiag');
+    if (el) { const v = window.__msViewport; el.textContent = 'inner ' + v.inner + ' · screen ' + v.screenH + ' · visual ' + v.visual + ' · safe-bottom ' + v.safeBottom + ' · gap ' + v.gap + ' · pad ' + v.pad + ' · standalone ' + (v.standalone ? 'yes' : 'no'); }
+    return window.__msViewport;
+  }
+  window.msMeasureViewport = measure;
+  measure();
+  window.addEventListener('resize', measure);
+  window.addEventListener('orientationchange', function () { setTimeout(measure, 350); });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', measure);
+  const open = window.openSettings;
+  if (typeof open === 'function') window.openSettings = function () { const r = open.apply(this, arguments); try { measure(); } catch (e) { /* ignore */ } return r; };
+})();
+</script>
 <script id="ms-ui54-v55">
 /* v55: "important now" strip, collapsing header, bottom navigation. */
 (function () {
@@ -31212,10 +31264,27 @@ body.ms-modal-open .season-particle,body.ms-modal-open .skeleton,body.ms-modal-o
       else if (n === 'cards') { const m = $('creditCardsModal'); if (m) { m.classList.add('open'); if (typeof renderCreditCards === 'function') renderCreditCards(); } }
       else if (n === 'more') openMenu();
     };
-    const mark = t => { bar.querySelectorAll('button[data-n]').forEach(b => b.classList.toggle('on', b.dataset.n === (t === 'home' ? 'home' : (t === 'all' || t === 'income' || t === 'expense' || t === 'savings') ? 'tx' : ''))); };
+    const mark = t => { const g = (t === 'home') ? 'home' : (['all', 'income', 'expense', 'savings', 'budget', 'chart'].includes(t) ? 'tx' : ''); bar.querySelectorAll('button[data-n]').forEach(b => b.classList.toggle('on', b.dataset.n === g)); };
     const orig = window.showTab;
-    if (typeof orig === 'function') window.showTab = function (t, btn) { const r = orig.apply(this, arguments); try { mark(t); } catch (e) { /* ignore */ } return r; };
+    // v57: the active top tab is chosen by the tab itself, not by whatever button the caller passed (the home links passed the FIRST tab, which highlighted the wrong one);
+    // body[data-view] lets the CSS show the tab row only inside the transactions area
+    if (typeof orig === 'function') window.showTab = function (t, btn) { const b = tabBtn(t) || btn || document.querySelector('.tab-btn'); const r = orig.call(this, t, b); try { document.body.dataset.view = t; mark(t); } catch (e) { /* ignore */ } return r; };
+    document.body.dataset.view = (typeof curTab !== 'undefined' ? curTab : 'home');
     mark(typeof curTab !== 'undefined' ? curTab : 'home');
+  })();
+  // ───────── v58: the tab row is a type filter. There is no "all" chip (the bottom "الحركات" is the list of everything):
+  // tapping the active chip again clears the filter and shows everything
+  (function () {
+    const row = document.querySelector('.tabs-nav'); if (!row) return;
+    row.addEventListener('click', function (e) {
+      const b = e.target.closest('.tab-btn'); if (!b) return;
+      const m = (b.getAttribute('onclick') || '').match(/showTab\('(\w+)'/); if (!m) return;
+      const t = m[1];
+      if (t === (typeof curTab !== 'undefined' ? curTab : '') && ['income', 'expense', 'savings', 'budget'].includes(t)) {
+        e.stopPropagation(); e.preventDefault();
+        const all = document.querySelector('.tab-btn[onclick*="\'all\'"]'); if (all) showTab('all', all);
+      }
+    }, true);
   })();
 })();
 </script>
