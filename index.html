@@ -586,7 +586,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);displ
 .modal-hint{font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px;}
 .handle:active{background-color:var(--accent);}
 .handle::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:100%;cursor:pointer;}
-.handle::before{content:'اضغط للإغلاق ↓';position:absolute;top:100%;left:50%;transform:translateX(-50%);font-size:11px;color:var(--muted);white-space:nowrap;margin-top:2px;opacity:.7;font-weight:600;pointer-events:none;}
+.handle::before{content:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);font-size:11px;color:var(--muted);white-space:nowrap;margin-top:2px;opacity:.7;font-weight:600;pointer-events:none;}
 .modal-title{font-size:16px;font-weight:600;margin-bottom:14px;text-align:center;}
 /* V29 dynamic-modal helper classes (used by PDF import, report, edit) */
 .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
@@ -3969,59 +3969,23 @@ button, .menu-row, .tx-card {
 
 <!-- ADD MODAL -->
 <div class="overlay" id="modal" onclick="closeIfOut(event,'modal')">
-  <div class="sheet">
+  <div class="sheet ms-add">
     <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
-    <div class="modal-title">إضافة حركة جديدة</div>
+    <div class="ms-add-head"><div class="modal-title">حركة جديدة</div><button type="button" class="ms-x" onclick="closeModal()" aria-label="إغلاق"><svg class="ic" aria-hidden="true"><use href="#ti-x"/></svg></button></div>
 
-    <!-- ⚡ إدخال سريع -->
-    <div class="quick-entry" id="quickEntry">
-      <div class="qe-title">⚡ صرف سريع</div>
-      <div class="qe-smart-row">
-        <input class="qe-smart-inp" id="qeSmart" placeholder="اكتب زي: قهوة 25" onkeydown="if(event.key==='Enter'){qeSmartSave();}"/>
-        <button class="qe-smart-btn" onclick="qeSmartSave()">حفظ</button>
-      </div>
-      <div class="qe-cats" id="qeCats">
-        <button class="qe-cat" data-cat="قهوة" data-em="☕" onclick="qeCatPick(this)">☕ قهوة</button>
-        <button class="qe-cat" data-cat="مطعم" data-em="🍔" onclick="qeCatPick(this)">🍔 مطعم</button>
-        <button class="qe-cat" data-cat="مواصلات" data-em="🚗" onclick="qeCatPick(this)">🚗 مواصلات</button>
-        <button class="qe-cat" data-cat="سوبرماركت" data-em="🛒" onclick="qeCatPick(this)">🛒 سوبر</button>
-        <button class="qe-cat" data-cat="توصيل" data-em="🛵" onclick="qeCatPick(this)">🛵 توصيل</button>
-        <button class="qe-cat" data-cat="بنزين" data-em="⛽" onclick="qeCatPick(this)">⛽ بنزين</button>
-      </div>
-      <div class="qe-amount-row" id="qeAmountRow" style="display:none">
-        <span class="qe-picked" id="qePicked"></span>
-        <input class="qe-amount-inp" id="qeAmount" type="text" inputmode="decimal" placeholder="المبلغ" style="direction:ltr" onkeydown="if(event.key==='Enter'){qeCatSave();}"/>
-        <button class="qe-amount-save" onclick="qeCatSave()">✅</button>
-      </div>
-      <div class="qe-last-saved" id="qeLastSaved" style="display:none"></div>
-      <div class="qe-divider"><span>أو بالتفصيل</span></div>
+    <div class="type-row ms-seg">
+      <button class="type-btn exp-s" id="btnExp" onclick="selType('expense')"><svg class="ic" aria-hidden="true"><use href="#ti-arrow-up-right"/></svg>مصروف</button>
+      <button class="type-btn" id="btnInc" onclick="selType('income')"><svg class="ic" aria-hidden="true"><use href="#ti-arrow-down-left"/></svg>دخل</button>
+      <button class="type-btn" id="btnSav" onclick="selType('savings')"><svg class="ic" aria-hidden="true"><use href="#ti-pig-money"/></svg>ادخار</button>
+      <button class="type-btn" id="btnTr" onclick="selType('transfer')"><svg class="ic" aria-hidden="true"><use href="#ti-arrows-exchange"/></svg>تحويل</button>
     </div>
 
-    <div class="type-row">
-      <button class="type-btn exp-s" id="btnExp" onclick="selType('expense')">📤 مصروف</button>
-      <button class="type-btn" id="btnInc" onclick="selType('income')">📥 دخل</button>
-      <button class="type-btn" id="btnSav" onclick="selType('savings')">💰 مدخرات</button>
-      <button class="type-btn" id="btnTr" onclick="selType('transfer')">🔄 تحويل</button>
-    </div>
-
-    <div class="form-row">
-      <div class="form-lbl">📌 اسم الحركة</div>
-      <input class="form-inp" id="fName" placeholder="مثال: راتب مايو..."/>
-    </div>
-
-    <div class="form-row">
-      <div class="form-lbl">💳 طريقة الدفع / العملة</div>
-      <div class="pay-cur-row">
-        <button class="pay-cur-btn sar-s" data-cur="SAR" onclick="selPayCur(this)"><span class="fl">🇸🇦</span>ريال</button>
-        <button class="pay-cur-btn" data-cur="EGP" onclick="selPayCur(this)"><span class="fl">🇪🇬</span>جنيه</button>
-        <button class="pay-cur-btn" data-cur="USD" onclick="selPayCur(this)"><span class="fl">🇺🇸</span>دولار</button>
-        <button class="pay-cur-btn" data-cur="EUR" onclick="selPayCur(this)"><span class="fl">🇪🇺</span>يورو</button>
+    <div class="ms-amt">
+      <div class="ms-amt-row">
+        <input class="ms-amt-inp" id="fAmt" type="text" inputmode="decimal" placeholder="0.00" style="direction:ltr" oninput="evalAmt()" onblur="evalAmt(true)" aria-label="المبلغ"/>
+        <button type="button" class="ms-cur-chip" id="msCurChip" onclick="msToggleCur()">ر.س <svg class="ic" aria-hidden="true"><use href="#ti-chevron-left"/></svg></button>
       </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-lbl">💵 المبلغ</div>
-      <input class="form-inp" id="fAmt" type="text" inputmode="decimal" placeholder="0.00 — جرب: 50+30+15.5" style="direction:ltr" oninput="evalAmt()" onblur="evalAmt(true)"/>
+      <div id="fAmtPreview" class="ms-amt-prev"></div>
       <div class="amt-ops" id="amtOps">
         <button type="button" class="amt-op-btn" onclick="insertAmtOp('+')">+</button>
         <button type="button" class="amt-op-btn" onclick="insertAmtOp('-')">−</button>
@@ -4030,10 +3994,14 @@ button, .menu-row, .tx-card {
         <button type="button" class="amt-op-btn" onclick="insertAmtOp('.')">.</button>
         <button type="button" class="amt-op-btn amt-op-clr" onclick="clearAmt()">مسح</button>
       </div>
-      <div id="fAmtPreview" style="font-size:11px;color:var(--accent);text-align:left;direction:ltr;margin-top:4px;min-height:14px"></div>
+      <div class="pay-cur-row ms-cur-list" id="msCurList" style="display:none">
+        <button class="pay-cur-btn sar-s" data-cur="SAR" onclick="selPayCur(this)"><span class="fl">🇸🇦</span>ريال</button>
+        <button class="pay-cur-btn" data-cur="EGP" onclick="selPayCur(this)"><span class="fl">🇪🇬</span>جنيه</button>
+        <button class="pay-cur-btn" data-cur="USD" onclick="selPayCur(this)"><span class="fl">🇺🇸</span>دولار</button>
+        <button class="pay-cur-btn" data-cur="EUR" onclick="selPayCur(this)"><span class="fl">🇪🇺</span>يورو</button>
+      </div>
     </div>
 
-    <!-- RATE BOX (hidden when SAR) -->
     <div class="rate-box" id="rateBox">
       <div style="flex:1">
         <div class="rate-label" id="rateLabel">سعر الريال = كام جنيه؟</div>
@@ -4042,11 +4010,9 @@ button, .menu-row, .tx-card {
       <input class="rate-inp" id="fRate" type="number" step="0.01" placeholder="0.00" oninput="updateRatePreview()"/>
     </div>
 
-    <!-- INCOME CATS -->
-    <div id="incCatSec" style="display:none">
-      <div class="form-row">
-        <div class="form-lbl">📂 نوع الدخل</div>
-        <div class="inc-grid" id="incCatGrid">
+    <div class="form-row ms-name"><input class="form-inp" id="fName" placeholder="اسم الحركة، مثال: قهوة" aria-label="اسم الحركة"/></div>
+
+    <div id="incCatSec" style="display:none"><div class="form-row"><div class="form-lbl">الفئة</div><div class="inc-grid ms-chips" id="incCatGrid">
           <button class="inc-btn sel" data-cat="راتب" onclick="selIC(this)"><span class="ci">💼</span>راتب</button>
           <button class="inc-btn" data-cat="حوافز" onclick="selIC(this)"><span class="ci">🏆</span>حوافز</button>
           <button class="inc-btn" data-cat="إضافات" onclick="selIC(this)"><span class="ci">➕</span>إضافات</button>
@@ -4059,32 +4025,25 @@ button, .menu-row, .tx-card {
           <button class="inc-btn" data-cat="عيدية" onclick="selIC(this)"><span class="ci">🌙</span>عيدية</button>
           <button class="inc-btn" data-cat="هدية مالية" onclick="selIC(this)"><span class="ci">💝</span>هدية</button>
           <button class="inc-btn" data-cat="أخرى" onclick="selIC(this)"><span class="ci">💡</span>أخرى</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- EXPENSE CATS -->
-    <div id="expCatSec">
-      <div class="form-row">
-        <div class="form-lbl">📂 فئة المصروف</div>
-        <div class="cat-grid" id="expCatGrid">
-          <!-- Daily -->
+        </div></div></div>
+    <div id="expCatSec"><div class="form-row"><div class="form-lbl">الفئة</div><div class="cat-grid ms-chips" id="expCatGrid">
+          
           <button class="cat-btn sel" data-cat="مطعم" onclick="selEC(this)"><span class="ci">🍔</span>مطعم</button>
           <button class="cat-btn" data-cat="قهوة" onclick="selEC(this)"><span class="ci">☕</span>قهوة</button>
           <button class="cat-btn" data-cat="سوبرماركت" onclick="selEC(this)"><span class="ci">🛒</span>سوبر</button>
           <button class="cat-btn" data-cat="توصيل" onclick="selEC(this)"><span class="ci">🛵</span>توصيل</button>
-          <!-- Home / bills -->
+          
           <button class="cat-btn" data-cat="بيت" onclick="selEC(this)"><span class="ci">🏠</span>بيت</button>
           <button class="cat-btn" data-cat="إيجار" onclick="selEC(this)"><span class="ci">🔑</span>إيجار</button>
           <button class="cat-btn" data-cat="فواتير" onclick="selEC(this)"><span class="ci">⚡</span>فواتير</button>
           <button class="cat-btn" data-cat="إنترنت" onclick="selEC(this)"><span class="ci">🌐</span>إنترنت</button>
           <button class="cat-btn" data-cat="اتصالات" onclick="selEC(this)"><span class="ci">📱</span>اتصالات</button>
           <button class="cat-btn" data-cat="اشتراكات" onclick="selEC(this)"><span class="ci">📺</span>اشتراكات</button>
-          <!-- Transport -->
+          
           <button class="cat-btn" data-cat="مواصلات" onclick="selEC(this)"><span class="ci">🚗</span>مواصلات</button>
           <button class="cat-btn" data-cat="بنزين" onclick="selEC(this)"><span class="ci">⛽</span>بنزين</button>
           <button class="cat-btn" data-cat="صيانة" onclick="selEC(this)"><span class="ci">🔧</span>صيانة</button>
-          <!-- Personal -->
+          
           <button class="cat-btn" data-cat="ملابس" onclick="selEC(this)"><span class="ci">👕</span>ملابس</button>
           <button class="cat-btn" data-cat="صحة" onclick="selEC(this)"><span class="ci">💊</span>صحة</button>
           <button class="cat-btn" data-cat="صيدلية" onclick="selEC(this)"><span class="ci">💉</span>صيدلية</button>
@@ -4093,29 +4052,22 @@ button, .menu-row, .tx-card {
           <button class="cat-btn" data-cat="صالون" onclick="selEC(this)"><span class="ci">💇</span>صالون</button>
           <button class="cat-btn" data-cat="تعليم" onclick="selEC(this)"><span class="ci">📚</span>تعليم</button>
           <button class="cat-btn" data-cat="سفر" onclick="selEC(this)"><span class="ci">✈️</span>سفر</button>
-          <!-- Occasions / social -->
+          
           <button class="cat-btn" data-cat="هدايا" onclick="selEC(this)"><span class="ci">🎁</span>هدايا</button>
           <button class="cat-btn" data-cat="عيدية" onclick="selEC(this)"><span class="ci">🌙</span>عيدية</button>
           <button class="cat-btn" data-cat="فرح" onclick="selEC(this)"><span class="ci">💍</span>فرح</button>
           <button class="cat-btn" data-cat="عزا" onclick="selEC(this)"><span class="ci">🤲</span>عزا</button>
           <button class="cat-btn" data-cat="مولود" onclick="selEC(this)"><span class="ci">👶</span>مولود</button>
           <button class="cat-btn" data-cat="نجاح" onclick="selEC(this)"><span class="ci">🎓</span>نجاح</button>
-          <!-- Religious / charity -->
+          
           <button class="cat-btn" data-cat="صدقة" onclick="selEC(this)"><span class="ci">🤝</span>صدقة</button>
           <button class="cat-btn" data-cat="زكاة" onclick="selEC(this)"><span class="ci">🕌</span>زكاة</button>
-          <!-- Family -->
+          
           <button class="cat-btn" data-cat="أطفال" onclick="selEC(this)"><span class="ci">🧸</span>أطفال</button>
           <button class="cat-btn" data-cat="حيوانات" onclick="selEC(this)"><span class="ci">🐾</span>حيوانات</button>
           <button class="cat-btn" id="catOtherBtn" data-cat="أخرى" onclick="selEC(this)"><span class="ci">💸</span>أخرى</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- SAVINGS CATS -->
-    <div id="savCatSec" style="display:none">
-      <div class="form-row">
-        <div class="form-lbl">📂 نوع المدخرات</div>
-        <div class="sav-grid" id="savCatGrid">
+        </div></div></div>
+    <div id="savCatSec" style="display:none"><div class="form-row"><div class="form-lbl">الفئة</div><div class="sav-grid ms-chips" id="savCatGrid">
           <button class="sav-btn sel" data-cat="بنك" onclick="selSC(this)"><span class="ci">🏦</span>بنك</button>
           <button class="sav-btn" data-cat="ذهب" onclick="selSC(this)"><span class="ci">🪙</span>ذهب</button>
           <button class="sav-btn" data-cat="استثمار" onclick="selSC(this)"><span class="ci">📈</span>استثمار</button>
@@ -4129,282 +4081,172 @@ button, .menu-row, .tx-card {
           <button class="sav-btn" data-cat="عمرة" onclick="selSC(this)"><span class="ci">🕌</span>عمرة</button>
           <button class="sav-btn" data-cat="أطفال" onclick="selSC(this)"><span class="ci">👶</span>أطفال</button>
           <button class="sav-btn" data-cat="أخرى" onclick="selSC(this)"><span class="ci">💎</span>أخرى</button>
-        </div>
-      </div>
-    </div>
+        </div></div></div>
 
-    <!-- TRANSFER SECTION -->
     <div id="transferSec" style="display:none">
-      <div class="form-row">
-        <div class="form-lbl">📤 من (المصدر)</div>
-        <select class="form-inp" id="fTransferFrom"></select>
-      </div>
-      <div class="transfer-arrow">⬇️</div>
-      <div class="form-row">
-        <div class="form-lbl">📥 إلى (الوجهة)</div>
-        <select class="form-inp" id="fTransferTo"></select>
-      </div>
-      <p style="font-size:11px;color:var(--muted);text-align:center;margin:4px 0 10px">التحويل مش بيأثر على دخلك أو مصروفك</p>
+      <div class="form-row"><div class="form-lbl">من</div><select class="form-inp" id="fTransferFrom"></select></div>
+      <div class="transfer-arrow"><svg class="ic" aria-hidden="true"><use href="#ti-arrows-exchange"/></svg></div>
+      <div class="form-row"><div class="form-lbl">إلى</div><select class="form-inp" id="fTransferTo"></select></div>
+      <p class="ms-hint">التحويل مش بيأثر على دخلك أو مصروفك</p>
     </div>
 
-    <div class="two-col">
-      <div class="form-row">
-        <div class="form-lbl">📅 التاريخ</div>
-        <input class="form-inp" id="fDate" type="date" style="direction:ltr"/>
-      </div>
-      <div class="form-row">
-        <div class="form-lbl">⏰ الوقت</div>
-        <input class="form-inp" id="fTime" type="time" style="direction:ltr"/>
-      </div>
+    <div class="ms-meta">
+      <div class="form-row"><input class="form-inp" id="fDate" type="date" style="direction:ltr" aria-label="التاريخ"/></div>
+      <div class="form-row"><input class="form-inp" id="fTime" type="time" style="direction:ltr" aria-label="الوقت"/></div>
     </div>
+    <div class="form-row ms-wallet"><div class="form-lbl">المحفظة</div><select class="form-inp" id="fAccount" aria-label="المحفظة"></select><div id="savDeductHint" class="ms-hint" style="display:none">هيتخصم من المحفظة دي ويزيد في المدخرات</div></div>
 
-    <div class="form-row">
-      <div class="form-lbl">📝 ملاحظات — اشتريت إيه؟</div>
-      <input class="form-inp" id="fNote" placeholder="مثال: جاكيت أزرق + جوارب من Zara..."/>
-    </div>
+    <div class="ms-more" id="msMore">
+      <button type="button" class="ms-more-head" onclick="msMoreToggle()"><span><span class="ms-more-t">خيارات إضافية</span><span class="ms-more-s">ملاحظة، إيصال، تكرار، وسوم</span></span><svg class="ic" aria-hidden="true"><use href="#ti-chevron-left"/></svg></button>
+      <div class="ms-more-body">
+        <div class="form-row"><input class="form-inp" id="fNote" placeholder="ملاحظة، اشتريت إيه؟" aria-label="ملاحظة"/></div>
 
-    <!-- RECEIPT PHOTO -->
-    <div class="form-row" id="receiptRow">
-      <div class="form-lbl">📸 صورة الإيصال — Claude يقرأها تلقائياً</div>
-      <input type="file" id="fReceiptInputCam" accept="image/*" capture="environment" style="display:none" onchange="onReceiptSelect(event)"/>
-      <input type="file" id="fReceiptInput" accept="image/*" style="display:none" onchange="onReceiptSelect(event)"/>
-      <div id="receiptArea">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-          <button type="button" class="export-btn" id="receiptLiveCamBtn" onclick="openReceiptCamera()">📹 كاميرا حية</button>
-          <button type="button" class="export-btn" onclick="document.getElementById('fReceiptInputCam').click()">📷 صورة فورية</button>
-          <button type="button" class="export-btn" onclick="document.getElementById('fReceiptInput').click()">🖼️ من المعرض</button>
+        <div class="form-row" id="receiptRow">
+          <div class="form-lbl">إيصال</div>
+          <input type="file" id="fReceiptInputCam" accept="image/*" capture="environment" style="display:none" onchange="onReceiptSelect(event)"/>
+          <input type="file" id="fReceiptInput" accept="image/*" style="display:none" onchange="onReceiptSelect(event)"/>
+          <div id="receiptArea">
+            <div class="ms-rcpt">
+              <button type="button" class="export-btn" id="receiptLiveCamBtn" onclick="openReceiptCamera()"><svg class="ic" aria-hidden="true"><use href="#ti-camera"/></svg> كاميرا حية</button>
+              <button type="button" class="export-btn" onclick="document.getElementById('fReceiptInputCam').click()"><svg class="ic" aria-hidden="true"><use href="#ti-camera"/></svg> صورة</button>
+              <button type="button" class="export-btn" onclick="document.getElementById('fReceiptInput').click()"><svg class="ic" aria-hidden="true"><use href="#ti-upload"/></svg> معرض</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row" id="fImpRow">
+          <div class="form-lbl">الأهمية</div>
+          <div style="display:flex;gap:6px">
+            <button type="button" data-imp="need" onclick="window.msFormImp('need')" style="flex:1;border:0.5px solid var(--border);background:transparent;color:var(--text);border-radius:8px;padding:9px 4px;font-family:inherit;font-size:13px;cursor:pointer">ضروري</button>
+            <button type="button" data-imp="normal" onclick="window.msFormImp('normal')" style="flex:1;border:0.5px solid var(--border);background:transparent;color:var(--text);border-radius:8px;padding:9px 4px;font-family:inherit;font-size:13px;cursor:pointer">عادي</button>
+            <button type="button" data-imp="skip" onclick="window.msFormImp('skip')" style="flex:1;border:0.5px solid var(--border);background:transparent;color:var(--text);border-radius:8px;padding:9px 4px;font-family:inherit;font-size:13px;cursor:pointer">كان ممكن أستغنى</button>
+          </div>
+        </div>
+
+        <div class="recurring-row ms-tog" id="recurringRow">
+          <div class="recurring-lbl">حركة متكررة</div>
+          <label class="toggle-sw"><input type="checkbox" id="fRecurring" onchange="document.getElementById('recurringFreqRow').style.display=this.checked?'block':'none'"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="form-row" id="recurringFreqRow" style="display:none">
+          <select class="form-inp" id="fRecurringFreq" aria-label="التكرار">
+            <option value="monthly">شهري</option><option value="weekly">أسبوعي</option><option value="biweekly">كل أسبوعين</option><option value="yearly">سنوي</option>
+          </select>
+        </div>
+
+        <div class="form-row" id="fOccLinkRow" style="display:none">
+          <div class="form-lbl">اربط بمناسبة</div>
+          <select class="form-inp" id="fOccLink"><option value="">— مفيش —</option></select>
+          <div class="ms-hint">الحركة هتترصد كمصروف/إيداع جوه المناسبة دي</div>
+        </div>
+        <div class="form-row" id="fTripLinkRow" style="display:none">
+          <div class="form-lbl">اربط برحلة</div>
+          <select class="form-inp" id="fTripLink"><option value="">— مفيش —</option></select>
+          <div class="ms-hint">الحركة هتترصد كمصروف/إيداع جوه الرحلة دي</div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-lbl">وسوم</div>
+          <div class="tags-input-wrap" id="tagsInputWrap" onclick="document.getElementById('fTagInput').focus()"><input type="text" id="fTagInput" placeholder="اكتب وسم واضغط إدخال" onkeydown="onTagKeydown(event)"></div>
+        </div>
+
+        <div class="pending-toggle ms-tog">
+          <div><label>معلّقة، لسه ما اتخصمتش</label><div class="ms-hint">مثال: طلب أونلاين قبل الاستلام</div></div>
+          <label class="toggle-sw"><input type="checkbox" id="fPending"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="pending-toggle ms-tog">
+          <div><label>تقسيم على أكتر من فئة</label><div class="ms-hint">مثال: 800 = 500 سوبرماركت + 300 منظفات</div></div>
+          <label class="toggle-sw"><input type="checkbox" id="fSplitEnabled" onchange="toggleSplitUI(this.checked)"><span class="toggle-slider"></span></label>
+        </div>
+        <div id="splitUI" style="display:none;margin-bottom:12px">
+          <div id="splitRows"></div>
+          <button type="button" class="export-btn" onclick="addSplitRow()" style="width:100%;margin-top:6px"><svg class="ic" aria-hidden="true"><use href="#ti-plus"/></svg> أضف فئة</button>
+          <div class="split-summary" id="splitSummary"></div>
         </div>
       </div>
     </div>
 
-    <div class="form-row">
-      <div class="form-lbl">🏦 المحفظة</div>
-      <select class="form-inp" id="fAccount"></select>
-      <div id="savDeductHint" style="display:none;font-size:11px;color:var(--sav);margin-top:3px">💡 المبلغ هيتخصم من المحفظة دي ويزيد في المدخرات</div>
+    <div class="ms-foot">
+      <button class="save-btn" id="msSaveBtn" onclick="saveTx()">حفظ المصروف</button>
+      <button type="button" class="ms-save-new" id="msSaveNew" onclick="msSaveAndNew()">حفظ وإضافة أخرى</button>
     </div>
-
-    <!-- RECURRING TOGGLE -->
-    <div class="recurring-row" id="recurringRow">
-      <div>
-        <div class="recurring-lbl">🔁 حركة متكررة؟</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">اختر التكرار من القائمة</div>
-      </div>
-      <label class="toggle-sw">
-        <input type="checkbox" id="fRecurring" onchange="document.getElementById('recurringFreqRow').style.display=this.checked?'block':'none'">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-    <div class="form-row" id="recurringFreqRow" style="display:none">
-      <div class="form-lbl">⏱️ التكرار</div>
-      <select class="form-inp" id="fRecurringFreq">
-        <option value="monthly">شهري</option>
-        <option value="weekly">أسبوعي</option>
-        <option value="biweekly">كل أسبوعين</option>
-        <option value="yearly">سنوي</option>
-      </select>
-    </div>
-
-    <!-- LINK TO OCCASION (V27) -->
-    <div class="form-row" id="fOccLinkRow" style="display:none">
-      <div class="form-lbl">🎁 اربط بمناسبة (اختياري)</div>
-      <select class="form-inp" id="fOccLink">
-        <option value="">— مفيش —</option>
-      </select>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">الحركة هتترصد كمصروف/إيداع جوه المناسبة دي</div>
-    </div>
-
-    <!-- LINK TO TRIP (V27) -->
-    <div class="form-row" id="fTripLinkRow" style="display:none">
-      <div class="form-lbl">🛫 اربط برحلة (اختياري)</div>
-      <select class="form-inp" id="fTripLink">
-        <option value="">— مفيش —</option>
-      </select>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">الحركة هتترصد كمصروف/إيداع جوه الرحلة دي</div>
-    </div>
-
-    <!-- IMPORTANCE (v44) -->
-    <div class="form-row" id="fImpRow">
-      <div class="form-lbl">⚖️ الأهمية (اختياري)</div>
-      <div style="display:flex;gap:6px">
-        <button type="button" data-imp="need" onclick="window.msFormImp('need')" style="flex:1;border:0.5px solid var(--border);background:transparent;color:var(--text);border-radius:12px;padding:9px 2px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">🟢 ضروري</button>
-        <button type="button" data-imp="normal" onclick="window.msFormImp('normal')" style="flex:1;border:0.5px solid var(--border);background:transparent;color:var(--text);border-radius:12px;padding:9px 2px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">🟡 عادي</button>
-        <button type="button" data-imp="skip" onclick="window.msFormImp('skip')" style="flex:1;border:0.5px solid var(--border);background:transparent;color:var(--text);border-radius:12px;padding:9px 2px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">🔴 كان ممكن أستغنى</button>
-      </div>
-    </div>
-
-    <!-- TAGS (#27) -->
-    <div class="form-row">
-      <div class="form-lbl">🏷️ tags (اختياري — اضغط enter لإضافة)</div>
-      <div class="tags-input-wrap" id="tagsInputWrap" onclick="document.getElementById('fTagInput').focus()">
-        <input type="text" id="fTagInput" placeholder="اكتب tag واضغط enter..." onkeydown="onTagKeydown(event)">
-      </div>
-    </div>
-
-    <!-- PENDING TOGGLE (#21) -->
-    <div class="pending-toggle">
-      <div>
-        <label>⏳ معاملة معلّقة (لم تُؤكَّد بعد)</label>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">مثال: طلب أونلاين قبل الاستلام</div>
-      </div>
-      <label class="toggle-sw">
-        <input type="checkbox" id="fPending">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-
-    <!-- SPLIT TOGGLE (#20) -->
-    <div class="pending-toggle">
-      <div>
-        <label>📊 تقسيم على فئات متعددة</label>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">مثال: 800 ر.س = 500 سوبرماركت + 300 منظفات</div>
-      </div>
-      <label class="toggle-sw">
-        <input type="checkbox" id="fSplitEnabled" onchange="toggleSplitUI(this.checked)">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-    <div id="splitUI" style="display:none;margin-bottom:12px">
-      <div id="splitRows"></div>
-      <button type="button" class="export-btn" onclick="addSplitRow()" style="width:100%;margin-top:6px">➕ أضف فئة</button>
-      <div class="split-summary" id="splitSummary"></div>
-    </div>
-
-    <button class="save-btn" onclick="saveTx()">💾 حفظ الحركة</button>
   </div>
 </div>
 
 <!-- SETTINGS MODAL -->
 <div class="overlay" id="settingsModal" onclick="closeIfOut(event,'settingsModal')">
-  <div class="settings-sheet">
-    <button class="sheet-close-btn" onclick="document.getElementById('settingsModal').classList.remove('open')">✕</button>
+  <div class="settings-sheet ms-set">
+    <button class="sheet-close-btn" onclick="document.getElementById('settingsModal').classList.remove('open')" aria-label="إغلاق"><svg class="ic" aria-hidden="true"><use href="#ti-x"/></svg></button>
     <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
-    <div class="st2-head"><div class="t">⚙️ الإعدادات</div></div>
+    <div class="st2-head"><div class="t">الإعدادات</div></div>
 
-    <!-- ═══ v35: مركز التحكم الجديد ═══ -->
-    <!-- العملة والأسعار -->
-    <div class="st2-group">
-      <div class="st2-group-title">💱 العملة وأسعار الصرف</div>
-      <div class="st2-card">
-        <div class="st2-cur-grid">
-          <button class="st2-cur base-cur-opt" data-base="SAR" onclick="setBase('SAR')"><span class="f">🇸🇦</span>ريال<span class="c">SAR</span></button>
-          <button class="st2-cur base-cur-opt" data-base="EGP" onclick="setBase('EGP')"><span class="f">🇪🇬</span>جنيه<span class="c">EGP</span></button>
-          <button class="st2-cur base-cur-opt" data-base="USD" onclick="setBase('USD')"><span class="f">🇺🇸</span>دولار<span class="c">USD</span></button>
-          <button class="st2-cur base-cur-opt" data-base="EUR" onclick="setBase('EUR')"><span class="f">🇪🇺</span>يورو<span class="c">EUR</span></button>
+    <div class="ms-sec">العملة</div>
+    <div class="ms-card">
+      <div class="ms-pad">
+        <div class="ms-lbl">العملة الأساسية</div>
+        <div class="st2-cur-grid ms-seg4">
+          <button class="st2-cur base-cur-opt" data-base="SAR" onclick="setBase('SAR')">ر.س</button>
+          <button class="st2-cur base-cur-opt" data-base="EGP" onclick="setBase('EGP')">ج.م</button>
+          <button class="st2-cur base-cur-opt" data-base="USD" onclick="setBase('USD')">$</button>
+          <button class="st2-cur base-cur-opt" data-base="EUR" onclick="setBase('EUR')">€</button>
         </div>
-        <div style="border-top:0.5px solid var(--border);margin:14px -14px 0;padding:14px 14px 0">
-          <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px">أسعار الصرف</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">اكتب السعر بأرقام السوق الحقيقية — اضغط الزر تحت تشوف أحدث الأسعار</div>
-          <div class="st2-rate">
-            <span class="st2-rate-fl">🇪🇬</span>
-            <div class="st2-rate-info"><div class="st2-rate-name">الجنيه المصري</div><div class="st2-rate-sub">1 ريال = كام جنيه؟</div></div>
-            <input class="st2-rate-inp" id="rEGP" type="number" step="0.01" placeholder="13.50"/>
-          </div>
-          <div class="st2-rate">
-            <span class="st2-rate-fl">🇺🇸</span>
-            <div class="st2-rate-info"><div class="st2-rate-name">الدولار الأمريكي</div><div class="st2-rate-sub">1 دولار = كام ريال؟</div></div>
-            <input class="st2-rate-inp" id="rUSD" type="number" step="0.01" placeholder="3.75"/>
-          </div>
-          <div class="st2-rate">
-            <span class="st2-rate-fl">🇪🇺</span>
-            <div class="st2-rate-info"><div class="st2-rate-name">اليورو</div><div class="st2-rate-sub">1 يورو = كام ريال؟</div></div>
-            <input class="st2-rate-inp" id="rEUR" type="number" step="0.01" placeholder="4.10"/>
-          </div>
-          <button class="st2-btn gold" style="margin-top:12px" onclick="window.open('https://edahabapp.com/','_blank')">🔗 شوف أسعار السوق المصري الآن</button>
-          <button class="st2-btn primary" style="margin-top:8px" onclick="saveSettings()">✅ حفظ الأسعار</button>
+      </div>
+      <div class="ms-exp" id="msRatesExp">
+        <div class="ms-row ms-exp-head" role="button" tabindex="0" onclick="msExpToggle('msRatesExp')"><span class="ms-ri"><svg class="ic" aria-hidden="true"><use href="#ti-arrows-exchange"/></svg></span><div class="ms-rt"><div class="ms-t">أسعار الصرف</div><div class="ms-s" id="msRatesSummary" style="direction:rtl"></div></div><svg class="ic" aria-hidden="true"><use href="#ti-chevron-left"/></svg></div>
+        <div class="ms-exp-body">
+          <div class="st2-rate"><span class="st2-rate-fl">🇪🇬</span><div class="st2-rate-info"><div class="st2-rate-name">الجنيه المصري</div><div class="st2-rate-sub">1 ريال = كام جنيه؟</div></div><input class="st2-rate-inp" id="rEGP" type="number" step="0.01" placeholder="13.50"/></div>
+          <div class="st2-rate"><span class="st2-rate-fl">🇺🇸</span><div class="st2-rate-info"><div class="st2-rate-name">الدولار الأمريكي</div><div class="st2-rate-sub">1 دولار = كام ريال؟</div></div><input class="st2-rate-inp" id="rUSD" type="number" step="0.01" placeholder="3.75"/></div>
+          <div class="st2-rate"><span class="st2-rate-fl">🇪🇺</span><div class="st2-rate-info"><div class="st2-rate-name">اليورو</div><div class="st2-rate-sub">1 يورو = كام ريال؟</div></div><input class="st2-rate-inp" id="rEUR" type="number" step="0.01" placeholder="4.10"/></div>
+          <div class="ms-hint2">بتتحفظ أول ما تخلّص تعديل. التحديث التلقائي بيغيّرها بنفسه.</div>
+          <button type="button" class="ms-linkbtn" onclick="window.open('https://edahabapp.com/','_blank')"><svg class="ic" aria-hidden="true"><use href="#ti-arrows-exchange"/></svg> أسعار السوق المصري</button>
         </div>
       </div>
     </div>
 
-    <!-- المظهر والأمان -->
-    <div class="st2-group">
-      <div class="st2-group-title">🎨 المظهر والأمان</div>
-      <div class="st2-card">
-        <div class="st2-row">
-          <span class="st2-row-em">🌗</span>
-          <div class="st2-row-info"><div class="st2-row-name">الثيم الفاتح</div><div class="st2-row-sub">تبديل بين الفاتح والغامق</div></div>
-          <label class="toggle-sw"><input type="checkbox" id="themeToggle" onchange="toggleTheme()"><span class="toggle-slider"></span></label>
-        </div>
-        <div class="st2-row">
-          <span class="st2-row-em">🔒</span>
-          <div class="st2-row-info"><div class="st2-row-name">قفل بـ PIN</div><div class="st2-row-sub" id="pinStatus">معطّل</div></div>
-          <button class="st2-mini-btn" onclick="togglePin()" id="pinBtnTxt">تفعيل</button>
-        </div>
-        <div class="st2-row">
-          <span class="st2-row-em">🔔</span>
-          <div class="st2-row-info"><div class="st2-row-name">تنبيهات الميزانية</div><div class="st2-row-sub">يبعتلك تنبيه لو تخطّيت الحد</div></div>
-          <button class="st2-mini-btn" id="notifBtn" onclick="requestNotifPermission()">تفعيل</button>
+    <div class="ms-sec">المظهر والأمان</div>
+    <div class="ms-card">
+      <div class="ms-row"><span class="ms-ri"><svg class="ic" aria-hidden="true"><use href="#ti-moon"/></svg></span><div class="ms-rt"><div class="ms-t">الثيم الفاتح</div></div><label class="toggle-sw"><input type="checkbox" id="themeToggle" onchange="toggleTheme()"><span class="toggle-slider"></span></label></div>
+      <div id="digitsSection" class="ms-row"><span class="ms-ri"><svg class="ic" aria-hidden="true"><use href="#ti-list"/></svg></span><div class="ms-rt"><div class="ms-t">شكل الأرقام</div></div><div class="ms-segsm"><button class="st2-btn" id="digEn" onclick="msSetDigits('en')">123</button><button class="st2-btn" id="digAr" onclick="msSetDigits('ar')">١٢٣</button></div></div>
+      <div class="ms-row"><span class="ms-ri"><svg class="ic" aria-hidden="true"><use href="#ti-lock"/></svg></span><div class="ms-rt"><div class="ms-t">قفل بـ PIN</div><div class="ms-s"><span id="pinStatus">معطّل</span></div></div><button class="st2-mini-btn" onclick="togglePin()" id="pinBtnTxt">تفعيل</button></div>
+      <div class="ms-row"><span class="ms-ri"><svg class="ic" aria-hidden="true"><use href="#ti-bell"/></svg></span><div class="ms-rt"><div class="ms-t">تنبيهات الميزانية</div><div class="ms-s">يبعتلك تنبيه لو تخطّيت الحد</div></div><button class="st2-mini-btn" id="notifBtn" onclick="requestNotifPermission()">تفعيل</button></div>
+    </div>
+
+    <div class="ms-sec">البيانات</div>
+    <div class="ms-card">
+      <div class="ms-row"><span class="ms-ri"><svg class="ic" aria-hidden="true"><use href="#ti-download"/></svg></span><div class="ms-rt"><div class="ms-t">نسخة احتياطية</div></div><span class="ms-pair"><button class="st2-mini-btn" onclick="exportJSON()">حفظ</button><button class="st2-mini-btn" onclick="document.getElementById('restoreInput').click()">استرداد</button></span></div>
+      <input type="file" id="restoreInput" accept=".json,application/json" style="display:none" onchange="restoreBackup(event)"/>
+      <div class="ms-row" role="button" tabindex="0" onclick="msChooseExport()"><span class="ms-ri"><svg class="ic" aria-hidden="true"><use href="#ti-file-export"/></svg></span><div class="ms-rt"><div class="ms-t">تصدير وتقارير</div><div class="ms-s">CSV · تقرير شهري</div></div><svg class="ic" aria-hidden="true"><use href="#ti-chevron-left"/></svg></div>
+      <div class="ms-row" role="button" tabindex="0" onclick="msChooseImport()"><span class="ms-ri"><svg class="ic" aria-hidden="true"><use href="#ti-file-import"/></svg></span><div class="ms-rt"><div class="ms-t">استيراد كشف حساب</div><div class="ms-s">CSV · PDF</div></div><svg class="ic" aria-hidden="true"><use href="#ti-chevron-left"/></svg></div>
+      <input type="file" id="csvImportInput" accept=".csv,text/csv" style="display:none" onchange="importBankCSV(event)"/>
+      <input type="file" id="pdfImportInput" accept=".pdf,application/pdf" style="display:none" onchange="importBankPDF(event)"/>
+      <div class="ms-row" role="button" tabindex="0" onclick="msOpenDualSalary()"><span class="ms-ri"><svg class="ic" aria-hidden="true"><use href="#ti-briefcase"/></svg></span><div class="ms-rt"><div class="ms-t">الراتب بعملتين</div><div class="ms-s">لو بتقبض من بلدين</div></div><svg class="ic" aria-hidden="true"><use href="#ti-chevron-left"/></svg></div>
+    </div>
+
+    <div class="ms-sec">الذكاء الاصطناعي</div>
+    <div class="ms-card" id="aiReceiptSection">
+      <div class="ms-exp" id="msAiExp">
+        <div class="ms-row ms-exp-head" role="button" tabindex="0" onclick="msExpToggle('msAiExp')"><span class="ms-ri"><svg class="ic" aria-hidden="true"><use href="#ti-receipt"/></svg></span><div class="ms-rt"><div class="ms-t">قراءة الفواتير</div><div class="ms-s" id="aiKeyStatus"></div></div><svg class="ic" aria-hidden="true"><use href="#ti-chevron-left"/></svg></div>
+        <div class="ms-exp-body">
+          <div class="ms-hint2">زرار "📹 كاميرا حية" بيقرا الفاتورة بـ Claude. محتاج مفتاح API من حسابك في Anthropic (من Console ← API keys على platform.claude.com). المفتاح بيتخزن على الجهاز ده بس ومش بيدخل في النسخة الاحتياطية.</div>
+          <input class="form-inp" id="aiKeyInput" type="password" autocomplete="off" placeholder="sk-ant-..." style="direction:ltr;font-family:monospace;width:100%"/>
+          <div class="ms-pair2"><button class="st2-btn primary" onclick="saveAnthropicKey()">حفظ المفتاح</button><button class="st2-btn" onclick="clearAnthropicKey()">مسح</button></div>
         </div>
       </div>
     </div>
 
-    <!-- البيانات والنسخ الاحتياطي -->
-    <div class="st2-group">
-      <div class="st2-group-title">💾 البيانات والنسخ الاحتياطي</div>
-      <div class="st2-card">
-        <button class="st2-btn primary" onclick="exportJSON()">💾 نسخة احتياطية كاملة</button>
-        <button class="st2-btn green" onclick="document.getElementById('restoreInput').click()">♻️ استرداد من نسخة احتياطية</button>
-        <input type="file" id="restoreInput" accept=".json,application/json" style="display:none" onchange="restoreBackup(event)"/>
-        <div class="st2-btn-2" style="margin-top:8px">
-          <button class="st2-btn" onclick="exportCSV()">📊 تصدير CSV</button>
-          <button class="st2-btn" onclick="generateMonthlyReport()">📄 تقرير شهري</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- الاستيراد والأدوات -->
-    <div class="st2-group">
-      <div class="st2-group-title">📥 استيراد كشف الحساب</div>
-      <div class="st2-card">
-        <button class="st2-btn blue" onclick="document.getElementById('csvImportInput').click()">🏦 استيراد كشف حساب (CSV)</button>
-        <input type="file" id="csvImportInput" accept=".csv,text/csv" style="display:none" onchange="importBankCSV(event)"/>
-        <button class="st2-btn gold" onclick="document.getElementById('pdfImportInput').click()">📄 استيراد كشف حساب (PDF)</button>
-        <input type="file" id="pdfImportInput" accept=".pdf,application/pdf" style="display:none" onchange="importBankPDF(event)"/>
-        <button class="st2-btn" onclick="manualReconcileEntries()">🧹 تنظيف الحركات المكررة</button>
-      </div>
-    </div>
-
-    <!-- v41: قراءة الفواتير بالذكاء الاصطناعي -->
-    <div class="st2-group" id="aiReceiptSection">
-      <div class="st2-group-title">🤖 قراءة الفواتير (Anthropic)</div>
-      <div class="st2-card">
-        <div style="font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:10px">زرار "📹 كاميرا حية" بيقرا الفاتورة بـ Claude. محتاج مفتاح API من حسابك في Anthropic (من Console ← API keys على platform.claude.com). المفتاح بيتخزن على الجهاز ده بس ومش بيدخل في النسخة الاحتياطية.</div>
-        <input class="form-inp" id="aiKeyInput" type="password" autocomplete="off" placeholder="sk-ant-..." style="direction:ltr;font-family:monospace;width:100%"/>
-        <div id="aiKeyStatus" style="font-size:11px;margin:6px 0 8px;color:var(--muted)"></div>
-        <div class="st2-btn-2">
-          <button class="st2-btn primary" onclick="saveAnthropicKey()">💾 حفظ المفتاح</button>
-          <button class="st2-btn" onclick="clearAnthropicKey()">✕ مسح</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- v55: شكل الأرقام -->
-    <div class="st2-group" id="digitsSection">
-      <div class="st2-group-title">🔢 شكل الأرقام</div>
-      <div class="st2-card">
-        <div style="font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:8px">بتتطبق على الأرقام والتواريخ في التطبيق كله.</div>
-        <div class="st2-btn-2">
-          <button class="st2-btn" id="digEn" onclick="msSetDigits('en')">123 إنجليزي</button>
-          <button class="st2-btn" id="digAr" onclick="msSetDigits('ar')">١٢٣ عربي</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- v41: التخزين وسجل الأخطاء -->
-    <div class="st2-group" id="storageSection">
-      <div class="st2-group-title">🧰 التخزين وسجل الأخطاء</div>
-      <div class="st2-card">
-        <div id="storageUsageBox" style="font-size:11px;color:var(--muted);line-height:1.8"></div>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px">📱 قياس الشاشة (للتشخيص)</div>
-        <div id="msVpDiag" style="font-size:11px;color:var(--muted);direction:ltr;text-align:left;line-height:1.7"></div>
-        <div class="st2-btn-2" style="margin-top:8px">
-          <button class="st2-btn" onclick="copyErrorLog()">📋 نسخ سجل الأخطاء</button>
-          <button class="st2-btn" onclick="clearErrorLog()">🧹 مسح السجل</button>
+    <div class="ms-card ms-adv" id="storageSection">
+      <div class="ms-exp" id="msAdvExp">
+        <div class="ms-row ms-exp-head" role="button" tabindex="0" onclick="msExpToggle('msAdvExp')"><span class="ms-ri"><svg class="ic" aria-hidden="true"><use href="#ti-tools"/></svg></span><div class="ms-rt"><div class="ms-t">متقدم</div><div class="ms-s">التخزين، سجل الأخطاء، تنظيف المكرر</div></div><svg class="ic" aria-hidden="true"><use href="#ti-chevron-left"/></svg></div>
+        <div class="ms-exp-body">
+          <div id="storageUsageBox" class="ms-hint2"></div>
+          <div class="ms-hint2" style="margin-top:8px">قياس الشاشة (للتشخيص)</div>
+          <div id="msVpDiag" class="ms-hint2" style="direction:ltr;text-align:left"></div>
+          <div class="ms-pair2" style="margin-top:10px"><button class="st2-btn" onclick="copyErrorLog()">نسخ سجل الأخطاء</button><button class="st2-btn" onclick="clearErrorLog()">مسح السجل</button></div>
+          <button class="st2-btn" style="margin-top:8px" onclick="manualReconcileEntries()">تنظيف الحركات المكررة</button>
         </div>
       </div>
     </div>
   </div>
 </div>
-
 
 <style>
 /* ═══ v35 — مركز التحكم (الإعدادات) الجديد ═══ */
@@ -4598,8 +4440,8 @@ window.openCurrencyRates = openCurrencyRates;
   <div class="sheet">
     <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:4px 8px 0">
-      <div style="font-size:16px;font-weight:600;color:var(--accent)">☰ المزيد</div>
-      <button id="menuCloseBtn" type="button" aria-label="إغلاق" style="background:var(--card2);border:1.5px solid var(--border);border-radius:50%;width:44px;height:44px;color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif;-webkit-tap-highlight-color:rgba(248,81,73,0.3);touch-action:manipulation">✕</button>
+      <div style="font-size:16px;font-weight:600;color:var(--accent)">المزيد</div>
+      <button id="menuCloseBtn" type="button" aria-label="إغلاق" style="background:var(--card2);border:1.5px solid var(--border);border-radius:50%;width:44px;height:44px;color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif;-webkit-tap-highlight-color:rgba(248,81,73,0.3);touch-action:manipulation"><svg class="ic" aria-hidden="true"><use href="#ti-x"/></svg></button>
     </div>
     
     <div class="menu-row" onclick="closeAndOpen('menuModal','accountsModal',renderAccounts)">
@@ -5440,6 +5282,7 @@ window.openCurrencyRates = openCurrencyRates;
     <div class="modal-title">🔄 حاسبة التحويلات</div>
     <p class="modal-hint">حوّل بين العملات بأحدث الأسعار</p>
 
+    <button type="button" class="ms-btn-line" onclick="document.getElementById('calcModal').classList.remove('open');setTimeout(openCurrencyRates,200)"><svg class="ic" aria-hidden="true"><use href="#ti-arrows-exchange"/></svg> ضبط أسعار الصرف</button>
     <div id="calcRateInfo" style="background:var(--card2);border-radius:12px;padding:10px;margin-bottom:12px;font-size:11px;color:var(--muted);text-align:center">
       جاري تحميل الأسعار...
     </div>
@@ -7701,69 +7544,7 @@ function _quickSaveExpense(cat, amount, emoji){
   }catch(e){ return false; }
 }
 
-// خانة ذكية: "قهوة 25" → فئة قهوة بمبلغ 25
-function qeSmartSave(){
-  try{
-    var raw = document.getElementById('qeSmart').value.trim();
-    if (!raw){ return; }
-    // استخرج الرقم (آخر رقم في النص)
-    var m = raw.match(/([\d.,]+)/);
-    if (!m){ if(typeof showToast==='function') showToast('اكتب مبلغ، مثال: قهوة 25','warning'); return; }
-    var amount = parseFloat(m[1].replace(/,/g,''));
-    var name = raw.replace(m[1],'').trim() || 'مصروف';
-    // حاول تطابق فئة معروفة
-    var known = {'قهوة':'☕','مطعم':'🍔','مواصلات':'🚗','سوبر':'🛒','سوبرماركت':'🛒','توصيل':'🛵','بنزين':'⛽','فواتير':'⚡','إنترنت':'🌐','بيت':'🏠'};
-    var cat = name, emoji = '';
-    for (var k in known){ if (name.indexOf(k)!==-1){ cat = k; emoji = known[k]; break; } }
-    if (_quickSaveExpense(cat, amount, emoji)){
-      document.getElementById('qeSmart').value='';
-      _qeShowLastSaved(cat, amount, emoji);
-      var si = document.getElementById('qeSmart'); if (si) si.focus();
-    }
-  }catch(e){}
-}
-window.qeSmartSave = qeSmartSave;
-
-// اعرض آخر حركة اتسجّلت (feedback بدل ما نقفل المودال)
-function _qeShowLastSaved(cat, amount, emoji){
-  try{
-    var host = document.getElementById('qeLastSaved');
-    if (!host) return;
-    var sym = BASE_LABELS[baseCurrency].sym;
-    host.innerHTML = '✅ اتسجّل: '+(emoji||'')+' '+cat+' — <b>'+fmt(amount,0)+' '+sym+'</b>';
-    host.style.display = 'block';
-  }catch(e){}
-}
-window._qeShowLastSaved = _qeShowLastSaved;
-
-// اختيار فئة سريعة → يظهر خانة المبلغ
-var _qePickedCat = null, _qePickedEm = '';
-function qeCatPick(btn){
-  _qePickedCat = btn.dataset.cat;
-  _qePickedEm = btn.dataset.em || '';
-  document.querySelectorAll('#qeCats .qe-cat').forEach(function(b){ b.classList.remove('active'); });
-  btn.classList.add('active');
-  var row = document.getElementById('qeAmountRow');
-  var picked = document.getElementById('qePicked');
-  if (picked) picked.textContent = _qePickedEm+' '+_qePickedCat;
-  if (row) row.style.display = 'flex';
-  var amt = document.getElementById('qeAmount');
-  if (amt){ amt.value=''; setTimeout(function(){ amt.focus(); },50); }
-}
-window.qeCatPick = qeCatPick;
-
-function qeCatSave(){
-  if (!_qePickedCat){ return; }
-  var amount = document.getElementById('qeAmount').value;
-  if (_quickSaveExpense(_qePickedCat, amount, _qePickedEm)){
-    _qeShowLastSaved(_qePickedCat, parseFloat(amount), _qePickedEm);
-    document.getElementById('qeAmount').value='';
-    document.getElementById('qeAmountRow').style.display='none';
-    document.querySelectorAll('#qeCats .qe-cat').forEach(function(b){ b.classList.remove('active'); });
-    _qePickedCat = null;
-  }
-}
-window.qeCatSave = qeCatSave;
+// v61: quick entry removed
 
 function saveTx() {
   const rawAmt = document.getElementById('fAmt').value;
@@ -18074,52 +17855,50 @@ setTimeout(() => {
   // Define menu structure
   const MENU_STRUCTURE = [
     {
-      section: '💰 الأساسيات',
+      section: 'أموالي',
       cat: 'finance',
       items: [
-        { id:'accounts', icon:'🏦', title:'المحافظ', sub:'كل أموالك في مكان واحد', modal:'accountsModal', render:'renderAccounts', countKey:'menuAccCount' },
-        { id:'moneymap', icon:'📊', title:'أين ذهبت فلوسي؟', sub:'مقارنة الشهور والسنة والأهمية', custom:'msMoneyOpen' },
+        { id:'accounts', icon:'🏦', title:'المحافظ', sub:'تحويل بين المحافظ، كل أموالك في مكان واحد', modal:'accountsModal', render:'renderAccounts', countKey:'menuAccCount' },
         { id:'goals', icon:'🎯', title:'أهداف الادخار', sub:'وفّر للحاجات الكبيرة', modal:'goalsModal', render:'renderGoals', countKey:'menuGoalCount' },
-        { id:'subs', icon:'📅', title:'الاشتراكات', sub:'Netflix, Spotify, إلخ', modal:'subsModal', render:'renderSubs', countKey:'menuSubCount' },
-        { id:'bills', icon:'🏠', title:'فواتير المنزل', sub:'كهرباء، ماء، إنترنت', modal:'billsModal', render:'renderBills', countKey:'menuBillCount' }
+        { id:'moneymap', icon:'📊', title:'أين ذهبت فلوسي؟', sub:'مقارنة الشهور والسنة والأهمية', custom:'msMoneyOpen' },
+        { id:'wrapped', icon:'🎵', title:'تقرير السنة', sub:'ملخص سنوي', custom:'showWrappedReport' }
       ]
     },
     {
-      section: '💱 العملة والذهب',
-      cat: 'currency',
-      items: [
-        { id:'gold', icon:'🥇', title:'الذهب وأسعاره', sub:'عيار 24، 21، 18 + حاسبة', custom:'openGoldModal' },
-        { id:'currency', icon:'💱', title:'أسعار العملات', sub:'دولار، يورو، جنيه', custom:'openCurrencyRates' }
-      ]
-    },
-    {
-      section: '🔄 الالتزامات',
+      section: 'الالتزامات',
       cat: 'commitments',
       items: [
-        { id:'debts', icon:'💸', title:'الديون', sub:'تسلف ودين', modal:'debtsModal', render:'renderDebts', countKey:'menuDebtCount' },
         { id:'installments', icon:'💳', title:'الأقساط', sub:'موبايل، أثاث، عربية', modal:'installmentsModal', render:'renderInstallments', countKey:'menuInstCount' },
+        { id:'debts', icon:'💸', title:'الديون', sub:'تسلف ودين', modal:'debtsModal', render:'renderDebts', countKey:'menuDebtCount' },
         { id:'jameya', icon:'🤝', title:'الجمعية', sub:'تتبع الدفع والقبض', modal:'jameyaModal', render:'renderJameya', countKey:'menuJamCount' },
+        { id:'subs', icon:'🔁', title:'الاشتراكات', sub:'Netflix, Spotify, إلخ', modal:'subsModal', render:'renderSubs', countKey:'menuSubCount' },
+        { id:'bills', icon:'🏠', title:'فواتير المنزل', sub:'كهرباء، ماء، إنترنت', modal:'billsModal', render:'renderBills', countKey:'menuBillCount' },
         { id:'orders', icon:'📦', title:'الطلبات أونلاين', sub:'أمازون، نون، شي إن', modal:'ordersModal', render:'renderOrders', countKey:'menuOrdersCount' }
       ]
     },
     {
-      section: '🎯 المشاريع الكبيرة',
+      section: 'العملات والذهب',
+      cat: 'currency',
+      items: [
+        { id:'gold', icon:'🥇', title:'الذهب وأسعاره', sub:'عيار 24، 21، 18', custom:'openGoldModal' },
+        { id:'currency', icon:'💱', title:'العملات والحاسبة', sub:'أسعار الصرف، حوّل بسرعة', modal:'calcModal', render:'openCalc' }
+      ]
+    },
+    {
+      section: 'المشاريع والمناسبات',
       cat: 'projects',
       items: [
         { id:'vehicles', icon:'🚗', title:'السيارات', sub:'بنزين، صيانة، تأمين', modal:'vehiclesModal', render:'renderVehicles', countKey:'menuVehCount', cat:'vehicles' },
-        { id:'weddings', icon:'💍', title:'الفرح', sub:'شبكة، مهر، جهاز', modal:'weddingsModal', render:'renderWeddings', countKey:'menuWedCount', cat:'weddings' },
         { id:'trips', icon:'🛫', title:'السفر والرحلات', sub:'تذكرة، فندق، مطعم، تاكسي', modal:'tripsModal', render:'renderTrips', countKey:'menuTripsCount' },
+        { id:'weddings', icon:'💍', title:'الفرح', sub:'شبكة، مهر، جهاز', modal:'weddingsModal', render:'renderWeddings', countKey:'menuWedCount', cat:'weddings' },
         { id:'occasions', icon:'🎁', title:'العيدية والمناسبات', sub:'عيد، فرح غيرك، عزا', modal:'occasionsModal', render:'renderOccasions', countKey:'menuOccCount' }
       ]
     },
     {
-      section: '🛠️ أدوات',
+      section: 'تخصيص',
       cat: 'tools',
       items: [
         { id:'catmgr', icon:'🏷️', title:'إدارة التصنيفات', sub:'ألوان ودمج التصنيفات', custom:'msCatOpen' },
-        { id:'calc', icon:'🔄', title:'حاسبة العملات', sub:'حوّل بسرعة', modal:'calcModal', render:'openCalc' },
-        { id:'dualSal', icon:'💼', title:'الراتب بعملتين', sub:'لو بتقبض من بلدين', modal:'dualSalaryModal', render:'renderDualSalary', countKey:'menuDualSal' },
-        { id:'wrapped', icon:'🎵', title:'تقرير السنة', sub:'ملخص سنوي احتفالي', custom:'showWrappedReport' },
         { id:'season', icon:'🌙', title:'الثيمات الموسمية', sub:'رمضان، عيد، شتاء', custom:'openSeasonTheme' }
       ]
     }
@@ -18134,15 +17913,11 @@ setTimeout(() => {
         const onclick = it.custom
           ? `document.getElementById('menuModal').classList.remove('open');${it.custom}()`
           : `closeAndOpen('menuModal','${it.modal}',${it.render})`;
-        html += `<div class="v17-menu-card" data-cat="${it.cat||sec.cat}" data-search="${it.title} ${it.sub}" onclick="${onclick}">
-          <div class="v17-icon">
-            <span>${window.msIconFor ? window.msIconFor(it.icon) : it.icon}</span>
-            ${it.countKey ? `<span class="v17-badge zero" id="${it.countKey}_v17">٠</span>` : ''}
-          </div>
-          <div>
-            <div class="v17-title">${it.title}</div>
-            <div class="v17-sub">${it.sub}</div>
-          </div>
+        html += `<div class="v17-menu-card" role="button" tabindex="0" data-cat="${it.cat||sec.cat}" data-search="${it.title} ${it.sub}" onclick="${onclick}">
+          <div class="v17-icon"><span>${window.msIconFor ? window.msIconFor(it.icon) : it.icon}</span></div>
+          <div class="v17-title">${it.title}</div>
+          ${it.countKey ? `<span class="v17-badge zero" id="${it.countKey}_v17"></span>` : ''}
+          <span class="v17-chev"><svg class="ic" aria-hidden="true"><use href="#ti-chevron-left"/></svg></span>
         </div>`;
       });
       html += `</div>`;
@@ -20684,6 +20459,7 @@ setTimeout(() => {
   // ─────────────────────────────────────────────────────────────
 
   function renameMenuTitle() {
+    return;   // v62: the sheet keeps the name "المزيد"
     const menuModal = document.getElementById('menuModal');
     if (!menuModal) return;
     // Find the title that says "المزيد" and rename it
@@ -20697,6 +20473,7 @@ setTimeout(() => {
   }
 
   function restructureMenuOrder() {
+    return;   // v62: the groups are defined once, in MENU_STRUCTURE
     // Move occasions to bottom, reorder sections for clarity
     if (typeof window.MENU_STRUCTURE_V22 !== 'undefined') return; // already done
     window.MENU_STRUCTURE_V22 = true;
@@ -20806,8 +20583,7 @@ setTimeout(() => {
         </div>
       </div>
     `;
-    oldTitle.style.display = 'none';
-    oldTitle.parentNode.insertBefore(header, oldTitle.nextSibling);
+    // v62: the "مركز التحكم" card (a second title and two meaningless counters) is no longer drawn; the sheet's own header stays
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -21096,6 +20872,7 @@ setTimeout(() => {
 
       <!-- TOTAL BALANCE BANNER -->
       <div id="v23TotalBalance" class="v23-total-balance"></div>
+      <button type="button" class="ms-btn-line" id="msTransferBtn" onclick="document.getElementById('accountsModal').classList.remove('open');setTimeout(window.openTransferModal,200)"><svg class="ic" aria-hidden="true"><use href="#ti-arrows-exchange"/></svg> تحويل بين المحافظ</button>
 
       <!-- WALLETS LIST -->
       <div class="v23-section-title">💼 محافظك</div>
@@ -29326,29 +29103,7 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 @media (prefers-reduced-motion: reduce){
   .cc-card,.cc-act-btn,.cc-progress-fill{transition:none !important;}
   .cc-card .cc-shine{animation:none !important;display:none;}
-}
-
-/* ═══ اختيار 3: تحسينات مستوحاة من تصميم لايت نظيف — مطبّقة على الدارك ═══ */
-/* ⚡ الإدخال السريع */
-.quick-entry{background:linear-gradient(135deg,rgba(240,180,41,.08),rgba(240,180,41,.02));border:1px solid rgba(240,180,41,.2);border-radius:16px;padding:14px;margin-bottom:16px;}
-.qe-title{font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px;}
-.qe-smart-row{display:flex;gap:8px;margin-bottom:12px;}
-.qe-smart-inp{flex:1;background:var(--card2);border:0.5px solid var(--border);border-radius:12px;padding:12px;font-family:'Cairo',sans-serif;font-size:13px;color:var(--text);}
-.qe-smart-inp:focus{outline:none;border-color:var(--accent);}
-.qe-smart-btn{background:linear-gradient(var(--accent),var(--accent));color:#1a1206;border:none;border-radius:12px;padding:0 18px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:transform .14s;}
-.qe-smart-btn:active{transform:scale(.94);}
-.qe-cats{display:flex;flex-wrap:wrap;gap:7px;}
-.qe-cat{background:var(--card2);border:0.5px solid var(--border);border-radius:12px;padding:8px 12px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:transform .14s, background-color .18s, border-color .18s;}
-.qe-cat:active{transform:scale(.93);}
-.qe-cat.active{background:linear-gradient(135deg,rgba(240,180,41,.2),rgba(240,180,41,.06));border-color:var(--accent);color:var(--accent);}
-.qe-amount-row{display:flex;align-items:center;gap:8px;margin-top:12px;}
-.qe-picked{font-size:13px;font-weight:600;color:var(--accent);flex-shrink:0;}
-.qe-amount-inp{flex:1;background:var(--card2);border:1px solid var(--accent);border-radius:12px;padding:12px;font-family:'Cairo',sans-serif;font-size:16px;font-weight:600;color:var(--text);}
-.qe-amount-inp:focus{outline:none;}
-.qe-amount-save{background:linear-gradient(135deg,var(--green),#2ea043);color:#fff;border:none;border-radius:12px;padding:0 16px;height:44px;font-size:16px;cursor:pointer;transition:transform .14s;}
-.qe-amount-save:active{transform:scale(.9);}
-.qe-last-saved{background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.3);border-radius:12px;padding:9px 12px;margin-top:10px;font-size:13px;font-weight:600;color:var(--green);text-align:center;}
-/* مؤشر صحة الأقساط (نسبة من الدخل) */
+}/* مؤشر صحة الأقساط (نسبة من الدخل) */
 .inst2-health{background:var(--card);border:0.5px solid var(--border);border-radius:16px;padding:14px;margin-top:12px;box-shadow:0 4px 16px -8px rgba(0,0,0,.3);}
 .inst2-health .ih-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
 .inst2-health .ih-title{font-size:13px;font-weight:600;color:var(--muted);}
@@ -29364,12 +29119,7 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 .inst-archive-toggle{width:100%;display:flex;justify-content:space-between;align-items:center;background:var(--card2);border:0.5px solid var(--border);border-radius:12px;padding:13px 15px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:background .18s;}
 .inst-archive-toggle:active{background:var(--card);}
 .inst-arch-chev{font-size:11px;}
-.inst-archive-body{margin-top:12px;opacity:.75;}
-.qe-last-saved b{font-weight:600;direction:ltr;}
-.qe-divider{text-align:center;margin:14px 0 2px;position:relative;}
-.qe-divider::before{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:var(--border);}
-.qe-divider span{position:relative;background:var(--card);padding:0 12px;font-size:11px;color:var(--muted);font-weight:600;}
-/* تفاصيل الجمعية التوضيحية */
+.inst-archive-body{margin-top:12px;opacity:.75;}/* تفاصيل الجمعية التوضيحية */
 .jam-turn-badge{display:inline-block;font-size:11px;font-weight:600;border-radius:8px;padding:4px 11px;}
 .jam-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;}
 .jam-detail{background:var(--card2);border:0.5px solid var(--border);border-radius:12px;padding:10px;}
@@ -31027,6 +30777,120 @@ b,strong,th,h1,h2,h3,h4{font-weight:600;}
 <style id="ms-home-v60">
 #msNowStrip{margin:14px 0 12px !important;}
 </style>
+<style id="ms-add-v61">
+.ms-add{padding-bottom:0 !important;}
+.ms-add-head{display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px;}
+.ms-add-head .modal-title{margin:0;font-size:16px;font-weight:600;}
+.ms-x{width:40px;height:40px;background:none;border:0;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0 -8px;}
+.ms-x .ic{width:20px;height:20px;}
+.ms-seg{display:flex !important;gap:3px;background:var(--card2);border-radius:12px;padding:3px;margin-bottom:14px !important;}
+.ms-seg .type-btn{flex:1;border:0 !important;background:transparent !important;border-radius:8px;padding:9px 0;font-size:13px;font-weight:600;color:var(--muted) !important;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;}
+.ms-seg .type-btn.exp-s,.ms-seg .type-btn.inc-s,.ms-seg .type-btn.sav-s,.ms-seg .type-btn.tr-s{background:rgba(240,180,41,.14) !important;color:var(--accent) !important;}
+.ms-amt{text-align:center;margin-bottom:12px;}
+.ms-amt-row{display:flex;align-items:center;justify-content:center;gap:10px;}
+.ms-amt-inp{flex:1;min-width:0;background:none !important;border:0 !important;border-bottom:0.5px solid var(--border) !important;border-radius:0 !important;font-size:28px !important;font-weight:600;text-align:center;color:var(--text);font-family:inherit;padding:8px 0 !important;font-variant-numeric:tabular-nums;}
+.ms-amt-inp:focus{border-bottom-color:var(--accent) !important;outline:none;}
+.ms-cur-chip{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;border:0.5px solid var(--border);background:var(--card2);color:var(--text);border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;cursor:pointer;}
+.ms-cur-chip .ic{width:16px;height:16px;transform:rotate(-90deg);}
+.ms-amt-prev{font-size:13px;color:var(--accent);text-align:center;direction:ltr;min-height:18px;margin-top:4px;}
+.ms-amt .amt-ops{display:none;justify-content:center;gap:8px;margin-top:8px;}
+.ms-amt:focus-within .amt-ops{display:flex;}
+.ms-cur-list{margin-top:10px;gap:6px;}
+.ms-name{margin-bottom:12px;}
+.ms-chips{display:flex !important;flex-wrap:wrap;gap:8px !important;}
+.ms-chips .cat-btn,.ms-chips .inc-btn,.ms-chips .sav-btn{display:inline-flex !important;align-items:center;gap:6px;width:auto !important;min-width:0;flex:0 0 auto;padding:8px 12px !important;border-radius:999px !important;border:0.5px solid var(--border) !important;background:transparent !important;color:var(--text) !important;font-family:inherit;font-size:13px !important;font-weight:400 !important;cursor:pointer;}
+.ms-chips .cat-btn .ci,.ms-chips .inc-btn .ci,.ms-chips .sav-btn .ci{font-size:16px !important;margin:0 !important;}
+.ms-chips .cat-btn.sel,.ms-chips .inc-btn.sel,.ms-chips .sav-btn.sel{background:rgba(240,180,41,.14) !important;border-color:var(--accent) !important;color:var(--accent) !important;}
+.ms-chips .ms-hide{display:none !important;}
+.ms-cat-more{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;border:0.5px dashed var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:13px;cursor:pointer;}
+.ms-cat-more .ic{width:16px;height:16px;}
+.ms-add .form-lbl{font-size:13px;color:var(--muted);font-weight:400;margin-bottom:6px;}
+.ms-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0 12px;}
+.ms-wallet{margin-bottom:12px;}
+.ms-add .v23-tx-acc-picker{gap:8px;padding:2px 0 4px;}
+.ms-add .v23-tx-acc-cell{flex-direction:row !important;min-width:0 !important;padding:6px 12px 6px 10px !important;border:0.5px solid var(--border) !important;border-radius:999px !important;background:transparent !important;gap:8px !important;}
+.ms-add .v23-tx-acc-cell.sel{background:rgba(240,180,41,.14) !important;border-color:var(--accent) !important;}
+.ms-add .v23-tx-acc-logo,.ms-add .v23-tx-acc-add{width:22px !important;height:22px !important;border-radius:6px !important;flex-shrink:0;}
+.ms-add .v23-tx-acc-add{font-size:13px !important;}
+.ms-add .v23-tx-acc-name{font-size:13px !important;font-weight:400 !important;max-width:110px !important;}
+.ms-meta .form-row{margin:0;min-width:0;}
+.ms-meta .form-inp{padding:10px 6px !important;font-size:13px !important;text-align:center;min-width:0;width:100%;}
+.ms-hint{font-size:13px;color:var(--muted);margin-top:3px;}
+.ms-more{border-top:0.5px solid var(--border);border-bottom:0.5px solid var(--border);margin-bottom:14px;}
+.ms-more-head{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:0;padding:12px 0;color:var(--text);font-family:inherit;cursor:pointer;text-align:right;}
+.ms-more-t{display:block;font-size:13px;font-weight:600;}
+.ms-more-s{display:block;font-size:13px;color:var(--muted);margin-top:1px;}
+.ms-more-head .ic{width:20px;height:20px;color:var(--muted);transform:rotate(-90deg);transition:transform .15s;}
+.ms-more.open .ms-more-head .ic{transform:rotate(90deg);}
+.ms-more-body{display:none;padding:2px 0 8px;}
+.ms-more.open .ms-more-body{display:block;}
+.ms-tog{display:flex !important;align-items:center;justify-content:space-between;gap:12px;padding:10px 0 !important;margin:0 !important;border-top:0.5px solid var(--border);background:none !important;border-radius:0 !important;}
+.ms-rcpt{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+.ms-rcpt .export-btn{display:flex;align-items:center;justify-content:center;gap:4px;padding:9px 4px;font-size:13px;}
+.ms-rcpt .ic{width:16px;height:16px;}
+.ms-foot{position:sticky;bottom:0;background:var(--card);padding:10px 0 calc(8px + var(--ms-sab, env(safe-area-inset-bottom, 0px)));margin:0 -2px;z-index:2;}
+.ms-foot .save-btn{width:100%;height:48px;border-radius:12px;font-size:16px;font-weight:600;margin:0;}
+.ms-save-new{display:block;width:100%;background:none;border:0;color:var(--accent);font-family:inherit;font-size:13px;padding:12px 0 4px;cursor:pointer;}
+</style>
+<style id="ms-more-v62">
+/* v62: the More sheet as grouped list rows */
+#menuModal .v22-menu-header,#menuRowTransfer{display:none !important;}
+#menuModal .v19-close-btn{display:none !important;}
+#menuModal .sheet > div:first-of-type + div,#menuModal .sheet > .handle + div{align-items:center;}
+#menuCloseBtn{background:none !important;border:0 !important;width:40px !important;height:40px !important;margin:0 -8px;}
+#menuCloseBtn .ic{width:20px;height:20px;}
+.ms-btn-line{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:0 0 12px;padding:10px 0;background:none;border:0.5px solid var(--border-strong,var(--border));border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;cursor:pointer;}
+.ms-btn-line .ic{width:18px;height:18px;color:var(--accent);}
+#menuModal .v17-menu-section{font-size:13px !important;font-weight:400 !important;color:var(--muted) !important;margin:14px 4px 6px !important;padding:0 !important;}
+#menuModal .v17-menu-grid{display:block !important;background:var(--card2);border-radius:12px;overflow:hidden;padding:0 !important;}
+#menuModal .v17-menu-card{display:flex !important;flex-direction:row !important;justify-content:flex-start !important;align-items:center !important;gap:12px;min-height:48px;padding:0 12px !important;margin:0 !important;border:0 !important;border-top:0.5px solid var(--border) !important;border-radius:0 !important;background:none !important;cursor:pointer;text-align:right;}
+#menuModal .v17-menu-card:first-child{border-top:0 !important;}
+#menuModal .v17-menu-card.hide{display:none !important;}
+#menuModal .v17-icon{position:static !important;width:24px;height:24px;display:flex;align-items:center;justify-content:center;margin:0 !important;background:none !important;font-size:20px;flex-shrink:0;}
+#menuModal .v17-icon .ic{width:22px;height:22px;color:var(--accent);}
+#menuModal .v17-title{flex:1;font-size:13px !important;font-weight:600;margin:0 !important;text-align:right !important;}
+#menuModal .v17-sub{display:none !important;}
+#menuModal .v17-badge{position:static !important;background:none !important;color:var(--muted) !important;font-size:13px !important;font-weight:400 !important;padding:0 !important;min-width:0 !important;}
+#menuModal .v17-badge.zero{display:none !important;}
+#menuModal .v17-chev .ic{width:18px;height:18px;color:var(--muted);}
+</style>
+<style id="ms-set-v63">
+/* v63: Settings as grouped rows */
+.ms-set .st2-head{text-align:right;margin:0 0 6px;}
+.ms-set .st2-head .t{font-size:16px;font-weight:600;}
+.ms-set .sheet-close-btn{background:none !important;border:0 !important;width:40px !important;height:40px !important;display:flex !important;align-items:center;justify-content:center;color:var(--text);}
+.ms-set .sheet-close-btn .ic{width:20px;height:20px;}
+.ms-sec{font-size:13px;color:var(--muted);margin:14px 4px 6px;}
+.ms-card{background:var(--card2);border-radius:12px;margin-bottom:6px;overflow:hidden;}
+.ms-pad{padding:12px;}
+.ms-lbl{font-size:13px;margin-bottom:8px;}
+.ms-seg4{grid-template-columns:repeat(4,1fr);gap:6px;}
+.ms-seg4 .st2-cur{padding:9px 0 !important;font-size:13px;border:0.5px solid var(--border) !important;border-radius:8px !important;background:transparent !important;}
+.ms-seg4 .st2-cur.active,.ms-seg4 .st2-cur.sel{background:rgba(240,180,41,.14) !important;border-color:var(--accent) !important;color:var(--accent);}
+.ms-row{display:flex;align-items:center;gap:12px;min-height:48px;padding:6px 12px;border-top:0.5px solid var(--border);cursor:default;}
+.ms-card > .ms-row:first-child,.ms-card > .ms-pad + .ms-exp .ms-exp-head{border-top:0;}
+.ms-row[role="button"]{cursor:pointer;}
+.ms-ri .ic{width:20px;height:20px;color:var(--accent);}
+.ms-rt{flex:1;min-width:0;}
+.ms-t{font-size:13px;font-weight:600;}
+.ms-s{font-size:13px;color:var(--muted);margin-top:1px;}
+.ms-row > .ic{width:18px;height:18px;color:var(--muted);flex-shrink:0;}
+.ms-pair{display:inline-flex;gap:6px;}
+.ms-set .st2-mini-btn{padding:6px 12px !important;border-width:0.5px !important;border-radius:8px !important;font-size:13px !important;}
+.ms-segsm{display:inline-flex;gap:4px;}
+.ms-segsm .st2-btn{width:auto;margin:0 !important;padding:6px 12px;font-size:13px;border-width:0.5px;border-radius:8px;}
+.ms-exp-head .ic:last-child{transform:rotate(-90deg);transition:transform .15s;}
+.ms-exp.open .ms-exp-head .ic:last-child{transform:rotate(90deg);}
+.ms-exp-body{display:none;padding:4px 12px 12px;border-top:0.5px solid var(--border);}
+.ms-exp.open .ms-exp-body{display:block;}
+.ms-hint2{font-size:13px;color:var(--muted);line-height:1.7;margin:4px 0 8px;}
+.ms-pair2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+.ms-pair2 .st2-btn{margin:0 !important;}
+.ms-linkbtn{display:flex;align-items:center;gap:8px;background:none;border:0;color:var(--accent);font-family:inherit;font-size:13px;padding:6px 0;cursor:pointer;}
+.ms-linkbtn .ic{width:16px;height:16px;}
+.ms-adv{margin-top:14px;}
+#msChooseModal .tx-act .ic{width:20px;height:20px;color:var(--accent);}
+</style>
 <style id="ms-safe-v54">
 /* v54: a sheet is at most (overlay height - status bar - 24px) tall, so its title and close button are never under the status bar / dynamic island */
 .overlay .sheet{max-height:calc(100% - env(safe-area-inset-top, 0px) - 24px) !important;}
@@ -31178,6 +31042,84 @@ body.ms-modal-open .season-particle,body.ms-modal-open .skeleton,body.ms-modal-o
   if (window.msStore) { window.msStore.sanitizeBackup = sanitizeBackup; window.msStore.checkLegacyBackup = checkLegacyBackup; window.msStore.safeImgSrc = safeImgSrc; }
 })();
 </script>
+<script id="ms-add61">
+/* v61: add-transaction sheet. Quick-entry is gone; amount first; top categories + "all"; one "more options" box; save + save-and-add-another. */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const TOP = { expCatGrid: 7, incCatGrid: 6, savCatGrid: 6 };
+  const KIND = { expCatGrid: 'expense', incCatGrid: 'income', savCatGrid: 'savings' };
+  const SYMS = { SAR: 'ر.س', EGP: 'ج.م', USD: '$', EUR: '€' };
+
+  // ── categories: most used first, the rest behind "كل الفئات"
+  function usage(kind) {
+    const m = {}; const list = kind === 'savings' ? (typeof savings !== 'undefined' ? savings : []) : (typeof txs !== 'undefined' ? txs : []);
+    list.forEach(t => { if (!t || !t.cat) return; if (kind === 'savings' || t.type === kind) m[t.cat] = (m[t.cat] || 0) + 1; });
+    return m;
+  }
+  function refreshGrid(gid) {
+    const grid = $(gid); if (!grid) return; const addBtn = grid.querySelector('#catAddBtn'); const btns = [...grid.querySelectorAll('.cat-btn,.inc-btn,.sav-btn')].filter(b => b.id !== 'catAddBtn'); if (!btns.length) return;
+    if (!grid.dataset.orig) { btns.forEach((b, i) => { b.dataset.ord = i; }); grid.dataset.orig = '1'; }
+    const u = usage(KIND[gid]);
+    btns.sort((a, b) => ((u[b.dataset.cat] || 0) - (u[a.dataset.cat] || 0)) || (a.dataset.ord - b.dataset.ord));
+    const other = btns.find(b => b.dataset.cat === 'أخرى'); const ordered = btns.filter(b => b !== other);
+    const frag = document.createDocumentFragment(); ordered.forEach(b => frag.appendChild(b)); if (other) frag.appendChild(other);
+    let more = grid.querySelector('.ms-cat-more'); if (!more) { more = document.createElement('button'); more.type = 'button'; more.className = 'ms-cat-more'; more.onclick = () => msCatToggle(gid); }
+    grid.appendChild(frag); grid.appendChild(more); if (addBtn) grid.appendChild(addBtn);
+    const all = [...ordered, ...(other ? [other] : [])]; const open = grid.classList.contains('ms-open'); const sel = all.find(b => b.classList.contains('sel'));
+    all.forEach((b, i) => b.classList.toggle('ms-hide', !open && i >= TOP[gid] && b !== sel)); if (addBtn) addBtn.classList.toggle('ms-hide', !open);
+    more.innerHTML = (window.msIcon ? window.msIcon(open ? 'chevron-left' : 'search') : '') + (open ? ' أقل' : ' كل الفئات'); more.style.display = all.length > TOP[gid] ? '' : 'none';
+  }
+  const origCustom = window.renderCustomCatBtns; if (typeof origCustom === 'function') window.renderCustomCatBtns = function () { const r = origCustom.apply(this, arguments); try { refreshGrid('expCatGrid'); } catch (e) { /* ignore */ } return r; };
+  function msCatToggle(gid) { const g = $(gid); if (!g) return; g.classList.toggle('ms-open'); refreshGrid(gid); }
+  window.msCatToggle = msCatToggle;
+  function refreshAllGrids() { ['expCatGrid', 'incCatGrid', 'savCatGrid'].forEach(refreshGrid); }
+  ['expCatGrid', 'incCatGrid', 'savCatGrid'].forEach(gid => { const g = $(gid); if (g) g.addEventListener('click', () => setTimeout(() => refreshGrid(gid), 0)); });
+
+  // ── currency chip
+  function syncCur() { const chip = $('msCurChip'); if (!chip) return; const cur = (typeof selPayCurVal !== 'undefined' ? selPayCurVal : 'SAR') || 'SAR'; chip.firstChild.textContent = (SYMS[cur] || cur) + ' '; const l = $('msCurList'); if (l) l.style.display = 'none'; }
+  window.msToggleCur = function () { const l = $('msCurList'); if (l) l.style.display = l.style.display === 'none' ? 'flex' : 'none'; };
+  const origCur = window.selPayCur; if (typeof origCur === 'function') window.selPayCur = function () { const r = origCur.apply(this, arguments); try { syncCur(); } catch (e) { /* ignore */ } return r; };
+
+  // ── labels that follow the type / edit mode
+  const LABEL = { expense: 'حفظ المصروف', income: 'حفظ الدخل', savings: 'حفظ الادخار', transfer: 'حفظ التحويل' };
+  function isEditing() { return typeof editingId !== 'undefined' && editingId !== null && editingId !== undefined; }
+  function syncChrome() {
+    const btn = $('msSaveBtn'), nw = $('msSaveNew'); const edit = isEditing();
+    if (btn) btn.textContent = edit ? 'حفظ التعديل' : (LABEL[typeof txType !== 'undefined' ? txType : 'expense'] || 'حفظ');
+    if (nw) nw.style.display = edit ? 'none' : '';
+    const title = document.querySelector('#modal .modal-title'); if (title) title.textContent = edit ? 'تعديل الحركة' : 'حركة جديدة';
+  }
+  const origType = window.selType; if (typeof origType === 'function') window.selType = function () { const r = origType.apply(this, arguments); try { refreshAllGrids(); syncChrome(); } catch (e) { /* ignore */ } return r; };
+
+  // ── "more options": closed for a new entry, open when an entry being edited uses any of them
+  function setMore(open) { const b = $('msMore'); if (!b) return; b.classList.toggle('open', !!open); }
+  window.msMoreToggle = function () { const b = $('msMore'); if (!b) return; b.classList.toggle('open'); if (b.classList.contains('open')) setTimeout(() => { try { b.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ } }, 30); };
+  function moreInUse(id) {
+    const g = x => $(x);
+    let t = null; try { t = (typeof txs !== 'undefined' ? txs : []).find(x => x.id === id) || (typeof savings !== 'undefined' ? savings : []).find(x => x.id === id) || null; } catch (e) { /* ignore */ }
+    return !!((t && (t.imp || t.note)) || (g('fNote') && g('fNote').value.trim()) || (typeof pendingReceipt !== 'undefined' && pendingReceipt) || (g('fRecurring') && g('fRecurring').checked) || (g('fPending') && g('fPending').checked) || (g('fSplitEnabled') && g('fSplitEnabled').checked) || (window.__currentTags && window.__currentTags.length) || (g('fOccLink') && g('fOccLink').value) || (g('fTripLink') && g('fTripLink').value) );
+  }
+  const origOpen = window.openModal;
+  if (typeof origOpen === 'function') window.openModal = function () {
+    const r = origOpen.apply(this, arguments);
+    try { ['expCatGrid', 'incCatGrid', 'savCatGrid'].forEach(g => $(g) && $(g).classList.remove('ms-open')); setMore(false); refreshAllGrids(); syncCur(); syncChrome(); const l = $('msCurList'); if (l) l.style.display = 'none'; setTimeout(() => { const a = $('fAmt'); if (a && $('modal').classList.contains('open')) a.focus(); }, 120); } catch (e) { /* ignore */ }
+    return r;
+  };
+  ['editTx', 'editSav'].forEach(n => { const o = window[n]; if (typeof o === 'function') window[n] = function () { const r = o.apply(this, arguments); try { refreshAllGrids(); syncCur(); syncChrome(); setMore(moreInUse(arguments[0])); } catch (e) { /* ignore */ } return r; }; });
+
+  // ── save and add another
+  window.msSaveAndNew = function () {
+    const type = typeof txType !== 'undefined' ? txType : 'expense';
+    const before = (typeof txs !== 'undefined' ? txs.length : 0) + (typeof savings !== 'undefined' ? savings.length : 0);
+    try { window.saveTx(); } catch (e) { return; }
+    const open = $('modal').classList.contains('open'); const after = (typeof txs !== 'undefined' ? txs.length : 0) + (typeof savings !== 'undefined' ? savings.length : 0);
+    if (open || after <= before) return;                       // validation failed: the sheet stays open with its message
+    window.openModal(); if (type !== 'expense') window.selType(type);
+  };
+  syncChrome(); refreshAllGrids();
+})();
+</script>
 <script id="ms-ui56-v56">
 /* v56: one tone for "due soon" (red only when overdue, amber when close) and the row actions sheet. */
 (function () {
@@ -31258,6 +31200,55 @@ body.ms-modal-open .season-particle,body.ms-modal-open .skeleton,body.ms-modal-o
   if (typeof origMenu === 'function') window.openMenu = function () { const r = origMenu.apply(this, arguments); try { ensureSettingsRow(); } catch (e) { /* ignore */ } return r; };
   const origRebuild = window.rebuildMenu; if (typeof origRebuild === 'function') window.rebuildMenu = function () { const r = origRebuild.apply(this, arguments); try { ensureSettingsRow(); } catch (e) { /* ignore */ } return r; };
   try { ensureSettingsRow(); } catch (e) { /* menu not built yet: openMenu adds it */ }
+})();
+</script>
+<script id="ms-set63">
+/* v63: Settings as grouped rows: expanders, choosers, rates saved when edited. */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  // expanders
+  window.msExpToggle = function (id) { const e = $(id); if (e) e.classList.toggle('open'); };
+  window.msExpOpen = function (id) { const e = $(id); if (e) e.classList.add('open'); };
+  // chooser sheet: the chosen action runs inside the tap (file pickers need that on iOS), then the sheet closes
+  function ensureChooser() {
+    let m = $('msChooseModal'); if (m) return m;
+    m = document.createElement('div'); m.className = 'overlay stacked'; m.id = 'msChooseModal'; m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = '<div class="sheet" style="max-width:520px;margin:0 auto"><div class="modal-head"><div class="modal-title" id="msChooseTitle"></div><button class="close-x" aria-label="إغلاق" onclick="document.getElementById(\'msChooseModal\').classList.remove(\'open\')">×</button></div><div id="msChooseBody"></div></div>';
+    document.body.appendChild(m); return m;
+  }
+  window.msChoose = function (title, items) {
+    const m = ensureChooser(); $('msChooseTitle').textContent = title; const body = $('msChooseBody'); body.innerHTML = '';
+    items.forEach(it => { const b = document.createElement('button'); b.type = 'button'; b.className = 'tx-act'; b.innerHTML = (window.msIcon ? window.msIcon(it.icon) : '') + '<span>' + esc(it.label) + '</span>'; b.addEventListener('click', () => { try { it.fn(); } finally { m.classList.remove('open'); } }); body.appendChild(b); });
+    m.classList.add('open');
+  };
+  window.msChooseExport = function () { window.msChoose('تصدير وتقارير', [{ icon: 'file-export', label: 'تصدير الحركات (CSV)', fn: () => window.exportCSV() }, { icon: 'chart-bar', label: 'تقرير شهري', fn: () => window.generateMonthlyReport() }]); };
+  window.msChooseImport = function () { window.msChoose('استيراد كشف حساب', [{ icon: 'file-import', label: 'ملف CSV', fn: () => $('csvImportInput').click() }, { icon: 'file-import', label: 'ملف PDF', fn: () => $('pdfImportInput').click() }]); };
+  window.msOpenDualSalary = function () { $('settingsModal').classList.remove('open'); setTimeout(() => { const m = $('dualSalaryModal'); if (m) { m.classList.add('open'); if (typeof window.renderDualSalary === 'function') window.renderDualSalary(); } }, 120); };
+
+  // rates: summary line + saved when edited (no save button)
+  function age(ts) { const d = Date.now() - ts, m = Math.floor(d / 60000), h = Math.floor(m / 60), dd = Math.floor(h / 24); return dd >= 1 ? 'من ' + dd + ' يوم' : h >= 1 ? 'من ' + h + ' ساعة' : m >= 1 ? 'من ' + m + ' دقيقة' : 'الآن'; }
+  function ratesSummary() {
+    const el = $('msRatesSummary'); if (!el || typeof rates === 'undefined') return;
+    const meta = (typeof rateMeta !== 'undefined' && rateMeta) ? rateMeta : null; const ts = meta && (meta.apiTs || meta.ts);
+    el.textContent = '1 ر.س = ' + Number(rates.EGP).toFixed(2) + ' ج.م' + (ts ? ' · محدّثة ' + age(ts) : ' · مضبوطة يدويًا');
+  }
+  window.msRatesSummary = ratesSummary;
+  window.msSaveRates = function () {
+    const egp = parseFloat($('rEGP').value), usd = parseFloat($('rUSD').value), eur = parseFloat($('rEUR').value);
+    if (egp > 0) rates.EGP = egp; if (usd > 0) rates.USD = usd; if (eur > 0) rates.EUR = eur;
+    if (typeof saveRates === 'function') saveRates();
+    if (typeof rateMeta !== 'undefined') { rateMeta = { source: 'يدوي', ts: Date.now(), apiTs: null, isRealtime: false, manual: true }; if (typeof saveRateMeta === 'function') saveRateMeta(); }
+    ratesSummary(); if (typeof renderAll === 'function') renderAll();
+  };
+  ['rEGP', 'rUSD', 'rEUR'].forEach(id => { const e = $(id); if (e) e.addEventListener('change', window.msSaveRates); });
+  // opening: everything folded, summary fresh
+  const origOpen = window.openSettings;
+  if (typeof origOpen === 'function') window.openSettings = function () { const r = origOpen.apply(this, arguments); try { document.querySelectorAll('#settingsModal .ms-exp').forEach(e => e.classList.remove('open')); ratesSummary(); } catch (e) { /* ignore */ } return r; };
+  const origRates = window.openCurrencyRates;
+  window.openCurrencyRates = function () { const r = (typeof origRates === 'function') ? origRates.apply(this, arguments) : (typeof window.openSettings === 'function' ? window.openSettings() : null); try { window.msExpOpen('msRatesExp'); } catch (e) { /* ignore */ } return r; };
+  ratesSummary();
 })();
 </script>
 <script id="ms-vp57">
