@@ -30891,6 +30891,14 @@ b,strong,th,h1,h2,h3,h4{font-weight:600;}
 .ms-adv{margin-top:14px;}
 #msChooseModal .tx-act .ic{width:20px;height:20px;color:var(--accent);}
 </style>
+<style id="ms-nav-v64">
+/* v64: from "المزيد" a sheet shows ONE control, "رجوع إلى المزيد", instead of an X that closes everything */
+.overlay[data-ms-back] .v19-close-btn,.overlay[data-ms-back] .v22-close-x,.overlay[data-ms-back] .sheet-close-btn,.overlay[data-ms-back] .close-x,.overlay[data-ms-back] .ms-x{display:none !important;}
+.ms-back{display:none;position:absolute;top:12px;left:12px;z-index:5;align-items:center;gap:4px;height:36px;padding:0 12px 0 8px;background:var(--card2);border:0.5px solid var(--border);border-radius:999px;color:var(--text);font-family:inherit;font-size:13px;cursor:pointer;}
+.overlay[data-ms-back] .ms-back{display:inline-flex;}
+.ms-back .ic{width:18px;height:18px;transform:rotate(180deg);color:var(--accent);}
+.overlay .sheet,.overlay .settings-sheet{position:relative;}
+</style>
 <style id="ms-safe-v54">
 /* v54: a sheet is at most (overlay height - status bar - 24px) tall, so its title and close button are never under the status bar / dynamic island */
 .overlay .sheet{max-height:calc(100% - env(safe-area-inset-top, 0px) - 24px) !important;}
@@ -31249,6 +31257,38 @@ body.ms-modal-open .season-particle,body.ms-modal-open .skeleton,body.ms-modal-o
   const origRates = window.openCurrencyRates;
   window.openCurrencyRates = function () { const r = (typeof origRates === 'function') ? origRates.apply(this, arguments) : (typeof window.openSettings === 'function' ? window.openSettings() : null); try { window.msExpOpen('msRatesExp'); } catch (e) { /* ignore */ } return r; };
   ratesSummary();
+})();
+</script>
+<script id="ms-nav64">
+/* v64: a sheet opened from "المزيد" gets a back button to "المزيد" (and no second close button). Sheets opened from anywhere else are untouched. */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  let armedAt = 0;
+  // a tap on a row of the More sheet (or its Settings row) arms the flag; the next sheet that opens within 1.5s is "from More"
+  document.addEventListener('click', function (e) {
+    const t = e.target && e.target.closest ? e.target.closest('#menuModal .v17-menu-card, #msMenuSettings, #menuModal .menu-row') : null;
+    if (t) armedAt = Date.now();
+  }, true);
+  function ensureBack(ov) {
+    const sheet = ov.querySelector('.sheet, .settings-sheet'); if (!sheet || sheet.querySelector('.ms-back')) return;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'ms-back'; b.setAttribute('aria-label', 'رجوع إلى المزيد');
+    b.innerHTML = (window.msIcon ? window.msIcon('chevron-left', 'ms-back-ic') : '') + '<span>المزيد</span>';
+    b.addEventListener('click', function (e) { e.stopPropagation(); ov.classList.remove('open'); if (typeof window.openMenu === 'function') window.openMenu(); });
+    sheet.insertBefore(b, sheet.firstChild);
+  }
+  const seen = new WeakMap();
+  function watch(ov) {
+    if (seen.has(ov) || ov.id === 'menuModal') return; seen.set(ov, 1);
+    new MutationObserver(function () {
+      const open = ov.classList.contains('open');
+      if (open && !ov.dataset.msBack && armedAt && Date.now() - armedAt < 1500) { armedAt = 0; ov.dataset.msBack = 'menuModal'; ensureBack(ov); }
+      if (!open && ov.dataset.msBack) delete ov.dataset.msBack;
+    }).observe(ov, { attributes: true, attributeFilter: ['class'] });
+  }
+  function scan() { document.querySelectorAll('.overlay').forEach(watch); }
+  scan();
+  new MutationObserver(function (ms) { for (const m of ms) m.addedNodes.forEach(function (n) { if (n.nodeType === 1) { if (n.classList && n.classList.contains('overlay')) watch(n); else if (n.querySelectorAll) n.querySelectorAll('.overlay').forEach(watch); } }); }).observe(document.body, { childList: true });
 })();
 </script>
 <script id="ms-vp57">
