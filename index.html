@@ -63,7 +63,7 @@
     'msarifyi_travel_archive': 'أرشيف الرحلات', 'msarifyi_hajj_budget': 'ميزانية الحج', 'msarifyi_flights': 'الطيران',
     'msarifyi_bills': 'الفواتير', 'msarifyi_credit_cards': 'البطاقات', 'msarifyi_nw_history': 'صافي الثروة',
     'msarifyi_home_widgets': 'ودجات الرئيسية', 'msarifyi_theme': 'المظهر', 'msarifyi_base': 'العملة الأساسية',
-    'msarifyi_weddings': 'الأفراح', 'msarifyi_imp_rules': 'أهمية التصنيفات', 'msarifyi_mm_cards': 'إعداد الإحصائيات', 'msarifyi_cat_colors': 'ألوان التصنيفات', 'msarifyi_cat_map': 'دمج التصنيفات', 'msarifyi_cat_undo': 'تراجع الدمج', 'msarifyi_vehicles': 'المركبات', 'msarifyi_orders': 'الطلبات'
+    'msarifyi_weddings': 'الأفراح', 'msarifyi_imp_rules': 'أهمية التصنيفات', 'msarifyi_mm_cards': 'إعداد الإحصائيات', 'msarifyi_digits': 'شكل الأرقام', 'msarifyi_cat_colors': 'ألوان التصنيفات', 'msarifyi_cat_map': 'دمج التصنيفات', 'msarifyi_cat_undo': 'تراجع الدمج', 'msarifyi_vehicles': 'المركبات', 'msarifyi_orders': 'الطلبات'
   };
   function labelOf(k) { return String(LABELS[k] || String(k).replace(PREFIX, '')).replace(/[<>&"']/g, ''); }
 
@@ -4346,6 +4346,18 @@ button, .menu-row, .tx-card {
       </div>
     </div>
 
+    <!-- v55: شكل الأرقام -->
+    <div class="st2-group" id="digitsSection">
+      <div class="st2-group-title">🔢 شكل الأرقام</div>
+      <div class="st2-card">
+        <div style="font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:8px">بتتطبق على الأرقام والتواريخ في التطبيق كله.</div>
+        <div class="st2-btn-2">
+          <button class="st2-btn" id="digEn" onclick="msSetDigits('en')">123 إنجليزي</button>
+          <button class="st2-btn" id="digAr" onclick="msSetDigits('ar')">١٢٣ عربي</button>
+        </div>
+      </div>
+    </div>
+
     <!-- v41: التخزين وسجل الأخطاء -->
     <div class="st2-group" id="storageSection">
       <div class="st2-group-title">🧰 التخزين وسجل الأخطاء</div>
@@ -5687,6 +5699,9 @@ var chartYear = now.getFullYear();
 // ── v49: safe image source + safe emoji ──
 function msSafeImgSrc(s) { return (typeof s === 'string' && s.length <= 8 * 1024 * 1024 && /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+\/=]+$/.test(s)) ? s : ''; }
 function _msSafeEmoji(e) { e = String(e == null ? '' : e).replace(/[<>&"'`\\]/g, '').trim(); return [...e][0] || '💸'; }
+function msDigits() { try { return msStore.getRaw('msarifyi_digits') === 'ar' ? 'ar' : 'en'; } catch (e) { return 'en'; } }
+function msNumLoc() { return msDigits() === 'ar' ? 'ar-EG' : 'en-US'; }
+function msDateLoc() { return msDigits() === 'ar' ? 'ar-EG' : 'ar-EG-u-nu-latn'; }
 var _msJsonCache = {};
 function _msReadMap(key) {
   try {
@@ -5857,7 +5872,7 @@ function tick() {
   const n = new Date();
   // Clock fully removed in V14
   const dte = document.getElementById('dte');
-  if (dte) dte.textContent = n.toLocaleDateString('ar-EG',{weekday:'short',day:'numeric',month:'short'});
+  if (dte) dte.textContent = n.toLocaleDateString(msDateLoc(),{weekday:'short',day:'numeric',month:'short'});
   try {
     const hijri = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura',
       {day:'numeric', month:'long'}).format(n);
@@ -5878,11 +5893,11 @@ function toSAR(amount, currency, rate) {
   return amount * rate; // USD, EUR
 }
 function fmt(n, dec=2) {
-  return Number(n).toLocaleString('ar-EG',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+  return Number(n).toLocaleString(msNumLoc(),{minimumFractionDigits:dec,maximumFractionDigits:dec});
 }
 // Convert number to Arabic-Indic digits (10 → ١٠) — defined early so all renders can use it
 function toArabicDigits(n) {
-  return String(n).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[parseInt(d)]);
+  return String(n).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]).replace(/\d/g, d => msDigits() === 'ar' ? '٠١٢٣٤٥٦٧٨٩'[parseInt(d)] : d);
 }
 
 // HTML-escape user input before injecting into innerHTML to prevent XSS (#5)
@@ -5892,7 +5907,7 @@ function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => _es
 function escAttr(s) { return String(s == null ? '' : s).replace(/[\\'"]/g, '\\$&').replace(/\r/g, '\\r').replace(/\n/g, '\\n').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029').replace(/[&<>"']/g, c => _escMap[c]); }
 function monthKey(y, m) { return `${y}-${String(m+1).padStart(2,'0')}`; }
 function arabicMonth(y, m) {
-  return new Date(y, m, 1).toLocaleDateString('ar-EG',{month:'long',year:'numeric'});
+  return new Date(y, m, 1).toLocaleDateString(msDateLoc(),{month:'long',year:'numeric'});
 }
 
 // ── MONTH NAVIGATION ──
@@ -6437,7 +6452,7 @@ function showTab(t, btn) {
 // ── DATE LABEL ──
 function dtLabel(d) {
   if (!d) return 'بدون تاريخ';
-  try { return new Date(d).toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'}); }
+  try { return new Date(d).toLocaleDateString(msDateLoc(),{weekday:'long',year:'numeric',month:'long',day:'numeric'}); }
   catch { return d; }
 }
 function rateDisplayText(t) {
@@ -8137,7 +8152,7 @@ function restoreBackup(event) {
       if (data && data._fullBackup && data.data && typeof data.data==='object'){
         const keys = Object.keys(data.data).filter(k=>k.indexOf('msarifyi_')===0 && !msStore.isSensitive(k));
         if (!keys.length){ showAlert('❌ الملف فاضي', 'error'); event.target.value=''; return; }
-        const when = data.exported ? new Date(data.exported).toLocaleDateString('ar-EG') : 'غير معروف';
+        const when = data.exported ? new Date(data.exported).toLocaleDateString(msDateLoc()) : 'غير معروف';
         const ok = confirm('⚠️ هتستبدل كل بياناتك الحالية بالنسخة دي؟\n\nتاريخ النسخة: '+when+'\nعدد الأقسام: '+keys.length+'\n\nالبيانات الحالية هتتمسح. متأكد؟');
         if (!ok){ event.target.value=''; return; }
         // امسح الحالي (عدا القفل)
@@ -8254,7 +8269,7 @@ function generateMonthlyReport() {
     </div>
     <div class="report-body">
     <h1>📊 التقرير الشهري — ${monthName}</h1>
-    <p style="color:#656d76;font-size:12px">تم إنشاء التقرير في ${new Date().toLocaleString('ar-EG')}</p>
+    <p style="color:#656d76;font-size:12px">تم إنشاء التقرير في ${new Date().toLocaleString(msDateLoc())}</p>
 
     <div class="summary-grid">
       <div class="stat"><div class="lbl">📥 إجمالي الدخل</div><div class="val" style="color:#28a745">${fmt(toBase(incTotal),0)} ${sym}</div></div>
@@ -8465,7 +8480,7 @@ function renderSubs() {
   // Calculate next renewal (1st of next month)
   const next = new Date();
   next.setMonth(next.getMonth() + 1, 1);
-  const nextStr = next.toLocaleDateString('ar-EG', {day:'numeric', month:'long'});
+  const nextStr = next.toLocaleDateString(msDateLoc(), {day:'numeric', month:'long'});
   let total = 0;
   el.innerHTML = recurringTxs.map(r => {
     const isExp = r.type === 'expense';
@@ -13998,7 +14013,7 @@ function exportPrintReport() {
     <button class="close-btn" onclick="window.close();window.parent.postMessage('close-print','*')">✕ إغلاق</button>
   </div>
   <h1>📊 تقرير ${esc(monthLabel)}</h1>
-  <div class="sub">تم إنشاء التقرير في ${new Date().toLocaleString('ar-EG')}</div>
+  <div class="sub">تم إنشاء التقرير في ${new Date().toLocaleString(msDateLoc())}</div>
   <div class="summary">
     <div class="sum-box"><div>إجمالي الدخل</div><div class="pos" style="font-size:20px;font-weight:900">${fmt(toBase(incTot),0)} ${sym}</div></div>
     <div class="sum-box"><div>إجمالي المصروف</div><div class="neg" style="font-size:20px;font-weight:900">${fmt(toBase(expTot),0)} ${sym}</div></div>
@@ -20446,7 +20461,7 @@ setTimeout(() => {
       const isMyTurn = mk === myTurnMonth;
 
       const [y, mm] = mk.split('-');
-      const monthName = new Date(parseInt(y), parseInt(mm) - 1, 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+      const monthName = new Date(parseInt(y), parseInt(mm) - 1, 1).toLocaleDateString(msDateLoc(), { month: 'long', year: 'numeric' });
 
       let badge = '';
       if (isMyTurn) badge = '<span style="background:#06b6d4;color:#000;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:900;margin-right:6px">🎉 دوري</span>';
@@ -23607,7 +23622,7 @@ setTimeout(() => {
             if (!_chk.ok){ if(typeof showAlert==='function')showAlert('❌ النسخة اترفضت: '+_chk.error,'error'); event.target.value=''; return; }
             parsed.data = _chk.map;
             if (_chk.fixes > 0 && typeof showAlert==='function') showAlert('ℹ️ اتنضّف '+_chk.fixes+' قيمة فيها رموز غير آمنة','info');
-            const when = parsed.exported ? new Date(parsed.exported).toLocaleDateString('ar-EG') : 'غير معروف';
+            const when = parsed.exported ? new Date(parsed.exported).toLocaleDateString(msDateLoc()) : 'غير معروف';
             const ok = confirm('⚠️ هتستبدل كل بياناتك الحالية بالنسخة دي؟\n\nتاريخ النسخة: '+when+'\nعدد الأقسام: '+keys.length+'\n\nالبيانات الحالية هتتمسح. متأكد؟');
             if (!ok){ event.target.value=''; return; }
             if (!msStore.restoreAll(parsed.data, keys)) { if(typeof showAlert==='function')showAlert('❌ الاستعادة فشلت (مساحة التخزين ممتلئة). بياناتك الحالية اترجعت زي ما كانت.','error'); event.target.value=''; return; }
@@ -25405,7 +25420,7 @@ setTimeout(() => {
       <div style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border-radius:14px;padding:14px;margin-bottom:14px;font-family:inherit">
         <div style="display:flex;justify-content:space-between;align-items:start">
           <div>
-            <div style="font-size:11px;opacity:.85;letter-spacing:1px">${esc(bankName)}</div>
+            <div style="font-size:12px;opacity:.9">${esc(bankName)}</div>
             <div style="font-size:14px;font-weight:900;margin-top:2px">${s.statementMonth||'كشف حساب'}</div>
             ${s.cardNumber?`<div style="font-family:monospace;font-size:11px;margin-top:4px;opacity:.9">${s.cardNumber}</div>`:''}
           </div>
@@ -25766,7 +25781,7 @@ setTimeout(() => {
         <div style="position:relative;z-index:1">
           <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:14px">
             <div>
-              <div style="font-size:11px;opacity:.85;letter-spacing:1.5px;font-weight:700">${esc(card.bankName||'BANK')}</div>
+              <div style="font-size:12px;opacity:.9;font-weight:700">${esc(card.bankName||'BANK')}</div>
               <div style="font-size:16px;font-weight:900;margin-top:2px">${esc(card.name||'')}</div>
             </div>
             <div style="font-size:11px;opacity:.85;text-align:left">
@@ -26183,19 +26198,19 @@ setTimeout(() => {
 
   // ─── BANK PRESETS (gradients) ───────────────────────────
   const BANKS = {
-    snb:      { name:'البنك الأهلي السعودي', from:'#0ea45f', to:'#064e3b', short:'SNB' },
-    alrajhi:  { name:'مصرف الراجحي',          from:'#1e40af', to:'#1e3a8a', short:'الراجحي' },
-    riyad:    { name:'بنك الرياض',              from:'#1e3a8a', to:'#0f172a', short:'الرياض' },
-    sab:      { name:'ساب',                     from:'#dc2626', to:'#7f1d1d', short:'SAB' },
-    alinma:   { name:'الإنماء',                from:'#7c3aed', to:'#5b21b6', short:'الإنماء' },
-    albilad:  { name:'البلاد',                  from:'#0891b2', to:'#155e75', short:'البلاد' },
-    aljazira: { name:'الجزيرة',                from:'#0f766e', to:'#134e4a', short:'الجزيرة' },
+    snb:      { name:'البنك الأهلي السعودي', from:'#0ea45f', to:'#064e3b', short:'SNB', en:'SNB' },
+    alrajhi:  { name:'مصرف الراجحي',          from:'#1e40af', to:'#1e3a8a', short:'الراجحي', en:'alrajhi bank' },
+    riyad:    { name:'بنك الرياض',              from:'#1e3a8a', to:'#0f172a', short:'الرياض', en:'Riyad Bank' },
+    sab:      { name:'ساب',                     from:'#dc2626', to:'#7f1d1d', short:'SAB', en:'SAB' },
+    alinma:   { name:'الإنماء',                from:'#7c3aed', to:'#5b21b6', short:'الإنماء', en:'Alinma' },
+    albilad:  { name:'البلاد',                  from:'#0891b2', to:'#155e75', short:'البلاد', en:'Albilad' },
+    aljazira: { name:'الجزيرة',                from:'#0f766e', to:'#134e4a', short:'الجزيرة', en:'Aljazira' },
     anb:      { name:'العربي الوطني',          from:'#1d4ed8', to:'#1e3a8a', short:'ANB' },
     bsf:      { name:'الفرنسي',                from:'#6366f1', to:'#4338ca', short:'BSF' },
     stcpay:   { name:'STC Pay',                from:'#7c3aed', to:'#4c1d95', short:'STC' },
     cib:      { name:'CIB',                    from:'#7c2d12', to:'#451a03', short:'CIB' },
-    nbe:      { name:'الأهلي المصري (NBE)',   from:'#15803d', to:'#14532d', short:'NBE' },
-    cae:      { name:'بنك مصر',                from:'#dc2626', to:'#7f1d1d', short:'مصر' },
+    nbe:      { name:'البنك الأهلي المصري',   from:'#15803d', to:'#14532d', short:'NBE', en:'NBE' },
+    cae:      { name:'بنك مصر',                from:'#dc2626', to:'#7f1d1d', short:'مصر', en:'Banque Misr' },
     qnb:      { name:'QNB',                    from:'#7e22ce', to:'#581c87', short:'QNB' },
     other:    { name:'بنك آخر',                from:'#475569', to:'#1e293b', short:'BANK' }
   };
@@ -26234,22 +26249,24 @@ setTimeout(() => {
 
     // Compute totals
     let totalBalance = 0, totalLimit = 0, totalMin = 0;
-    const sym = symFor((cards[0] && cards[0].currency) || 'SAR');
+    const sym = (typeof BASE_LABELS !== 'undefined' && BASE_LABELS[baseCurrency]) ? BASE_LABELS[baseCurrency].sym : symFor('SAR');   // v55: totals are in the app's base currency
     for (const c of cards) {
       const r = calcCard(c);
-      totalBalance += r.balance;
-      totalLimit += r.limit;
-      totalMin += r.minDue;
+      const _c = v => toBase(curToSAR(Number(v) || 0, c.currency || 'SAR'));   // v55: a card in Egyptian pounds and one in riyals were added as if they were the same currency
+      let _min = r.minDue; try { const _pd = calcPaymentDue(c); if (_pd && _pd.minimumDue >= 0) _min = _pd.minimumDue; } catch (e) { /* keep */ }
+      totalBalance += _c(r.balance);
+      totalLimit += _c(r.limit);
+      totalMin += _c(_min);
     }
     const totalAvail = Math.max(0, totalLimit - totalBalance);
 
     // Header summary
     let html = `
-      <div style="background:linear-gradient(135deg,#7c3aed,#5b21b6 55%,#4f46e5);color:#fff;border-radius:20px;padding:18px;margin:10px 0 16px;position:relative;overflow:hidden;box-shadow:0 12px 32px -10px rgba(124,58,237,.55)">
+      <div style="background:linear-gradient(160deg,#1c2430,#121820);color:#fff;border:1px solid var(--border);border-radius:20px;padding:18px;margin:10px 0 16px;position:relative;overflow:hidden">
         <div style="position:absolute;top:-40px;right:-30px;width:150px;height:150px;background:radial-gradient(circle,rgba(255,255,255,.15),transparent 70%);border-radius:50%;pointer-events:none"></div>
         <div style="position:absolute;bottom:-50px;left:-20px;width:130px;height:130px;background:radial-gradient(circle,rgba(255,255,255,.08),transparent 70%);border-radius:50%;pointer-events:none"></div>
         <div style="position:relative;z-index:1">
-          <div style="font-size:11px;opacity:.85;letter-spacing:1.5px;font-weight:800">💎 إجمالي البطاقات</div>
+          <div style="font-size:12px;opacity:.9;font-weight:800">💎 إجمالي البطاقات</div>
           <div style="display:flex;justify-content:space-between;align-items:end;margin-top:6px">
             <div>
               <div style="font-size:11px;opacity:.85">المبلغ المستحق</div>
@@ -26262,10 +26279,10 @@ setTimeout(() => {
           </div>
           <div style="display:flex;gap:7px;margin-top:12px;font-size:11px">
             <div style="background:rgba(255,255,255,.16);border-radius:10px;padding:7px 10px;flex:1;text-align:center">
-              <div style="opacity:.85;font-size:10px">الحد الأدنى</div><b style="direction:ltr;font-size:13px">${fmt(totalMin)}</b>
+              <div style="opacity:.85;font-size:11px">الحد الأدنى</div><b style="direction:ltr;font-size:13px">${fmt(totalMin)}</b>
             </div>
             <div style="background:rgba(255,255,255,.16);border-radius:10px;padding:7px 10px;flex:1;text-align:center">
-              <div style="opacity:.85;font-size:10px">عدد البطاقات</div><b style="font-size:13px">${cards.length}</b>
+              <div style="opacity:.85;font-size:11px">عدد البطاقات</div><b style="font-size:13px">${cards.length}</b>
             </div>
           </div>
         </div>
@@ -26285,25 +26302,25 @@ setTimeout(() => {
           <div style="position:relative;z-index:1">
             <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px">
               <div style="min-width:0;flex:1">
-                <div style="font-size:10px;opacity:.85;letter-spacing:1.5px;font-weight:800">${esc(bank.name)}</div>
+                <div style="font-size:12px;opacity:.95;font-weight:800">${esc(bank.name)}${bank.en ? ` <span style="font-size:11px;opacity:.8;font-weight:600;direction:ltr;unicode-bidi:isolate;display:inline-block">· ${esc(bank.en)}</span>` : ''}</div>
                 <div style="font-size:15px;font-weight:900;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.2)">${esc(card.name||'بطاقة')}</div>
               </div>
               <div style="text-align:left;flex-shrink:0">
-                <div style="font-size:12px;opacity:.95;font-weight:900;font-style:italic;letter-spacing:-.5px">${(card.type || card.cardType || 'visa').toUpperCase()}</div>
+                <div style="direction:ltr;display:flex;align-items:center">${(function(t){ t = String(t||'visa').toLowerCase(); if (t === 'mastercard') return '<svg width="38" height="24" viewBox="0 0 38 24" aria-label="Mastercard"><circle cx="13" cy="12" r="11" fill="#eb001b"/><circle cx="25" cy="12" r="11" fill="#f79e1b" fill-opacity=".92"/><path d="M19 3.2a11 11 0 0 1 0 17.6a11 11 0 0 1 0-17.6z" fill="#ff5f00"/></svg>'; if (t === 'visa') return '<span style="font-size:17px;font-weight:900;font-style:italic;font-family:Arial,sans-serif">VISA</span>'; return '<span style="font-size:13px;font-weight:900">' + esc(t.toUpperCase()) + '</span>'; })(card.type || card.cardType)}</div>
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
               <div style="width:38px;height:28px;border-radius:6px;background:linear-gradient(135deg,#f7d774,#d4a94a 45%,#f7d774 60%,#b8892e);box-shadow:inset 0 1px 2px rgba(255,255,255,.5),0 1px 2px rgba(0,0,0,.25);flex-shrink:0;position:relative">
                 <div style="position:absolute;inset:5px 4px;border:1px solid rgba(0,0,0,.15);border-radius:3px"></div>
               </div>
-              <div style="font-family:monospace;font-size:14px;letter-spacing:2px;opacity:.92;text-shadow:0 1px 2px rgba(0,0,0,.2)">•••• •••• •••• ${esc(card.last4)||'••••'}</div>
+              <div style="font-family:monospace;font-size:14px;letter-spacing:2px;opacity:.92;text-shadow:0 1px 2px rgba(0,0,0,.2);direction:ltr;unicode-bidi:isolate">•••• •••• •••• ${esc(card.last4)||'••••'}</div>
             </div>
-            <div style="font-size:10px;opacity:.85">المستحق</div>
+            <div style="font-size:11px;opacity:.85">المستحق</div>
             <div style="font-size:23px;font-weight:900;direction:ltr;text-shadow:0 1px 3px rgba(0,0,0,.25)">${fmt(r.balance)} <span style="font-size:12px;opacity:.85">${cardSym}</span></div>
-            <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;opacity:.95">
+            <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;opacity:.95">
               <span>الحد: <b style="direction:ltr">${fmt0(r.limit)}</b></span>
               <span>المتاح: <b style="direction:ltr">${fmt0(r.available)}</b></span>
-              <span>الاستخدام: <b>${r.utilization.toFixed(0)}%</b></span>
+              <span>الاستخدام: <b style="direction:ltr;display:inline-block">${r.utilization.toFixed(0)}%</b></span>
             </div>
             <div style="background:rgba(0,0,0,.22);border-radius:8px;height:7px;margin-top:7px;overflow:hidden">
               <div style="background:${utilColor};height:100%;width:${r.utilization}%;transition:width .6s cubic-bezier(.34,1.2,.46,1);border-radius:8px"></div>
@@ -26317,8 +26334,8 @@ setTimeout(() => {
                 var dueTxt = pd.dueDateText || '';
                 var daysTxt = days==null ? '' : (days<0 ? ('متأخر '+(-days)+' يوم') : days===0 ? 'النهاردة!' : ('باقي '+days+' يوم'));
                 return '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:9px 11px;background:rgba(0,0,0,.25);border-radius:10px'+(urgent?';border:1px solid rgba(248,81,73,.5)':'')+'">'
-                  + '<div><div style="font-size:9px;opacity:.8">الحد الأدنى للسداد</div><div style="font-size:15px;font-weight:900;direction:ltr">'+fmt(pd.minimumDue)+' '+cardSym+'</div></div>'
-                  + '<div style="text-align:left"><div style="font-size:9px;opacity:.8">'+(dueTxt?('يستحق '+dueTxt):'')+'</div><div style="font-size:12px;font-weight:900;color:'+(urgent?'#ff9b94':'#fff')+'">'+daysTxt+'</div></div>'
+                  + '<div><div style="font-size:11px;opacity:.85">الحد الأدنى للسداد</div><div style="font-size:15px;font-weight:900;direction:ltr">'+fmt(pd.minimumDue)+' '+cardSym+'</div></div>'
+                  + '<div style="text-align:left"><div style="font-size:11px;opacity:.85">'+(dueTxt?('يستحق '+dueTxt):'')+'</div><div style="font-size:12px;font-weight:900;color:'+(urgent?'#ff9b94':'#fff')+'">'+daysTxt+'</div></div>'
                 + '</div>';
               }catch(e){ return ''; }
             })()}
@@ -26531,7 +26548,7 @@ setTimeout(() => {
         <div style="position:relative;z-index:1">
           <div style="display:flex;justify-content:space-between;margin-bottom:10px">
             <div>
-              <div style="font-size:10px;opacity:.85;letter-spacing:1.5px;font-weight:700">${esc(bank.name)}</div>
+              <div style="font-size:12px;opacity:.95;font-weight:800">${esc(bank.name)}${bank.en ? ` <span style="font-size:11px;opacity:.8;font-weight:600;direction:ltr;unicode-bidi:isolate;display:inline-block">· ${esc(bank.en)}</span>` : ''}</div>
               <div style="font-size:15px;font-weight:900;margin-top:2px">${esc(card.name||'')}</div>
             </div>
             <div style="text-align:left">
@@ -26559,7 +26576,7 @@ setTimeout(() => {
           <div style="position:relative;z-index:1">
             <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px">
               <div>
-                <div style="font-size:11px;opacity:.9;font-weight:700;letter-spacing:1px">💰 الواجب سداده</div>
+                <div style="font-size:12px;opacity:.9;font-weight:700">💰 الواجب سداده</div>
                 ${pd.dueDate ? `
                   <div style="font-size:11px;margin-top:3px;opacity:.95">
                     ⏰ آخر موعد: <b>${pd.dueDateText}</b>
@@ -28308,7 +28325,7 @@ setTimeout(() => {
       if (diff===0) return 'النهاردة';
       if (diff===1) return 'إمبارح';
       if (diff>1 && diff<7) return 'من '+diff+' أيام';
-      return dt.toLocaleDateString('ar-EG',{day:'numeric',month:'short'});
+      return dt.toLocaleDateString(msDateLoc(),{day:'numeric',month:'short'});
     }catch(e){ return d||''; }
   }
 
@@ -28565,6 +28582,7 @@ setTimeout(() => {
       // 1) أقساط قرب موعد سدادها (خلال 5 أيام)
       var inst = (typeof installments!=='undefined' && Array.isArray(installments))?installments:[];
       inst.forEach(function(i){
+        if (window.msUpcoming) return;   // v55: shown in the strip at the top
         var paid = i.paidMonths||0, total = i.totalMonths||0;
         if (total && paid>=total) return;
         if (i.lastPaidMonth){
@@ -28847,7 +28865,7 @@ setTimeout(() => {
     });
     parts = parts.filter(Boolean);
 
-    el.innerHTML = '<div class="h2-wrap">'+parts.join('')+'</div>';
+    el.innerHTML = '<div class="h2-wrap">'+(window.msNowStripHtml ? window.msNowStripHtml() : '')+parts.join('')+'</div>';
   }
 
   // ── تخصيص الصفحة الرئيسية (ترتيب + تشغيل/إطفاء الودجت) ──
@@ -30886,6 +30904,20 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(false); });
 })();
 </script>
+<style id="ms-ui-v55">
+/* v55: no letter-spacing on Arabic titles and labels (it breaks the joined letters); header folds when scrolled; bottom navigation */
+.app-name,.modal-title,.h2-sec-title,.dash-sec-title,.st2-head .t,.home-greet .hg-line,.sum-main .lbl,.sum-inc .lbl,.sum-exp .lbl,.sum-sav .lbl,.h2-hero-lbl,.st2-group-title{letter-spacing:0 !important;}
+.header{transition:padding .2s;}
+.header.ms-compact .summary-wrap,.header.ms-compact .header-sub{display:none;}
+.header.ms-compact{padding-bottom:8px;}
+.bottom-bar.ms-nav{display:flex;align-items:flex-end;justify-content:space-around;gap:0;padding:6px 8px calc(6px + env(safe-area-inset-bottom));}
+.ms-nav button{flex:1;background:none;border:0;color:var(--muted);font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;min-height:44px;}
+.ms-nav .ico{font-size:20px;line-height:1;filter:grayscale(.6);}
+.ms-nav .lbl{font-size:11px;font-weight:700;}
+.ms-nav button.on{color:var(--accent);}
+.ms-nav button.on .ico{filter:none;}
+.ms-nav .ms-nav-add{flex:0 0 56px;height:56px;min-height:56px;margin-top:-22px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;font-size:28px;font-weight:900;box-shadow:0 4px 14px rgba(240,180,41,.4);justify-content:center;padding:0;}
+</style>
 <style id="ms-safe-v54">
 /* v54: a sheet is at most (overlay height - status bar - 24px) tall, so its title and close button are never under the status bar / dynamic island */
 .overlay .sheet{max-height:calc(100% - env(safe-area-inset-top, 0px) - 24px) !important;}
@@ -31036,6 +31068,97 @@ body.ms-modal-open .season-particle,body.ms-modal-open .skeleton,body.ms-modal-o
 
   if (window.msStore) { window.msStore.sanitizeBackup = sanitizeBackup; window.msStore.checkLegacyBackup = checkLegacyBackup; window.msStore.safeImgSrc = safeImgSrc; }
 })();
+</script>
+<script id="ms-ui54-v55">
+/* v55: "important now" strip, collapsing header, bottom navigation. */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const fmt0 = n => (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  const SYM = { SAR: 'ر.س', EGP: 'ج.م', USD: '$', EUR: '€' };
+  const sym = c => SYM[c] || c || 'ر.س';
+  const dayStart = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  // ───────── upcoming payments from every source that has a real due date
+  window.msUpcoming = function (now) {
+    now = now || new Date(); const t0 = dayStart(now), out = [];
+    try {
+      (window.creditCards || []).forEach(c => {
+        const pd = typeof window.calcPaymentDue === 'function' ? window.calcPaymentDue(c) : null;
+        if (pd && pd.minimumDue > 0 && pd.daysUntilDue != null) out.push({ k: 'card', id: c.id, icon: '💳', title: c.name || 'بطاقة', sub: 'الحد الأدنى · ' + (pd.dueDateText || ''), amount: pd.minimumDue, cur: c.currency || 'SAR', days: pd.daysUntilDue });
+      });
+    } catch (e) { /* ignore */ }
+    try {
+      (typeof installments !== 'undefined' ? installments : []).forEach(i => {
+        if (!i || i.linkedCardId || (i.paidMonths || 0) >= i.totalMonths || typeof getInstNextDueInfo !== 'function') return;
+        const info = getInstNextDueInfo(i, now); if (info.status === 'done' || info.status === 'paid' || !isFinite(info.daysFromToday)) return;
+        out.push({ k: 'inst', id: i.id, icon: '📆', title: i.name || 'قسط', sub: 'قسط شهري', amount: Number(i.monthlyPayment) || 0, cur: i.currency || 'SAR', days: info.daysFromToday });
+      });
+    } catch (e) { /* ignore */ }
+    try {
+      const subs = (typeof recurringTxs !== 'undefined' ? recurringTxs : []).filter(r => r && r.type === 'expense');
+      if (subs.length) {
+        const next = new Date(now.getFullYear(), now.getMonth() + 1, 1), days = Math.round((next - t0) / 86400000);
+        const total = subs.reduce((s, r) => s + (Number(r.amountSAR) || 0), 0);
+        if (total > 0) out.push({ k: 'subs', id: 'subs', icon: '🔁', title: 'اشتراكات شهرية', sub: subs.length + ' اشتراك · تتجدد أول الشهر', amount: typeof toBase === 'function' ? toBase(total) : total, cur: typeof baseCurrency === 'string' ? baseCurrency : 'SAR', days });
+      }
+    } catch (e) { /* ignore */ }
+    return out.filter(x => x.days <= 30).sort((a, b) => a.days - b.days);
+  };
+  const dayChip = d => d < 0 ? { t: 'متأخر ' + (-d) + ' يوم', c: 'var(--red)' } : d === 0 ? { t: 'النهاردة', c: '#f59e0b' } : d === 1 ? { t: 'بكرة', c: '#f59e0b' } : { t: 'باقي ' + d + ' يوم', c: d <= 5 ? '#f59e0b' : 'var(--muted)' };
+  window.msNowStripHtml = function () {
+    const items = window.msUpcoming(); if (!items.length) return '';
+    const shown = items.slice(0, 3);
+    const rows = shown.map((x, i) => { const ch = dayChip(x.days); return `<div onclick="msNowOpen('${escAttr(x.k)}','${escAttr(x.id)}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;${i ? 'border-top:1px solid var(--border);' : ''}cursor:pointer"><span style="font-size:20px;flex-shrink:0">${x.icon}</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.title)}</div><div style="font-size:11px;color:var(--muted);margin-top:1px">${esc(x.sub)}</div></div><div style="text-align:left;flex-shrink:0"><div style="font-size:14px;font-weight:900;direction:ltr">${fmt0(x.amount)} <span style="font-size:11px">${esc(sym(x.cur))}</span></div><div style="font-size:11px;font-weight:800;color:${ch.c}">${ch.t}</div></div></div>`; }).join('');
+    const worst = shown[0].days <= 3 ? '#f59e0b' : 'var(--border)';
+    return `<div id="msNowStrip" style="margin:0 0 12px"><div style="display:flex;justify-content:space-between;align-items:center;margin:2px 4px 6px"><span style="font-size:15px;font-weight:900">⏰ الأهم دلوقتي</span>${items.length > 3 ? `<span style="font-size:11px;color:var(--accent)">+${items.length - 3} كمان</span>` : ''}</div><div style="background:var(--card);border:1px solid ${worst};border-radius:14px;overflow:hidden">${rows}</div></div>`;
+  };
+  window.msNowOpen = function (k, id) {
+    try {
+      if (k === 'card' && typeof window.openCardDetail === 'function') { window.openCardDetail(id); return; }
+      if (k === 'inst') { $('installmentsModal').classList.add('open'); if (typeof renderInstallments === 'function') renderInstallments(); return; }
+      if (k === 'subs') { $('subsModal').classList.add('open'); if (typeof renderSubs === 'function') renderSubs(); }
+    } catch (e) { /* ignore */ }
+  };
+
+  // ───────── header folds to one row while the page is scrolled down
+  (function () {
+    const sc = document.querySelector('.body-scroll'), hd = document.querySelector('.header'); if (!sc || !hd) return;
+    let compact = false;
+    sc.addEventListener('scroll', function () {
+      const y = sc.scrollTop, room = sc.scrollHeight - sc.clientHeight;
+      if (!compact && y > 90 && room > 320) { compact = true; hd.classList.add('ms-compact'); }
+      else if (compact && y < 12) { compact = false; hd.classList.remove('ms-compact'); }
+    }, { passive: true });
+    window.msHeaderCompact = () => compact;
+  })();
+
+  // ───────── bottom navigation (replaces the wide yellow add button)
+  (function () {
+    const bar = document.querySelector('.bottom-bar'); if (!bar) return;
+    bar.classList.add('ms-nav');
+    bar.innerHTML = `<button data-n="home" onclick="msNav('home')" aria-label="الرئيسية"><span class="ico">🏠</span><span class="lbl">الرئيسية</span></button>
+      <button data-n="tx" onclick="msNav('tx')" aria-label="الحركات"><span class="ico">📋</span><span class="lbl">الحركات</span></button>
+      <button class="ms-nav-add" onclick="openModal()" aria-label="إضافة حركة">＋</button>
+      <button data-n="cards" onclick="msNav('cards')" aria-label="الكروت"><span class="ico">💳</span><span class="lbl">الكروت</span></button>
+      <button data-n="more" onclick="msNav('more')" aria-label="المزيد"><span class="ico">☰</span><span class="lbl">المزيد</span></button>`;
+    const tabBtn = t => document.querySelector('.tab-btn[onclick*="\'' + t + '\'"]');
+    window.msNav = function (n) {
+      if (n === 'home' && tabBtn('home')) showTab('home', tabBtn('home'));
+      else if (n === 'tx' && tabBtn('all')) showTab('all', tabBtn('all'));
+      else if (n === 'cards') { const m = $('creditCardsModal'); if (m) { m.classList.add('open'); if (typeof renderCreditCards === 'function') renderCreditCards(); } }
+      else if (n === 'more') openMenu();
+    };
+    const mark = t => { bar.querySelectorAll('button[data-n]').forEach(b => b.classList.toggle('on', b.dataset.n === (t === 'home' ? 'home' : (t === 'all' || t === 'income' || t === 'expense' || t === 'savings') ? 'tx' : ''))); };
+    const orig = window.showTab;
+    if (typeof orig === 'function') window.showTab = function (t, btn) { const r = orig.apply(this, arguments); try { mark(t); } catch (e) { /* ignore */ } return r; };
+    mark(typeof curTab !== 'undefined' ? curTab : 'home');
+  })();
+})();
+</script>
+<script id="ms-digits-v55">
+(function(){ function mark(){ var d = (typeof msDigits === "function") ? msDigits() : "en"; ["En","Ar"].forEach(function(k){ var b = document.getElementById("dig"+k); if(b){ var on = (k.toLowerCase() === d); b.style.borderColor = on ? "var(--accent)" : ""; b.style.background = on ? "rgba(240,180,41,.15)" : ""; } }); } window.msSetDigits = function(v){ try { msStore.setRaw("msarifyi_digits", v === "ar" ? "ar" : "en"); } catch(e){} mark(); if (window.showToast) window.showToast("تم. هيتطبق بعد إعادة تحميل التطبيق", "success"); setTimeout(function(){ location.reload(); }, 700); }; mark(); })();
 </script>
 <script id="ms-closefix-v46-js">
 /* v46: one close button per sheet.
