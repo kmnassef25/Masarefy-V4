@@ -26359,13 +26359,16 @@ setTimeout(() => {
     const cardSym = symFor(card.currency);
 
     // 1) Total historical cost of credit (gross murabaha profit + fees charged)
-    const grossFees = (card.transactions||[]).filter(t=>t.type==='fee')
-      .reduce((s,t)=>s+Math.abs(Number(t.amount)||0),0);
+    const _ft = window.ccFeeTotals ? window.ccFeeTotals(card) : null;
+    const grossFees = _ft ? _ft.gross : (card.transactions||[]).filter(t=>t.type==='fee').reduce((s,t)=>s+Math.abs(Number(t.amount)||0),0);
     if (grossFees > 0) {
+      const _refunded = _ft ? _ft.credits : 0;
       tips.push({
         icon:'💸', color:'#f59e0b',
         title:'إجمالي تكلفة الائتمان',
-        text:`اتحصّل عليك ${fmt(grossFees)} ${cardSym} رسوم وفوائد مرابحة إجمالاً على البطاقة دي من كل الكشوفات المسجّلة عندك. ده الرقم اللي يستاهل تراجعه لو عايز تقلل التكلفة.`
+        text: _refunded > 0
+          ? `البنك خصم عليك ${fmt(grossFees)} ${cardSym} ربح ورسوم مرابحة ورجّع لك منها ${fmt(_refunded)}. يعني اللي اتحسب عليك فعلًا من كل الكشوفات المسجّلة ${fmt(_ft.net)} ${cardSym}. ده الرقم اللي يستاهل تراجعه لو عايز تقلل التكلفة.`
+          : `اتحصّل عليك ${fmt(grossFees)} ${cardSym} رسوم وفوائد مرابحة إجمالاً على البطاقة دي من كل الكشوفات المسجّلة عندك. ده الرقم اللي يستاهل تراجعه لو عايز تقلل التكلفة.`
       });
     }
 
@@ -27532,7 +27535,7 @@ setTimeout(() => {
         </div>
         <div onclick="window.ccTileOpen('${escAttr(cardId)}','fee')" style="background:var(--card2);border-radius:10px;padding:10px;text-align:center;cursor:pointer;border:1px solid transparent">
           <div style="font-size:10px;color:var(--muted);font-weight:700">إجمالي الرسوم ›</div>
-          <div style="color:#f59e0b;font-weight:900;font-size:14px;direction:ltr">${fmt(r.fees)}</div>
+          ${(() => { const _t = window.ccFeeTotals ? window.ccFeeTotals(card) : null; return (_t && _t.credits > 0) ? `<div style="color:#f59e0b;font-weight:900;font-size:14px;direction:ltr">${fmt(_t.net)}</div><div style="font-size:9px;color:var(--muted);font-weight:700;margin-top:2px">الصافي · قبل الاسترداد ${fmt(_t.gross)}</div>` : `<div style="color:#f59e0b;font-weight:900;font-size:14px;direction:ltr">${fmt(r.fees)}</div>`; })()}
         </div>
         <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
           <div style="font-size:10px;color:var(--muted);font-weight:700">عدد العمليات</div>
@@ -29578,12 +29581,17 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
     return { kind, gross: sum(items, false), credits: sum(items, true), net: Math.round((sum(items, false) - sum(items, true)) * 100) / 100, count: items.length, groups: keys.map(k => ({ key: k, items: groups[k].sort((a, b) => String(b.t.date).localeCompare(String(a.t.date))), gross: sum(groups[k], false), credits: sum(groups[k], true) })) };
   };
 
+  // gross = fees charged, credits = refunds that reverse fees, net = what was really paid
+  window.ccFeeTotals = function (card) { const d = window.ccTileData(card, 'fee'); return d ? { gross: d.gross, credits: d.credits, net: d.net, count: d.count } : { gross: 0, credits: 0, net: 0, count: 0 }; };
+
   window.ccTileOpen = function (cardId, kind) {
     const card = cardOf(cardId), K = KINDS[kind]; if (!card || !K) return;
     const d = window.ccTileData(card, kind), s = symOf(card);
     ensure(); $('ccTileTitle').textContent = K.title;
     const hasCredits = d.credits > 0;
-    const head = `<div style="background:var(--card2);border-radius:12px;padding:12px;margin-bottom:10px;text-align:center"><div style="font-size:11px;color:var(--muted)">${esc(card.name || '')} ${card.last4 ? '•••• ' + esc(card.last4) : ''}</div><div style="font-size:24px;font-weight:900;direction:ltr;color:${K.color};margin-top:4px">${fmt(d.gross)} <span style="font-size:12px">${esc(s)}</span></div><div style="font-size:11px;color:var(--muted)">${d.count} عملية</div>${hasCredits ? `<div style="font-size:12px;margin-top:6px;line-height:1.8">بعد ${esc(K.creditLabel)} <b style="direction:ltr;display:inline-block;color:var(--green)">${fmt(d.credits)}</b>: ${esc(K.netLabel)} <b style="direction:ltr;display:inline-block">${fmt(d.net)} ${esc(s)}</b></div>` : ''}</div>`;
+    const head = hasCredits
+      ? `<div style="background:var(--card2);border-radius:12px;padding:12px;margin-bottom:10px;text-align:center"><div style="font-size:11px;color:var(--muted)">${esc(card.name || '')} ${card.last4 ? '•••• ' + esc(card.last4) : ''}</div><div style="font-size:11px;color:var(--muted);margin-top:8px">${esc(K.netLabel)} (اللي اتحسب عليك فعلًا)</div><div style="font-size:26px;font-weight:900;direction:ltr;color:${K.color}">${fmt(d.net)} <span style="font-size:12px">${esc(s)}</span></div><div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.8">البنك خصم <b style="direction:ltr;display:inline-block">${fmt(d.gross)}</b> ورجّع <b style="direction:ltr;display:inline-block;color:var(--green)">${fmt(d.credits)}</b> · ${d.count} عملية</div></div>`
+      : `<div style="background:var(--card2);border-radius:12px;padding:12px;margin-bottom:10px;text-align:center"><div style="font-size:11px;color:var(--muted)">${esc(card.name || '')} ${card.last4 ? '•••• ' + esc(card.last4) : ''}</div><div style="font-size:24px;font-weight:900;direction:ltr;color:${K.color};margin-top:4px">${fmt(d.gross)} <span style="font-size:12px">${esc(s)}</span></div><div style="font-size:11px;color:var(--muted)">${d.count} عملية</div></div>`;
     const body = d.count === 0 ? `<div style="text-align:center;color:var(--muted);padding:28px;font-size:12px">${esc(K.empty)}</div>` : d.groups.map(g => `
       <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 4px 6px;font-size:12px;font-weight:900"><span>${esc(monthName(g.key))}</span><span style="direction:ltr;color:${K.color}">${fmt(g.gross)}${g.credits > 0 ? ` <span style="color:var(--green);font-weight:700">- ${fmt(g.credits)}</span>` : ''}</span></div>
       <div style="background:var(--card2);border-radius:12px;overflow:hidden">${g.items.map((x, i) => {
@@ -30878,6 +30886,10 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(false); });
 })();
 </script>
+<style id="ms-safe-v54">
+/* v54: a sheet is at most (overlay height - status bar - 24px) tall, so its title and close button are never under the status bar / dynamic island */
+.overlay .sheet{max-height:calc(100% - env(safe-area-inset-top, 0px) - 24px) !important;}
+</style>
 <style id="ms-scroll-v48">
 /* v48: smooth scrolling inside sheets */
 .overlay{-webkit-backdrop-filter:none !important;backdrop-filter:none !important;background:rgba(0,0,0,.7) !important;overscroll-behavior:contain;}
