@@ -24852,7 +24852,7 @@ setTimeout(() => {
 
       // A "data row" has: a date in DD/MM/YY AND "SAR" AND numeric amount
       const dateMatches = [...txt.matchAll(/(\d{1,2}\/\d{1,2}\/\d{2,4})/g)];
-      const sarMatch = txt.match(/([\d,\.]+)\s*SAR/i);
+      const sarMatch = txt.match(/([\d,\.]+)\s*SAR/i) || txt.match(/([\d,]+\.\d{2})\s*(?:USD|EUR|GBP|AED|EGP|KWD|QAR|BHD|OMR|TRY|JPY|CNY|CHF|CAD|AUD)\b/i);
       if (dateMatches.length < 1 || !sarMatch) continue;
 
       // Skip header rows
@@ -24869,13 +24869,18 @@ setTimeout(() => {
       if (numbers.length === 0) continue;
 
       const isCR = /\bCR\b/.test(txt);
+      // v52: single-line rows carry their own description between the amounts. The old logic took the row above, which dropped the first
+      // such payment and gave every later one the previous row's text.
+      const _inl = txt.match(/^(?:CR\s+)?[\d,]+\.\d{2}\s+[\d,]+\.\d{2}\s+(.+?)\s+[\d,]+\.\d{2}\s+[A-Za-z]{3}\s+\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}\/\d{1,2}\/\d{2,4}\s*$/);
+      const inlineDesc = (_inl && /[A-Za-z\u0600-\u06FF]/.test(_inl[1])) ? _inl[1].replace(/\s+/g, ' ').trim() : '';
 
       // Pull description from row(s) above (i-1) and continuation from row below (i+1)
       // In the all[] array sorted top-to-bottom:
       //   all[i-1] = row ABOVE data row (the description)
       //   all[i+1] = row BELOW data row (city or date continuation)
       let descParts = [];
-      if (i > 0) {
+      if (inlineDesc) descParts.push(inlineDesc);
+      if (!inlineDesc && i > 0) {
         const prev1 = all[i-1].text.trim();
         if (prev1 && !/^(Riyadh|Jeddah|Dammam|Cairo|Mecca|Madinah)$/i.test(prev1) && !/^\d/.test(prev1) && prev1.length > 1
             && !/Transaction Details|Posting Date|Transaction Description|Billing Amount|Other fees/i.test(prev1)) {
@@ -24885,7 +24890,7 @@ setTimeout(() => {
       // Look at row below for continuation (e.g. "- 25 September 25")
       let continuation = '';
       let city = '';
-      if (i + 1 < all.length) {
+      if (!inlineDesc && i + 1 < all.length) {
         const next1 = all[i+1].text.trim();
         if (/^(Riyadh|Jeddah|Dammam|Mecca|Madinah|Khobar|Cairo)$/i.test(next1)) {
           city = next1;
@@ -24908,6 +24913,9 @@ setTimeout(() => {
 
       // Amount: the value with SAR suffix is the transaction amount (in the middle column)
       let amount = parseNum(sarMatch[1]);
+      const _bill = txt.match(/^(?:CR\s+)?([\d,]+\.\d{2})\s+[\d,]+\.\d{2}\s/);
+      const _ccy = (txt.match(/[\d,]+\.\d{2}\s*([A-Z]{3})\b/) || [])[1] || 'SAR';
+      if (_bill) amount = parseNum(_bill[1]);          // billing amount in SAR
 
       // Determine type
       let type = 'purchase';
@@ -24922,6 +24930,8 @@ setTimeout(() => {
         amount: Math.abs(amount),
         description: desc + (city ? ` — ${city}` : ''),
         type,
+        postDate: parseDate(dateMatches[0][1]) || undefined,
+        origCurrency: _ccy !== 'SAR' ? _ccy : undefined, origAmount: _ccy !== 'SAR' ? parseNum(sarMatch[1]) : undefined,
         raw: txt.substring(0, 150)
       });
     }
@@ -24945,6 +24955,16 @@ setTimeout(() => {
       if (/Definitions|التعريفات|Important Notice/i.test(txt)) inInstSection = false;
       if (!inInstSection) continue;
 
+      // v52: layout of the September 2026 statement (verified on the real file)
+      const _t = txt.match(/^([\d,]+\.\d{2})\s+(\d{1,2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+(.+?)\s+(\d{1,2}\/\d{1,2}\/\d{2,4})\s+(\d{4,12})\s*$/);
+      if (_t) {
+        result.installments.push({
+          serial: _t[9], date: parseDate(_t[8]), merchant: _t[7].trim(),
+          txAmount: parseNum(_t[6]), monthlyAmount: parseNum(_t[5]), monthlyFee: parseNum(_t[4]), totalMonthly: parseNum(_t[3]),
+          remainingMonths: parseInt(_t[2], 10), remainingAmount: parseNum(_t[1]), raw: txt.substring(0, 200)
+        });
+        continue;
+      }
       // Installment row has: serial, date, merchant, txAmount, monthly, fee, total, remainingCount, remainingAmount
       const dateMatch = txt.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})/);
       const numbers = [];
@@ -24982,6 +25002,7 @@ setTimeout(() => {
   }
 
   // Expose parser globally so the import modal can use it
+  window.__parseAlRajhiRows = parseAlRajhi;   // for tests
   window.parseAlRajhiPdf = async function(file) {
     const pages = await extractPDFRows(file);
     return parseAlRajhi(pages);
@@ -25039,8 +25060,8 @@ setTimeout(() => {
 
   function nbeLooksLike(pages) {
     const txt = [].concat(...pages).map(r => r.text).join('\n');
-    if (/DCC MARKUP FEES|EB-00CC|CARD PAYMENT:|PAYMENT:\d{10,}/i.test(txt)) return true;
-    return nbeHas(txt, 'بطاقات') && nbeHas(txt, 'ائتمان') && nbeHas(txt, 'كشف') && /\d{6}\*{4,}\d{4}|\d{6}\*+\d{4}/.test(txt);
+    if (/alrajhi|al rajhi|الراجحي|Tasaheel|Murabaha/i.test(txt)) return false;      // v52: never claim another bank's statement
+    return /DCC MARKUP FEES|EB-00CC|CARD PAYMENT:|PAYMENT:\d{10,}|RLOP\s+\d+\s+OF|NATIONAL BANK OF EGYPT|البنك الأهلي المصري/i.test(txt);
   }
 
   // cluster the items of one page into visual lines by raw y
@@ -25590,6 +25611,29 @@ setTimeout(() => {
       txAdded++;
     });
 
+    // v52 Al Rajhi: the statement carries the real minimum, due date and closing balance. The transaction list does not include the opening balance,
+    // so the card balance is aligned to the statement's closing balance with a constant adjustment.
+    if (_v2Parsed.bank === 'alrajhi' && s.statementMonth && s.closingBalance != null) {
+      const MN = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+      const mm = String(s.statementMonth).toUpperCase().match(/([A-Z]+)\D+(\d{4})/); const mi = mm ? MN.indexOf(mm[1]) : -1;
+      if (mi >= 0) {
+        const pk = mm[2] + '-' + String(mi + 1).padStart(2, '0');
+        const last = new Date(Date.UTC(+mm[2], mi + 1, 0)).getUTCDate();
+        card.statements = card.statements || {};
+        card.statements[pk] = { opening: s.openingBalance, closing: s.closingBalance, minDue: s.minAmount, dueDate: s.dueDate, totalDue: s.totalAmountDue,
+          stmtDate: pk + '-' + String(last).padStart(2, '0'), limit: s.creditLimit, paymentsTotal: s.totalPayments, interest: s.profit, fees: s.fees,
+          carriedForward: s.carriedForward, otherCredits: s.otherCredits, importedAt: new Date().toISOString() };
+        let bal = 0;
+        for (const t of card.transactions) {
+          const k = (window.ccNormalizePeriodKey ? window.ccNormalizePeriodKey(t.statementMonth, t.date) : String(t.date).slice(0, 7));
+          if (k > pk) continue; const a = Math.abs(Number(t.amount) || 0);
+          if (t.type === 'purchase' || t.type === 'fee') bal += a; else if (t.type === 'payment' || t.type === 'refund') bal -= a;
+        }
+        card.balanceAdjust = Math.round((s.closingBalance - bal) * 100) / 100;
+        card.bank = card.bankPreset = 'alrajhi';
+      }
+    }
+
     // NBE: keep the statement's own figures (min payment, due date, closing) — they beat any estimate
     if (isNbe && s.statementMonth) {
       card.statements = card.statements || {};
@@ -25936,13 +25980,13 @@ setTimeout(() => {
         // plan_move and unknown types do NOT affect balance
       }
     }
-    const balance = purchases + fees - payments - refunds;
+    const balance = purchases + fees - payments - refunds + (Number(card.balanceAdjust) || 0);   // v52: opening balance of an imported statement
     // Read limit from BOTH naming conventions (V26 used "creditLimit", V29 uses "limit")
     const limit = Number(card.limit || card.creditLimit) || 0;
     const available = Math.max(0, limit - balance);
     const utilization = limit > 0 ? Math.min(100, Math.max(0, (balance / limit) * 100)) : 0;
     const minPct = Number(card.minPaymentPct) || 5;
-    const minDue = Math.max(0, balance) * (minPct / 100);
+    const minDue = window.msArMin ? window.msArMin(card, Math.max(0, balance), Math.max(0, balance) * (minPct / 100)) : Math.max(0, balance) * (minPct / 100);
     // V26 used "interestRate", V29 uses "profitRate" — Al Rajhi uses 2.20% (not 2.5%)
     const profitRate = Number(card.profitRate || card.interestRate) || 2.20;
     return {
@@ -26011,7 +26055,8 @@ setTimeout(() => {
     const fivePctOfCurrent = Math.max(0, currentStmt.closing - installmentsMonthly) * (minPct / 100);
 
     // Compute auto minimum due
-    const autoMinDue = pastDue + fivePctOfCurrent + installmentsMonthly;
+    const _autoRaw = pastDue + fivePctOfCurrent + installmentsMonthly;
+    const autoMinDue = window.msArMin ? window.msArMin(card, r.balance, _autoRaw) : _autoRaw;   // v51: floor (Al Rajhi: 100)
 
     // Allow manual override stored on the card (`card.manualMinDue`)
     const manualOverride = (typeof card.manualMinDue === 'number' && card.manualMinDue > 0)
@@ -26077,7 +26122,7 @@ setTimeout(() => {
   // Falls back to grouping by tx.date month if statementMonth not set on tx.
   function calcStatement(card, periodKey) {
     const txs = card.transactions || [];
-    let opening = 0, purchases = 0, fees = 0, payments = 0, refunds = 0;
+    let opening = Number(card.balanceAdjust) || 0, purchases = 0, fees = 0, payments = 0, refunds = 0;   // v52: opening balance of an imported statement
     const periodTxs = [];
     const target = normalizePeriodKey(periodKey);
     for (const t of txs) {
@@ -26098,7 +26143,7 @@ setTimeout(() => {
     }
     const closing = opening + purchases + fees - payments - refunds;
     const minPct = Number(card.minPaymentPct) || 5;
-    const minDue = Math.max(0, closing) * (minPct / 100);
+    const minDue = window.msArMin ? window.msArMin(card, Math.max(0, closing), Math.max(0, closing) * (minPct / 100)) : Math.max(0, closing) * (minPct / 100);
     return {
       periodKey: target, opening, purchases, fees, payments, refunds,
       closing, minDue, items: periodTxs
@@ -26106,7 +26151,7 @@ setTimeout(() => {
   }
 
   // عرّض دوال حساب البطاقات عشان التوزيع الشهري (في closure تاني) يوصلها
-  try{ window.calcCard = calcCard; window.calcPaymentDue = calcPaymentDue; window.CARDS = CARDS; window.ccNormalizePeriodKey = normalizePeriodKey; }catch(e){}
+  try{ window.calcCard = calcCard; window.calcPaymentDue = calcPaymentDue; window.CARDS = CARDS; window.ccNormalizePeriodKey = normalizePeriodKey; window.ccListPeriods = listPeriods; window.ccCalcStatement = calcStatement; }catch(e){}
 
   // List of available statement periods (based on existing tx data)
   function listPeriods(card) {
@@ -26635,14 +26680,14 @@ setTimeout(() => {
         </div>
 
         <!-- Profit warning -->
-        ${stmt.closing > 0 ? `
+        ${(() => { const h = window.arWarnHtml ? window.arWarnHtml(card, stmt, cardSym) : null; return h !== null && h !== undefined ? h : (stmt.closing > 0 ? `
           <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:10px;margin-top:10px;font-size:11px;line-height:1.6">
             <div style="font-weight:900;color:#f59e0b">⚠ تنبيه:</div>
             لو ما سدّدتش الرصيد كامل قبل تاريخ الاستحقاق، هتتحاسب على
             <b style="color:#f59e0b">${fmt(stmt.closing * (r.profitRate/100))} ${cardSym}</b>
             فوايد الشهر الجاي (${r.profitRate}% شهرياً).
           </div>
-        ` : ''}
+        ` : ''); })()}
       </div>
 
       <!-- V30: Advice engine -->
@@ -29487,6 +29532,267 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 .sum-main .sub,.sum-inc .sub,.sum-exp .sub,.sum-sav .sub{white-space:nowrap !important;}
 
 </style>
+<script id="ms-ar-engine-v51">
+/* v51 Al Rajhi Signature profit engine, built from the worked example in the card agreement summary.
+   Rules (all verified against the example to the cent):
+   - profit = rate% / 30 per day x principal, simple (no profit on profit), every line truncated to 2 decimals
+   - a statement is issued on the 1st for the previous month and is due on the 25th
+   - profit on a purchase runs from the purchase date, but it is only charged if the statement is NOT paid in full by its due date
+     (days from the purchase to the end of its month, plus the days up to the due date, are charged on the next statement)
+   - after the due date the unpaid principal keeps accruing, day by day, and is billed on the statement of that month
+   - a payment is split between principal and billed profit in proportion to what is outstanding
+   - minimum payment = 5% of the amount due, at least 100 (and never more than the amount due)
+   All money inside the engine is integer cents. */
+(function () {
+  'use strict';
+  var DEN = 300000;                                   // 30 days x 100 (rate is passed in hundredths of a percent)
+  function dnum(s) { var p = String(s).split('-'); return Math.round(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000); }
+  function ymd(n) { return new Date(n * 86400000).toISOString().slice(0, 10); }
+  function monthKey(date) { return date.slice(0, 7); }
+  function addMonths(key, k) { var y = +key.slice(0, 4), m = +key.slice(5, 7) - 1 + k; var d = new Date(Date.UTC(y, m, 1)); return d.toISOString().slice(0, 7); }
+  function lastDay(key) { var y = +key.slice(0, 4), m = +key.slice(5, 7); return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+  function cents(x) { return Math.round((Number(x) || 0) * 100 + (x < 0 ? -1e-9 : 1e-9)); }
+  function money(c) { return c / 100; }
+  function minDueCents(amountDue, minPct, floorC) {
+    if (!(amountDue > 0)) return 0;
+    var pct = Math.round(amountDue * (minPct / 100));
+    return Math.min(amountDue, Math.max(floorC || 0, pct));
+  }
+
+  // cfg: { events:[{date,type:'purchase'|'payment',amount}], ratePct, minPct, floor, issueDay, dueDay, start, end,
+  //        init:{ cycle:'YYYY-MM', principal, billed, stubs:[{date,amount}] } }
+  function simulate(cfg) {
+    var rateH = Math.round((Number(cfg.ratePct) || 0) * 100);
+    var issueDay = cfg.issueDay || 1, dueDay = cfg.dueDay || 25, minPct = cfg.minPct == null ? 5 : cfg.minPct, floorC = cents(cfg.floor || 0);
+    var pf = function (c, days) { return Math.floor(c * days * rateH / DEN); };
+    var byDay = {}, evs = (cfg.events || []).slice();
+    evs.forEach(function (e) { var d = dnum(e.date); (byDay[d] = byDay[d] || []).push({ type: e.type, c: cents(e.amount) }); });
+    var firstEv = evs.length ? Math.min.apply(null, evs.map(function (e) { return dnum(e.date); })) : null;
+    var P = 0, Bp = 0, N = {}, billed = {}, cont = {}, stubSum = {}, open = null, stmts = [], segs = [], seg = null;
+    var start, end = dnum(cfg.end);
+
+    function flush() {
+      if (seg && seg.days > 0 && seg.P > 0) { var v = pf(seg.P, seg.days); if (seg.kind === 'cont') cont[seg.key] = (cont[seg.key] || 0) + v; else billed[seg.key] = (billed[seg.key] || 0) + v; segs.push({ from: ymd(seg.from), to: ymd(seg.from + seg.days - 1), principal: money(seg.P), days: seg.days, profit: money(v), kind: seg.kind, bucket: seg.key }); }
+      seg = null;
+    }
+    function pay(c) {
+      var tot = P + Bp;
+      if (tot > 0) {
+        c = Math.min(c, tot);
+        var pp = Math.min(P, Math.round(c * P / tot)); P -= pp; Bp = Math.max(0, Bp - (c - pp));
+      } else {                                         // nothing issued yet: the payment reduces this month's new purchases, oldest first
+        var keys = Object.keys(N).sort();
+        for (var i = 0; i < keys.length && c > 0; i++) { var arr = N[keys[i]]; for (var j = 0; j < arr.length && c > 0; j++) { var t = Math.min(arr[j].c, c); arr[j].c -= t; c -= t; } }
+      }
+    }
+    function issue(cycle, date) {
+      var items = N[cycle] || [], nsum = items.reduce(function (s, it) { return s + it.c; }, 0), b = billed[cycle] || 0;
+      var due = P + Bp + nsum + b;
+      var stub = 0, endDay = dnum(cycle + '-' + String(lastDay(cycle)).padStart(2, '0'));
+      items.forEach(function (it) { if (it.c > 0) { var sv = pf(it.c, endDay - it.day + 1); stub += sv; segs.push({ from: ymd(it.day), to: ymd(endDay), principal: money(it.c), days: endDay - it.day + 1, profit: money(sv), kind: 'stub', bucket: cycle }); } });
+      Bp += b; P += nsum; delete N[cycle]; delete billed[cycle];
+      var dueDate = addMonths(cycle, 1) + '-' + String(dueDay).padStart(2, '0');
+      var st = { cycle: cycle, issued: date, dueDate: dueDate, amountDue: money(due), principal: money(P), billedProfit: money(b), minDue: money(minDueCents(due, minPct, floorC)), paidInFull: null, chargedProfit: 0 };
+      stmts.push(st);
+      if (due > 0) { open = { cycle: cycle, dueDate: dueDate, stub: stub, st: st }; stubSum[cycle] = stub; } else open = null;
+    }
+    function crystallize(date) {
+      if (!open) return;
+      var full = (P + Bp) <= 1, key = monthKey(date);
+      if (full) { open.st.paidInFull = true; segs.forEach(function (sg) { if (sg.bucket === open.cycle && (sg.kind === 'cont' || sg.kind === 'stub')) sg.forgiven = true; }); }
+      else { var add = (cont[open.cycle] || 0) + open.stub; billed[key] = (billed[key] || 0) + add; open.st.paidInFull = false; open.st.chargedProfit = money(add); }
+      delete cont[open.cycle]; open = null;
+    }
+
+    var skipIssueAt = null;
+    if (cfg.init) {                                    // start from an already issued statement
+      var ic = cfg.init.cycle; P = cents(cfg.init.principal); Bp = cents(cfg.init.billed || 0);
+      var istub = 0, iend = dnum(ic + '-' + String(lastDay(ic)).padStart(2, '0'));
+      (cfg.init.stubs || []).forEach(function (s) { var c = cents(s.amount); if (c > 0) { var sv = pf(c, iend - dnum(s.date) + 1); istub += sv; segs.push({ from: s.date, to: ymd(iend), principal: money(c), days: iend - dnum(s.date) + 1, profit: money(sv), kind: 'stub', bucket: ic }); } });
+      var idue = addMonths(ic, 1) + '-' + String(dueDay).padStart(2, '0');
+      var ist = { cycle: ic, issued: addMonths(ic, 1) + '-01', dueDate: idue, amountDue: money(P + Bp), principal: money(P), billedProfit: 0, minDue: money(minDueCents(P + Bp, minPct, floorC)), paidInFull: null, chargedProfit: 0, seeded: true };
+      stmts.push(ist); if (P + Bp > 0) open = { cycle: ic, dueDate: idue, stub: istub, st: ist };
+      start = dnum(ist.issued); skipIssueAt = start;
+    } else start = cfg.start ? dnum(cfg.start) : firstEv;
+    if (start == null) return { statements: [], segments: [], state: { principal: 0, billed: 0 } };
+
+    for (var d = start; d <= end; d++) {
+      var date = ymd(d), key = monthKey(date), dd = +date.slice(8);
+      var todays = byDay[d] || [];
+      todays.forEach(function (e) { if (e.type === 'payment') { flush(); pay(e.c); } else { (N[key] = N[key] || []).push({ day: d, c: e.c }); } });
+      if (dd === issueDay && d !== skipIssueAt) { flush(); issue(addMonths(key, -1), date); }
+      if (dd === dueDay) { flush(); crystallize(date); }
+      if (P > 0) {
+        var isCont = !!open && dd >= issueDay && dd < dueDay && open.dueDate.slice(0, 7) === key;
+        var kind = isCont ? 'cont' : 'bill', bkey = isCont ? open.cycle : key;
+        if (seg && (seg.P !== P || seg.kind !== kind || seg.key !== bkey)) flush();
+        if (!seg) seg = { P: P, kind: kind, key: bkey, from: d, days: 0 };
+        seg.days++;
+      } else flush();
+    }
+    flush();
+    return { statements: stmts, segments: segs, state: { principal: money(P), billed: money(Bp), open: open ? { cycle: open.cycle, dueDate: open.dueDate } : null, pendingBilled: Object.keys(billed).map(function (k) { return [k, money(billed[k])]; }), contingent: Object.keys(cont).map(function (k) { return [k, money(cont[k])]; }) } };
+  }
+
+  // Plan: what happens on the next statement if `pay` is paid on `payDate` after the statement for `cycle` (amount `due`) was issued.
+  function plan(o) {
+    var cycle = o.cycle, issueDate = addMonths(cycle, 1) + '-01', nextIssue = addMonths(cycle, 2) + '-01';
+    var events = [];
+    if (o.pay > 0) events.push({ date: o.payDate, type: 'payment', amount: o.pay });
+    (o.newPurchases || []).forEach(function (p) { events.push({ date: p.date, type: 'purchase', amount: p.amount }); });
+    var r = simulate({ ratePct: o.ratePct, minPct: o.minPct, floor: o.floor, issueDay: 1, dueDay: o.dueDay || 25, end: nextIssue, events: events, init: { cycle: cycle, principal: o.due, billed: 0, stubs: o.stubs || [] } });
+    var nxt = r.statements.filter(function (s) { return s.cycle === addMonths(cycle, 1); })[0] || null;
+    var cur = r.statements[0];
+    return { current: cur, next: nxt, state: r.state, segments: r.segments };
+  }
+
+  window.msAR = { simulate: simulate, plan: plan, minDue: function (due, minPct, floor) { return money(minDueCents(cents(due), minPct == null ? 5 : minPct, cents(floor || 0))); }, addMonths: addMonths };
+})();
+</script>
+<script id="ms-ar-ui-v51">
+/* v51 Al Rajhi Signature: preset, minimum payment with a floor, profit estimate and payment calculator (uses window.msAR). */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const fmt = n => (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const toast = (m, t) => { if (window.showToast) window.showToast(m, t || 'info'); };
+  const cards = () => (Array.isArray(window.creditCards) ? window.creditCards : []);
+  const findCard = id => cards().find(c => c.id === id);
+  const isAR = c => !!c && (c.bank === 'alrajhi' || c.bankPreset === 'alrajhi');
+  const daily = c => !!c && c.profitModel === 'daily';
+  const AR = () => window.msAR;
+  const rateOf = c => Number(c.profitRate || c.interestRate) || 2.2;
+  const minPctOf = c => Number(c.minPaymentPct) || 5;
+  const floorOf = c => Number(c.minPaymentFloor) || 0;
+  const sym = c => (c.currency === 'EGP' ? 'ج.م' : c.currency === 'USD' ? '$' : 'ر.س');
+
+  // ───────── minimum payment with a floor (hooked into the card calculations)
+  window.msArMin = function (card, owed, pctMin) {   // pctMin = the plain percentage minimum already computed
+    const f = floorOf(card); const o = Number(owed) || 0, p = Number(pctMin) || 0;
+    if (!(f > 0) || !(o > 0)) return p;
+    return Math.min(o, Math.max(p, f));
+  };
+
+  // ───────── scenario for the statement the card screen shows as "current"
+  function periodInfo(card) {
+    if (typeof window.ccListPeriods !== 'function' || typeof window.ccCalcStatement !== 'function') return null;
+    const periods = window.ccListPeriods(card); const key = periods && periods[0]; if (!/^\d{4}-\d{2}$/.test(String(key))) return null;
+    const stmt = window.ccCalcStatement(card, key);
+    const stubs = (card.transactions || []).filter(t => t.type === 'purchase' && Number(t.amount) > 0 && String(t.statementMonth || String(t.date).slice(0, 7)).slice(0, 7) === key && /^\d{4}-\d{2}-\d{2}$/.test(String(t.date || '')))
+      .map(t => ({ date: t.date, amount: Math.abs(Number(t.amount)) }));
+    const dueDay = Number(card.dueDay) || 25;
+    const rec = card.statements && card.statements[key] ? card.statements[key] : null;
+    return { key, stmt, stubs, dueDay, rec, dueDate: AR().addMonths(key, 1) + '-' + String(dueDay).padStart(2, '0') };
+  }
+  function run(card, info, due, pay, payDate) {
+    return AR().plan({ cycle: info.key, due: due, pay: pay, payDate: payDate, ratePct: rateOf(card), minPct: minPctOf(card), floor: floorOf(card), dueDay: info.dueDay, stubs: info.stubs });
+  }
+
+  // null = this card does not use the daily model (the old estimate stays)
+  window.arWarnHtml = function (card, stmt, cardSym) {
+    if (!daily(card) || !AR()) return null;
+    const info = periodInfo(card); if (!info) return null;
+    const due = Math.max(0, Number(info.rec && info.rec.totalDue) || Number(stmt && stmt.closing) || info.stmt.closing || 0);
+    if (!(due > 0)) return '';
+    const min = AR().minDue(due, minPctOf(card), floorOf(card));
+    const a = run(card, info, due, min, info.dueDate), b = run(card, info, due, due, info.dueDate);
+    const profitMin = a.next ? a.next.billedProfit : 0, dueNext = a.next ? a.next.amountDue : 0;
+    const box = 'background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:10px;margin-top:10px;font-size:11px;line-height:1.8';
+    return `<div style="${box}">
+      <div style="font-weight:900;color:#f59e0b">🧮 الربح حسب اتفاقية البطاقة (تقدير)</div>
+      <div>سداد <b>كامل المبلغ ${fmt(due)} ${esc(cardSym)}</b> يوم ${esc(info.dueDate)} أو قبله: <b style="color:var(--green)">بدون ربح</b>.</div>
+      <div>سداد الحد الأدنى <b>${fmt(min)}</b> فقط: يتضاف ربح حوالي <b style="color:#f59e0b">${fmt(profitMin)} ${esc(cardSym)}</b> على الكشف الجاي، والمستحق وقتها حوالي <b>${fmt(dueNext)}</b>.</div>
+      <div style="margin-top:4px;font-size:10px;color:var(--muted)">⚠️ لما قورن بكشف سبتمبر 2026 الحقيقي، التقدير (46.60) طلع أقل من الربح الفعلي (72.43). اعتبر الرقم حد أدنى تقريبي.</div>
+      <div style="margin-top:6px"><button onclick="window.arCalcOpen('${esc(card.id)}')" style="background:var(--card2);border:1px solid var(--border);color:var(--accent);border-radius:8px;padding:7px 12px;font-family:inherit;font-weight:900;font-size:12px;cursor:pointer">🧮 حاسبة السداد</button></div>
+    </div>`;
+  };
+
+  // ───────── calculator
+  function ensureModal() {
+    let m = $('arCalcModal'); if (m) return m;
+    m = document.createElement('div'); m.className = 'overlay stacked'; m.id = 'arCalcModal';
+    m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = '<div class="sheet" style="max-width:600px;max-height:94vh;margin:0 auto"><div class="modal-head"><div class="modal-title">🧮 حاسبة السداد</div><button class="close-x" onclick="document.getElementById(\'arCalcModal\').classList.remove(\'open\')">×</button></div><div id="arCalcBody"></div></div>';
+    document.body.appendChild(m); return m;
+  }
+  let S = { cardId: null };
+  window.arCalcOpen = function (cardId) {
+    const card = findCard(cardId); if (!card || !AR()) return;
+    const info = periodInfo(card); if (!info) { toast('مفيش كشف نحسب عليه', 'error'); return; }
+    S = { cardId };
+    const due = Math.max(0, (info.rec && info.rec.totalDue) || info.stmt.closing || 0), min = (info.rec && info.rec.minDue > 0) ? info.rec.minDue : AR().minDue(due, minPctOf(card), floorOf(card));
+    ensureModal();
+    $('arCalcBody').innerHTML = `
+      <div style="font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:10px">الكشف: <b>${esc(info.key)}</b> · الاستحقاق <b>${esc(info.dueDate)}</b> · الربح ${esc(rateOf(card))}% شهريًا (حساب يومي على الأصل). النتيجة تقدير حسب مثال الاتفاقية، وفي كشف حقيقي (سبتمبر 2026) الربح الفعلي طلع أعلى منها، فالكشف هو المرجع.</div>
+      <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">المبلغ المستحق في الكشف</label>
+      <input id="arDue" class="inp" type="number" step="0.01" inputmode="decimal" value="${due.toFixed(2)}" oninput="window.arCalcRun()" style="direction:ltr;margin-bottom:8px">
+      <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">مبلغ السداد</label>
+      <input id="arPay" class="inp" type="number" step="0.01" inputmode="decimal" value="${min.toFixed(2)}" oninput="window.arCalcRun()" style="direction:ltr;margin-bottom:6px">
+      <div style="display:flex;gap:6px;margin-bottom:8px"><button onclick="window.arCalcPreset('min')" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px;font-family:inherit;font-size:12px;cursor:pointer">الحد الأدنى</button><button onclick="window.arCalcPreset('full')" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px;font-family:inherit;font-size:12px;cursor:pointer">كامل المبلغ</button></div>
+      <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">تاريخ السداد</label>
+      <input id="arDate" class="inp" type="date" value="${esc(info.dueDate)}" oninput="window.arCalcRun()" style="direction:ltr;margin-bottom:10px">
+      <div id="arCalcOut"></div>`;
+    $('arCalcModal').classList.add('open'); window.arCalcRun();
+  };
+  window.arCalcPreset = function (k) {
+    const card = findCard(S.cardId); if (!card) return; const due = parseFloat(($('arDue') || {}).value) || 0;
+    $('arPay').value = (k === 'full' ? due : AR().minDue(due, minPctOf(card), floorOf(card))).toFixed(2); window.arCalcRun();
+  };
+  window.arCalcRun = function () {
+    const card = findCard(S.cardId), out = $('arCalcOut'); if (!card || !out) return;
+    const info = periodInfo(card); if (!info) return;
+    const due = parseFloat($('arDue').value), pay = parseFloat($('arPay').value), date = $('arDate').value;
+    const bad = !(due > 0) || !(pay >= 0) || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !isFinite(due) || !isFinite(pay) || due > 1e9 || pay > 1e9;
+    if (bad) { out.innerHTML = '<div style="color:var(--red);font-size:12px">اكتب مبلغ مستحق وسداد وتاريخ صحيح.</div>'; return; }
+    const early = date < AR().addMonths(info.key, 1) + '-01';
+    if (early) { out.innerHTML = '<div style="color:var(--red);font-size:12px">تاريخ السداد لازم يكون بعد إصدار الكشف (من أول الشهر اللي بعد الكشف).</div>'; return; }
+    const r = run(card, info, due, Math.min(pay, due), date), cur = r.current, nxt = r.next, s = sym(card);
+    const full = cur && cur.paidInFull === true, late = date > info.dueDate;
+    const left = Math.max(0, due - pay);
+    out.innerHTML = `<div style="background:var(--card2);border-radius:12px;padding:12px;font-size:12px;line-height:2">
+      <div>${full ? '✅ <b style="color:var(--green)">سداد كامل في الميعاد: بدون ربح.</b>' : late ? '⚠️ <b style="color:var(--red)">السداد بعد تاريخ الاستحقاق، فالربح بيتحسب من أول عملية.</b>' : '⚠️ <b style="color:#f59e0b">سداد جزئي، فالربح بيتحسب على المتبقي.</b>'}</div>
+      <div>المتبقي بعد السداد: <b style="direction:ltr;display:inline-block">${fmt(left)} ${esc(s)}</b></div>
+      <div>ربح هيتضاف على الكشف الجاي: <b style="direction:ltr;display:inline-block;color:${nxt && nxt.billedProfit > 0 ? '#f59e0b' : 'var(--green)'}">${fmt(nxt ? nxt.billedProfit : 0)} ${esc(s)}</b></div>
+      <div>المستحق في الكشف الجاي (من غير مشتريات جديدة): <b style="direction:ltr;display:inline-block">${fmt(nxt ? nxt.amountDue : 0)} ${esc(s)}</b></div>
+      <div>الحد الأدنى وقتها: <b style="direction:ltr;display:inline-block">${fmt(nxt ? nxt.minDue : 0)} ${esc(s)}</b></div>
+    </div>`;
+  };
+
+  // ───────── preset when the bank is chosen in the add-card form, and saving
+  const bank = $('ccBank');
+  if (bank) bank.addEventListener('change', function () {
+    if (bank.value !== 'alrajhi') return;
+    if ($('ccCurrency')) $('ccCurrency').value = 'SAR';
+    if ($('ccStmtDay')) $('ccStmtDay').value = '31';
+    if ($('ccDueDay')) $('ccDueDay').value = '25';
+    if ($('ccRate')) $('ccRate').value = '2.2';
+    if ($('ccMinPct')) $('ccMinPct').value = '5';
+    toast('ضبطت إعدادات الراجحي: الكشف أول الشهر والاستحقاق يوم 25، والحد الأدنى 5% أو 100', 'info');
+  });
+  const origSave = window.saveCreditCard;
+  if (typeof origSave === 'function') window.saveCreditCard = function () {
+    const wasAR = ($('ccBank') || {}).value === 'alrajhi'; const before = new Set(cards().map(c => c.id));
+    const r = origSave.apply(this, arguments);
+    try { if (wasAR) { const c = cards().find(x => !before.has(x.id)); if (c) { c.profitModel = 'daily'; if (c.minPaymentFloor == null) c.minPaymentFloor = 100; c._arPreset = 1; if (typeof window.saveCreditCards === 'function') window.saveCreditCards(); } } } catch (e) { /* ignore */ }
+    return r;
+  };
+
+  // ───────── existing Al Rajhi cards: statement = end of month (issued on the 1st), due on the 25th, daily model, floor 100
+  (function migrate() {
+    let changed = false;
+    cards().forEach(c => {
+      if (!isAR(c) || c._arPreset) return;
+      const sd = Number(c.stmtDay || c.statementDay) || 25, dd = Number(c.dueDay) || 15;
+      if ((sd === 25 && dd === 15) || (sd === 1 && dd === 25)) { c.stmtDay = c.statementDay = 31; c.dueDay = 25; }
+      if (!c.profitModel) c.profitModel = 'daily';
+      if (c.minPaymentFloor == null) c.minPaymentFloor = 100;
+      c._arPreset = 1; changed = true;
+    });
+    if (changed && typeof window.saveCreditCards === 'function') window.saveCreditCards();
+  })();
+})();
+</script>
 <script id="ms-nbe-v42">
 /* v42 NBE support: SMS charge notifications, statement info, card preset. Injected before </body>. */
 (function () {
