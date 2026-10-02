@@ -25622,7 +25622,8 @@ setTimeout(() => {
         card.statements = card.statements || {};
         card.statements[pk] = { opening: s.openingBalance, closing: s.closingBalance, minDue: s.minAmount, dueDate: s.dueDate, totalDue: s.totalAmountDue,
           stmtDate: pk + '-' + String(last).padStart(2, '0'), limit: s.creditLimit, paymentsTotal: s.totalPayments, interest: s.profit, fees: s.fees,
-          carriedForward: s.carriedForward, otherCredits: s.otherCredits, importedAt: new Date().toISOString() };
+          carriedForward: s.carriedForward, otherCredits: s.otherCredits,
+          installments: Math.round((_v2Parsed.installments || []).reduce((a, i) => a + (Number(i.totalMonthly) || 0), 0) * 100) / 100, importedAt: new Date().toISOString() };
         let bal = 0;
         for (const t of card.transactions) {
           const k = (window.ccNormalizePeriodKey ? window.ccNormalizePeriodKey(t.statementMonth, t.date) : String(t.date).slice(0, 7));
@@ -25654,12 +25655,18 @@ setTimeout(() => {
         const inst = _v2Parsed.installments[idx];
         if (!inst) return;
         // Check if installment already imported
-        const exists = installments.find(i =>
-          i.tasaheelSerial === inst.serial ||
-          (i.name === inst.merchant && i.totalAmount === inst.txAmount && i.linkedCardId === _v2CardId)
-        );
-        if (exists) return;
-        const totalMonths = (inst.remainingMonths || 0) + Math.ceil((inst.txAmount - inst.remainingAmount) / inst.monthlyAmount) || 6;
+        const _ratio = inst.monthlyAmount > 0 ? inst.txAmount / inst.monthlyAmount : NaN;
+        const totalMonths = (_ratio >= 1 && Math.abs(_ratio - Math.round(_ratio)) < 0.02) ? Math.round(_ratio)
+          : ((inst.remainingMonths || 0) + Math.ceil((inst.txAmount - inst.remainingAmount) / inst.monthlyAmount) || 6);
+        const _rem = Number.isFinite(inst.remainingMonths) ? inst.remainingMonths : totalMonths;
+        const exists = installments.find(i => i.linkedCardId === _v2CardId && (
+          (inst.serial && i.tasaheelSerial === inst.serial) ||
+          (i.startDate === inst.date && String(i.name || '').indexOf(inst.merchant) === 0) ||
+          (i.name === inst.merchant && i.totalAmount === inst.txAmount)));
+        if (exists) {            // same plan imported again (or imported by an older, wrong reader): bring it up to date
+          Object.assign(exists, { totalAmount: inst.txAmount, monthlyPayment: inst.totalMonthly, totalMonths: totalMonths, paidMonths: totalMonths - _rem, startDate: inst.date, tasaheelSerial: inst.serial || exists.tasaheelSerial });
+          return;
+        }
         installments.push({
           id: 'inst_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
           name: inst.merchant + (isNbe ? ' (تقسيط)' : ' (تساهيل)'),
@@ -25667,7 +25674,7 @@ setTimeout(() => {
           totalAmount: inst.txAmount,
           monthlyPayment: inst.totalMonthly,
           totalMonths: totalMonths,
-          paidMonths: totalMonths - (inst.remainingMonths || totalMonths),
+          paidMonths: totalMonths - _rem,
           startDate: inst.date,
           currency: isNbe ? (_v2Parsed.currency || 'EGP') : 'SAR',
           category: 'بطاقة ائتمان',
@@ -27515,16 +27522,16 @@ setTimeout(() => {
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px">
-        <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--muted);font-weight:700">إجمالي المشتريات</div>
+        <div onclick="window.ccTileOpen('${escAttr(cardId)}','purchase')" style="background:var(--card2);border-radius:10px;padding:10px;text-align:center;cursor:pointer;border:1px solid transparent">
+          <div style="font-size:10px;color:var(--muted);font-weight:700">إجمالي المشتريات ›</div>
           <div style="color:var(--red);font-weight:900;font-size:14px;direction:ltr">${fmt(r.purchases)}</div>
         </div>
-        <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--muted);font-weight:700">إجمالي المدفوعات</div>
+        <div onclick="window.ccTileOpen('${escAttr(cardId)}','payment')" style="background:var(--card2);border-radius:10px;padding:10px;text-align:center;cursor:pointer;border:1px solid transparent">
+          <div style="font-size:10px;color:var(--muted);font-weight:700">إجمالي المدفوعات ›</div>
           <div style="color:var(--green);font-weight:900;font-size:14px;direction:ltr">${fmt(r.payments)}</div>
         </div>
-        <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--muted);font-weight:700">إجمالي الرسوم</div>
+        <div onclick="window.ccTileOpen('${escAttr(cardId)}','fee')" style="background:var(--card2);border-radius:10px;padding:10px;text-align:center;cursor:pointer;border:1px solid transparent">
+          <div style="font-size:10px;color:var(--muted);font-weight:700">إجمالي الرسوم ›</div>
           <div style="color:#f59e0b;font-weight:900;font-size:14px;direction:ltr">${fmt(r.fees)}</div>
         </div>
         <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center">
@@ -29532,6 +29539,62 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 .sum-main .sub,.sum-inc .sub,.sum-exp .sub,.sum-sav .sub{white-space:nowrap !important;}
 
 </style>
+<script id="ms-cc-tiles-v53">
+/* v53: tap a total in the card report (fees, purchases, payments) to see the transactions behind it. */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const fmt = n => (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  const cardOf = id => (Array.isArray(window.creditCards) ? window.creditCards : []).find(c => c.id === id);
+  const symOf = c => (c.currency === 'EGP' ? 'ج.م' : c.currency === 'USD' ? '$' : c.currency === 'EUR' ? '€' : 'ر.س');
+  const periodOf = t => (typeof window.ccNormalizePeriodKey === 'function' ? window.ccNormalizePeriodKey(t.statementMonth, t.date) : String(t.date || '').slice(0, 7));
+  const monthName = k => (/^\d{4}-\d{2}$/.test(k) ? MONTHS[+k.slice(5, 7) - 1] + ' ' + k.slice(0, 4) : k);
+  // a refund that reverses a fee (the bank shows profit charged and then partly refunded)
+  const isFeeReversal = t => t.type === 'refund' && /(profit|murabaha|مرابحة|ربح|fee|رسوم|interest|فايدة|فوائد)/i.test(String(t.name || '') + ' ' + String(t.category || ''));
+
+  const KINDS = {
+    fee: { title: '💸 إجمالي الرسوم', color: '#f59e0b', match: t => t.type === 'fee', credit: isFeeReversal, creditLabel: 'استرداد رسوم', netLabel: 'صافي الرسوم', empty: 'مفيش رسوم أو فوائد مسجّلة.' },
+    purchase: { title: '🛒 إجمالي المشتريات', color: 'var(--red)', match: t => t.type === 'purchase', credit: () => false, empty: 'مفيش مشتريات مسجّلة.' },
+    payment: { title: '✅ إجمالي المدفوعات', color: 'var(--green)', match: t => t.type === 'payment', credit: () => false, empty: 'مفيش مدفوعات مسجّلة.' }
+  };
+
+  function ensure() {
+    let m = $('ccTileModal'); if (m) return m;
+    m = document.createElement('div'); m.className = 'overlay stacked'; m.id = 'ccTileModal';
+    m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = '<div class="sheet" style="max-width:600px;max-height:94vh;margin:0 auto"><div class="modal-head"><div class="modal-title" id="ccTileTitle"></div><button class="close-x" onclick="document.getElementById(\'ccTileModal\').classList.remove(\'open\')">×</button></div><div id="ccTileBody"></div></div>';
+    document.body.appendChild(m); return m;
+  }
+
+  window.ccTileData = function (card, kind) {
+    const K = KINDS[kind]; if (!K || !card) return null;
+    const rows = (card.transactions || []).filter(t => K.match(t) || K.credit(t));
+    const items = rows.map(t => ({ t, credit: !K.match(t), amt: Math.abs(Number(t.amount) || 0), per: periodOf(t) }));
+    const groups = {}; items.forEach(x => { (groups[x.per] = groups[x.per] || []).push(x); });
+    const keys = Object.keys(groups).sort().reverse();
+    const sum = (arr, c) => Math.round(arr.filter(x => x.credit === c).reduce((a, x) => a + x.amt, 0) * 100) / 100;
+    return { kind, gross: sum(items, false), credits: sum(items, true), net: Math.round((sum(items, false) - sum(items, true)) * 100) / 100, count: items.length, groups: keys.map(k => ({ key: k, items: groups[k].sort((a, b) => String(b.t.date).localeCompare(String(a.t.date))), gross: sum(groups[k], false), credits: sum(groups[k], true) })) };
+  };
+
+  window.ccTileOpen = function (cardId, kind) {
+    const card = cardOf(cardId), K = KINDS[kind]; if (!card || !K) return;
+    const d = window.ccTileData(card, kind), s = symOf(card);
+    ensure(); $('ccTileTitle').textContent = K.title;
+    const hasCredits = d.credits > 0;
+    const head = `<div style="background:var(--card2);border-radius:12px;padding:12px;margin-bottom:10px;text-align:center"><div style="font-size:11px;color:var(--muted)">${esc(card.name || '')} ${card.last4 ? '•••• ' + esc(card.last4) : ''}</div><div style="font-size:24px;font-weight:900;direction:ltr;color:${K.color};margin-top:4px">${fmt(d.gross)} <span style="font-size:12px">${esc(s)}</span></div><div style="font-size:11px;color:var(--muted)">${d.count} عملية</div>${hasCredits ? `<div style="font-size:12px;margin-top:6px;line-height:1.8">بعد ${esc(K.creditLabel)} <b style="direction:ltr;display:inline-block;color:var(--green)">${fmt(d.credits)}</b>: ${esc(K.netLabel)} <b style="direction:ltr;display:inline-block">${fmt(d.net)} ${esc(s)}</b></div>` : ''}</div>`;
+    const body = d.count === 0 ? `<div style="text-align:center;color:var(--muted);padding:28px;font-size:12px">${esc(K.empty)}</div>` : d.groups.map(g => `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 4px 6px;font-size:12px;font-weight:900"><span>${esc(monthName(g.key))}</span><span style="direction:ltr;color:${K.color}">${fmt(g.gross)}${g.credits > 0 ? ` <span style="color:var(--green);font-weight:700">- ${fmt(g.credits)}</span>` : ''}</span></div>
+      <div style="background:var(--card2);border-radius:12px;overflow:hidden">${g.items.map((x, i) => {
+        const t = x.t, orig = t.origCurrency && t.origCurrency !== card.currency ? ` · ${fmt(t.origAmount)} ${esc(t.origCurrency)}` : '';
+        return `<div style="display:flex;justify-content:space-between;gap:8px;padding:10px 12px;${i ? 'border-top:1px solid var(--border);' : ''}font-size:12px"><div style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.name || '')}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(t.date || '')}${t.category ? ' · ' + esc(t.category) : ''}${orig}${x.credit ? ' · ' + esc(K.creditLabel) : ''}${t.pending ? ' · ⏳ تقديري' : ''}</div></div><div style="direction:ltr;font-weight:900;flex-shrink:0;color:${x.credit ? 'var(--green)' : K.color}">${x.credit ? '-' : ''}${fmt(x.amt)}</div></div>`;
+      }).join('')}</div>`).join('');
+    $('ccTileBody').innerHTML = head + body;
+    $('ccTileModal').classList.add('open');
+  };
+})();
+</script>
 <script id="ms-ar-engine-v51">
 /* v51 Al Rajhi Signature profit engine, built from the worked example in the card agreement summary.
    Rules (all verified against the example to the cent):
@@ -29646,7 +29709,76 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
     return { current: cur, next: nxt, state: r.state, segments: r.segments };
   }
 
-  window.msAR = { simulate: simulate, plan: plan, minDue: function (due, minPct, floor) { return money(minDueCents(cents(due), minPct == null ? 5 : minPct, cents(floor || 0))); }, addMonths: addMonths };
+
+  // ───────── payoff planner ─────────
+  // o: { cycle:'YYYY-MM' (cycle of the last issued statement), due, ratePct, minPct, floor, dueDay,
+  //      strategy:'fixed'|'min', monthly, firstMin (the bank's own minimum for that statement, optional),
+  //      installments:[{amount, months}] (still to be billed in the next statements), stubs, maxMonths }
+  // Two estimates are returned for the profit, because the real statements do not match one formula exactly:
+  //   low  = the agreement's daily method (this engine)
+  //   high = a full month of profit (rate x amount due) every month that is not paid in full
+  function minFor(due, inst, minPct, floor) {
+    if (!(due > 0)) return 0;
+    var m = Math.max(floor || 0, (due - inst) * (minPct / 100) + inst);
+    return Math.min(due, Math.round(m * 100) / 100);
+  }
+  function instAt(list, k) { var t = 0; (list || []).forEach(function (i) { if (k < (i.months || 0)) t += i.amount; }); return Math.round(t * 100) / 100; }   // k = 0 is the first statement AFTER the seeded one
+  function planPayoff(o) {
+    var maxM = o.maxMonths || 120, rate = (Number(o.ratePct) || 0) / 100, dueDay = o.dueDay || 25, minPct = o.minPct == null ? 5 : o.minPct, floor = o.floor || 0;
+    var strategy = o.strategy || 'fixed', monthly = Number(o.monthly) || 0, inst = o.installments || [];
+    function payFor(due, k, instNow, firstMin) {
+      if (strategy === 'min') return (k === 0 && firstMin > 0) ? Math.min(due, firstMin) : minFor(due, instNow, minPct, floor);
+      return Math.min(due, monthly);
+    }
+    // ── low: the engine, month by month
+    var events = [], rowsLow = [], profitLow = 0, monthsLow = null, k, cyc, due, st, pay, instNow;
+    var instLeftTotal = (inst || []).reduce(function (n, i) { return Math.max(n, i.months || 0); }, 0);
+    for (k = 0; k < maxM; k++) {
+      cyc = addMonths(o.cycle, k);
+      var dueDate = addMonths(cyc, 1) + '-' + String(dueDay).padStart(2, '0');
+      var res = simulate({ ratePct: o.ratePct, minPct: minPct, floor: floor, issueDay: 1, dueDay: dueDay, end: dueDate, events: events, init: { cycle: o.cycle, principal: o.due, billed: 0, stubs: o.stubs || [] } });
+      st = res.statements.filter(function (s) { return s.cycle === cyc; })[0];
+      due = st ? st.amountDue : 0;
+      if (!(due > 0.005)) {
+        if (k >= instLeftTotal) { monthsLow = k; break; }
+        rowsLow.push({ cycle: cyc, dueDate: dueDate, amountDue: 0, payment: 0, profit: 0 });
+        var ni = instAt(inst, k); if (ni > 0) events.push({ date: addMonths(cyc, 1) + '-02', type: 'purchase', amount: ni });   // installments keep coming even when nothing is due now
+        continue;
+      }
+      instNow = instAt(inst, k - 1 < 0 ? 0 : k - 1);
+      pay = payFor(due, k, k === 0 ? (o.firstInst || 0) : instNow, k === 0 ? o.firstMin : 0);
+      pay = Math.round(pay * 100) / 100;
+      rowsLow.push({ cycle: cyc, dueDate: dueDate, amountDue: due, payment: pay, profit: st.billedProfit });
+      profitLow += st.billedProfit;
+      if (pay > 0) events.push({ date: dueDate, type: 'payment', amount: pay });
+      // installments that will be billed in the following month
+      var nextInst = instAt(inst, k);
+      if (nextInst > 0) events.push({ date: addMonths(cyc, 1) + '-02', type: 'purchase', amount: nextInst });
+      if (pay <= 0.005) { monthsLow = null; if (k > 12 && rowsLow.length > 12) break; }
+    }
+    // ── high: a full month of profit on the whole amount due whenever it is not paid in full
+    var B = o.due, rowsHigh = [], profitHigh = 0, monthsHigh = null;
+    for (k = 0; k < maxM; k++) {
+      var instCur = k === 0 ? (o.firstInst || 0) : instAt(inst, k - 1);
+      if (!(B > 0.005) && k >= instLeftTotal) { monthsHigh = k; break; }
+      var p = Math.round(payFor(B, k, instCur, k === 0 ? o.firstMin : 0) * 100) / 100, rest = Math.max(0, B - p);
+      var pr = rest > 0.005 ? Math.floor(B * rate * 100) / 100 : 0;
+      rowsHigh.push({ amountDue: Math.round(B * 100) / 100, payment: p, profit: pr });
+      profitHigh += pr; B = rest + pr + instAt(inst, k);
+      if (k > 12 && p <= pr) break;                  // payments do not even cover the profit
+    }
+    var r2 = function (n) { return Math.round(n * 100) / 100; };
+    return { monthsLow: monthsLow, monthsHigh: monthsHigh, profitLow: r2(profitLow), profitHigh: r2(profitHigh), rowsLow: rowsLow, rowsHigh: rowsHigh,
+             totalLow: r2(rowsLow.reduce(function (a, r) { return a + r.payment; }, 0)), totalHigh: r2(rowsHigh.reduce(function (a, r) { return a + r.payment; }, 0)) };
+  }
+  // smallest monthly payment (cents precision 1) that clears the balance within `months` months, for each estimate
+  function solveMonthly(o, months) {
+    function ok(m, which) { var r = planPayoff(Object.assign({}, o, { strategy: 'fixed', monthly: m })); var n = which === 'low' ? r.monthsLow : r.monthsHigh; return n !== null && n <= months; }
+    function search(which) { var lo = 0, hi = Math.max(o.due * 2, 100); if (!ok(hi, which)) return null; while (hi - lo > 1) { var mid = Math.floor((lo + hi) / 2); if (ok(mid, which)) hi = mid; else lo = mid; } return hi; }
+    return { low: search('low'), high: search('high') };
+  }
+
+  window.msAR = { simulate: simulate, plan: plan, planPayoff: planPayoff, solveMonthly: solveMonthly, minFor: minFor, minDue: function (due, minPct, floor) { return money(minDueCents(cents(due), minPct == null ? 5 : minPct, cents(floor || 0))); }, addMonths: addMonths };
 })();
 </script>
 <script id="ms-ar-ui-v51">
@@ -29708,7 +29840,7 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
     </div>`;
   };
 
-  // ───────── calculator
+  // ───────── calculator (v53): three tabs - this statement, payoff plan, tips
   function ensureModal() {
     let m = $('arCalcModal'); if (m) return m;
     m = document.createElement('div'); m.className = 'overlay stacked'; m.id = 'arCalcModal';
@@ -29716,15 +29848,41 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
     m.innerHTML = '<div class="sheet" style="max-width:600px;max-height:94vh;margin:0 auto"><div class="modal-head"><div class="modal-title">🧮 حاسبة السداد</div><button class="close-x" onclick="document.getElementById(\'arCalcModal\').classList.remove(\'open\')">×</button></div><div id="arCalcBody"></div></div>';
     document.body.appendChild(m); return m;
   }
-  let S = { cardId: null };
-  window.arCalcOpen = function (cardId) {
+  let S = { cardId: null, tab: 'stmt' };
+  const MAXN = 1e9;
+  const num = v => { const n = parseFloat(v); return isFinite(n) ? n : NaN; };
+  const bold = t => `<b style="direction:ltr;display:inline-block">${t}</b>`;
+  const range = (lo, hi, s) => { const a = fmt(lo), b = fmt(hi); return a === b ? bold(`${a} ${esc(s)}`) : bold(`${a} – ${b} ${esc(s)}`); };
+  const monthsTxt = (lo, hi) => { const f = n => n === null ? 'مش بيخلص' : String(n); if (lo === null && hi === null) return '<b style="color:var(--red)">مش بيخلص (الدفعة أقل من الربح)</b>'; const a = f(lo), b = f(hi); return bold(a === b ? `${a} شهر` : `${a} – ${b} شهر`); };
+
+  function planInputs(card, info, monthly, strategy) {
+    const due = Math.max(0, (info.rec && info.rec.totalDue) || info.stmt.closing || 0);
+    const minRec = info.rec && info.rec.minDue > 0 ? info.rec.minDue : AR().minDue(due, minPctOf(card), floorOf(card));
+    const inst = futureInst(card);
+    const firstInst = (info.rec && Number(info.rec.installments) > 0) ? Number(info.rec.installments) : inst.filter(i => i.months > 0).reduce((a, i) => a + i.amount, 0);   // billed in this statement
+    return { cycle: info.key, due, ratePct: rateOf(card), minPct: minPctOf(card), floor: floorOf(card), dueDay: info.dueDay, strategy: strategy || 'fixed', monthly: monthly, firstMin: minRec, firstInst: firstInst, installments: inst.filter(i => i.months > 0), stubs: info.stubs, maxMonths: 120 };
+  }
+  // installments of this card that still have statements to come: [{amount, months}] (months = statements still to be billed after this one)
+  function futureInst(card) {
+    const list = (Array.isArray(window.installments) ? window.installments : []).filter(i => i && i.linkedCardId === card.id);
+    return list.map(i => ({ amount: Number(i.monthlyPayment) || 0, months: Math.max(0, (Number(i.totalMonths) || 0) - (Number(i.paidMonths) || 0)) })).filter(i => i.amount > 0);
+  }
+  window.arCalcOpen = function (cardId, tab) {
     const card = findCard(cardId); if (!card || !AR()) return;
     const info = periodInfo(card); if (!info) { toast('مفيش كشف نحسب عليه', 'error'); return; }
-    S = { cardId };
+    S = { cardId, tab: tab || 'stmt' };
+    ensureModal(); window.arCalcTab(S.tab);
+    $('arCalcModal').classList.add('open');
+  };
+  window.arCalcTab = function (tab) {
+    const card = findCard(S.cardId); if (!card) return; S.tab = tab;
+    const info = periodInfo(card); if (!info) return;
     const due = Math.max(0, (info.rec && info.rec.totalDue) || info.stmt.closing || 0), min = (info.rec && info.rec.minDue > 0) ? info.rec.minDue : AR().minDue(due, minPctOf(card), floorOf(card));
-    ensureModal();
-    $('arCalcBody').innerHTML = `
-      <div style="font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:10px">الكشف: <b>${esc(info.key)}</b> · الاستحقاق <b>${esc(info.dueDate)}</b> · الربح ${esc(rateOf(card))}% شهريًا (حساب يومي على الأصل). النتيجة تقدير حسب مثال الاتفاقية، وفي كشف حقيقي (سبتمبر 2026) الربح الفعلي طلع أعلى منها، فالكشف هو المرجع.</div>
+    const tabs = [['stmt', 'سداد الكشف'], ['plan', 'خطة السداد'], ['tips', 'نصائح']];
+    const bar = `<div style="display:flex;gap:4px;background:var(--card2);border-radius:10px;padding:3px;margin-bottom:10px">${tabs.map(([k, l]) => `<button onclick="window.arCalcTab('${k}')" style="flex:1;background:${tab === k ? 'var(--accent)' : 'transparent'};color:${tab === k ? '#000' : 'var(--text)'};border:0;border-radius:8px;padding:8px 4px;font-family:inherit;font-size:12px;font-weight:900;cursor:pointer">${l}</button>`).join('')}</div>`;
+    const warn = `<div style="font-size:10px;color:var(--muted);line-height:1.8;margin-bottom:10px">الكشف: <b>${esc(info.key)}</b> · الاستحقاق <b>${esc(info.dueDate)}</b> · الربح ${esc(rateOf(card))}% شهريًا. الأرقام تقدير: لما قارنتها بكشف سبتمبر 2026 الحقيقي طلع الربح الفعلي أعلى من حساب الاتفاقية، فبعرض مدى (من حساب الاتفاقية لحد شهر كامل على المستحق). الكشف هو المرجع، وده مش نصيحة مالية.</div>`;
+    let body = '';
+    if (tab === 'stmt') body = `
       <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">المبلغ المستحق في الكشف</label>
       <input id="arDue" class="inp" type="number" step="0.01" inputmode="decimal" value="${due.toFixed(2)}" oninput="window.arCalcRun()" style="direction:ltr;margin-bottom:8px">
       <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">مبلغ السداد</label>
@@ -29733,30 +29891,101 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
       <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">تاريخ السداد</label>
       <input id="arDate" class="inp" type="date" value="${esc(info.dueDate)}" oninput="window.arCalcRun()" style="direction:ltr;margin-bottom:10px">
       <div id="arCalcOut"></div>`;
-    $('arCalcModal').classList.add('open'); window.arCalcRun();
+    else if (tab === 'plan') body = `
+      <div style="font-size:12px;margin-bottom:8px">المستحق دلوقتي: ${bold(fmt(due) + ' ' + esc(sym(card)))}${futureInst(card).filter(i => i.months > 0).length ? ' · وفيه أقساط جاية هتتضاف على الكشوف الجاية' : ''}</div>
+      <label style="display:block;font-size:11px;font-weight:900;margin-bottom:4px">أقدر أدفع كل شهر</label>
+      <input id="arMonthly" class="inp" type="number" step="1" inputmode="decimal" value="${Math.max(Math.ceil(min / 100) * 100, 1000)}" oninput="window.arPlanRun()" style="direction:ltr;margin-bottom:6px">
+      <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">${[500, 1000, 1500, 2000, 3000].map(v => `<button onclick="window.arPlanSet(${v})" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-family:inherit;font-size:12px;cursor:pointer">${v}</button>`).join('')}</div>
+      <div id="arPlanOut"></div>
+      <div style="margin-top:12px;background:var(--card2);border-radius:12px;padding:10px"><div style="font-weight:900;font-size:12px;margin-bottom:6px">🎯 عايز أخلّص في كام شهر؟</div>
+        <div style="display:flex;gap:6px;align-items:center"><input id="arTarget" class="inp" type="number" min="1" max="120" step="1" inputmode="numeric" value="6" oninput="window.arSolveRun()" style="direction:ltr;width:90px"><span style="font-size:12px">شهر</span></div><div id="arSolveOut" style="margin-top:8px;font-size:12px;line-height:1.9"></div></div>`;
+    else body = '<div id="arTipsOut"></div>';
+    $('arCalcBody').innerHTML = bar + warn + body;
+    if (tab === 'stmt') window.arCalcRun(); else if (tab === 'plan') { window.arPlanRun(); window.arSolveRun(); } else window.arTipsRun();
   };
   window.arCalcPreset = function (k) {
-    const card = findCard(S.cardId); if (!card) return; const due = parseFloat(($('arDue') || {}).value) || 0;
-    $('arPay').value = (k === 'full' ? due : AR().minDue(due, minPctOf(card), floorOf(card))).toFixed(2); window.arCalcRun();
+    const card = findCard(S.cardId); if (!card) return; const info = periodInfo(card); const due = num(($('arDue') || {}).value) || 0;
+    const m = (k === 'min' && info && info.rec && info.rec.minDue > 0 && Math.abs(due - info.rec.totalDue) < 0.005) ? info.rec.minDue : AR().minDue(due, minPctOf(card), floorOf(card));
+    $('arPay').value = (k === 'full' ? due : m).toFixed(2); window.arCalcRun();
   };
   window.arCalcRun = function () {
     const card = findCard(S.cardId), out = $('arCalcOut'); if (!card || !out) return;
     const info = periodInfo(card); if (!info) return;
-    const due = parseFloat($('arDue').value), pay = parseFloat($('arPay').value), date = $('arDate').value;
-    const bad = !(due > 0) || !(pay >= 0) || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !isFinite(due) || !isFinite(pay) || due > 1e9 || pay > 1e9;
+    const due = num($('arDue').value), pay = num($('arPay').value), date = $('arDate').value;
+    const bad = !(due > 0) || !(pay >= 0) || !/^\d{4}-\d{2}-\d{2}$/.test(date) || due > MAXN || pay > MAXN;
     if (bad) { out.innerHTML = '<div style="color:var(--red);font-size:12px">اكتب مبلغ مستحق وسداد وتاريخ صحيح.</div>'; return; }
-    const early = date < AR().addMonths(info.key, 1) + '-01';
-    if (early) { out.innerHTML = '<div style="color:var(--red);font-size:12px">تاريخ السداد لازم يكون بعد إصدار الكشف (من أول الشهر اللي بعد الكشف).</div>'; return; }
+    if (date < AR().addMonths(info.key, 1) + '-01') { out.innerHTML = '<div style="color:var(--red);font-size:12px">تاريخ السداد لازم يكون بعد إصدار الكشف (من أول الشهر اللي بعد الكشف).</div>'; return; }
     const r = run(card, info, due, Math.min(pay, due), date), cur = r.current, nxt = r.next, s = sym(card);
-    const full = cur && cur.paidInFull === true, late = date > info.dueDate;
-    const left = Math.max(0, due - pay);
+    const full = cur && cur.paidInFull === true, late = date > info.dueDate, left = Math.max(0, due - pay);
+    const lowP = nxt ? nxt.billedProfit : 0, highP = full ? 0 : Math.floor(due * (rateOf(card) / 100) * 100) / 100;
     out.innerHTML = `<div style="background:var(--card2);border-radius:12px;padding:12px;font-size:12px;line-height:2">
       <div>${full ? '✅ <b style="color:var(--green)">سداد كامل في الميعاد: بدون ربح.</b>' : late ? '⚠️ <b style="color:var(--red)">السداد بعد تاريخ الاستحقاق، فالربح بيتحسب من أول عملية.</b>' : '⚠️ <b style="color:#f59e0b">سداد جزئي، فالربح بيتحسب على المتبقي.</b>'}</div>
-      <div>المتبقي بعد السداد: <b style="direction:ltr;display:inline-block">${fmt(left)} ${esc(s)}</b></div>
-      <div>ربح هيتضاف على الكشف الجاي: <b style="direction:ltr;display:inline-block;color:${nxt && nxt.billedProfit > 0 ? '#f59e0b' : 'var(--green)'}">${fmt(nxt ? nxt.billedProfit : 0)} ${esc(s)}</b></div>
-      <div>المستحق في الكشف الجاي (من غير مشتريات جديدة): <b style="direction:ltr;display:inline-block">${fmt(nxt ? nxt.amountDue : 0)} ${esc(s)}</b></div>
-      <div>الحد الأدنى وقتها: <b style="direction:ltr;display:inline-block">${fmt(nxt ? nxt.minDue : 0)} ${esc(s)}</b></div>
-    </div>`;
+      <div>المتبقي بعد السداد: ${bold(fmt(left) + ' ' + esc(s))}</div>
+      <div>ربح هيتضاف على الكشف الجاي: ${range(lowP, Math.max(lowP, highP), s)}</div>
+      <div>المستحق في الكشف الجاي (من غير مشتريات جديدة): ${range(nxt ? nxt.amountDue : 0, (nxt ? nxt.amountDue : 0) + Math.max(0, highP - lowP), s)}</div>
+      <div>الحد الأدنى وقتها: ${bold(fmt(nxt ? nxt.minDue : 0) + ' ' + esc(s))}</div></div>`;
+  };
+
+  // ── tab 2: payoff plan
+  window.arPlanSet = function (v) { const el = $('arMonthly'); if (el) { el.value = v; window.arPlanRun(); } };
+  window.arPlanRun = function () {
+    const card = findCard(S.cardId), out = $('arPlanOut'); if (!card || !out) return; const info = periodInfo(card); if (!info) return;
+    const m = num(($('arMonthly') || {}).value), s = sym(card);
+    if (!(m >= 0) || m > MAXN) { out.innerHTML = '<div style="color:var(--red);font-size:12px">اكتب مبلغ شهري صحيح.</div>'; return; }
+    const mk = (strategy, monthly) => AR().planPayoff(planInputs(card, info, monthly, strategy));
+    const due = planInputs(card, info, 0).due;
+    if (!(due > 0)) { out.innerHTML = '<div style="font-size:12px;color:var(--muted)">مفيش مستحق دلوقتي.</div>'; return; }
+    const mine = mk('fixed', m), minOnly = mk('min', 0), x15 = mk('fixed', Math.round(m * 1.5)), all = mk('fixed', due);
+    const row = (label, r, pay) => `<tr style="border-top:1px solid var(--border)"><td style="padding:7px 4px;font-weight:700">${label}</td><td style="padding:7px 4px">${pay}</td><td style="padding:7px 4px">${monthsTxt(r.monthsLow, r.monthsHigh)}</td><td style="padding:7px 4px">${r.monthsLow === null && r.monthsHigh === null ? '-' : range(r.profitLow, Math.max(r.profitLow, r.profitHigh), s)}</td></tr>`;
+    const saveLo = minOnly.monthsLow !== null && mine.monthsLow !== null ? Math.max(0, minOnly.profitLow - mine.profitHigh) : null;
+    out.innerHTML = `<div style="background:var(--card2);border-radius:12px;padding:10px;font-size:12px;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;text-align:right"><tr style="color:var(--muted)"><th style="padding:4px">الخطة</th><th style="padding:4px">الدفعة</th><th style="padding:4px">المدة</th><th style="padding:4px">الربح الكلي</th></tr>
+      ${row('الحد الأدنى بس', minOnly, 'الحد الأدنى كل شهر')}${row('مبلغك', mine, bold(fmt(m)))}${row('مبلغك × 1.5', x15, bold(fmt(Math.round(m * 1.5))))}${row('كل المستحق دلوقتي', all, bold(fmt(due)))}</table></div>
+      ${saveLo > 0 ? `<div style="margin-top:8px;font-size:12px;line-height:1.9">💡 دفعك ${bold(fmt(m))} بدل الحد الأدنى بيوفّر على الأقل ${bold(fmt(saveLo) + ' ' + esc(s))} ربح.</div>` : ''}
+      <div style="margin-top:6px;font-size:10px;color:var(--muted)">من غير مشتريات جديدة على الكارت. الأقساط الجاية (${esc(fmt(planInputs(card, info, 0).installments.reduce((a, i) => a + i.amount, 0)))} ${esc(s)} شهريًا) محسوبة.</div>`;
+  };
+  window.arSolveRun = function () {
+    const card = findCard(S.cardId), out = $('arSolveOut'); if (!card || !out) return; const info = periodInfo(card); if (!info) return;
+    const n = parseInt(($('arTarget') || {}).value, 10), s = sym(card);
+    if (!(n >= 1 && n <= 120)) { out.innerHTML = '<span style="color:var(--red)">اكتب عدد شهور من 1 لـ120.</span>'; return; }
+    const o = planInputs(card, info, 0), minLen = Math.max(0, ...o.installments.map(i => i.months)) + 1;
+    if (!(o.due > 0)) { out.innerHTML = 'مفيش مستحق.'; return; }
+    if (n < minLen) { out.innerHTML = `<span style="color:var(--muted)">الأقساط الجاية لوحدها بتاخد ${minLen} شهور، فأقل مدة ممكنة ${minLen}.</span>`; return; }
+    const r = AR().solveMonthly(o, n);
+    out.innerHTML = r.low === null && r.high === null ? '<span style="color:var(--red)">مش ممكن في المدة دي.</span>' : `علشان تخلّص في <b>${n}</b> شهر ادفع كل شهر: ${range(r.low === null ? r.high : r.low, r.high === null ? r.low : r.high, s)}<div style="font-size:10px;color:var(--muted)">الرقم الأكبر هو الاحتياط، لو الربح الفعلي أعلى من حساب الاتفاقية.</div>`;
+  };
+
+  // ── tab 3: tips from the card's own numbers
+  window.arTips = function (card) {
+    const info = periodInfo(card); if (!info || !AR()) return [];
+    const s = sym(card), o = planInputs(card, info, 0); if (!(o.due > 0)) return [];
+    const tips = [];
+    const mk = (strategy, monthly) => AR().planPayoff(Object.assign({}, o, { strategy, monthly }));
+    const minOnly = mk('min', 0), min = o.firstMin;
+    const dbl = mk('fixed', Math.max(Math.round(min * 2), Math.ceil(o.due / 4)));
+    // 1: the card is the expensive debt
+    tips.push({ icon: '💳', t: 'الكارت أغلى دين عندك', b: `الربح ${rateOf(card)}% في الشهر يعني حوالي ${(rateOf(card) * 12).toFixed(0)}% في السنة. لو أقساطك (تساهيل أو تابي أو تمارا) بدون رسوم زي ما في الكشف، فاللي بيتحاسب عليه ربح هو رصيد الكارت. اخلّصه الأول وخلّي الأقساط تتدفع في ميعادها.` });
+    // 2: minimum only
+    if (minOnly.monthsLow !== null || minOnly.monthsHigh !== null) tips.push({ icon: '⏳', t: 'الحد الأدنى بس طريق طويل', b: `لو فضلت تدفع الحد الأدنى كل شهر، الرصيد بياخد ${minOnly.monthsLow === null ? '' : minOnly.monthsLow}${minOnly.monthsHigh !== minOnly.monthsLow ? ' – ' + minOnly.monthsHigh : ''} شهر تقريبًا وربح حوالي ${fmt(minOnly.profitLow)} – ${fmt(Math.max(minOnly.profitLow, minOnly.profitHigh))} ${s}. لو دفعت ${fmt(Math.max(Math.round(min * 2), Math.ceil(o.due / 4)))} كل شهر هيخلص في ${dbl.monthsLow} شهر وربح حوالي ${fmt(dbl.profitLow)} – ${fmt(Math.max(dbl.profitLow, dbl.profitHigh))} ${s}.` });
+    // 3: pay early
+    const early = AR().plan({ cycle: info.key, due: o.due, pay: Math.min(o.due, Math.max(min * 2, 1000)), payDate: AR().addMonths(info.key, 1) + '-02', ratePct: o.ratePct, minPct: o.minPct, floor: o.floor, dueDay: o.dueDay, stubs: o.stubs });
+    const late = AR().plan({ cycle: info.key, due: o.due, pay: Math.min(o.due, Math.max(min * 2, 1000)), payDate: info.dueDate, ratePct: o.ratePct, minPct: o.minPct, floor: o.floor, dueDay: o.dueDay, stubs: o.stubs });
+    const saved = (late.next ? late.next.billedProfit : 0) - (early.next ? early.next.billedProfit : 0);
+    if (saved > 0.5) tips.push({ icon: '📅', t: 'ادفع بدري مش يوم الاستحقاق', b: `الربح بيتحسب يوم بيوم على الرصيد، فدفع ${fmt(Math.min(o.due, Math.max(min * 2, 1000)))} يوم ${AR().addMonths(info.key, 1)}-02 بدل ${info.dueDate} بيوفّر حوالي ${fmt(saved)} ${s} (حسب حساب الاتفاقية). لو الراتب بينزل بدري، حوّل لسداد الكارت بعدها على طول.` });
+    // 4: new spending
+    tips.push({ icon: '🛍️', t: 'وقّف المشتريات الجديدة على الكارت لحد ما يخلص', b: `كل 1,000 ${s} بتصرفها بالكارت وإنت مش بتسدد كامل بتفضل عليك شهر كامل بحوالي ${fmt(1000 * rateOf(card) / 100)} ${s} ربح. استخدم وسيلة دفع تانية للمصاريف الجديدة.` });
+    // 5: lump sum
+    tips.push({ icon: '💰', t: 'أي مبلغ كبير يجيلك: ادفعه للكارت', b: 'مكافأة أو سلفة أو بيع حاجة: دفعه للكارت أول ما يوصلك بيوقف الربح على الجزء ده من يومها، وده أكبر توفير ممكن لأن الربح بالأيام.' });
+    // 6: ask the bank
+    tips.push({ icon: '☎️', t: 'اسأل البنك (920003344)', b: 'اسأل لو ينفع تحوّل جزء من الرصيد لخطة أقساط (تساهيل) بدون ربح، وعن سبب استرداد الربح اللي ظهر في الكشف. ده سؤال مش وعد: مش مضمون إنه متاح لبطاقتك.' });
+    // 7: don't miss the minimum
+    tips.push({ icon: '🛡️', t: 'ما تفوتش الحد الأدنى', b: `الحد الأدنى ${fmt(min)} ${s} قبل ${info.dueDate}. التأخير بيدخلك في أحكام التعثر (المادة 2 في الاتفاقية، وتفاصيل رسومها مش في الملف اللي عندي، راجعها مع البنك). لو الشهر ضيّق، ادفع الحد الأدنى بس وكمّل بعدها.` });
+    return tips;
+  };
+  window.arTipsRun = function () {
+    const card = findCard(S.cardId), out = $('arTipsOut'); if (!card || !out) return;
+    const tips = window.arTips(card);
+    out.innerHTML = tips.length ? tips.map(x => `<div style="background:var(--card2);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:12px;line-height:1.9"><div style="font-weight:900;margin-bottom:2px">${x.icon} ${esc(x.t)}</div><div style="color:var(--text)">${esc(x.b)}</div></div>`).join('') : '<div style="color:var(--muted);font-size:12px">مفيش مستحق دلوقتي.</div>';
   };
 
   // ───────── preset when the bank is chosen in the add-card form, and saving
@@ -29989,9 +30218,9 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 /* v43: card screens scroll smoothly.
    - the full-screen backdrop blur is what made scrolling inside card sheets heavy (the whole page behind gets re-blurred), so card sheets use a plain dark backdrop
    - long lists are drawn lazily: rows outside the viewport skip layout and paint */
-#msCatMgr,#msMoneyMap,#creditCardsModal,#ccDetailModal,#ccSimpleModal,#ccPdfImportModalV2,#ccSmsModal,#ccStatsModal,#ccCatModal,#ccAddModal,#ccPurchaseModal,#ccPaymentModal{
+#ccTileModal,#arCalcModal,#msCatMgr,#msMoneyMap,#creditCardsModal,#ccDetailModal,#ccSimpleModal,#ccPdfImportModalV2,#ccSmsModal,#ccStatsModal,#ccCatModal,#ccAddModal,#ccPurchaseModal,#ccPaymentModal{
   background:rgba(0,0,0,.72) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;}
-#msCatMgr .sheet,#msMoneyMap .sheet,#creditCardsModal .sheet,#ccDetailModal .sheet,#ccSimpleModal .sheet,#ccPdfImportModalV2 .sheet,#ccSmsModal .sheet,#ccStatsModal .sheet,#ccCatModal .sheet,#ccAddModal .sheet,#ccPurchaseModal .sheet,#ccPaymentModal .sheet{
+#ccTileModal .sheet,#arCalcModal .sheet,#msCatMgr .sheet,#msMoneyMap .sheet,#creditCardsModal .sheet,#ccDetailModal .sheet,#ccSimpleModal .sheet,#ccPdfImportModalV2 .sheet,#ccSmsModal .sheet,#ccStatsModal .sheet,#ccCatModal .sheet,#ccAddModal .sheet,#ccPurchaseModal .sheet,#ccPaymentModal .sheet{
   box-shadow:0 -2px 14px rgba(0,0,0,.35) !important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
 .cc-row{content-visibility:auto;contain-intrinsic-size:auto 92px;}
 </style>
