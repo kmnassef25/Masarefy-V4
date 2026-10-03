@@ -5702,28 +5702,39 @@ function highlightBaseOpt() {
 }
 
 // ── RECURRING: auto-inject monthly transactions ──
-function checkRecurring() {
+function checkRecurring(nowArg) {
   if (!recurringTxs.length) return;
-  const today = new Date(); // Always use current time, not stale module-load `now`
-  const y = today.getFullYear();
-  const m = today.getMonth();
-  const daysInMonth = new Date(y, m+1, 0).getDate();
-  const key = `${y}-${String(m+1).padStart(2,'0')}`;
+  const today = nowArg || new Date(); // Always use current time, not stale module-load `now`
+  const y = today.getFullYear(), m = today.getMonth(), daysInMonth = new Date(y, m+1, 0).getDate();
+  const key = `${y}-${String(m+1).padStart(2,'0')}`, pad2 = n => String(n).padStart(2,'0'), ds = d => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
   const done = msStore.getJSON('msarifyi_recurring_done', '{}');
+  const t0 = new Date(y, m, today.getDate());
+  const inject = (r, dStr, rKey) => {
+    txs.unshift({ ...r, id: 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2,9), date: dStr, time: '00:01', note: (r.note||'') + ' (تكرار تلقائي)' });
+    delete txs[0].paused; delete txs[0].frequency; done[rKey] = true;
+  };
   recurringTxs.forEach(r => {
+    if (r.paused) return;                                   // v69: paused entries add nothing
+    const f = r.frequency || 'monthly';
+    const a = new Date(String(r.date || '').slice(0,10) + 'T12:00:00'); const anchor = isNaN(a) ? null : a;
+    if ((f === 'weekly' || f === 'biweekly') && anchor) {   // v69: every 7 / 14 days from the first entry, only the dates of this month that have arrived
+      const step = f === 'weekly' ? 7 : 14;
+      for (let d = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + step); d <= t0; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + step)) {
+        if (d.getFullYear() !== y || d.getMonth() !== m) continue;
+        const rKey = r.id + '_' + ds(d); if (done[rKey]) continue; inject(r, ds(d), rKey);
+      }
+      return;
+    }
+    if (f === 'yearly' && anchor) {                         // v69: once a year, in the month of the first entry
+      if (anchor.getMonth() !== m || anchor.getFullYear() === y) return;
+      const rKey = r.id + '_' + y; if (done[rKey]) return;
+      const d = new Date(y, m, Math.min(anchor.getDate(), daysInMonth)); if (d > t0) return; inject(r, ds(d), rKey); return;
+    }
     const rKey = r.id + '_' + key;
     if (done[rKey]) return;
     // Honor dayOfMonth if set; clamp to last day of short months (#7)
     const dayOfMonth = r.dayOfMonth ? Math.min(r.dayOfMonth, daysInMonth) : today.getDate();
-    const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(dayOfMonth).padStart(2,'0')}`;
-    txs.unshift({
-      ...r,
-      id: 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2,9),
-      date: dStr,
-      time: '00:01',
-      note: (r.note||'') + ' (تكرار تلقائي)'
-    });
-    done[rKey] = true;
+    inject(r, `${y}-${pad2(m+1)}-${pad2(dayOfMonth)}`, rKey);
   });
   msStore.setRaw('msarifyi_recurring_done', JSON.stringify(done));
   saveData();
@@ -8770,7 +8781,7 @@ renderAll();
 var MS_QUIET = [
   /جاري جلب الأسعار/, /تم التحديث من /, /^✅ .+ · سعر /, /كل المصادر فشلت/,       // exchange rates
   /تحديث سعر الذهب/,                                                           // gold price
-  /أنت offline/, /رجعت online/,                                                // connection
+  /أنت offline/, /رجعت online/, /المبالغ (مخفية|ظاهرة)/,                                                // connection
   /^⏰ (قسط|عندك \d+ أقساط)/,                                                  // installment reminder (the home strip shows it)
   /^💡 /                                                                       // tips
 ];
@@ -9681,15 +9692,15 @@ function renderInstallments() {
     const isDone = paid >= inst.totalMonths; const lbl = _instStatusLabel(info, sym);
     const dueTxt = isDone ? 'خلصت' : lbl.text.replace(/^[^\s]+\s/, '');
     const dueColor = isDone ? 'var(--green)' : lbl.color;
-    const provLabel = { tabby: 'tabby', tamara: 'tamara', bank: 'بنك', dealer: 'محل' }[inst.provider] || '';
-    const provIcon = { bank: 'building-bank', tabby: 'shopping-cart', tamara: 'shopping-cart', dealer: 'shopping-cart' }[inst.provider] || 'calendar-time';
-    const logo = window.msIcon ? window.msIcon(provIcon) : '';
-    const metaTail = [inst.store ? esc(inst.store) : '', provLabel].filter(Boolean).join(' · ');
+    const provBadge = { tabby: 'tabby', tamara: 'tamara' }[inst.provider] || '';
+    const provIcon = { bank: 'building-bank', dealer: 'shopping-cart' }[inst.provider] || 'calendar-time';
+    const logo = provBadge ? '<span class="ms-prov ' + provBadge + '">' + provBadge + '</span>' : (window.msIcon ? window.msIcon(provIcon) : '');   // tabby / tamara keep their own colours (sized to fit); everything else is a line icon
+    const metaTail = inst.store ? esc(inst.store) : '';
     const canPay = !isDone && info.status !== 'paid'; const canEarly = !isDone && remaining > 1;
     const fees = (inst.fees && inst.fees > 0) ? `<div class="ms-kv"><span>فوائد ورسوم</span><span>${fmt(inst.fees, 0)} ${esc(inst.currency)}</span></div>` : '';
     return `<div class="ms-item ${isDone ? 'done' : ''}" data-id="${esc(inst.id)}">
       <div class="ms-item-row" role="button" tabindex="0" onclick="msItemToggle(this)">
-        <span class="ms-item-ic">${logo}</span>
+        <span class="ms-item-ic${provBadge ? ' prov' : ''}">${logo}</span>
         <div class="ms-item-main">
           <div class="ms-item-l1"><span class="ms-item-name">${esc(inst.name)}</span><span class="ms-item-amt">${money(monthlySAR)}</span></div>
           <div class="ms-item-l2"><span>${paid} من ${inst.totalMonths} شهر${metaTail ? ' · ' + metaTail : ''}</span><span style="color:${dueColor}">${dueTxt}</span></div>
@@ -12158,7 +12169,7 @@ setTimeout(() => { try { applyBalanceVisibility(); } catch(e) {} }, 0);
 // Apply hide/show state to all .val elements (call after every renderAll)
 function applyBalanceVisibility() {
   const btn = document.getElementById('hideBalanceBtn');
-  const vals = document.querySelectorAll('.sum-main .val, .sum-inc .val, .sum-exp .val, .sum-sav .val, .sum-cur .val');
+  const vals = document.querySelectorAll('.sum-main .val, .sum-inc .val, .sum-exp .val, .sum-sav .val, .sum-cur .val, .ms-money');
   if (balanceHidden) {
     if (btn) {
       btn.innerHTML = '<span class="hb-icon">' + (window.msIcon ? window.msIcon('eye-off') : '🙈') + '</span>';
@@ -17697,7 +17708,8 @@ setTimeout(() => {
         { id:'accounts', icon:'🏦', title:'المحافظ', sub:'تحويل بين المحافظ، كل أموالك في مكان واحد', modal:'accountsModal', render:'renderAccounts', countKey:'menuAccCount' },
         { id:'goals', icon:'🎯', title:'أهداف الادخار', sub:'وفّر للحاجات الكبيرة', modal:'goalsModal', render:'renderGoals', countKey:'menuGoalCount' },
         { id:'moneymap', icon:'📊', title:'أين ذهبت فلوسي؟', sub:'مقارنة الشهور والسنة والأهمية', custom:'msMoneyOpen' },
-        { id:'wrapped', icon:'🎵', title:'تقرير السنة', sub:'ملخص سنوي', custom:'showWrappedReport' }
+        { id:'wrapped', icon:'🎵', title:'تقرير السنة', sub:'ملخص سنوي', custom:'showWrappedReport' },
+        { id:'recurring', icon:'🔁', title:'المعاملات المتكررة', sub:'اشتراكات ومرتبات تلقائية', modal:'msRecurModal', render:'msRecurRender' }
       ]
     },
     {
@@ -28030,6 +28042,7 @@ setTimeout(() => {
 
   // ── بطاقة صافي الثروة (Hero) ──
   function heroCard(T){
+    if (window.msHeroHtml) return window.msHeroHtml(T);   // v69: "available now"
     var c = _heroCur();
     // أزرار تبديل العملة — العملات اللي عند المستخدم فعلاً + الأساسية
     var curs = ['SAR','EGP','USD','EUR'];
@@ -28496,7 +28509,7 @@ setTimeout(() => {
       quick: quickActions
     };
     // الترتيب والتشغيل الافتراضي
-    var _defaultOrder = ['dashboard','assistant','month','alerts','budget','commitments','goal','recent','quick'];
+    var _defaultOrder = ['assistant','alerts','budget','commitments','goal','recent','quick'];
     var _cfg;
     try{ _cfg = msStore.getJSON('msarifyi_home_widgets', 'null'); }catch(e){ _cfg = null; }
     if (!_cfg || !Array.isArray(_cfg.order)){
@@ -28509,6 +28522,7 @@ setTimeout(() => {
     // الهيرو دايماً أول حاجة (أساسي، مش بيتقفل)
     var parts = [ heroCard(T) ];
     _cfg.order.forEach(function(key){
+      if (key==='dashboard' || key==='month') return;   // v70: replaced by the four numbers
       if (_off.indexOf(key)!==-1) return;        // مقفول
       var fn = _widgetMap[key];
       if (typeof fn === 'function'){
@@ -28518,7 +28532,8 @@ setTimeout(() => {
     });
     parts = parts.filter(Boolean);
 
-    el.innerHTML = '<div class="h2-wrap">'+(parts[0]||'')+(window.msNowStripHtml ? window.msNowStripHtml() : '')+parts.slice(1).join('')+'</div>';   // v60: hero first, then the strip
+    el.innerHTML = '<div class="h2-wrap">'+(parts[0]||'')+(window.msFourHtml ? window.msFourHtml() : '')+(window.msNowStripHtml ? window.msNowStripHtml() : '')+parts.slice(1).join('')+'</div>';
+    try { if (typeof applyBalanceVisibility === 'function') applyBalanceVisibility(); } catch (e) { /* ignore */ }   // v60: hero first, then the strip
   }
 
   // ── تخصيص الصفحة الرئيسية (ترتيب + تشغيل/إطفاء الودجت) ──
@@ -28534,10 +28549,11 @@ setTimeout(() => {
     quick: '⚡ وصول سريع'
   };
   function _getHomeCfg(){
-    var def = { order: ['dashboard','assistant','month','alerts','budget','commitments','goal','recent','quick'], off: [] };
+    var def = { order: ['assistant','alerts','budget','commitments','goal','recent','quick'], off: [] };
     var c;
     try{ c = msStore.getJSON('msarifyi_home_widgets', 'null'); }catch(e){ c=null; }
     if (!c || !Array.isArray(c.order)) return def;
+    c.order = c.order.filter(function(k){ return k!=='dashboard' && k!=='month'; });   // v70: saved layouts lose them too
     def.order.forEach(function(k){ if (c.order.indexOf(k)===-1) c.order.push(k); });
     if (!Array.isArray(c.off)) c.off = [];
     return c;
@@ -30286,6 +30302,38 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
   }
   const navBtn = (fn, t) => `<button onclick="${fn}" style="background:var(--card2);border:0.5px solid var(--border);color:var(--text);border-radius:8px;padding:6px 14px;font-family:inherit;font-size:13px;cursor:pointer">${t}</button>`;
 
+  // ───────── v69: the month in a few plain numbers (same rows, same periods and same-day comparison as the rest of this screen)
+  function analyse(y, m) {
+    const rows = allRows(getCardsOn()), n = nowFn(), today = dstr(n);
+    const a = mStart(y, m), b = mEnd(y, m), open = a <= today && today <= b, dim = +b.slice(8, 10), day = open ? n.getDate() : dim, cutB = open ? today : b;
+    const cur = sumR(rows, a, cutB), future = open ? sumR(rows, addDays(today, 1), b) : 0;   // entries of this month dated after today are not spent yet
+    const aligned = k => { const d = new Date(y, m - k, 1), ma = mStart(d.getFullYear(), d.getMonth()), me = mEnd(d.getFullYear(), d.getMonth()), cd = open ? Math.min(n.getDate(), +me.slice(8, 10)) : +me.slice(8, 10); return sumR(rows, ma, ma.slice(0, 8) + pad(cd)); };
+    const prev = aligned(1), v = []; for (let k = 1; k <= 3; k++) { const s = aligned(k); if (s > 0) v.push(s); }
+    const avg3 = v.length ? v.reduce((p, q) => p + q, 0) / v.length : null;
+    const byDay = {}, byCat = {}; rows.forEach(r => { if (!inR(r, a, cutB)) return; byDay[r.date] = (byDay[r.date] || 0) + r.sar; byCat[r.cat] = (byCat[r.cat] || 0) + r.sar; });
+    const topDayK = Object.keys(byDay).sort((p, q) => byDay[q] - byDay[p])[0], topCatK = Object.keys(byCat).sort((p, q) => byCat[q] - byCat[p])[0];
+    let income = 0; TXS().forEach(t => { if (t && t.type === 'income' && !t.isTransfer) { const d = String(t.date || '').slice(0, 10); if (d >= a && d <= b) income += Number(t.amountSAR) || 0; } });
+    const savings = (Array.isArray(window.savings) ? window.savings : []).filter(s => { const d = String(s.date || '').slice(0, 10); return d >= a && d <= b; }).reduce((p, s) => p + (Number(s.amountSAR) || 0), 0);
+    const pct = (x, base) => base > 0 ? (x - base) / base * 100 : null;
+    return { open: open, day: day, spent: cur, future: future, income: income, savings: savings, avgDaily: day ? cur / day : 0, topDay: topDayK ? { date: topDayK, v: byDay[topDayK] } : null, topCat: topCatK ? { cat: topCatK, v: byCat[topCatK], share: cur > 0 ? byCat[topCatK] / cur * 100 : 0 } : null, prev: prev, prevPct: pct(cur, prev), avg3: avg3, avg3n: v.length, avg3Pct: avg3 != null ? pct(cur, avg3) : null, spentPct: income > 0 ? cur / income * 100 : null, savedPct: income > 0 ? savings / income * 100 : null };
+  }
+  function sentence(an) {
+    const cmp = (p, base) => Math.abs(Math.round(p)) < 2 ? 'قريب من ' + base : (p < 0 ? 'أقل من ' : 'أكتر من ') + base + ' بـ ' + Math.abs(Math.round(p)) + '%';
+    if (an.avg3Pct != null) { const lab = an.avg3n >= 3 ? 'متوسط آخر 3 أشهر' : an.avg3n === 2 ? 'متوسط آخر شهرين' : 'الشهر السابق'; return { t: 'صرفك هذا الشهر ' + cmp(an.avg3Pct, lab), p: an.avg3Pct }; }
+    if (an.prevPct != null) return { t: 'صرفك هذا الشهر ' + cmp(an.prevPct, 'الشهر السابق'), p: an.prevPct };
+    return null;
+  }
+  window.msMonthAnalysis = analyse; window.msMonthSentence = sentence;
+  function analysisHtml(an) {
+    if (!(an.spent > 0)) return '';
+    const s = sentence(an), pc = x => x == null ? '-' : Math.round(x) + '%';
+    const col = !s || Math.abs(Math.round(s.p)) < 2 ? 'var(--muted)' : s.p < 0 ? 'var(--green)' : 'var(--warn)';
+    const dl = d => +d.slice(8, 10) + ' ' + MONTHS[+d.slice(5, 7) - 1];
+    const fig = (k, v, sub) => '<div style="background:var(--card2);border-radius:12px;padding:12px"><div style="font-size:11px;color:var(--muted)">' + k + '</div><div style="font-size:16px;font-weight:600;margin-top:2px;direction:ltr;text-align:right">' + v + '</div>' + (sub ? '<div style="font-size:11px;color:var(--muted)">' + sub + '</div>' : '') + '</div>';
+    return '<div id="msAnalysis" style="margin-bottom:10px">' + (s ? '<div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:8px"><div style="font-size:16px;font-weight:600;line-height:1.6;color:' + col + '">' + esc(s.t) + '</div><div style="font-size:11px;color:var(--muted);margin-top:4px">' + (an.open ? 'لحد يوم ' + an.day + ' من الشهر، ومقارنة بنفس الفترة' : 'الشهر كامل') + '</div>' + (an.future > 0 ? '<div style="font-size:11px;color:var(--muted);margin-top:4px">مش محسوب هنا: ' + fmt0(toBase(an.future)) + ' ' + esc(sym()) + ' مسجلة بتاريخ لسه ما جاش (موجودة في إجمالي الشهر تحت)</div>' : '') + '</div>' : '')
+      + '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px">' + fig('متوسط الصرف اليومي', fmt0(toBase(an.avgDaily)) + ' ' + esc(sym())) + fig('أعلى يوم صرف', an.topDay ? esc(dl(an.topDay.date)) : '-', an.topDay ? fmt0(toBase(an.topDay.v)) + ' ' + esc(sym()) : '') + fig('صرفت من دخلك', pc(an.spentPct)) + fig('ادخرت من دخلك', pc(an.savedPct)) + '</div>'
+      + (an.topCat ? '<div style="display:flex;align-items:center;gap:12px;background:var(--card2);border-radius:12px;padding:12px"><span style="font-size:20px">' + iconOf(an.topCat.cat) + '</span><span style="flex:1;font-size:13px">أعلى تصنيف</span><span style="font-size:13px;font-weight:600">' + esc(an.topCat.cat) + '</span><span style="font-size:11px;color:var(--muted)">' + Math.round(an.topCat.share) + '% من الصرف</span></div>' : '') + '</div>';
+  }
   function render() {
     const body = $('msMMBody'); if (!body) return;
     const withCards = getCardsOn();
@@ -30300,8 +30348,8 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
     // average of the 3 months before (month mode) / average per month so far (year mode)
     let avgTxt = '', avgVal = null;
     if (S.mode === 'month') {
-      const v = []; for (let i = 1; i <= 3; i++) { const d = new Date(S.y, S.m - i, 1), a = mStart(d.getFullYear(), d.getMonth()), b = mEnd(d.getFullYear(), d.getMonth()); const s = sumR(dr ? rows.filter(r => r.cat === dr) : rows, a, b); if (s > 0) v.push(s); }
-      if (v.length) { avgVal = v.reduce((a, b) => a + b, 0) / v.length; avgTxt = 'متوسط آخر ' + v.length + ' شهور'; }
+      const v = []; for (let i = 1; i <= 3; i++) { const d = new Date(S.y, S.m - i, 1), a = mStart(d.getFullYear(), d.getMonth()), b0 = mEnd(d.getFullYear(), d.getMonth()), b = R.open ? a.slice(0, 8) + pad(Math.min(nowFn().getDate(), +b0.slice(8, 10))) : b0; const s = sumR(dr ? rows.filter(r => r.cat === dr) : rows, a, b); if (s > 0) v.push(s); }
+      if (v.length) { avgVal = v.reduce((a, b) => a + b, 0) / v.length; avgTxt = 'متوسط آخر ' + v.length + ' شهور' + (R.open ? ' (لنفس اليوم)' : ''); }
     }
     const period = S.mode === 'custom'
       ? `<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px"><input type="date" class="inp" value="${esc(S.from)}" onchange="msMM.range('from',this.value)" style="flex:1;direction:ltr"><span>→</span><input type="date" class="inp" value="${esc(S.to)}" onchange="msMM.range('to',this.value)" style="flex:1;direction:ltr"></div>`
@@ -30321,7 +30369,7 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
     else if (S.view === 'cat') main = catHtml(inRows, prevRows, R, hasPrev);
     else if (S.view === 'time') main = timeHtml(rows, R);
     else main = impHtml(inRows, prevRows, rows, R, hasPrev);
-    body.innerHTML = (dr ? '' : seg([['month', 'شهر'], ['year', 'سنة'], ['custom', 'فترة']], S.mode, 'msMM.mode')) + head + tabs + main;
+    body.innerHTML = (dr ? '' : seg([['month', 'شهر'], ['year', 'سنة'], ['custom', 'فترة']], S.mode, 'msMM.mode')) + (!dr && S.mode === 'month' ? analysisHtml(analyse(S.y, S.m)) : '') + head + tabs + main;
   }
 
   // ── tab 1: categories
@@ -30762,6 +30810,10 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;}
 .ms-item-row.col{display:block;}
 .ms-item-ic{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;background:rgba(240,180,41,.14);color:var(--accent);}
 .ms-item-ic .ic{width:20px;height:20px;}
+.ms-item-ic.prov{width:auto;min-width:36px;background:none;}
+.ms-prov{display:inline-flex;align-items:center;justify-content:center;height:28px;min-width:44px;padding:0 8px;border-radius:8px;font-size:11px;font-weight:600;white-space:nowrap;}
+.ms-prov.tabby{background:#3bffc1;color:#000;}
+.ms-prov.tamara{background:#ec4899;color:#fff;}
 .ms-item-main{flex:1;min-width:0;}
 .ms-item-l1,.ms-item-l2{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
 .ms-item-name{font-size:13px;font-weight:600;}
@@ -30803,6 +30855,26 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;}
 .handle{padding:10px 30px;margin:0 auto 8px;}
 .v19-handle-zone{padding:2px 0 6px;}
 .ms-foot{margin:0;}
+</style>
+<style id="ms-home-v69">
+.ms-hero2 .h2-hero-lbl{display:flex;align-items:center;justify-content:space-between;}
+.ms-hero-tools{display:inline-flex;align-items:center;gap:6px;}
+.ms-curchip{display:inline-flex;align-items:center;gap:4px;border:0.5px solid var(--border);background:var(--card2);color:var(--text);border-radius:8px;padding:5px 10px;font-family:inherit;font-size:13px;cursor:pointer;}
+.ms-curchip .ic{width:14px;height:14px;transform:rotate(-90deg);}
+.ms-hero2 .h2-hero-val{font-size:28px;margin:6px 0 2px;}
+.ms-hero2 .h2-hero-sub b{font-weight:600;}
+.ms-nw{margin-top:8px;font-size:13px;color:var(--muted);}
+.ms-four{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:12px 2px;margin:0 0 12px;}
+.ms-four > div{text-align:center;padding:0 2px;border-inline-start:0.5px solid var(--border);min-width:0;}
+.ms-four > div:first-child{border-inline-start:0;}
+.ms-four .k{font-size:13px;color:var(--muted);}
+.ms-four .v{font-size:13px;font-weight:600;margin:3px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ms-four .p{font-size:11px;color:var(--muted);}
+</style>
+<style id="ms-list-v69">
+.ms-shown{font-size:13px;color:var(--muted);padding:2px 4px 8px;}
+.ms-shown b{color:var(--text);font-weight:600;}
+#msRecurModal .form-inp{padding:8px 10px;font-size:13px;}
 </style>
 <style id="ms-safe-v54">
 /* v54: a sheet is at most (overlay height - status bar - 24px) tall, so its title and close button are never under the status bar / dynamic island */
@@ -31083,6 +31155,142 @@ body.ms-modal-open .season-particle,body.ms-modal-open .skeleton,body.ms-modal-o
   };
 })();
 </script>
+<script id="ms-calc69">
+/* v69: "available now", the month's four numbers and the home hero built on them. One definition for each. */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const num = n => Number(n) || 0;
+  const SYM = { SAR: 'ر.س', EGP: 'ج.م', USD: '$', EUR: '€' };
+  const toSar = (a, c) => { try { return typeof window.curToSAR === 'function' ? window.curToSAR(num(a), c || 'SAR') : num(a); } catch (e) { return num(a); } };
+  const ymOf = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  const list = n => { try { const v = window[n]; return Array.isArray(v) ? v : []; } catch (e) { return []; } };
+  const digits = s => (typeof window.toArabicDigits === 'function' ? window.toArabicDigits(String(s)) : String(s));
+
+  // everything earned minus everything spent, transfers excluded = the sum of the wallets. Savings, gold and cards are not in it.
+  window.msAvailableSAR = function () {
+    let inc = 0, exp = 0;
+    list('txs').forEach(x => { if (!x || x.isTransfer) return; if (x.type === 'income') inc += num(x.amountSAR); else if (x.type === 'expense') exp += num(x.amountSAR); });
+    return inc - exp;
+  };
+  // what still has to be paid before the month ends: card minimums, installments and jameya payments with a due date from today to the last day
+  // (the monthly renewals of recurring transactions are not here: this month's ones are already in the expenses)
+  window.msMonthCommitments = function (now) {
+    now = now || new Date();
+    const t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()), end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const left = Math.round((end - t0) / 86400000);
+    const items = (typeof window.msUpcoming === 'function' ? window.msUpcoming(now) : []).filter(x => x.k !== 'subs' && x.days <= left);
+    return { items: items, count: items.length, totalSAR: items.reduce((s, x) => s + toSar(x.amount, x.cur), 0) };
+  };
+  window.msMonthFigures = function (now) {
+    now = now || new Date(); const ym = ymOf(now); let inc = 0, exp = 0;
+    list('txs').forEach(x => { if (!x || x.isTransfer || String(x.date || '').slice(0, 7) !== ym) return; if (x.type === 'income') inc += num(x.amountSAR); else if (x.type === 'expense') exp += num(x.amountSAR); });
+    const sav = list('savings').filter(s => String(s.date || '').slice(0, 7) === ym).reduce((a, s) => a + num(s.amountSAR), 0);
+    const cm = window.msMonthCommitments(now), avail = window.msAvailableSAR();
+    return { ym: ym, income: inc, expense: exp, savings: sav, commitments: cm.totalSAR, commitmentItems: cm.items, available: avail, afterCommitments: avail - cm.totalSAR };
+  };
+
+  const heroCur = () => { try { return window.msStore.getRaw('msarifyi_hero_cur') || window.baseCurrency || 'SAR'; } catch (e) { return 'SAR'; } };
+  const money = sar => { const c = heroCur(); let v = sar; try { v = typeof window.sarToCur === 'function' ? window.sarToCur(sar, c) : sar; } catch (e) { /* ignore */ } return window.fmt(v, 0) + ' ' + (SYM[c] || c); };
+  window.msCycleHeroCur = function () { const order = ['SAR', 'EGP', 'USD', 'EUR']; const c = heroCur(); const n = order[(order.indexOf(c) + 1) % order.length]; if (typeof window._setHeroCur === 'function') window._setHeroCur(n); };
+
+  window.msHeroHtml = function (T) {
+    const f = window.msMonthFigures(); const c = heroCur();
+    const after = f.commitments > 0
+      ? 'بعد التزامات الشهر: <b class="ms-money" style="color:' + (f.afterCommitments < 0 ? 'var(--red)' : 'var(--text)') + '">' + money(f.afterCommitments) + '</b>'
+      : 'مفيش التزامات باقية الشهر ده';
+    const nw = T && isFinite(T.netWorth) ? '<div class="ms-nw">صافي الثروة <span class="ms-money">' + money(T.netWorth) + '</span></div>' : '';
+    return '<div class="h2-hero ms-hero2" id="msHero2"><div class="h2-hero-lbl"><span>إجمالي المتاح الآن</span><span class="ms-hero-tools"><span id="msHeroEye"><button id="msHeroEyeBtn" class="hide-balance-btn" onclick="toggleBalanceVisibility()" aria-label="إخفاء/إظهار المبالغ"><span class="hb-icon"><svg class="ic" aria-hidden="true"><use href="#ti-eye"/></svg></span></button></span><button type="button" class="ms-curchip" onclick="msCycleHeroCur()" aria-label="تغيير عملة العرض">' + (SYM[c] || c) + (window.msIcon ? window.msIcon('chevron-left') : '') + '</button></span></div>'
+      + '<div class="h2-hero-val ms-money" style="color:' + (f.available < 0 ? 'var(--red)' : 'var(--text)') + '">' + money(f.available) + '</div>'
+      + '<div class="h2-hero-sub">' + after + '</div>' + nw + '</div>';
+  };
+  window.msFourHtml = function () {
+    const f = window.msMonthFigures(); const pct = x => (f.income > 0 && x > 0) ? digits(Math.round(x / f.income * 100)) + '% من الدخل' : '';
+    const cell = (k, v, col, sub) => '<div><div class="k">' + k + '</div><div class="v ms-money" style="color:' + col + '">' + money(v) + '</div><div class="p">' + (sub || '&nbsp;') + '</div></div>';
+    return '<div class="ms-four" id="msFour">' + cell('دخل', f.income, 'var(--green)', 'هذا الشهر') + cell('مصروف', f.expense, 'var(--red)', pct(f.expense)) + cell('ادخار', f.savings, 'var(--cyan, #39c5cf)', pct(f.savings)) + cell('التزامات', f.commitments, 'var(--warn)', pct(f.commitments) || (f.commitments > 0 ? '' : 'مفيش')) + '</div>';
+  };
+})();
+</script>
+<script id="ms-recur69">
+/* v69: recurring transactions as a screen you control, and the "shown" line of the transactions list. */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const FREQ = { monthly: 'شهري', weekly: 'أسبوعي', biweekly: 'كل أسبوعين', yearly: 'سنوي' };
+  const PER_MONTH = { monthly: 1, weekly: 52 / 12, biweekly: 26 / 12, yearly: 1 / 12 };
+  const MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  const pad = n => String(n).padStart(2, '0');
+  const money = sar => window.fmt(window.toBase(sar), 0) + ' ' + (typeof BASE_LABELS !== 'undefined' && BASE_LABELS[window.baseCurrency] ? BASE_LABELS[window.baseCurrency].sym : '');
+  const doneMap = () => { try { return window.msStore.getJSON('msarifyi_recurring_done', '{}'); } catch (e) { return {}; } };
+  const anchorOf = r => { const d = new Date(String(r.date || '').slice(0, 10) + 'T12:00:00'); return isNaN(d) ? new Date() : d; };
+  function nextDate(r, now) {
+    now = now || new Date(); const a = anchorOf(r), f = r.frequency || 'monthly', t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dim = (y, m) => new Date(y, m + 1, 0).getDate();
+    if (f === 'weekly' || f === 'biweekly') { const step = f === 'weekly' ? 7 : 14; let d = new Date(a.getFullYear(), a.getMonth(), a.getDate() + step); while (d < t0) d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + step); return d; }
+    if (f === 'yearly') { let d = new Date(now.getFullYear(), a.getMonth(), Math.min(a.getDate(), dim(now.getFullYear(), a.getMonth()))); if (d < t0 || doneMap()[r.id + '_' + now.getFullYear()]) d = new Date(now.getFullYear() + 1, a.getMonth(), Math.min(a.getDate(), dim(now.getFullYear() + 1, a.getMonth()))); return d; }
+    const day = r.dayOfMonth || a.getDate(); const key = now.getFullYear() + '-' + pad(now.getMonth() + 1);
+    let d = new Date(now.getFullYear(), now.getMonth(), Math.min(day, dim(now.getFullYear(), now.getMonth())));
+    if (doneMap()[r.id + '_' + key] || d < t0) d = new Date(now.getFullYear(), now.getMonth() + 1, Math.min(day, dim(now.getFullYear(), now.getMonth() + 1)));
+    return d;
+  }
+  window.msRecurNext = nextDate;
+  function ensureModal() {
+    let m = $('msRecurModal'); if (m) return m;
+    m = document.createElement('div'); m.className = 'overlay'; m.id = 'msRecurModal'; m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+    m.innerHTML = '<div class="sheet" style="max-width:520px;margin:0 auto"><div class="handle" onclick="this.closest(\'.overlay\').classList.remove(\'open\')"></div><div class="ms-sheet-head"><div class="modal-title">المعاملات المتكررة</div></div><div id="msRecurList"></div></div>';
+    document.body.appendChild(m); return m;
+  }
+  window.msRecurRender = function () {
+    ensureModal(); const host = $('msRecurList'); const list = Array.isArray(window.recurringTxs) ? window.recurringTxs : [];
+    if (!list.length) { host.innerHTML = '<div class="empty"><div class="empty-icon">🔁</div>مفيش معاملات متكررة<div style="font-size:13px;margin-top:6px;color:var(--muted)">فعّل "حركة متكررة" من خيارات إضافية وأنت بتضيف حركة</div></div>'; return; }
+    let inc = 0, exp = 0; list.forEach(r => { if (r.paused) return; const v = (Number(r.amountSAR) || 0) * (PER_MONTH[r.frequency || 'monthly'] || 1); if (r.type === 'income') inc += v; else exp += v; });
+    const now = new Date();
+    const row = r => {
+      const f = r.frequency || 'monthly', nx = nextDate(r, now), sar = Number(r.amountSAR) || 0, isInc = r.type === 'income';
+      const sub = (FREQ[f] || f) + (r.paused ? ' · موقوفة' : ' · الجاية ' + nx.getDate() + ' ' + MONTHS[nx.getMonth()]);
+      return '<div class="ms-item' + (r.paused ? ' done' : '') + '" data-id="' + esc(r.id) + '"><div class="ms-item-row" role="button" tabindex="0" onclick="msItemToggle(this)"><span class="ms-item-ic">' + window.msIcon(isInc ? 'arrow-down-left' : 'arrow-up-right') + '</span><div class="ms-item-main"><div class="ms-item-l1"><span class="ms-item-name">' + esc(r.name) + '</span><span class="ms-item-amt" style="color:' + (isInc ? 'var(--green)' : 'var(--red)') + '">' + (isInc ? '+' : '-') + money(sar) + '</span></div><div class="ms-item-l2"><span>' + sub + '</span><span>' + esc(r.cat || '') + '</span></div></div></div>'
+        + '<div class="ms-item-body"><div class="ms-kv"><span>الاسم</span><input class="form-inp" data-f="name" value="' + esc(r.name) + '" style="max-width:60%"></div><div class="ms-kv"><span>المبلغ (' + esc(r.currency || 'SAR') + ')</span><input class="form-inp" data-f="amount" inputmode="decimal" value="' + esc(r.amount) + '" style="max-width:40%;direction:ltr"></div>'
+        + (f === 'monthly' ? '<div class="ms-kv"><span>يوم الشهر</span><input class="form-inp" data-f="day" inputmode="numeric" value="' + esc(r.dayOfMonth || anchorOf(r).getDate()) + '" style="max-width:30%;direction:ltr"></div>' : '')
+        + '<button type="button" class="ms-primary" onclick="msRecurSave(\'' + esc(r.id) + '\',this)">حفظ التعديل</button><div class="ms-acts"><button type="button" class="ms-act" onclick="msRecurPause(\'' + esc(r.id) + '\')">' + (r.paused ? 'استئناف' : 'إيقاف') + '</button><button type="button" class="ms-act danger" onclick="msRecurDelete(\'' + esc(r.id) + '\',this)">حذف</button></div><div class="ms-hint2" style="color:var(--muted);font-size:11px;margin-top:6px">التعديل والإيقاف بيأثروا على الجاي بس. الحركات اللي اتسجلت قبل كده زي ما هي.</div></div></div>';
+    };
+    host.innerHTML = '<div class="ms-hero"><div class="ms-hero-lbl">كل شهر (تقريبًا)</div><div class="ms-hero-line" style="margin-top:6px"><span>مصروفات متكررة <b class="ms-money">' + money(exp) + '</b></span><span>دخل متكرر <b class="ms-money">' + money(inc) + '</b></span></div></div><div class="ms-list">' + list.map(row).join('') + '</div>';
+    try { if (typeof window.applyBalanceVisibility === 'function') window.applyBalanceVisibility(); } catch (e) { /* ignore */ }
+  };
+  const byId = id => (window.recurringTxs || []).find(r => r.id === id);
+  window.msRecurPause = function (id) { const r = byId(id); if (!r) return; r.paused = !r.paused; window.saveRecurring(); window.msRecurRender(); };
+  window.msRecurSave = function (id, btn) {
+    const r = byId(id), box = btn && btn.closest ? btn.closest('.ms-item') : null; if (!r || !box) return; const g = f => { const e = box.querySelector('[data-f="' + f + '"]'); return e ? e.value : null; };
+    const name = String(g('name') || '').trim(), amt = parseFloat(String(g('amount') || '').replace(/,/g, '')), day = g('day') != null ? parseInt(g('day'), 10) : null;
+    if (!name || !(amt > 0) || (day != null && !(day >= 1 && day <= 31))) { window.showToast('اكتب اسم ومبلغ صح' + (day != null ? ' ويوم من 1 لـ 31' : ''), 'error'); return; }
+    r.name = name; r.amount = amt; r.amountSAR = window.toSAR ? window.toSAR(amt, r.currency || 'SAR', r.rate || 1) : amt; if (day != null) r.dayOfMonth = day;
+    window.saveRecurring(); window.msRecurRender();
+  };
+  let pendingDel = null;
+  window.msRecurDelete = function (id, btn) {
+    if (pendingDel !== id) { pendingDel = id; if (btn) { btn.textContent = 'اضغط تاني للتأكيد'; } setTimeout(() => { if (pendingDel === id) { pendingDel = null; if (btn && btn.isConnected) btn.textContent = 'حذف'; } }, 4000); return; }
+    pendingDel = null; window.recurringTxs = (window.recurringTxs || []).filter(r => r.id !== id); window.saveRecurring(); window.msRecurRender();
+  };
+  ensureModal();
+
+  // ───────── the "shown" line: when a search or a category filter is on, say how many entries are shown and what they add up to
+  const origList = window.renderList;
+  if (typeof origList === 'function') window.renderList = function (id, list) {
+    const r = origList.apply(this, arguments);
+    try {
+      const host = $(id), on = (typeof window.searchQuery !== 'undefined' && window.searchQuery) || (typeof window.filterCat !== 'undefined' && window.filterCat !== 'الكل');
+      if (!host || !on || !Array.isArray(list)) return r;
+      let net = 0; list.forEach(t => { if (t.isTransfer) return; const v = Number(t.amountSAR) || 0;   // a transfer is shown as a row but moves money between wallets: it is not part of the sum
+       if (t.type === 'expense') net -= v; else net += v; });
+      const sign = net < 0 ? '-' : net > 0 ? '+' : '', col = net < 0 ? 'var(--red)' : net > 0 ? 'var(--green)' : 'var(--muted)';
+      const line = document.createElement('div'); line.className = 'ms-shown'; line.id = 'msShown';
+      line.innerHTML = 'المعروض: <b>' + list.length + ' حركة</b> · <span class="ms-money" style="color:' + col + ';direction:ltr;display:inline-block">' + sign + window.fmtBase(Math.abs(net)) + '</span>';
+      host.insertBefore(line, host.firstChild);
+    } catch (e) { /* ignore */ }
+    return r;
+  };
+})();
+</script>
 <script id="ms-ui59">
 /* v59: single-row header, hide-amounts eye inside the net-worth card, Settings as the first row of "More". */
 (function () {
@@ -31273,6 +31481,18 @@ body.ms-modal-open .season-particle,body.ms-modal-open .skeleton,body.ms-modal-o
         out.push({ k: 'inst', id: i.id, icon: window.msIcon('calendar-time'), title: i.name || 'قسط', sub: 'قسط شهري', amount: Number(i.monthlyPayment) || 0, cur: i.currency || 'SAR', days: info.daysFromToday });
       });
     } catch (e) { /* ignore */ }
+    try {   // jameya: the monthly payment, until it is logged for this month (a day that already passed is not shown: a missing log is not proof of a missed payment)
+      (typeof jameya !== 'undefined' ? jameya : []).forEach(j => {
+        if (!j || !j.startDate) return; const start = new Date(j.startDate); if (isNaN(start)) return;
+        const elapsed = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth()) + 1;
+        if (elapsed < 1 || elapsed > (j.totalMembers || 0)) return;
+        const key = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'), log = Array.isArray(j.paidMonthsLog) ? j.paidMonthsLog : [];
+        if (log.includes(key) || log.length >= j.totalMembers) return;
+        const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(), due = new Date(now.getFullYear(), now.getMonth(), Math.min(start.getDate(), dim));
+        const days = Math.round((due - t0) / 86400000); if (days < 0) return;
+        out.push({ k: 'jam', id: j.id, icon: window.msIcon('users-group'), title: j.name || 'جمعية', sub: 'الدفعة الشهرية', amount: Number(j.monthlyAmount) || 0, cur: j.currency || 'SAR', days: days });
+      });
+    } catch (e) { /* ignore */ }
     try {
       const subs = (typeof recurringTxs !== 'undefined' ? recurringTxs : []).filter(r => r && r.type === 'expense');
       if (subs.length) {
@@ -31289,12 +31509,13 @@ body.ms-modal-open .season-particle,body.ms-modal-open .skeleton,body.ms-modal-o
     const shown = items.slice(0, 3);
     const rows = shown.map((x, i) => { const ch = dayChip(x.days); return `<div onclick="msNowOpen('${escAttr(x.k)}','${escAttr(x.id)}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;${i ? 'border-top:0.5px solid var(--border);' : ''}cursor:pointer"><span style="font-size:20px;flex-shrink:0">${x.icon}</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.title)}</div><div style="font-size:11px;color:var(--muted);margin-top:1px">${esc(x.sub)}</div></div><div style="text-align:left;flex-shrink:0"><div style="font-size:13px;font-weight:600;direction:ltr">${fmt0(x.amount)} <span style="font-size:11px">${esc(sym(x.cur))}</span></div><div style="font-size:11px;font-weight:600;color:${ch.c}">${ch.t}</div></div></div>`; }).join('');
     const worst = shown[0].days < 0 ? 'var(--red)' : shown[0].days <= 3 ? 'var(--warn)' : 'var(--border)';
-    return `<div id="msNowStrip" style="margin:0 0 12px"><div style="display:flex;justify-content:space-between;align-items:center;margin:2px 4px 6px"><span style="font-size:16px;font-weight:600">${window.msIcon('alarm')} الأهم دلوقتي</span>${items.length > 3 ? `<span style="font-size:11px;color:var(--accent)">+${items.length - 3} كمان</span>` : ''}</div><div style="background:var(--card);border:1px solid ${worst};border-radius:12px;overflow:hidden">${rows}</div></div>`;
+    return `<div id="msNowStrip" style="margin:0 0 12px"><div style="display:flex;justify-content:space-between;align-items:center;margin:2px 4px 6px"><span style="font-size:16px;font-weight:600">${window.msIcon('alarm')} أهم التنبيهات</span>${items.length > 3 ? `<span style="font-size:11px;color:var(--accent)">+${items.length - 3} كمان</span>` : ''}</div><div style="background:var(--card);border:1px solid ${worst};border-radius:12px;overflow:hidden">${rows}</div></div>`;
   };
   window.msNowOpen = function (k, id) {
     try {
       if (k === 'card' && typeof window.openCardDetail === 'function') { window.openCardDetail(id); return; }
       if (k === 'inst') { $('installmentsModal').classList.add('open'); if (typeof renderInstallments === 'function') renderInstallments(); return; }
+      if (k === 'jam') { $('jameyaModal').classList.add('open'); if (typeof renderJameya === 'function') renderJameya(); return; }
       if (k === 'subs') { $('subsModal').classList.add('open'); if (typeof renderSubs === 'function') renderSubs(); }
     } catch (e) { /* ignore */ }
   };
