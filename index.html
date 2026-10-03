@@ -3987,12 +3987,12 @@ button, .menu-row, .tx-card {
       </div>
       <div id="fAmtPreview" class="ms-amt-prev"></div>
       <div class="amt-ops" id="amtOps">
-        <button type="button" class="amt-op-btn" onclick="insertAmtOp('+')">+</button>
-        <button type="button" class="amt-op-btn" onclick="insertAmtOp('-')">−</button>
-        <button type="button" class="amt-op-btn" onclick="insertAmtOp('×')">×</button>
-        <button type="button" class="amt-op-btn" onclick="insertAmtOp('÷')">÷</button>
-        <button type="button" class="amt-op-btn" onclick="insertAmtOp('.')">.</button>
-        <button type="button" class="amt-op-btn amt-op-clr" onclick="clearAmt()">مسح</button>
+        <button type="button" class="amt-op-btn" onmousedown="event.preventDefault()" onclick="insertAmtOp('+')">+</button>
+        <button type="button" class="amt-op-btn" onmousedown="event.preventDefault()" onclick="insertAmtOp('-')">−</button>
+        <button type="button" class="amt-op-btn" onmousedown="event.preventDefault()" onclick="insertAmtOp('×')">×</button>
+        <button type="button" class="amt-op-btn" onmousedown="event.preventDefault()" onclick="insertAmtOp('÷')">÷</button>
+        <button type="button" class="amt-op-btn" onmousedown="event.preventDefault()" onclick="insertAmtOp('.')">.</button>
+        <button type="button" class="amt-op-btn amt-op-clr" onmousedown="event.preventDefault()" onclick="clearAmt()">مسح</button>
       </div>
       <div class="pay-cur-row ms-cur-list" id="msCurList" style="display:none">
         <button class="pay-cur-btn sar-s" data-cur="SAR" onclick="selPayCur(this)"><span class="fl">🇸🇦</span>ريال</button>
@@ -4169,6 +4169,15 @@ button, .menu-row, .tx-card {
       <button class="save-btn" id="msSaveBtn" onclick="saveTx()">حفظ المصروف</button>
       <button type="button" class="ms-save-new" id="msSaveNew" onclick="msSaveAndNew()">حفظ وإضافة أخرى</button>
     </div>
+  </div>
+</div>
+
+<!-- COMMITMENTS (opened from the "التزامات" number and from "أهم التنبيهات") -->
+<div class="overlay" id="commitmentsModal" onclick="closeIfOut(event,'commitmentsModal')">
+  <div class="sheet" style="max-width:520px;margin:0 auto">
+    <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
+    <div class="ms-sheet-head"><div class="modal-title">التزامات الشهر</div></div>
+    <div id="commitmentsBody"></div>
   </div>
 </div>
 
@@ -6366,6 +6375,13 @@ function setFilter(cat) {
   filterCat = cat;
   renderAll();
 }
+// "المعروض: N حركة · المجموع" above the list while a search or a category is on (a transfer is counted as a row, not in the sum)
+function _shownLine(list) {
+  if (!(searchQuery || filterCat !== 'الكل')) return '';
+  let net = 0; list.forEach(t => { if (t.isTransfer) return; const v = Number(t.amountSAR) || 0; if (t.type === 'expense') net -= v; else net += v; });
+  const sign = net < 0 ? '-' : net > 0 ? '+' : '', col = net < 0 ? 'var(--red)' : net > 0 ? 'var(--green)' : 'var(--muted)';
+  return '<div class="ms-shown">المعروض: <b>' + list.length + ' حركة</b> · <span class="ms-money" style="color:' + col + ';direction:ltr;display:inline-block">' + sign + fmtBase(Math.abs(net)) + '</span></div>';
+}
 function applyFilters(list) {
   let r = filterByMonth(list, listYear, listMonth);
   if (searchQuery) {
@@ -6437,7 +6453,7 @@ function renderList(id, list) {
   const el = document.getElementById(id);
   if (!el) return;
   _lastListData[id] = list;
-  if (!list.length) { el.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>لا توجد حركات</div>`; return; }
+  if (!list.length) { el.innerHTML = _shownLine(list) + `<div class="empty"><div class="empty-icon">📭</div>لا توجد حركات</div>`; return; }
 
   // Sort newest-first once, then cap to the current page limit (most recent N)
   const sorted = list.slice().sort((a,b)=>((b.date||'')+' '+(b.time||'')).localeCompare((a.date||'')+' '+(a.time||'')));
@@ -6501,7 +6517,7 @@ function renderList(id, list) {
     const remaining = sorted.length - limit;
     h += `<button onclick="loadMoreList('${id}')" style="display:block;width:100%;margin:10px 0 4px;padding:12px;background:var(--card2);border:1.5px solid var(--border);border-radius:12px;color:var(--accent);font-family:inherit;font-weight:600;font-size:13px;cursor:pointer">⬇️ حمّل المزيد (${remaining} حركة متبقية)</button>`;
   }
-  el.innerHTML = h;
+  el.innerHTML = _shownLine(list) + h;
 }
 
 // ملخّص تبويب «الكل» — دخل/مصروف/صافي للفترة المعروضة
@@ -7337,8 +7353,10 @@ function evalAmt(commit = false) {
   // احتياط: لو فيه أي رقم عربي بقي بدون ما يتحوّل، حوّله هنا
   const norm = normalizeDigits(inp.value);
   if (norm !== inp.value) inp.value = norm;
-  const v = inp.value.trim();
+  let v = inp.value.trim();
   if (!v) { preview.textContent = ''; updateRatePreview(); return; }
+  // an unfinished expression ("50+", "50×", "(5"): no error while the person is still typing; on commit the dangling operator is dropped
+  if (/[+\-×÷*/(]$/.test(v) && v.length > 1) { if (!commit) { preview.textContent = ''; updateRatePreview(); return; } v = v.replace(/[+\-×÷*/(]+$/, ''); inp.value = v; }
   // If just a plain number, no preview needed
   if (/^-?\d*\.?\d+$/.test(v)) { preview.textContent = ''; updateRatePreview(); return; }
   const r = safeEval(v);
@@ -28041,41 +28059,142 @@ setTimeout(() => {
   }
 
   // ── بطاقة صافي الثروة (Hero) ──
+  // ── v71: the month's numbers, the alerts and the commitments sheet live here, next to the hero and the four cells that use them
+  //    (they used to be separate scripts that the hero reached through window hooks).
+  var _SYM = { SAR: 'ر.س', EGP: 'ج.م', USD: '$', EUR: '€' };
+  function _symOf(c){ return _SYM[c] || c || 'ر.س'; }
+  function _n(x){ return Number(x) || 0; }
+  function _toSar(a, c){ try{ return curToSAR(_n(a), c || 'SAR'); }catch(e){ return _n(a); } }
+  function _day0(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function _ar(x){ try{ return toArabicDigits(String(x)); }catch(e){ return String(x); } }
+
+  // the sum of the wallets: everything earned minus everything spent, transfers left out (savings, gold and cards are not in it)
+  function availableSAR(){
+    var inc = 0, exp = 0;
+    (Array.isArray(txs) ? txs : []).forEach(function(x){ if (!x || x.isTransfer) return; if (x.type === 'income') inc += _n(x.amountSAR); else if (x.type === 'expense') exp += _n(x.amountSAR); });
+    return inc - exp;
+  }
+  // payments with a real due date: card minimums, installments, jameya payments (until logged), and the monthly renewal of subscriptions
+  function upcoming(now){
+    now = now || new Date(); var t0 = _day0(now), out = [];
+    try{
+      (window.creditCards || []).forEach(function(c){
+        var pd = typeof window.calcPaymentDue === 'function' ? window.calcPaymentDue(c) : null;
+        if (pd && pd.minimumDue > 0 && pd.daysUntilDue != null) out.push({ k: 'card', id: c.id, icon: window.msIcon('credit-card'), title: c.name || 'بطاقة', sub: 'الحد الأدنى · ' + (pd.dueDateText || ''), amount: pd.minimumDue, cur: c.currency || 'SAR', days: pd.daysUntilDue });
+      });
+    }catch(e){}
+    try{
+      (typeof installments !== 'undefined' ? installments : []).forEach(function(i){
+        if (!i || i.linkedCardId || (i.paidMonths || 0) >= i.totalMonths || typeof getInstNextDueInfo !== 'function') return;
+        var info = getInstNextDueInfo(i, now); if (info.status === 'done' || info.status === 'paid' || !isFinite(info.daysFromToday)) return;
+        out.push({ k: 'inst', id: i.id, icon: window.msIcon('calendar-time'), title: i.name || 'قسط', sub: 'قسط شهري', amount: Number(i.monthlyPayment) || 0, cur: i.currency || 'SAR', days: info.daysFromToday });
+      });
+    }catch(e){}
+    try{   // jameya: the monthly payment until it is logged for this month (a day that already passed is not shown: a missing log is not proof of a missed payment)
+      (typeof jameya !== 'undefined' ? jameya : []).forEach(function(j){
+        if (!j || !j.startDate) return; var start = new Date(j.startDate); if (isNaN(start)) return;
+        var elapsed = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth()) + 1;
+        if (elapsed < 1 || elapsed > (j.totalMembers || 0)) return;
+        var key = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'), log = Array.isArray(j.paidMonthsLog) ? j.paidMonthsLog : [];
+        if (log.indexOf(key) !== -1 || log.length >= j.totalMembers) return;
+        var dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(), due = new Date(now.getFullYear(), now.getMonth(), Math.min(start.getDate(), dim));
+        var days = Math.round((due - t0) / 86400000); if (days < 0) return;
+        out.push({ k: 'jam', id: j.id, icon: window.msIcon('users-group'), title: j.name || 'جمعية', sub: 'الدفعة الشهرية', amount: Number(j.monthlyAmount) || 0, cur: j.currency || 'SAR', days: days });
+      });
+    }catch(e){}
+    try{
+      var subs = (typeof recurringTxs !== 'undefined' ? recurringTxs : []).filter(function(r){ return r && r.type === 'expense' && !r.paused; });
+      if (subs.length){
+        var next = new Date(now.getFullYear(), now.getMonth() + 1, 1), d2 = Math.round((next - t0) / 86400000);
+        var total = subs.reduce(function(s, r){ return s + (Number(r.amountSAR) || 0); }, 0);
+        if (total > 0) out.push({ k: 'subs', id: 'subs', icon: window.msIcon('repeat'), title: 'اشتراكات شهرية', sub: subs.length + ' اشتراك · تتجدد أول الشهر', amount: toBase(total), cur: baseCurrency, days: d2 });
+      }
+    }catch(e){}
+    return out.filter(function(x){ return x.days <= 30; }).sort(function(a, b){ return a.days - b.days; });
+  }
+  // what still has to be paid before the month ends (renewals of subscriptions are not here: this month's ones are already in the expenses)
+  function monthCommitments(now){
+    now = now || new Date();
+    var t0 = _day0(now), end = new Date(now.getFullYear(), now.getMonth() + 1, 0), left = Math.round((end - t0) / 86400000);
+    var items = upcoming(now).filter(function(x){ return x.k !== 'subs' && x.days <= left; });
+    return { items: items, count: items.length, totalSAR: items.reduce(function(s, x){ return s + _toSar(x.amount, x.cur); }, 0), daysLeft: left };
+  }
+  function monthFigures(now){
+    now = now || new Date();
+    var ym = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'), inc = 0, exp = 0;
+    (Array.isArray(txs) ? txs : []).forEach(function(x){ if (!x || x.isTransfer || String(x.date || '').slice(0, 7) !== ym) return; if (x.type === 'income') inc += _n(x.amountSAR); else if (x.type === 'expense') exp += _n(x.amountSAR); });
+    var sav = (Array.isArray(savings) ? savings : []).filter(function(s){ return String(s.date || '').slice(0, 7) === ym; }).reduce(function(a, s){ return a + _n(s.amountSAR); }, 0);
+    var cm = monthCommitments(now), avail = availableSAR();
+    return { ym: ym, income: inc, expense: exp, savings: sav, commitments: cm.totalSAR, commitmentItems: cm.items, available: avail, afterCommitments: avail - cm.totalSAR };
+  }
+  function dayChip(d){
+    var tone = window.msDueTone ? window.msDueTone(d) : { c: 'var(--muted)' };
+    return d < 0 ? { t: 'متأخر ' + (-d) + ' يوم', c: tone.c } : d === 0 ? { t: 'النهاردة', c: tone.c } : d === 1 ? { t: 'بكرة', c: tone.c } : { t: 'باقي ' + d + ' يوم', c: tone.c };
+  }
+  function nowOpen(k, id){
+    try{
+      if (k === 'card' && typeof window.openCardDetail === 'function') { window.openCardDetail(id); return; }
+      if (k === 'inst') { document.getElementById('installmentsModal').classList.add('open'); if (typeof renderInstallments === 'function') renderInstallments(); return; }
+      if (k === 'jam') { document.getElementById('jameyaModal').classList.add('open'); if (typeof renderJameya === 'function') renderJameya(); return; }
+      if (k === 'subs') { document.getElementById('subsModal').classList.add('open'); if (typeof renderSubs === 'function') renderSubs(); }
+    }catch(e){}
+  }
+  // "أهم التنبيهات": the nearest three; the title and "+N كمان" open the whole list
+  function stripHtml(){
+    var items = upcoming(); if (!items.length) return '';
+    var shown = items.slice(0, 3);
+    var rows = shown.map(function(x, i){ var ch = dayChip(x.days); return '<div onclick="msNowOpen(\'' + escAttr(x.k) + '\',\'' + escAttr(x.id) + '\')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;' + (i ? 'border-top:0.5px solid var(--border);' : '') + 'cursor:pointer"><span style="font-size:20px;flex-shrink:0">' + x.icon + '</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(x.title) + '</div><div style="font-size:11px;color:var(--muted);margin-top:1px">' + esc(x.sub) + '</div></div><div style="text-align:left;flex-shrink:0"><div style="font-size:13px;font-weight:600;direction:ltr" class="ms-money">' + _fmt(x.amount, 0) + ' <span style="font-size:11px">' + esc(_symOf(x.cur)) + '</span></div><div style="font-size:11px;font-weight:600;color:' + ch.c + '">' + ch.t + '</div></div></div>'; }).join('');
+    var worst = shown[0].days < 0 ? 'var(--red)' : shown[0].days <= 3 ? 'var(--warn)' : 'var(--border)';
+    return '<div id="msNowStrip" style="margin:0 0 12px"><div onclick="homeOpenCommitments()" role="button" tabindex="0" style="display:flex;justify-content:space-between;align-items:center;margin:2px 4px 6px;cursor:pointer"><span style="font-size:16px;font-weight:600">' + window.msIcon('alarm') + ' أهم التنبيهات</span>' + (items.length > 3 ? '<span style="font-size:11px;color:var(--accent)">+' + (items.length - 3) + ' كمان</span>' : '') + '</div><div style="background:var(--card);border:1px solid ' + worst + ';border-radius:12px;overflow:hidden">' + rows + '</div></div>';
+  }
+  // the four numbers of the month; each one opens what is behind it
+  function fourCard(){
+    var f = monthFigures();
+    function pct(x){ return (f.income > 0 && x > 0) ? _ar(Math.round(x / f.income * 100)) + '% من الدخل' : ''; }
+    function cell(kind, k, v, col, sub){
+      return '<div class="ms-cell" role="button" tabindex="0" onclick="homeOpenMonth(\'' + kind + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();homeOpenMonth(\'' + kind + '\')}"><div class="k">' + k + '</div><div class="v ms-money" style="color:' + col + '">' + _heroFmt(v) + '</div><div class="p">' + (sub || '&nbsp;') + '</div></div>';
+    }
+    return '<div class="ms-four" id="msFour">' + cell('income', 'دخل', f.income, 'var(--green)', 'هذا الشهر') + cell('expense', 'مصروف', f.expense, 'var(--red)', pct(f.expense)) + cell('savings', 'ادخار', f.savings, 'var(--cyan, #39c5cf)', pct(f.savings)) + cell('commitments', 'التزامات', f.commitments, 'var(--warn)', pct(f.commitments) || (f.commitments > 0 ? '' : 'مفيش')) + '</div>';
+  }
+  // دخل / مصروف / ادخار: the transactions page, on the current month, on that type, with no search or category left over
+  function openMonth(kind){
+    if (kind === 'commitments') { openCommitments(); return; }
+    var n = new Date(); listYear = n.getFullYear(); listMonth = n.getMonth();
+    filterCat = 'الكل'; searchQuery = ''; var si = document.getElementById('searchInp'); if (si) si.value = '';
+    var btn = document.querySelector('.tab-btn[onclick*="\'' + kind + '\'"]') || document.querySelector('.tab-btn');
+    showTab(kind, btn); renderAll();
+    var sc = document.querySelector('.body-scroll'); if (sc) sc.scrollTop = 0;
+  }
+  function openCommitments(){ var m = document.getElementById('commitmentsModal'); if (!m) return; renderCommitments(); m.classList.add('open'); }
+  function renderCommitments(){
+    var host = document.getElementById('commitmentsBody'); if (!host) return;
+    var now = new Date(), f = monthFigures(now), all = upcoming(now), cm = monthCommitments(now);
+    var inMonth = all.filter(function(x){ return x.k !== 'subs' && x.days <= cm.daysLeft; }), later = all.filter(function(x){ return !(x.k !== 'subs' && x.days <= cm.daysLeft); });   // the same rule that counts the commitments
+    function row(x){
+      var ch = dayChip(x.days);
+      return '<div class="ms-item"><div class="ms-item-row" role="button" tabindex="0" onclick="homeNowGo(\'' + escAttr(x.k) + '\',\'' + escAttr(x.id) + '\')"><span class="ms-item-ic">' + x.icon + '</span><div class="ms-item-main"><div class="ms-item-l1"><span class="ms-item-name">' + esc(x.title) + '</span><span class="ms-item-amt ms-money">' + _fmt(x.amount, 0) + ' ' + esc(_symOf(x.cur)) + '</span></div><div class="ms-item-l2"><span>' + esc(x.sub) + '</span><span style="color:' + ch.c + '">' + ch.t + '</span></div></div></div></div>';
+    }
+    host.innerHTML = '<div class="ms-hero"><div class="ms-hero-lbl">لسه عليك الشهر ده</div><div class="ms-hero-val ms-money">' + _heroFmt(f.commitments) + '</div><div class="ms-hero-line one">المتاح بعدها: <b class="ms-money">' + _heroFmt(f.afterCommitments) + '</b></div></div>'
+      + (inMonth.length ? '<div class="ms-list-h"><span>الشهر ده</span></div><div class="ms-list">' + inMonth.map(row).join('') + '</div>' : '<div class="empty"><div class="empty-icon">✅</div>مفيش التزامات باقية الشهر ده</div>')
+      + (later.length ? '<div class="ms-list-h"><span>بعد كده (خلال 30 يوم)</span></div><div class="ms-list">' + later.map(row).join('') + '</div>' : '');
+    try{ applyBalanceVisibility(); }catch(e){}
+  }
+  function nowGo(k, id){ var m = document.getElementById('commitmentsModal'); if (m) m.classList.remove('open'); nowOpen(k, id); }
+  function cycleHeroCur(){ var order = ['SAR', 'EGP', 'USD', 'EUR'], c = _heroCur(); window._setHeroCur(order[(order.indexOf(c) + 1) % order.length]); }
+  window.msAvailableSAR = availableSAR; window.msUpcoming = upcoming; window.msMonthCommitments = monthCommitments; window.msMonthFigures = monthFigures;
+  window.msNowStripHtml = stripHtml; window.msNowOpen = nowOpen; window.msCycleHeroCur = cycleHeroCur;
+  window.homeOpenMonth = openMonth; window.homeOpenCommitments = openCommitments; window.homeNowGo = nowGo; window.renderCommitments = renderCommitments;
+
+  // ── الهيرو: "إجمالي المتاح الآن" (كان "صافي الثروة")
   function heroCard(T){
-    if (window.msHeroHtml) return window.msHeroHtml(T);   // v69: "available now"
-    var c = _heroCur();
-    // أزرار تبديل العملة — العملات اللي عند المستخدم فعلاً + الأساسية
-    var curs = ['SAR','EGP','USD','EUR'];
-    var switcher = curs.map(function(cur){
-      var on = cur===c;
-      var lbl = (BASE_LABELS[cur]&&BASE_LABELS[cur].flag||'')+' '+(BASE_LABELS[cur]&&BASE_LABELS[cur].sym||cur);
-      return `<button class="h2-cur-btn${on?' on':''}" onclick="_setHeroCur('${cur}')">${lbl}</button>`;
-    }).join('');
-    var nwColor = T.netWorth>=0 ? 'var(--text)' : 'var(--red)';
-    var debtLine = T.debt>0 ? `<div class="h2-hero-debt">− ديون: ${_heroFmt(T.debt)}</div>` : '';
-    return `
-    <div class="h2-hero">
-      <div class="h2-hero-lbl"><span>💎 صافي الثروة</span><span id="msHeroEye"><button id="msHeroEyeBtn" class="hide-balance-btn" onclick="toggleBalanceVisibility()" aria-label="إخفاء/إظهار المبالغ"><span class="hb-icon"><svg class="ic" aria-hidden="true"><use href="#ti-eye"/></svg></span></button></span></div>
-      <div class="h2-hero-val" style="color:${nwColor}">${_heroFmt(T.netWorth)}</div>
-      <div class="h2-hero-sub">السائل ${_heroFmt(T.liquid)}${T.debt>0?' · بعد خصم الديون':''}</div>
-      ${debtLine}
-      <div class="h2-cur-switch">${switcher}</div>
-      <div class="h2-hero-row">
-        <div class="h2-hero-mini inc">
-          <div class="m-lbl">📥 الدخل</div>
-          <div class="m-val">${_heroFmt(T.inc)}</div>
-        </div>
-        <div class="h2-hero-mini exp">
-          <div class="m-lbl">📤 المصروف</div>
-          <div class="m-val">${_heroFmt(T.exp)}</div>
-        </div>
-        <div class="h2-hero-mini sav">
-          <div class="m-lbl">🏦 ادخار</div>
-          <div class="m-val">${_heroFmt(T.sav)}</div>
-        </div>
-      </div>
-      ${window.msHomeTrendHtml ? window.msHomeTrendHtml() : ''}
-    </div>`;
+    var f = monthFigures(), c = _heroCur();
+    var after = f.commitments > 0
+      ? 'بعد التزامات الشهر: <b class="ms-money" style="color:' + (f.afterCommitments < 0 ? 'var(--red)' : 'var(--text)') + '">' + _heroFmt(f.afterCommitments) + '</b>'
+      : 'مفيش التزامات باقية الشهر ده';
+    var nw = (T && isFinite(T.netWorth)) ? '<div class="ms-nw">صافي الثروة <span class="ms-money">' + _heroFmt(T.netWorth) + '</span></div>' : '';
+    return '<div class="h2-hero ms-hero2" id="msHero2"><div class="h2-hero-lbl"><span>إجمالي المتاح الآن</span><span class="ms-hero-tools"><span id="msHeroEye"><button id="msHeroEyeBtn" class="hide-balance-btn" onclick="toggleBalanceVisibility()" aria-label="إخفاء/إظهار المبالغ"><span class="hb-icon"><svg class="ic" aria-hidden="true"><use href="#ti-eye"/></svg></span></button></span><button type="button" class="ms-curchip" onclick="msCycleHeroCur()" aria-label="تغيير عملة العرض">' + _symOf(c) + window.msIcon('chevron-left') + '</button></span></div>'
+      + '<div class="h2-hero-val ms-money" style="color:' + (f.available < 0 ? 'var(--red)' : 'var(--text)') + '">' + _heroFmt(f.available) + '</div>'
+      + '<div class="h2-hero-sub">' + after + '</div>' + nw + '</div>';
   }
 
   // ── بطاقة الميزانيات ──
@@ -28120,45 +28239,7 @@ setTimeout(() => {
   }
 
   // ── بطاقة الالتزامات (أقساط + فواتير) ──
-  function commitmentsCard(){
-    try{
-      var items = [];
-      // أقساط نشطة — الحقول الصحيحة: monthlyPayment, paidMonths, totalMonths, currency
-      var inst = (typeof installments!=='undefined' && Array.isArray(installments))?installments:[];
-      inst.forEach(i=>{
-        var paid = i.paidMonths||0, total = i.totalMonths||i.months||0;
-        if (total && paid>=total) return; // مخلّص
-        // المبلغ بعملته → حوّله للعملة الأساسية
-        var monthlyRaw = i.monthlyPayment||0;
-        var monthlySAR = (typeof curToSAR==='function') ? curToSAR(monthlyRaw, i.currency||'SAR') : monthlyRaw;
-        items.push({ em:'💳', name:i.name||'قسط', meta: total?('قسط '+(paid+1)+' من '+total):'قسط', amt:monthlySAR });
-      });
-      // فواتير — amount بعملة SAR افتراضياً
-      var bl = (typeof bills!=='undefined' && Array.isArray(bills))?bills:[];
-      bl.forEach(b=>{
-        var billSAR = (typeof curToSAR==='function') ? curToSAR(b.amount||0, b.currency||'SAR') : (b.amount||0);
-        items.push({ em:'🧾', name:b.name||'فاتورة', meta:b.type||'فاتورة', amt:billSAR });
-      });
-      if (!items.length) return '';
-      items = items.slice(0,4);
-      var totalMonthly = items.reduce((a,x)=>a+(x.amt||0),0);
-      var html = '<div class="h2-sec-title">📌 التزامات قادمة</div>';
-      html += '<div class="h2-card tap" onclick="_h2open(\'installmentsModal\',\'renderInstallments\')">';
-      items.forEach(i=>{
-        html += `<div class="h2-commit">
-          <span class="h2-commit-em">${i.em}</span>
-          <div class="h2-commit-info">
-            <div class="h2-commit-name">${_esc(i.name)}</div>
-            <div class="h2-commit-meta">${_esc(i.meta)}</div>
-          </div>
-          <div class="h2-commit-amt">${_fmtBase(i.amt)}</div>
-        </div>`;
-      });
-      html += '</div>';
-      return html;
-    }catch(e){ return ''; }
-  }
-
+  
   // ── بطاقة أقرب هدف ──
   function goalCard(){
     try{
@@ -28503,13 +28584,12 @@ setTimeout(() => {
       month: monthCard,
       alerts: alertsCard,
       budget: budgetCard,
-      commitments: function(){ return window.msNowStripHtml ? '' : commitmentsCard(); },   // v57: the strip at the top replaces it
       goal: goalCard,
       recent: recentCard,
       quick: quickActions
     };
     // الترتيب والتشغيل الافتراضي
-    var _defaultOrder = ['assistant','alerts','budget','commitments','goal','recent','quick'];
+    var _defaultOrder = ['assistant','alerts','budget','goal','recent','quick'];
     var _cfg;
     try{ _cfg = msStore.getJSON('msarifyi_home_widgets', 'null'); }catch(e){ _cfg = null; }
     if (!_cfg || !Array.isArray(_cfg.order)){
@@ -28522,7 +28602,7 @@ setTimeout(() => {
     // الهيرو دايماً أول حاجة (أساسي، مش بيتقفل)
     var parts = [ heroCard(T) ];
     _cfg.order.forEach(function(key){
-      if (key==='dashboard' || key==='month') return;   // v70: replaced by the four numbers
+      if (key==='dashboard' || key==='month' || key==='commitments') return;   // replaced by the four numbers and the alerts
       if (_off.indexOf(key)!==-1) return;        // مقفول
       var fn = _widgetMap[key];
       if (typeof fn === 'function'){
@@ -28532,7 +28612,7 @@ setTimeout(() => {
     });
     parts = parts.filter(Boolean);
 
-    el.innerHTML = '<div class="h2-wrap">'+(parts[0]||'')+(window.msFourHtml ? window.msFourHtml() : '')+(window.msNowStripHtml ? window.msNowStripHtml() : '')+parts.slice(1).join('')+'</div>';
+    el.innerHTML = '<div class="h2-wrap">'+(parts[0]||'')+fourCard()+stripHtml()+parts.slice(1).join('')+'</div>';
     try { if (typeof applyBalanceVisibility === 'function') applyBalanceVisibility(); } catch (e) { /* ignore */ }   // v60: hero first, then the strip
   }
 
@@ -28543,17 +28623,16 @@ setTimeout(() => {
     month: '📅 حركة الشهر',
     alerts: '🔔 التنبيهات',
     budget: '🎯 الميزانية',
-    commitments: '💳 الالتزامات',
     goal: '🏆 الأهداف',
     recent: '🧾 آخر الحركات',
     quick: '⚡ وصول سريع'
   };
   function _getHomeCfg(){
-    var def = { order: ['assistant','alerts','budget','commitments','goal','recent','quick'], off: [] };
+    var def = { order: ['assistant','alerts','budget','goal','recent','quick'], off: [] };
     var c;
     try{ c = msStore.getJSON('msarifyi_home_widgets', 'null'); }catch(e){ c=null; }
     if (!c || !Array.isArray(c.order)) return def;
-    c.order = c.order.filter(function(k){ return k!=='dashboard' && k!=='month'; });   // v70: saved layouts lose them too
+    c.order = c.order.filter(function(k){ return k!=='dashboard' && k!=='month' && k!=='commitments'; });   // v70: saved layouts lose them too
     def.order.forEach(function(k){ if (c.order.indexOf(k)===-1) c.order.push(k); });
     if (!Array.isArray(c.off)) c.off = [];
     return c;
@@ -30678,8 +30757,6 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;}
 .ms-cur-chip{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;border:0.5px solid var(--border);background:var(--card2);color:var(--text);border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;cursor:pointer;}
 .ms-cur-chip .ic{width:16px;height:16px;transform:rotate(-90deg);}
 .ms-amt-prev{font-size:13px;color:var(--accent);text-align:center;direction:ltr;min-height:18px;margin-top:4px;}
-.ms-amt .amt-ops{display:none;justify-content:center;gap:8px;margin-top:8px;}
-.ms-amt:focus-within .amt-ops{display:flex;}
 .ms-cur-list{margin-top:10px;gap:6px;}
 .ms-name{margin-bottom:12px;}
 .ms-chips{display:flex !important;flex-wrap:wrap;gap:8px !important;}
@@ -30846,8 +30923,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;}
 </style>
 <style id="ms-fix-v67">
 /* v67: calculator keys, amount field, sheet top gap, save button alignment (all seen on the phone) */
-.ms-amt .amt-ops{display:none;}
-.ms-amt:focus-within .amt-ops,.ms-amt.ms-focus .amt-ops{display:grid !important;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;justify-content:stretch;margin-top:10px;}
+.ms-amt .amt-ops{display:grid !important;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;justify-content:stretch;margin-top:10px;}
 .ms-amt .amt-op-btn{height:40px;min-width:0;padding:0 !important;white-space:nowrap;background:var(--card2) !important;border:0.5px solid var(--border) !important;border-radius:8px !important;font-size:16px !important;color:var(--text) !important;display:flex;align-items:center;justify-content:center;}
 .ms-amt .amt-op-btn:active{background:var(--accent) !important;color:#0d1117 !important;}
 .ms-amt .amt-op-clr{font-size:13px !important;color:var(--red) !important;}
@@ -30870,6 +30946,8 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;}
 .ms-four .k{font-size:13px;color:var(--muted);}
 .ms-four .v{font-size:13px;font-weight:600;margin:3px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .ms-four .p{font-size:11px;color:var(--muted);}
+.ms-cell{cursor:pointer;border-radius:8px;-webkit-tap-highlight-color:transparent;}
+.ms-cell:active{background:var(--card2);}
 </style>
 <style id="ms-list-v69">
 .ms-shown{font-size:13px;color:var(--muted);padding:2px 4px 8px;}
@@ -31155,61 +31233,6 @@ body.ms-modal-open .season-particle,body.ms-modal-open .skeleton,body.ms-modal-o
   };
 })();
 </script>
-<script id="ms-calc69">
-/* v69: "available now", the month's four numbers and the home hero built on them. One definition for each. */
-(function () {
-  'use strict';
-  const $ = id => document.getElementById(id);
-  const num = n => Number(n) || 0;
-  const SYM = { SAR: 'ر.س', EGP: 'ج.م', USD: '$', EUR: '€' };
-  const toSar = (a, c) => { try { return typeof window.curToSAR === 'function' ? window.curToSAR(num(a), c || 'SAR') : num(a); } catch (e) { return num(a); } };
-  const ymOf = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-  const list = n => { try { const v = window[n]; return Array.isArray(v) ? v : []; } catch (e) { return []; } };
-  const digits = s => (typeof window.toArabicDigits === 'function' ? window.toArabicDigits(String(s)) : String(s));
-
-  // everything earned minus everything spent, transfers excluded = the sum of the wallets. Savings, gold and cards are not in it.
-  window.msAvailableSAR = function () {
-    let inc = 0, exp = 0;
-    list('txs').forEach(x => { if (!x || x.isTransfer) return; if (x.type === 'income') inc += num(x.amountSAR); else if (x.type === 'expense') exp += num(x.amountSAR); });
-    return inc - exp;
-  };
-  // what still has to be paid before the month ends: card minimums, installments and jameya payments with a due date from today to the last day
-  // (the monthly renewals of recurring transactions are not here: this month's ones are already in the expenses)
-  window.msMonthCommitments = function (now) {
-    now = now || new Date();
-    const t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()), end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    const left = Math.round((end - t0) / 86400000);
-    const items = (typeof window.msUpcoming === 'function' ? window.msUpcoming(now) : []).filter(x => x.k !== 'subs' && x.days <= left);
-    return { items: items, count: items.length, totalSAR: items.reduce((s, x) => s + toSar(x.amount, x.cur), 0) };
-  };
-  window.msMonthFigures = function (now) {
-    now = now || new Date(); const ym = ymOf(now); let inc = 0, exp = 0;
-    list('txs').forEach(x => { if (!x || x.isTransfer || String(x.date || '').slice(0, 7) !== ym) return; if (x.type === 'income') inc += num(x.amountSAR); else if (x.type === 'expense') exp += num(x.amountSAR); });
-    const sav = list('savings').filter(s => String(s.date || '').slice(0, 7) === ym).reduce((a, s) => a + num(s.amountSAR), 0);
-    const cm = window.msMonthCommitments(now), avail = window.msAvailableSAR();
-    return { ym: ym, income: inc, expense: exp, savings: sav, commitments: cm.totalSAR, commitmentItems: cm.items, available: avail, afterCommitments: avail - cm.totalSAR };
-  };
-
-  const heroCur = () => { try { return window.msStore.getRaw('msarifyi_hero_cur') || window.baseCurrency || 'SAR'; } catch (e) { return 'SAR'; } };
-  const money = sar => { const c = heroCur(); let v = sar; try { v = typeof window.sarToCur === 'function' ? window.sarToCur(sar, c) : sar; } catch (e) { /* ignore */ } return window.fmt(v, 0) + ' ' + (SYM[c] || c); };
-  window.msCycleHeroCur = function () { const order = ['SAR', 'EGP', 'USD', 'EUR']; const c = heroCur(); const n = order[(order.indexOf(c) + 1) % order.length]; if (typeof window._setHeroCur === 'function') window._setHeroCur(n); };
-
-  window.msHeroHtml = function (T) {
-    const f = window.msMonthFigures(); const c = heroCur();
-    const after = f.commitments > 0
-      ? 'بعد التزامات الشهر: <b class="ms-money" style="color:' + (f.afterCommitments < 0 ? 'var(--red)' : 'var(--text)') + '">' + money(f.afterCommitments) + '</b>'
-      : 'مفيش التزامات باقية الشهر ده';
-    const nw = T && isFinite(T.netWorth) ? '<div class="ms-nw">صافي الثروة <span class="ms-money">' + money(T.netWorth) + '</span></div>' : '';
-    return '<div class="h2-hero ms-hero2" id="msHero2"><div class="h2-hero-lbl"><span>إجمالي المتاح الآن</span><span class="ms-hero-tools"><span id="msHeroEye"><button id="msHeroEyeBtn" class="hide-balance-btn" onclick="toggleBalanceVisibility()" aria-label="إخفاء/إظهار المبالغ"><span class="hb-icon"><svg class="ic" aria-hidden="true"><use href="#ti-eye"/></svg></span></button></span><button type="button" class="ms-curchip" onclick="msCycleHeroCur()" aria-label="تغيير عملة العرض">' + (SYM[c] || c) + (window.msIcon ? window.msIcon('chevron-left') : '') + '</button></span></div>'
-      + '<div class="h2-hero-val ms-money" style="color:' + (f.available < 0 ? 'var(--red)' : 'var(--text)') + '">' + money(f.available) + '</div>'
-      + '<div class="h2-hero-sub">' + after + '</div>' + nw + '</div>';
-  };
-  window.msFourHtml = function () {
-    const f = window.msMonthFigures(); const pct = x => (f.income > 0 && x > 0) ? digits(Math.round(x / f.income * 100)) + '% من الدخل' : '';
-    const cell = (k, v, col, sub) => '<div><div class="k">' + k + '</div><div class="v ms-money" style="color:' + col + '">' + money(v) + '</div><div class="p">' + (sub || '&nbsp;') + '</div></div>';
-    return '<div class="ms-four" id="msFour">' + cell('دخل', f.income, 'var(--green)', 'هذا الشهر') + cell('مصروف', f.expense, 'var(--red)', pct(f.expense)) + cell('ادخار', f.savings, 'var(--cyan, #39c5cf)', pct(f.savings)) + cell('التزامات', f.commitments, 'var(--warn)', pct(f.commitments) || (f.commitments > 0 ? '' : 'مفيش')) + '</div>';
-  };
-})();
 </script>
 <script id="ms-recur69">
 /* v69: recurring transactions as a screen you control, and the "shown" line of the transactions list. */
@@ -31272,23 +31295,6 @@ body.ms-modal-open .season-particle,body.ms-modal-open .skeleton,body.ms-modal-o
     pendingDel = null; window.recurringTxs = (window.recurringTxs || []).filter(r => r.id !== id); window.saveRecurring(); window.msRecurRender();
   };
   ensureModal();
-
-  // ───────── the "shown" line: when a search or a category filter is on, say how many entries are shown and what they add up to
-  const origList = window.renderList;
-  if (typeof origList === 'function') window.renderList = function (id, list) {
-    const r = origList.apply(this, arguments);
-    try {
-      const host = $(id), on = (typeof window.searchQuery !== 'undefined' && window.searchQuery) || (typeof window.filterCat !== 'undefined' && window.filterCat !== 'الكل');
-      if (!host || !on || !Array.isArray(list)) return r;
-      let net = 0; list.forEach(t => { if (t.isTransfer) return; const v = Number(t.amountSAR) || 0;   // a transfer is shown as a row but moves money between wallets: it is not part of the sum
-       if (t.type === 'expense') net -= v; else net += v; });
-      const sign = net < 0 ? '-' : net > 0 ? '+' : '', col = net < 0 ? 'var(--red)' : net > 0 ? 'var(--green)' : 'var(--muted)';
-      const line = document.createElement('div'); line.className = 'ms-shown'; line.id = 'msShown';
-      line.innerHTML = 'المعروض: <b>' + list.length + ' حركة</b> · <span class="ms-money" style="color:' + col + ';direction:ltr;display:inline-block">' + sign + window.fmtBase(Math.abs(net)) + '</span>';
-      host.insertBefore(line, host.firstChild);
-    } catch (e) { /* ignore */ }
-    return r;
-  };
 })();
 </script>
 <script id="ms-ui59">
@@ -31459,66 +31465,6 @@ body.ms-modal-open .season-particle,body.ms-modal-open .skeleton,body.ms-modal-o
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-  const fmt0 = n => (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
-  const SYM = { SAR: 'ر.س', EGP: 'ج.م', USD: '$', EUR: '€' };
-  const sym = c => SYM[c] || c || 'ر.س';
-  const dayStart = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-
-  // ───────── upcoming payments from every source that has a real due date
-  window.msUpcoming = function (now) {
-    now = now || new Date(); const t0 = dayStart(now), out = [];
-    try {
-      (window.creditCards || []).forEach(c => {
-        const pd = typeof window.calcPaymentDue === 'function' ? window.calcPaymentDue(c) : null;
-        if (pd && pd.minimumDue > 0 && pd.daysUntilDue != null) out.push({ k: 'card', id: c.id, icon: window.msIcon('credit-card'), title: c.name || 'بطاقة', sub: 'الحد الأدنى · ' + (pd.dueDateText || ''), amount: pd.minimumDue, cur: c.currency || 'SAR', days: pd.daysUntilDue });
-      });
-    } catch (e) { /* ignore */ }
-    try {
-      (typeof installments !== 'undefined' ? installments : []).forEach(i => {
-        if (!i || i.linkedCardId || (i.paidMonths || 0) >= i.totalMonths || typeof getInstNextDueInfo !== 'function') return;
-        const info = getInstNextDueInfo(i, now); if (info.status === 'done' || info.status === 'paid' || !isFinite(info.daysFromToday)) return;
-        out.push({ k: 'inst', id: i.id, icon: window.msIcon('calendar-time'), title: i.name || 'قسط', sub: 'قسط شهري', amount: Number(i.monthlyPayment) || 0, cur: i.currency || 'SAR', days: info.daysFromToday });
-      });
-    } catch (e) { /* ignore */ }
-    try {   // jameya: the monthly payment, until it is logged for this month (a day that already passed is not shown: a missing log is not proof of a missed payment)
-      (typeof jameya !== 'undefined' ? jameya : []).forEach(j => {
-        if (!j || !j.startDate) return; const start = new Date(j.startDate); if (isNaN(start)) return;
-        const elapsed = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth()) + 1;
-        if (elapsed < 1 || elapsed > (j.totalMembers || 0)) return;
-        const key = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'), log = Array.isArray(j.paidMonthsLog) ? j.paidMonthsLog : [];
-        if (log.includes(key) || log.length >= j.totalMembers) return;
-        const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(), due = new Date(now.getFullYear(), now.getMonth(), Math.min(start.getDate(), dim));
-        const days = Math.round((due - t0) / 86400000); if (days < 0) return;
-        out.push({ k: 'jam', id: j.id, icon: window.msIcon('users-group'), title: j.name || 'جمعية', sub: 'الدفعة الشهرية', amount: Number(j.monthlyAmount) || 0, cur: j.currency || 'SAR', days: days });
-      });
-    } catch (e) { /* ignore */ }
-    try {
-      const subs = (typeof recurringTxs !== 'undefined' ? recurringTxs : []).filter(r => r && r.type === 'expense');
-      if (subs.length) {
-        const next = new Date(now.getFullYear(), now.getMonth() + 1, 1), days = Math.round((next - t0) / 86400000);
-        const total = subs.reduce((s, r) => s + (Number(r.amountSAR) || 0), 0);
-        if (total > 0) out.push({ k: 'subs', id: 'subs', icon: window.msIcon('repeat'), title: 'اشتراكات شهرية', sub: subs.length + ' اشتراك · تتجدد أول الشهر', amount: typeof toBase === 'function' ? toBase(total) : total, cur: typeof baseCurrency === 'string' ? baseCurrency : 'SAR', days });
-      }
-    } catch (e) { /* ignore */ }
-    return out.filter(x => x.days <= 30).sort((a, b) => a.days - b.days);
-  };
-  const dayChip = d => { const tone = window.msDueTone ? window.msDueTone(d) : { c: 'var(--muted)' }; return d < 0 ? { t: 'متأخر ' + (-d) + ' يوم', c: tone.c } : d === 0 ? { t: 'النهاردة', c: tone.c } : d === 1 ? { t: 'بكرة', c: tone.c } : { t: 'باقي ' + d + ' يوم', c: tone.c }; };
-  window.msNowStripHtml = function () {
-    const items = window.msUpcoming(); if (!items.length) return '';
-    const shown = items.slice(0, 3);
-    const rows = shown.map((x, i) => { const ch = dayChip(x.days); return `<div onclick="msNowOpen('${escAttr(x.k)}','${escAttr(x.id)}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;${i ? 'border-top:0.5px solid var(--border);' : ''}cursor:pointer"><span style="font-size:20px;flex-shrink:0">${x.icon}</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.title)}</div><div style="font-size:11px;color:var(--muted);margin-top:1px">${esc(x.sub)}</div></div><div style="text-align:left;flex-shrink:0"><div style="font-size:13px;font-weight:600;direction:ltr">${fmt0(x.amount)} <span style="font-size:11px">${esc(sym(x.cur))}</span></div><div style="font-size:11px;font-weight:600;color:${ch.c}">${ch.t}</div></div></div>`; }).join('');
-    const worst = shown[0].days < 0 ? 'var(--red)' : shown[0].days <= 3 ? 'var(--warn)' : 'var(--border)';
-    return `<div id="msNowStrip" style="margin:0 0 12px"><div style="display:flex;justify-content:space-between;align-items:center;margin:2px 4px 6px"><span style="font-size:16px;font-weight:600">${window.msIcon('alarm')} أهم التنبيهات</span>${items.length > 3 ? `<span style="font-size:11px;color:var(--accent)">+${items.length - 3} كمان</span>` : ''}</div><div style="background:var(--card);border:1px solid ${worst};border-radius:12px;overflow:hidden">${rows}</div></div>`;
-  };
-  window.msNowOpen = function (k, id) {
-    try {
-      if (k === 'card' && typeof window.openCardDetail === 'function') { window.openCardDetail(id); return; }
-      if (k === 'inst') { $('installmentsModal').classList.add('open'); if (typeof renderInstallments === 'function') renderInstallments(); return; }
-      if (k === 'jam') { $('jameyaModal').classList.add('open'); if (typeof renderJameya === 'function') renderJameya(); return; }
-      if (k === 'subs') { $('subsModal').classList.add('open'); if (typeof renderSubs === 'function') renderSubs(); }
-    } catch (e) { /* ignore */ }
-  };
 
   // ───────── header folds to one row while the page is scrolled down
   (function () {
