@@ -63,7 +63,7 @@
     'msarifyi_travel_archive': 'أرشيف الرحلات', 'msarifyi_hajj_budget': 'ميزانية الحج', 'msarifyi_flights': 'الطيران',
     'msarifyi_bills': 'الفواتير', 'msarifyi_credit_cards': 'البطاقات', 'msarifyi_nw_history': 'صافي الثروة',
     'msarifyi_home_widgets': 'ودجات الرئيسية', 'msarifyi_theme': 'المظهر', 'msarifyi_base': 'العملة الأساسية',
-    'msarifyi_weddings': 'الأفراح', 'msarifyi_imp_rules': 'أهمية التصنيفات', 'msarifyi_mm_cards': 'إعداد الإحصائيات', 'msarifyi_digits': 'شكل الأرقام', 'msarifyi_cat_colors': 'ألوان التصنيفات', 'msarifyi_cat_map': 'دمج التصنيفات', 'msarifyi_cat_undo': 'تراجع الدمج', 'msarifyi_vehicles': 'المركبات', 'msarifyi_orders': 'الطلبات'
+    'msarifyi_weddings': 'الأفراح', 'msarifyi_imp_rules': 'أهمية التصنيفات', 'msarifyi_sms_cat': 'تصنيفات الرسائل', 'msarifyi_mm_cards': 'إعداد الإحصائيات', 'msarifyi_digits': 'شكل الأرقام', 'msarifyi_cat_colors': 'ألوان التصنيفات', 'msarifyi_cat_map': 'دمج التصنيفات', 'msarifyi_cat_undo': 'تراجع الدمج', 'msarifyi_vehicles': 'المركبات', 'msarifyi_orders': 'الطلبات'
   };
   function labelOf(k) { return String(LABELS[k] || String(k).replace(PREFIX, '')).replace(/[<>&"']/g, ''); }
 
@@ -1126,36 +1126,7 @@ select.form-inp{padding-left:8px;}
 }
 
 /* ═══ شارت الذهب + المحفظة ═══ */
-.gold-chart-box{background:var(--card2);border:0.5px solid var(--border);border-radius:12px;padding:14px;margin-top:14px;}
-.gold-chart-title{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;}
-.gold-chart-chg{font-size:13px;font-weight:600;direction:ltr;}
-.gold-chart-svg{width:100%;height:90px;display:block;}
-.gold-chart-foot{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-weight:600;margin-top:8px;direction:ltr;}
-.gold-chart-empty{font-size:11px;color:var(--muted);text-align:center;padding:20px 10px;line-height:1.7;}
 
-.gold-port-box{background:var(--card2);border:0.5px solid var(--border);border-radius:12px;padding:14px;margin-top:14px;}
-.gold-port-title{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;}
-.gold-port-add{background:linear-gradient(135deg,#d4a94a,#b8892e);color:#fff;border:none;border-radius:12px;padding:7px 14px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:transform .14s;}
-.gold-port-add:active{transform:scale(.94);}
-.gold-port-empty{font-size:11px;color:var(--muted);text-align:center;padding:16px 10px;line-height:1.7;}
-.gold-port-summary{background:linear-gradient(135deg,rgba(212,169,74,.12),rgba(212,169,74,.04));border:1px solid rgba(212,169,74,.25);border-radius:12px;padding:12px;margin-bottom:12px;}
-.gps-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.gps-cell{text-align:center;}
-.gps-lbl{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px;}
-.gps-val{font-size:13px;font-weight:600;color:var(--text);direction:ltr;font-variant-numeric:tabular-nums;}
-.gps-pct{text-align:center;font-size:11px;font-weight:600;margin-top:10px;direction:ltr;}
-.gps-grams{text-align:center;font-size:13px;font-weight:600;color:var(--accent);margin-bottom:12px;padding-bottom:10px;border-bottom:0.5px solid var(--border);}
-.gps-grams b{font-size:16px;font-weight:600;}
-.gps-nohint{text-align:center;font-size:11px;font-weight:600;color:var(--muted);margin-top:10px;line-height:1.6;}
-.gold-port-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;background:var(--card);border:0.5px solid var(--border);border-radius:12px;margin-bottom:8px;}
-.gold-port-item:last-child{margin-bottom:0;}
-.gpi-info{min-width:0;flex:1;}
-.gpi-name{font-size:13px;font-weight:600;color:var(--text);}
-.gpi-sub{font-size:11px;color:var(--muted);margin-top:2px;}
-.gpi-vals{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.gpi-profit{font-size:13px;font-weight:600;direction:ltr;font-variant-numeric:tabular-nums;}
-.gpi-del{background:none;border:none;cursor:pointer;font-size:13px;opacity:.6;padding:2px;}
-.gpi-del:active{opacity:1;}
 /* أزرار اختيار العيار في مودال الإضافة */
 .gold-karat-pick{display:flex;gap:8px;}
 .gold-karat-btn{flex:1;background:var(--card2);border:0.5px solid var(--border);border-radius:12px;padding:12px 6px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:transform .14s cubic-bezier(.34,1.3,.5,1), background-color .18s, border-color .18s, color .18s;}
@@ -1419,28 +1390,6 @@ body::after{content:'';position:fixed;left:0;right:0;bottom:0;height:env(safe-ar
 .amt-op-btn.amt-op-clr{font-size:13px;color:var(--red);border-color:rgba(248,81,73,0.4);background:linear-gradient(135deg,rgba(248,81,73,0.1),rgba(248,81,73,0.02))}
 
 /* Gold prices card (V9) */
-.gold-card{
-  background:linear-gradient(135deg,rgba(240,180,41,0.12),rgba(252,211,77,0.04));
-  border:1px solid rgba(240,180,41,0.3);
-  border-radius:12px;padding:12px 14px;margin:8px 0;
-}
-.gold-title{
-  display:flex;justify-content:space-between;align-items:center;
-  font-size:13px;color:var(--accent);font-weight:600;margin-bottom:8px;
-}
-.gold-refresh{
-  background:transparent;border:none;color:var(--accent);
-  cursor:pointer;font-size:13px;padding:4px 8px;
-}
-.gold-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.gold-cell{
-  background:var(--card2);border-radius:12px;
-  padding:8px 6px;text-align:center;
-}
-.gold-cell .karat{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:2px}
-.gold-cell .price{font-size:13px;color:var(--text);font-weight:600;direction:ltr}
-.gold-cell .unit{font-size:11px;color:var(--muted);margin-top:1px}
-.gold-meta{font-size:11px;color:var(--muted);text-align:center;margin-top:6px}
 
 /* ── V10: Travel Mode ── */
 .travel-card{background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(99,102,241,0.05));border:1.5px solid rgba(99,102,241,0.4);border-radius:12px;padding:14px;margin:10px 0}
@@ -1844,29 +1793,6 @@ body::after{content:'';position:fixed;left:0;right:0;bottom:0;height:env(safe-ar
 .fhc-meta{font-size:11px;color:var(--muted)}
 .fhc-arrow{color:var(--muted);font-size:20px}
 
-.gold-calc{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
-.gold-calc-title{font-size:11px;color:var(--accent);font-weight:600;margin-bottom:6px;text-align:center}
-.gold-calc-row{display:flex;gap:6px}
-.gold-calc-row input{flex:2;padding:8px;background:var(--card2);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;direction:ltr;text-align:center}
-.gold-calc-row select{flex:1;padding:8px;background:var(--card2);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px}
-.gold-calc-result{margin-top:6px;padding:6px;text-align:center;color:var(--accent);font-size:13px;min-height:20px;font-weight:600}
-.gold-calc-extra{display:flex;flex-direction:column;gap:6px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
-.gca-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.gca-row label{font-size:11px;color:var(--muted);font-weight:600;flex:1}
-.gca-row input,.gca-row select{width:120px;padding:6px 8px;background:var(--card);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;direction:ltr;text-align:center}
-.gca-toggle{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text);font-weight:600;cursor:pointer;padding:4px 0}
-.gca-toggle input{width:16px;height:16px;cursor:pointer}
-.gcr-line{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:3px 0}
-.gcr-line b{color:var(--text);direction:ltr}
-.gcr-total{display:flex;justify-content:space-between;padding-top:6px;margin-top:4px;border-top:0.5px solid var(--border);font-size:13px;font-weight:600;color:var(--accent)}
-.gcr-total b{font-size:16px;direction:ltr}
-.gcr-simple{font-size:13px;font-weight:600;color:var(--accent)}
-.gcr-nohint{font-size:13px;font-weight:600;color:var(--accent);text-align:center;line-height:1.6;padding:6px}
-.gold-noprice{display:flex;align-items:center;gap:11px;background:rgba(240,180,41,.1);border:1px solid rgba(240,180,41,.3);border-radius:12px;padding:12px;margin-bottom:12px}
-.gold-noprice .gnp-ic{font-size:20px;flex-shrink:0}
-.gold-noprice .gnp-txt{font-size:13px;font-weight:600;color:var(--text);line-height:1.6}
-.gold-noprice .gnp-txt b{color:var(--accent);font-weight:600}
-.gcr-simple b{font-size:16px;direction:ltr}
 
 /* Days-left-in-month indicator (V9) */
 .month-days-left{
@@ -3749,12 +3675,12 @@ button, .menu-row, .tx-card {
 
 </head>
 <body>
-<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><symbol id="ti-home" viewBox="0 0 24 24"><path d="M5 12l-2 0l9 -9l9 9l-2 0" /> <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" /> <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" /></symbol><symbol id="ti-list" viewBox="0 0 24 24"><path d="M9 6l11 0" /> <path d="M9 12l11 0" /> <path d="M9 18l11 0" /> <path d="M5 6l0 .01" /> <path d="M5 12l0 .01" /> <path d="M5 18l0 .01" /></symbol><symbol id="ti-plus" viewBox="0 0 24 24"><path d="M12 5l0 14" /> <path d="M5 12l14 0" /></symbol><symbol id="ti-credit-card" viewBox="0 0 24 24"><path d="M3 5m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z" /> <path d="M3 10l18 0" /> <path d="M7 15l.01 0" /> <path d="M11 15l2 0" /></symbol><symbol id="ti-menu-2" viewBox="0 0 24 24"><path d="M4 6l16 0" /> <path d="M4 12l16 0" /> <path d="M4 18l16 0" /></symbol><symbol id="ti-settings" viewBox="0 0 24 24"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" /> <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></symbol><symbol id="ti-eye" viewBox="0 0 24 24"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /> <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" /></symbol><symbol id="ti-eye-off" viewBox="0 0 24 24"><path d="M10.585 10.587a2 2 0 0 0 2.829 2.828" /> <path d="M16.681 16.673a8.717 8.717 0 0 1 -4.681 1.327c-3.6 0 -6.6 -2 -9 -6c1.272 -2.12 2.712 -3.678 4.32 -4.674m2.86 -1.146a9.055 9.055 0 0 1 1.82 -.18c3.6 0 6.6 2 9 6c-.666 1.11 -1.379 2.067 -2.138 2.87" /> <path d="M3 3l18 18" /></symbol><symbol id="ti-wallet" viewBox="0 0 24 24"><path d="M17 8v-3a1 1 0 0 0 -1 -1h-10a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1 -1 1h-12a2 2 0 0 1 -2 -2v-12" /> <path d="M20 12v4h-4a2 2 0 0 1 0 -4h4" /></symbol><symbol id="ti-arrow-down-left" viewBox="0 0 24 24"><path d="M17 7l-10 10" /> <path d="M16 17l-9 0l0 -9" /></symbol><symbol id="ti-arrow-up-right" viewBox="0 0 24 24"><path d="M17 7l-10 10" /> <path d="M8 7l9 0l0 9" /></symbol><symbol id="ti-pig-money" viewBox="0 0 24 24"><path d="M15 11v.01" /> <path d="M5.173 8.378a3 3 0 1 1 4.656 -1.377" /> <path d="M16 4v3.803a6.019 6.019 0 0 1 2.658 3.197h1.341a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-1.342c-.336 .95 -.907 1.8 -1.658 2.473v2.027a1.5 1.5 0 0 1 -3 0v-.583a6.04 6.04 0 0 1 -1 .083h-4a6.04 6.04 0 0 1 -1 -.083v.583a1.5 1.5 0 0 1 -3 0v-2l0 -.027a6 6 0 0 1 4 -10.473h2.5l4.5 -3h0z" /></symbol><symbol id="ti-target" viewBox="0 0 24 24"><path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /> <path d="M12 12m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0" /> <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /></symbol><symbol id="ti-chart-pie" viewBox="0 0 24 24"><path d="M10 3.2a9 9 0 1 0 10.8 10.8a1 1 0 0 0 -1 -1h-6.8a2 2 0 0 1 -2 -2v-7a.9 .9 0 0 0 -1 -.8" /> <path d="M15 3.5a9 9 0 0 1 5.5 5.5h-4.5a1 1 0 0 1 -1 -1v-4.5" /></symbol><symbol id="ti-chart-bar" viewBox="0 0 24 24"><path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" /> <path d="M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" /> <path d="M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" /> <path d="M4 20h14" /></symbol><symbol id="ti-chart-line" viewBox="0 0 24 24"><path d="M4 19l16 0" /> <path d="M4 15l4 -6l4 2l4 -5l4 4" /></symbol><symbol id="ti-trending-down" viewBox="0 0 24 24"><path d="M3 7l6 6l4 -4l8 8" /> <path d="M21 10l0 7l-7 0" /></symbol><symbol id="ti-calendar-event" viewBox="0 0 24 24"><path d="M4 5m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" /> <path d="M16 3l0 4" /> <path d="M8 3l0 4" /> <path d="M4 11l16 0" /> <path d="M8 15h2v2h-2z" /></symbol><symbol id="ti-calendar-time" viewBox="0 0 24 24"><path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" /> <path d="M18 18m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /> <path d="M15 3v4" /> <path d="M7 3v4" /> <path d="M3 11h16" /> <path d="M18 16.496v1.504l1 1" /></symbol><symbol id="ti-calendar" viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" /> <path d="M16 3v4" /> <path d="M8 3v4" /> <path d="M4 11h16" /> <path d="M11 15h1" /> <path d="M12 15v3" /></symbol><symbol id="ti-coins" viewBox="0 0 24 24"><path d="M9 14c0 1.657 2.686 3 6 3s6 -1.343 6 -3s-2.686 -3 -6 -3s-6 1.343 -6 3z" /> <path d="M9 14v4c0 1.656 2.686 3 6 3s6 -1.344 6 -3v-4" /> <path d="M3 6c0 1.072 1.144 2.062 3 2.598s4.144 .536 6 0c1.856 -.536 3 -1.526 3 -2.598c0 -1.072 -1.144 -2.062 -3 -2.598s-4.144 -.536 -6 0c-1.856 .536 -3 1.526 -3 2.598z" /> <path d="M3 6v10c0 .888 .772 1.45 2 2" /> <path d="M3 11c0 .888 .772 1.45 2 2" /></symbol><symbol id="ti-arrows-exchange" viewBox="0 0 24 24"><path d="M7 10h14l-4 -4" /> <path d="M17 14h-14l4 4" /></symbol><symbol id="ti-receipt" viewBox="0 0 24 24"><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2m4 -14h6m-6 4h6m-2 4h2" /></symbol><symbol id="ti-users-group" viewBox="0 0 24 24"><path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /> <path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1" /> <path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /> <path d="M17 10h2a2 2 0 0 1 2 2v1" /> <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /> <path d="M3 13v-1a2 2 0 0 1 2 -2h2" /></symbol><symbol id="ti-package" viewBox="0 0 24 24"><path d="M12 3l8 4.5l0 9l-8 4.5l-8 -4.5l0 -9l8 -4.5" /> <path d="M12 12l8 -4.5" /> <path d="M12 12l0 9" /> <path d="M12 12l-8 -4.5" /> <path d="M16 5.25l-8 4.5" /></symbol><symbol id="ti-car" viewBox="0 0 24 24"><path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5" /></symbol><symbol id="ti-diamond" viewBox="0 0 24 24"><path d="M6 5h12l3 5l-8.5 9.5a.7 .7 0 0 1 -1 0l-8.5 -9.5l3 -5" /> <path d="M10 12l-2 -2.2l.6 -1" /></symbol><symbol id="ti-plane" viewBox="0 0 24 24"><path d="M16 10h4a2 2 0 0 1 0 4h-4l-4 7h-3l2 -7h-4l-2 2h-3l2 -4l-2 -4h3l2 2h4l-2 -7h3z" /></symbol><symbol id="ti-gift" viewBox="0 0 24 24"><path d="M3 8m0 1a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1z" /> <path d="M12 8l0 13" /> <path d="M19 12v7a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-7" /> <path d="M7.5 8a2.5 2.5 0 0 1 0 -5a4.8 8 0 0 1 4.5 5a4.8 8 0 0 1 4.5 -5a2.5 2.5 0 0 1 0 5" /></symbol><symbol id="ti-tag" viewBox="0 0 24 24"><path d="M7.5 7.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /> <path d="M3 6v5.172a2 2 0 0 0 .586 1.414l7.71 7.71a2.41 2.41 0 0 0 3.408 0l5.592 -5.592a2.41 2.41 0 0 0 0 -3.408l-7.71 -7.71a2 2 0 0 0 -1.414 -.586h-5.172a3 3 0 0 0 -3 3z" /></symbol><symbol id="ti-calculator" viewBox="0 0 24 24"><path d="M4 3m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" /> <path d="M8 7m0 1a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-6a1 1 0 0 1 -1 -1z" /> <path d="M8 14l0 .01" /> <path d="M12 14l0 .01" /> <path d="M16 14l0 .01" /> <path d="M8 17l0 .01" /> <path d="M12 17l0 .01" /> <path d="M16 17l0 .01" /></symbol><symbol id="ti-briefcase" viewBox="0 0 24 24"><path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /> <path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" /> <path d="M12 12l0 .01" /> <path d="M3 13a20 20 0 0 0 18 0" /></symbol><symbol id="ti-moon" viewBox="0 0 24 24"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" /></symbol><symbol id="ti-building-bank" viewBox="0 0 24 24"><path d="M3 21l18 0" /> <path d="M3 10l18 0" /> <path d="M5 6l7 -3l7 3" /> <path d="M4 10l0 11" /> <path d="M20 10l0 11" /> <path d="M8 14l0 3" /> <path d="M12 14l0 3" /> <path d="M16 14l0 3" /></symbol><symbol id="ti-bell" viewBox="0 0 24 24"><path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" /> <path d="M9 17v1a3 3 0 0 0 6 0v-1" /></symbol><symbol id="ti-alert-triangle" viewBox="0 0 24 24"><path d="M12 9v4" /> <path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z" /> <path d="M12 16h.01" /></symbol><symbol id="ti-circle-check" viewBox="0 0 24 24"><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /> <path d="M9 12l2 2l4 -4" /></symbol><symbol id="ti-chevron-left" viewBox="0 0 24 24"><path d="M15 6l-6 6l6 6" /></symbol><symbol id="ti-pin" viewBox="0 0 24 24"><path d="M15 4.5l-4 4l-4 1.5l-1.5 1.5l7 7l1.5 -1.5l1.5 -4l4 -4" /> <path d="M9 15l-4.5 4.5" /> <path d="M14.5 4l5.5 5.5" /></symbol><symbol id="ti-bolt" viewBox="0 0 24 24"><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11" /></symbol><symbol id="ti-shopping-cart" viewBox="0 0 24 24"><path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M17 17h-11v-14h-2" /> <path d="M6 5l14 1l-1 7h-13" /></symbol><symbol id="ti-repeat" viewBox="0 0 24 24"><path d="M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3" /> <path d="M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3" /></symbol><symbol id="ti-alarm" viewBox="0 0 24 24"><path d="M12 13m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /> <path d="M12 10l0 3l2 0" /> <path d="M7 4l-2.75 2" /> <path d="M17 4l2.75 2" /></symbol><symbol id="ti-lock" viewBox="0 0 24 24"><path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6z" /> <path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" /> <path d="M8 11v-4a4 4 0 1 1 8 0v4" /></symbol><symbol id="ti-brain" viewBox="0 0 24 24"><path d="M15.5 13a3.5 3.5 0 0 0 -3.5 3.5v1a3.5 3.5 0 0 0 7 0v-1.8" /> <path d="M8.5 13a3.5 3.5 0 0 1 3.5 3.5v1a3.5 3.5 0 0 1 -7 0v-1.8" /> <path d="M17.5 16a3.5 3.5 0 0 0 0 -7h-.5" /> <path d="M19 9.3v-2.8a3.5 3.5 0 0 0 -7 0" /> <path d="M6.5 16a3.5 3.5 0 0 1 0 -7h.5" /> <path d="M5 9.3v-2.8a3.5 3.5 0 0 1 7 0v10" /></symbol><symbol id="ti-device-mobile" viewBox="0 0 24 24"><path d="M6 5a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2v-14z" /> <path d="M11 4h2" /> <path d="M12 17v.01" /></symbol><symbol id="ti-paperclip" viewBox="0 0 24 24"><path d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5 -6.5a3 3 0 0 0 -6 -6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5 -6.5" /></symbol><symbol id="ti-cash" viewBox="0 0 24 24"><path d="M7 15h-3a1 1 0 0 1 -1 -1v-8a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v3" /> <path d="M7 9m0 1a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v8a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1z" /> <path d="M12 14a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /></symbol><symbol id="ti-medal" viewBox="0 0 24 24"><path d="M12 4v3m-4 -3v6m8 -6v6" /> <path d="M12 18.5l-3 1.5l.5 -3.5l-2 -2l3 -.5l1.5 -3l1.5 3l3 .5l-2 2l.5 3.5z" /></symbol><symbol id="ti-refresh" viewBox="0 0 24 24"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" /> <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" /></symbol><symbol id="ti-search" viewBox="0 0 24 24"><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /> <path d="M21 21l-6 -6" /></symbol><symbol id="ti-x" viewBox="0 0 24 24"><path d="M18 6l-12 12" /> <path d="M6 6l12 12" /></symbol><symbol id="ti-info-circle" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /> <path d="M12 9h.01" /> <path d="M11 12h1v4h1" /></symbol><symbol id="ti-flag" viewBox="0 0 24 24"><path d="M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1 -7 0a5 5 0 0 0 -7 0v-9z" /> <path d="M5 21v-7" /></symbol><symbol id="ti-clock" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /> <path d="M12 7v5l3 3" /></symbol><symbol id="ti-heart" viewBox="0 0 24 24"><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572" /></symbol><symbol id="ti-star" viewBox="0 0 24 24"><path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z" /></symbol><symbol id="ti-trash" viewBox="0 0 24 24"><path d="M4 7l16 0" /> <path d="M10 11l0 6" /> <path d="M14 11l0 6" /> <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /> <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></symbol><symbol id="ti-pencil" viewBox="0 0 24 24"><path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" /> <path d="M13.5 6.5l4 4" /></symbol><symbol id="ti-download" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /> <path d="M7 11l5 5l5 -5" /> <path d="M12 4l0 12" /></symbol><symbol id="ti-upload" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /> <path d="M7 9l5 -5l5 5" /> <path d="M12 4l0 12" /></symbol><symbol id="ti-shield-lock" viewBox="0 0 24 24"><path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" /> <path d="M12 11m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /> <path d="M12 12l0 2.5" /></symbol><symbol id="ti-currency-dollar" viewBox="0 0 24 24"><path d="M16.7 8a3 3 0 0 0 -2.7 -2h-4a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6h-4a3 3 0 0 1 -2.7 -2" /> <path d="M12 3v3m0 12v3" /></symbol><symbol id="ti-layout-dashboard" viewBox="0 0 24 24"><path d="M5 4h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1" /> <path d="M5 16h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1" /> <path d="M15 12h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1" /> <path d="M15 4h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1" /></symbol><symbol id="ti-scale" viewBox="0 0 24 24"><path d="M7 20l10 0" /> <path d="M6 6l6 -1l6 1" /> <path d="M12 3l0 17" /> <path d="M9 12l-3 -6l-3 6a3 3 0 0 0 6 0" /> <path d="M21 12l-3 -6l-3 6a3 3 0 0 0 6 0" /></symbol></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><symbol id="ti-home" viewBox="0 0 24 24"><path d="M5 12l-2 0l9 -9l9 9l-2 0" /> <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" /> <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" /></symbol><symbol id="ti-list" viewBox="0 0 24 24"><path d="M9 6l11 0" /> <path d="M9 12l11 0" /> <path d="M9 18l11 0" /> <path d="M5 6l0 .01" /> <path d="M5 12l0 .01" /> <path d="M5 18l0 .01" /></symbol><symbol id="ti-plus" viewBox="0 0 24 24"><path d="M12 5l0 14" /> <path d="M5 12l14 0" /></symbol><symbol id="ti-credit-card" viewBox="0 0 24 24"><path d="M3 5m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z" /> <path d="M3 10l18 0" /> <path d="M7 15l.01 0" /> <path d="M11 15l2 0" /></symbol><symbol id="ti-menu-2" viewBox="0 0 24 24"><path d="M4 6l16 0" /> <path d="M4 12l16 0" /> <path d="M4 18l16 0" /></symbol><symbol id="ti-settings" viewBox="0 0 24 24"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" /> <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></symbol><symbol id="ti-eye" viewBox="0 0 24 24"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /> <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" /></symbol><symbol id="ti-eye-off" viewBox="0 0 24 24"><path d="M10.585 10.587a2 2 0 0 0 2.829 2.828" /> <path d="M16.681 16.673a8.717 8.717 0 0 1 -4.681 1.327c-3.6 0 -6.6 -2 -9 -6c1.272 -2.12 2.712 -3.678 4.32 -4.674m2.86 -1.146a9.055 9.055 0 0 1 1.82 -.18c3.6 0 6.6 2 9 6c-.666 1.11 -1.379 2.067 -2.138 2.87" /> <path d="M3 3l18 18" /></symbol><symbol id="ti-wallet" viewBox="0 0 24 24"><path d="M17 8v-3a1 1 0 0 0 -1 -1h-10a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1 -1 1h-12a2 2 0 0 1 -2 -2v-12" /> <path d="M20 12v4h-4a2 2 0 0 1 0 -4h4" /></symbol><symbol id="ti-arrow-down-left" viewBox="0 0 24 24"><path d="M17 7l-10 10" /> <path d="M16 17l-9 0l0 -9" /></symbol><symbol id="ti-arrow-up-right" viewBox="0 0 24 24"><path d="M17 7l-10 10" /> <path d="M8 7l9 0l0 9" /></symbol><symbol id="ti-pig-money" viewBox="0 0 24 24"><path d="M15 11v.01" /> <path d="M5.173 8.378a3 3 0 1 1 4.656 -1.377" /> <path d="M16 4v3.803a6.019 6.019 0 0 1 2.658 3.197h1.341a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-1.342c-.336 .95 -.907 1.8 -1.658 2.473v2.027a1.5 1.5 0 0 1 -3 0v-.583a6.04 6.04 0 0 1 -1 .083h-4a6.04 6.04 0 0 1 -1 -.083v.583a1.5 1.5 0 0 1 -3 0v-2l0 -.027a6 6 0 0 1 4 -10.473h2.5l4.5 -3h0z" /></symbol><symbol id="ti-target" viewBox="0 0 24 24"><path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /> <path d="M12 12m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0" /> <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /></symbol><symbol id="ti-chart-pie" viewBox="0 0 24 24"><path d="M10 3.2a9 9 0 1 0 10.8 10.8a1 1 0 0 0 -1 -1h-6.8a2 2 0 0 1 -2 -2v-7a.9 .9 0 0 0 -1 -.8" /> <path d="M15 3.5a9 9 0 0 1 5.5 5.5h-4.5a1 1 0 0 1 -1 -1v-4.5" /></symbol><symbol id="ti-chart-bar" viewBox="0 0 24 24"><path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" /> <path d="M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" /> <path d="M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" /> <path d="M4 20h14" /></symbol><symbol id="ti-chart-line" viewBox="0 0 24 24"><path d="M4 19l16 0" /> <path d="M4 15l4 -6l4 2l4 -5l4 4" /></symbol><symbol id="ti-trending-down" viewBox="0 0 24 24"><path d="M3 7l6 6l4 -4l8 8" /> <path d="M21 10l0 7l-7 0" /></symbol><symbol id="ti-calendar-event" viewBox="0 0 24 24"><path d="M4 5m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" /> <path d="M16 3l0 4" /> <path d="M8 3l0 4" /> <path d="M4 11l16 0" /> <path d="M8 15h2v2h-2z" /></symbol><symbol id="ti-calendar-time" viewBox="0 0 24 24"><path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" /> <path d="M18 18m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /> <path d="M15 3v4" /> <path d="M7 3v4" /> <path d="M3 11h16" /> <path d="M18 16.496v1.504l1 1" /></symbol><symbol id="ti-calendar" viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" /> <path d="M16 3v4" /> <path d="M8 3v4" /> <path d="M4 11h16" /> <path d="M11 15h1" /> <path d="M12 15v3" /></symbol><symbol id="ti-coins" viewBox="0 0 24 24"><path d="M9 14c0 1.657 2.686 3 6 3s6 -1.343 6 -3s-2.686 -3 -6 -3s-6 1.343 -6 3z" /> <path d="M9 14v4c0 1.656 2.686 3 6 3s6 -1.344 6 -3v-4" /> <path d="M3 6c0 1.072 1.144 2.062 3 2.598s4.144 .536 6 0c1.856 -.536 3 -1.526 3 -2.598c0 -1.072 -1.144 -2.062 -3 -2.598s-4.144 -.536 -6 0c-1.856 .536 -3 1.526 -3 2.598z" /> <path d="M3 6v10c0 .888 .772 1.45 2 2" /> <path d="M3 11c0 .888 .772 1.45 2 2" /></symbol><symbol id="ti-arrows-exchange" viewBox="0 0 24 24"><path d="M7 10h14l-4 -4" /> <path d="M17 14h-14l4 4" /></symbol><symbol id="ti-receipt" viewBox="0 0 24 24"><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2m4 -14h6m-6 4h6m-2 4h2" /></symbol><symbol id="ti-users-group" viewBox="0 0 24 24"><path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /> <path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1" /> <path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /> <path d="M17 10h2a2 2 0 0 1 2 2v1" /> <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /> <path d="M3 13v-1a2 2 0 0 1 2 -2h2" /></symbol><symbol id="ti-package" viewBox="0 0 24 24"><path d="M12 3l8 4.5l0 9l-8 4.5l-8 -4.5l0 -9l8 -4.5" /> <path d="M12 12l8 -4.5" /> <path d="M12 12l0 9" /> <path d="M12 12l-8 -4.5" /> <path d="M16 5.25l-8 4.5" /></symbol><symbol id="ti-car" viewBox="0 0 24 24"><path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5" /></symbol><symbol id="ti-diamond" viewBox="0 0 24 24"><path d="M6 5h12l3 5l-8.5 9.5a.7 .7 0 0 1 -1 0l-8.5 -9.5l3 -5" /> <path d="M10 12l-2 -2.2l.6 -1" /></symbol><symbol id="ti-plane" viewBox="0 0 24 24"><path d="M16 10h4a2 2 0 0 1 0 4h-4l-4 7h-3l2 -7h-4l-2 2h-3l2 -4l-2 -4h3l2 2h4l-2 -7h3z" /></symbol><symbol id="ti-gift" viewBox="0 0 24 24"><path d="M3 8m0 1a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1z" /> <path d="M12 8l0 13" /> <path d="M19 12v7a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-7" /> <path d="M7.5 8a2.5 2.5 0 0 1 0 -5a4.8 8 0 0 1 4.5 5a4.8 8 0 0 1 4.5 -5a2.5 2.5 0 0 1 0 5" /></symbol><symbol id="ti-tag" viewBox="0 0 24 24"><path d="M7.5 7.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /> <path d="M3 6v5.172a2 2 0 0 0 .586 1.414l7.71 7.71a2.41 2.41 0 0 0 3.408 0l5.592 -5.592a2.41 2.41 0 0 0 0 -3.408l-7.71 -7.71a2 2 0 0 0 -1.414 -.586h-5.172a3 3 0 0 0 -3 3z" /></symbol><symbol id="ti-calculator" viewBox="0 0 24 24"><path d="M4 3m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" /> <path d="M8 7m0 1a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-6a1 1 0 0 1 -1 -1z" /> <path d="M8 14l0 .01" /> <path d="M12 14l0 .01" /> <path d="M16 14l0 .01" /> <path d="M8 17l0 .01" /> <path d="M12 17l0 .01" /> <path d="M16 17l0 .01" /></symbol><symbol id="ti-briefcase" viewBox="0 0 24 24"><path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /> <path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" /> <path d="M12 12l0 .01" /> <path d="M3 13a20 20 0 0 0 18 0" /></symbol><symbol id="ti-moon" viewBox="0 0 24 24"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" /></symbol><symbol id="ti-building-bank" viewBox="0 0 24 24"><path d="M3 21l18 0" /> <path d="M3 10l18 0" /> <path d="M5 6l7 -3l7 3" /> <path d="M4 10l0 11" /> <path d="M20 10l0 11" /> <path d="M8 14l0 3" /> <path d="M12 14l0 3" /> <path d="M16 14l0 3" /></symbol><symbol id="ti-bell" viewBox="0 0 24 24"><path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" /> <path d="M9 17v1a3 3 0 0 0 6 0v-1" /></symbol><symbol id="ti-alert-triangle" viewBox="0 0 24 24"><path d="M12 9v4" /> <path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z" /> <path d="M12 16h.01" /></symbol><symbol id="ti-circle-check" viewBox="0 0 24 24"><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /> <path d="M9 12l2 2l4 -4" /></symbol><symbol id="ti-chevron-left" viewBox="0 0 24 24"><path d="M15 6l-6 6l6 6" /></symbol><symbol id="ti-pin" viewBox="0 0 24 24"><path d="M15 4.5l-4 4l-4 1.5l-1.5 1.5l7 7l1.5 -1.5l1.5 -4l4 -4" /> <path d="M9 15l-4.5 4.5" /> <path d="M14.5 4l5.5 5.5" /></symbol><symbol id="ti-bolt" viewBox="0 0 24 24"><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11" /></symbol><symbol id="ti-shopping-cart" viewBox="0 0 24 24"><path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M17 17h-11v-14h-2" /> <path d="M6 5l14 1l-1 7h-13" /></symbol><symbol id="ti-repeat" viewBox="0 0 24 24"><path d="M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3" /> <path d="M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3" /></symbol><symbol id="ti-alarm" viewBox="0 0 24 24"><path d="M12 13m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /> <path d="M12 10l0 3l2 0" /> <path d="M7 4l-2.75 2" /> <path d="M17 4l2.75 2" /></symbol><symbol id="ti-lock" viewBox="0 0 24 24"><path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6z" /> <path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" /> <path d="M8 11v-4a4 4 0 1 1 8 0v4" /></symbol><symbol id="ti-brain" viewBox="0 0 24 24"><path d="M15.5 13a3.5 3.5 0 0 0 -3.5 3.5v1a3.5 3.5 0 0 0 7 0v-1.8" /> <path d="M8.5 13a3.5 3.5 0 0 1 3.5 3.5v1a3.5 3.5 0 0 1 -7 0v-1.8" /> <path d="M17.5 16a3.5 3.5 0 0 0 0 -7h-.5" /> <path d="M19 9.3v-2.8a3.5 3.5 0 0 0 -7 0" /> <path d="M6.5 16a3.5 3.5 0 0 1 0 -7h.5" /> <path d="M5 9.3v-2.8a3.5 3.5 0 0 1 7 0v10" /></symbol><symbol id="ti-device-mobile" viewBox="0 0 24 24"><path d="M6 5a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2v-14z" /> <path d="M11 4h2" /> <path d="M12 17v.01" /></symbol><symbol id="ti-paperclip" viewBox="0 0 24 24"><path d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5 -6.5a3 3 0 0 0 -6 -6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5 -6.5" /></symbol><symbol id="ti-cash" viewBox="0 0 24 24"><path d="M7 15h-3a1 1 0 0 1 -1 -1v-8a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v3" /> <path d="M7 9m0 1a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v8a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1z" /> <path d="M12 14a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /></symbol><symbol id="ti-medal" viewBox="0 0 24 24"><path d="M12 4v3m-4 -3v6m8 -6v6" /> <path d="M12 18.5l-3 1.5l.5 -3.5l-2 -2l3 -.5l1.5 -3l1.5 3l3 .5l-2 2l.5 3.5z" /></symbol><symbol id="ti-refresh" viewBox="0 0 24 24"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" /> <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" /></symbol><symbol id="ti-search" viewBox="0 0 24 24"><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /> <path d="M21 21l-6 -6" /></symbol><symbol id="ti-clipboard" viewBox="0 0 24 24"><path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"/><path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z"/></symbol><symbol id="ti-x" viewBox="0 0 24 24"><path d="M18 6l-12 12" /> <path d="M6 6l12 12" /></symbol><symbol id="ti-info-circle" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /> <path d="M12 9h.01" /> <path d="M11 12h1v4h1" /></symbol><symbol id="ti-flag" viewBox="0 0 24 24"><path d="M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1 -7 0a5 5 0 0 0 -7 0v-9z" /> <path d="M5 21v-7" /></symbol><symbol id="ti-clock" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /> <path d="M12 7v5l3 3" /></symbol><symbol id="ti-heart" viewBox="0 0 24 24"><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572" /></symbol><symbol id="ti-star" viewBox="0 0 24 24"><path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z" /></symbol><symbol id="ti-trash" viewBox="0 0 24 24"><path d="M4 7l16 0" /> <path d="M10 11l0 6" /> <path d="M14 11l0 6" /> <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /> <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></symbol><symbol id="ti-pencil" viewBox="0 0 24 24"><path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" /> <path d="M13.5 6.5l4 4" /></symbol><symbol id="ti-download" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /> <path d="M7 11l5 5l5 -5" /> <path d="M12 4l0 12" /></symbol><symbol id="ti-upload" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /> <path d="M7 9l5 -5l5 5" /> <path d="M12 4l0 12" /></symbol><symbol id="ti-shield-lock" viewBox="0 0 24 24"><path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" /> <path d="M12 11m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /> <path d="M12 12l0 2.5" /></symbol><symbol id="ti-currency-dollar" viewBox="0 0 24 24"><path d="M16.7 8a3 3 0 0 0 -2.7 -2h-4a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6h-4a3 3 0 0 1 -2.7 -2" /> <path d="M12 3v3m0 12v3" /></symbol><symbol id="ti-layout-dashboard" viewBox="0 0 24 24"><path d="M5 4h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1" /> <path d="M5 16h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1" /> <path d="M15 12h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1" /> <path d="M15 4h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1" /></symbol><symbol id="ti-building-mosque" viewBox="0 0 24 24"><path d="M3 21h7v-2a2 2 0 1 1 4 0v2h7" /> <path d="M4 21v-10" /> <path d="M20 21v-10" /> <path d="M4 16h3v-3h10v3h3" /> <path d="M17 13a5 5 0 0 0 -10 0" /> <path d="M21 10.5c0 -.329 -.077 -.653 -.224 -.947l-.776 -1.553l-.776 1.553a2.118 2.118 0 0 0 -.224 .947a.5 .5 0 0 0 .5 .5h1a.5 .5 0 0 0 .5 -.5z" /> <path d="M5 10.5c0 -.329 -.077 -.653 -.224 -.947l-.776 -1.553l-.776 1.553a2.118 2.118 0 0 0 -.224 .947a.5 .5 0 0 0 .5 .5h1a.5 .5 0 0 0 .5 -.5z" /> <path d="M12 2a2 2 0 1 0 2 2" /> <path d="M12 6v2" /></symbol><symbol id="ti-scale" viewBox="0 0 24 24"><path d="M7 20l10 0" /> <path d="M6 6l6 -1l6 1" /> <path d="M12 3l0 17" /> <path d="M9 12l-3 -6l-3 6a3 3 0 0 0 6 0" /> <path d="M21 12l-3 -6l-3 6a3 3 0 0 0 6 0" /></symbol></svg>
 <script id="ms-ic59">
 /* v59: line icons (Tabler outline, MIT) drawn from an inline sprite. Emoji in navigation chrome, titles and tabs become icons; data emoji (categories, notes) are never touched. */
 (function () {
   'use strict';
-  const MAP = { '🏠': 'home', '📋': 'list', '📥': 'arrow-down-left', '📤': 'arrow-up-right', '💰': 'pig-money', '🎯': 'target', '💳': 'credit-card', '📊': 'chart-bar', '📈': 'chart-line', '📉': 'trending-down', '📅': 'calendar-event', '📌': 'pin', '🧾': 'receipt', '⚡': 'bolt', '🔔': 'bell', '⚙': 'settings', '💎': 'diamond', '🏦': 'building-bank', '🛒': 'shopping-cart', '🔁': 'repeat', '⚠': 'alert-triangle', '✅': 'circle-check', '💵': 'wallet', '🔒': 'lock', '👁': 'eye', '🧠': 'brain', '⏰': 'alarm', '🎁': 'gift', '📱': 'device-mobile', '📎': 'paperclip', '💸': 'cash', '🤝': 'users-group', '🚗': 'car', '🥇': 'medal', '💱': 'arrows-exchange', '🔄': 'refresh', '🌙': 'moon', '🏷': 'tag', '🛫': 'plane', '✈': 'plane', '💍': 'diamond', '📦': 'package', '🎵': 'chart-bar', '💼': 'briefcase', '🔍': 'search', '🗑': 'trash', '✏': 'pencil', '🧮': 'calculator', '🕒': 'clock', '⭐': 'star', '❤': 'heart', '🚀': 'flag', '🛡': 'shield-lock', '⚖': 'scale' };
+  const MAP = { '🏠': 'home', '📋': 'list', '📥': 'arrow-down-left', '📤': 'arrow-up-right', '💰': 'pig-money', '🎯': 'target', '💳': 'credit-card', '📊': 'chart-bar', '📈': 'chart-line', '📉': 'trending-down', '📅': 'calendar-event', '📌': 'pin', '🧾': 'receipt', '⚡': 'bolt', '🔔': 'bell', '⚙': 'settings', '💎': 'diamond', '🏦': 'building-bank', '🛒': 'shopping-cart', '🔁': 'repeat', '⚠': 'alert-triangle', '✅': 'circle-check', '💵': 'wallet', '🔒': 'lock', '👁': 'eye', '🧠': 'brain', '⏰': 'alarm', '🎁': 'gift', '📱': 'device-mobile', '📎': 'paperclip', '💸': 'cash', '🤝': 'users-group', '🚗': 'car', '🥇': 'medal', '💱': 'arrows-exchange', '🔄': 'refresh', '🌙': 'moon', '🏷': 'tag', '🛫': 'plane', '✈': 'plane', '💍': 'diamond', '📦': 'package', '🎵': 'chart-bar', '💼': 'briefcase', '🔍': 'search', '🗑': 'trash', '✏': 'pencil', '🧮': 'calculator', '🕒': 'clock', '⭐': 'star', '❤': 'heart', '🚀': 'flag', '🛡': 'shield-lock', '⚖': 'scale', '🕋': 'building-mosque' };
   const clean = e => String(e || '').replace(/\uFE0F/g, '');
   window.msIcon = function (name, cls) { return '<svg class="ic ' + (cls || '') + '" aria-hidden="true"><use href="#ti-' + name + '"/></svg>'; };
   window.msIconFor = function (emoji) { const n = MAP[clean(emoji)]; return n ? window.msIcon(n) : emoji; };
@@ -3973,6 +3899,14 @@ button, .menu-row, .tx-card {
     <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
     <div class="ms-add-head"><div class="modal-title">حركة جديدة</div><button type="button" class="ms-x" onclick="closeModal()" aria-label="إغلاق"><svg class="ic" aria-hidden="true"><use href="#ti-x"/></svg></button></div>
 
+    <div class="ms-sms" id="msSms">
+      <button type="button" class="ms-sms-open" id="msSmsOpenBtn" onclick="msSmsBox(true)"><svg class="ic" aria-hidden="true"><use href="#ti-clipboard"/></svg>الصق رسالة البنك</button>
+      <div class="ms-sms-box" id="msSmsBox" style="display:none">
+        <textarea id="msSmsText" rows="3" placeholder="الصق رسالة البنك هنا" oninput="msSmsParse()" aria-label="رسالة البنك"></textarea>
+        <div class="ms-sms-bar"><span class="ms-sms-info" id="msSmsInfo"></span><button type="button" class="ms-sms-act" onclick="msSmsPaste()">لصق</button><button type="button" class="ms-sms-act" onclick="msSmsClear()">مسح</button></div>
+        <div class="ms-sms-tags" id="msSmsTags"></div>
+      </div>
+    </div>
     <div class="type-row ms-seg">
       <button class="type-btn exp-s" id="btnExp" onclick="selType('expense')"><svg class="ic" aria-hidden="true"><use href="#ti-arrow-up-right"/></svg>مصروف</button>
       <button class="type-btn" id="btnInc" onclick="selType('income')"><svg class="ic" aria-hidden="true"><use href="#ti-arrow-down-left"/></svg>دخل</button>
@@ -4362,7 +4296,7 @@ button, .menu-row, .tx-card {
 <div class="overlay" id="goldModal" onclick="closeIfOut(event,'goldModal')">
   <div class="sheet">
     <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
-    <div class="modal-title">🥇 الذهب وأسعاره</div>
+    <div class="ms-sheet-head"><div class="modal-title">الذهب</div></div>
     <div id="goldModalContent"></div>
   </div>
 </div>
@@ -4395,7 +4329,11 @@ button, .menu-row, .tx-card {
         </div>
       </div>
       <div class="form-row">
-        <div class="form-lbl">💰 سعر شراء الجرام (ج.م)</div>
+        <div class="form-lbl">💰 سعر شراء الجرام</div>
+        <div class="gold-karat-pick" style="margin-bottom:8px">
+          <button type="button" class="gold-karat-btn" data-cur="SAR" onclick="goldAddSetCur('SAR')">ر.س</button>
+          <button type="button" class="gold-karat-btn" data-cur="EGP" onclick="goldAddSetCur('EGP')">ج.م</button>
+        </div>
         <input class="form-inp" id="goldAddPrice" type="number" step="1" inputmode="decimal" placeholder="السعر وقت الشراء" style="direction:ltr"/>
         <div id="goldAddHint" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
       </div>
@@ -4410,13 +4348,7 @@ function selGoldKarat(btn){
   try{
     btn.parentElement.querySelectorAll('.gold-karat-btn').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
-    // لو فيه سعر حالي، اقترحه
-    var k = parseInt(btn.dataset.karat)||21;
-    if (typeof goldData!=='undefined' && goldData && typeof egpPerGramKarat==='function'){
-      var cur = egpPerGramKarat(k);
-      var hint = document.getElementById('goldAddHint');
-      if (hint && cur) hint.textContent = 'السعر الحالي لعيار '+k+' ≈ '+fmt(cur,0)+' ج.م/جرام';
-    }
+    if (typeof _goldAddHint === 'function') _goldAddHint();
   }catch(e){}
 }
 window.selGoldKarat = selGoldKarat;
@@ -7052,6 +6984,7 @@ function delSav(id) {
 // ── EDIT ──
 function editTx(id) {
   const t = txs.find(x=>x.id===id); if(!t) return;
+  if (window.msSmsReset) window.msSmsReset(true);
   editingId=id; editingIsSavings=false;
   pendingReceipt = t.receipt || null;
   document.getElementById('fReceiptInput').value = '';
@@ -7107,6 +7040,7 @@ function editTx(id) {
 }
 function editSav(id) {
   const t = savings.find(x=>x.id===id); if(!t) return;
+  if (window.msSmsReset) window.msSmsReset(true);
   editingId=id; editingIsSavings=true;
   pendingReceipt = t.receipt || null;
   document.getElementById('fReceiptInput').value = '';
@@ -7162,6 +7096,7 @@ function populateOccasionPicker(selectedOccId) {
 
 // ── MODAL ──
 function openModal() {
+  if (window.msSmsReset) window.msSmsReset();
   editingId=null; editingIsSavings=false;
   pendingReceipt = null;
   document.getElementById('fReceiptInput').value = '';
@@ -7424,7 +7359,7 @@ function fillTransferDropdowns() {
   if (accounts[0]) document.getElementById('fTransferFrom').value = 'acc:'+accounts[0].id;
   document.getElementById('fTransferTo').value = 'sav:بنك';
 }
-function selEC(btn){document.querySelectorAll('#expCatGrid .cat-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selECat=btn.dataset.cat;}
+function selEC(btn){document.querySelectorAll('#expCatGrid .cat-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selECat=btn.dataset.cat;if(window.msSmsPicked)window.msSmsPicked();}
 
 // ── CUSTOM EXPENSE CATEGORIES: render + manage ──
 // يرسم أزرار الفئات المخصصة + زرار "➕ فئة جديدة" قبل زرار "أخرى" مباشرة.
@@ -7539,7 +7474,7 @@ function deleteCustomCat() {
   showToast('🗑️ تم حذف الفئة', 'success');
   if (typeof renderAll === 'function') renderAll();
 }
-function selIC(btn){document.querySelectorAll('#incCatGrid .inc-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selICat=btn.dataset.cat;}
+function selIC(btn){document.querySelectorAll('#incCatGrid .inc-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selICat=btn.dataset.cat;if(window.msSmsPicked)window.msSmsPicked();}
 function selSC(btn){document.querySelectorAll('#savCatGrid .sav-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selSCat=btn.dataset.cat;}
 
 // ── SAVE TX ──
@@ -7579,6 +7514,7 @@ function _quickSaveExpense(cat, amount, emoji){
 // v61: quick entry removed
 
 function saveTx() {
+  if (window.msSmsGate && !window.msSmsGate()) return;
   const rawAmt = document.getElementById('fAmt').value;
   const _norm = normalizeDigits(rawAmt);
   const amt = safeEval(rawAmt) ?? (/^\s*-?\d*\.?\d+\s*$/.test(_norm) ? parseFloat(_norm) : NaN);   // v68: never save a truncated number
@@ -7601,7 +7537,7 @@ function saveTx() {
     const fromLabel = fromKind === 'acc' ? (accounts.find(a=>a.id===fromId)?.name || 'محفظة') : `ادخار - ${fromId}`;
     const toLabel = toKind === 'acc' ? (accounts.find(a=>a.id===toId)?.name || 'محفظة') : `ادخار - ${toId}`;
     const txName = `🔄 تحويل: ${fromLabel} ← ${toLabel}`;
-    const baseObj = {amount:amt,currency:selPayCurVal,rate,amountSAR,date,time,note,transferId,transferLabel:`${fromLabel} → ${toLabel}`};
+    const baseObj = {amount:amt,currency:selPayCurVal,rate,amountSAR,date,time,note,smsKey:(window.__smsCtx&&window.__smsCtx.p&&window.__smsCtx.p.key)||undefined,transferId,transferLabel:`${fromLabel} → ${toLabel}`};
 
     // Outgoing leg (from source) — recorded as expense in source
     if (fromKind === 'acc') {
@@ -7617,6 +7553,7 @@ function saveTx() {
       savings.unshift({...baseObj, id:'sv_in_'+transferId, type:'savings', name:txName, cat:toId, isTransfer:true, transferDirection:'in'});
     }
     saveData(); saveSavings();
+    if (window.msSmsDone) window.msSmsDone({type:'transfer'});
     closeModal(); renderAll();
     if (typeof showToast === 'function') showToast('🔄 تم التحويل', 'success');
     return;
@@ -7652,7 +7589,8 @@ function saveTx() {
     receipt:pendingReceipt||undefined,
     tags: tags.length ? tags : undefined,
     pending: isPending || undefined,
-    splits: splits || undefined
+    splits: splits || undefined,
+    smsKey: (window.__smsCtx && window.__smsCtx.p && window.__smsCtx.p.key) || undefined
   };
 
   if(txType==='savings'){
@@ -7686,10 +7624,10 @@ function saveTx() {
   } else if(account && String(account).startsWith('cc_')) {
     // ── بطاقة ائتمان: سجّل في card.transactions فقط — لا تخصم من الجاري ──
     if(editingId&&!editingIsSavings) txs=txs.filter(t=>t.id!==editingId);
-    const _ccCard = (window.creditCards||[]).find(c=>c.id===account);
+    const _ccCard = (window.creditCards||[]).find(c=>c.id===account||('cc_'+c.id)===account);
     if(_ccCard){
       _ccCard.transactions = (_ccCard.transactions||[]).filter(t=>t.id!==txObj.id);
-      _ccCard.transactions.push({
+      _ccCard.transactions.push((window.msSmsCardTx && window.msSmsCardTx(_ccCard, txObj)) || {
         id:        txObj.id,
         date:      txObj.date,
         time:      txObj.time||'12:00',
@@ -7725,6 +7663,7 @@ function saveTx() {
     saveRecurring();
   }
 
+  if (window.msSmsDone) window.msSmsDone(txObj);
   closeModal(); renderAll();
   if(curTab==='budget') renderBudget();
 }
@@ -13971,8 +13910,53 @@ renderIslamicOccasionCard = function() {
 const GRAMS_PER_OZ = 31.1034768;
 var goldData = msStore.getJSON('msarifyi_gold', 'null');
 
+// ═══ الذهب: السعر، مشترياتك، الحاسبة، حركة السعر ═══
+var _GOLD_SYM = { SAR: 'ر.س', EGP: 'ج.م', USD: '$', EUR: '€' };
+var GOLD_KARATS = [24, 21, 18];
+function _gSym(c){ return _GOLD_SYM[c] || c; }
+function _gBaseSym(){ try{ return BASE_LABELS[baseCurrency].sym; }catch(e){ return 'ر.س'; } }
+function _gAr(x){ try{ return toArabicDigits(String(x)); }catch(e){ return String(x); } }
+function _gNum(x){ var n = parseFloat(x); return isFinite(n) ? n : 0; }
+function _gMoney(sarAmt, d){ return fmt(toBase(sarAmt), d == null ? 0 : d) + ' ' + _gBaseSym(); }
+
+// سعر الجرام: دولار الأوقية ← ريال ← أي عملة (نفس حساب الجنيه القديم بالظبط)
+function sarPerGramKarat(karat){ if (!goldData) return null; return goldData.usdPerOz / GRAMS_PER_OZ * (rates.USD || 3.75) * (karat / 24); }
+function egpPerGramKarat(karat){ var s = sarPerGramKarat(karat); return s == null ? null : s * (rates.EGP || 13.5); }
+function basePerGramKarat(karat){ var s = sarPerGramKarat(karat); return s == null ? null : toBase(s); }
+function _gPerGramIn(karat, cur){ var s = sarPerGramKarat(karat); if (s == null) return null; return cur === 'EGP' ? s * (rates.EGP || 13.5) : s; }
+
+// تاريخ السعر: نقطة واحدة في اليوم، بصيغة واحدة {date, usdPerOz, ts}. القديم ({p,t} أو {date,k21,k24,usdPerOz}) بيتقرا ويتوحّد.
+function _goldHistLoad(){
+  var raw = []; try{ raw = msStore.getJSON('msarifyi_gold_history', '[]'); }catch(e){}
+  var by = {};
+  (Array.isArray(raw) ? raw : []).forEach(function(h){
+    if (!h) return; var usd = _gNum(h.usdPerOz || h.p); var ts = _gNum(h.ts || h.t) || (h.date ? new Date(h.date + 'T12:00:00').getTime() : 0);
+    if (!(usd > 100) || !ts) return; var d = h.date || new Date(ts).toISOString().slice(0, 10); by[d] = { date: d, usdPerOz: usd, ts: ts };
+  });
+  return Object.keys(by).sort().map(function(k){ return by[k]; }).slice(-90);
+}
+var goldHistory = _goldHistLoad();
+function _goldHistPush(usd){
+  var h = _goldHistLoad(), d = new Date().toISOString().slice(0, 10), e = { date: d, usdPerOz: usd, ts: Date.now() };
+  var i = h.findIndex(function(x){ return x.date === d; }); if (i >= 0) h[i] = e; else h.push(e);
+  goldHistory = h.slice(-90); msStore.setRaw('msarifyi_gold_history', JSON.stringify(goldHistory));
+}
+
+var _goldUI = { karat: parseInt(msStore.getRaw('msarifyi_gold_view_karat') || '21', 10) || 21, open: {} };
+var _goldFetch = { state: 'idle' };
+function _goldRefreshSheet(){
+  try{
+    var m = document.getElementById('goldModal'), c = document.getElementById('goldModalContent');
+    if (!m || !c || !m.classList.contains('open')) return;
+    c.innerHTML = buildGoldCardHTML(); setTimeout(function(){ try{ updateGoldCalc(); }catch(e){} }, 0);
+  }catch(e){}
+}
+
+// جلب السعر (مرة واحدة، من غير إشعارات: النتيجة بتظهر في كارت السعر)
 async function fetchGoldPrice() {
+  _goldFetch.state = 'loading'; _goldRefreshSheet();
   try {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new Error('offline');
     const ctl = new AbortController();
     const tm = setTimeout(() => ctl.abort(), 8000);
     const resp = await fetch('https://api.gold-api.com/price/XAU', {signal: ctl.signal});
@@ -13981,365 +13965,189 @@ async function fetchGoldPrice() {
     const data = await resp.json();
     const usdPerOz = data.price;
     if (!usdPerOz || usdPerOz < 100) throw new Error('سعر مش منطقي');
-    goldData = {
-      usdPerOz,
-      ts: Date.now(),
-      symbol: data.symbol || 'XAU/USD',
-      source: 'السعر الفوري العالمي (LBMA-derived)'
-    };
+    goldData = { usdPerOz, ts: Date.now(), symbol: data.symbol || 'XAU/USD', source: 'السعر الفوري العالمي (LBMA-derived)' };
     msStore.setRaw('msarifyi_gold', JSON.stringify(goldData));
-    // سجّل تاريخ السعر للشارت (نحتفظ بآخر 60 نقطة)
-    try{
-      var hist = msStore.getJSON('msarifyi_gold_history', '[]');
-      hist.push({ p: usdPerOz, t: Date.now() });
-      if (hist.length > 60) hist = hist.slice(-60);
-      msStore.setRaw('msarifyi_gold_history', JSON.stringify(hist));
-    }catch(e){}
-    renderGoldCard(); // re-render with fresh data
-    if (typeof showToast === 'function') showToast('✅ تم تحديث سعر الذهب', 'success');
+    _goldHistPush(usdPerOz);
+    _goldFetch.state = 'ok'; _goldRefreshSheet();
+    try{ if (typeof checkPriceAlerts === 'function') checkPriceAlerts(); }catch(e){}
     return goldData;
   } catch (e) {
     console.warn('Gold fetch failed:', e.message);
-    if (typeof showToast === 'function') showToast('⚠️ فشل تحديث سعر الذهب', 'warning');
+    _goldFetch.state = 'failed'; _goldRefreshSheet();
     return null;
   }
 }
+function goldRefresh(){ return fetchGoldPrice(); }
+window.goldRefresh = goldRefresh;
+function goldSetKarat(k){ _goldUI.karat = k; msStore.setRaw('msarifyi_gold_view_karat', String(k)); _goldRefreshSheet(); }
+window.goldSetKarat = goldSetKarat;
+function goldToggle(key){ _goldUI.open[key] = !_goldUI.open[key]; var e = document.getElementById('gold-' + key); if (e) e.classList.toggle('open', !!_goldUI.open[key]); }
+window.goldToggle = goldToggle;
 
-// Compute EGP per gram for a given karat (24/21/18)
-function egpPerGramKarat(karat) {
-  if (!goldData) return null;
-  // 1 USD = rates.USD SAR (since rates.USD = SAR per USD in this codebase)
-  // 1 SAR = rates.EGP EGP (since rates.EGP = EGP per SAR)
-  // So 1 USD = rates.USD * rates.EGP EGP
-  const usdToEgp = (rates.USD || 3.75) * (rates.EGP || 50);
-  const usdPerGram = goldData.usdPerOz / GRAMS_PER_OZ;
-  const egpPerGram24 = usdPerGram * usdToEgp;
-  return egpPerGram24 * (karat / 24);
+// ── كارت السعر ──
+function _goldPriceCard(){
+  var has = !!goldData, k = _goldUI.karat, sym = _gBaseSym(), st = _goldFetch.state;
+  var age = ''; if (has){ var m = Math.floor((Date.now() - goldData.ts) / 60000); age = m < 1 ? 'الآن' : m < 60 ? 'من ' + _gAr(m) + ' دقيقة' : m < 1440 ? 'من ' + _gAr(Math.floor(m / 60)) + ' ساعة' : 'من ' + _gAr(Math.floor(m / 1440)) + ' يوم'; }
+  var status = st === 'loading' ? 'بيتحدّث...' : st === 'failed' ? ('فشل التحديث' + (has ? ' · ' + age : '')) : (has ? age : 'لسه ما اتحدّتش');
+  var chips = GOLD_KARATS.map(function(x){ return '<button type="button" class="g-chip' + (x === k ? ' on' : '') + '" onclick="goldSetKarat(' + x + ')">عيار ' + _gAr(x) + '</button>'; }).join('');
+  var head = '<div class="ms-hero-lbl" style="display:flex;justify-content:space-between;align-items:center"><span>سعر الجرام الآن</span><button type="button" class="g-refresh" id="goldRefreshBtn" onclick="goldRefresh()"' + (st === 'loading' ? ' disabled' : '') + '>' + window.msIcon('refresh') + '<span>' + status + '</span></button></div>';
+  if (!has) return '<div class="ms-hero" id="goldPriceCard">' + head + '<div class="g-note" style="margin-top:10px">محتاج سعر الذهب الأول: اضغط تحديث فوق، أو اكتب السعر بإيدك من تحت.</div></div>';
+  var main = basePerGramKarat(k), other = baseCurrency === 'EGP' ? { v: sarPerGramKarat(k), s: 'ر.س' } : { v: egpPerGramKarat(k), s: 'ج.م' };
+  var pct = null; try{ var h = _goldHistLoad(), today = new Date().toISOString().slice(0, 10), prev = null; for (var i = h.length - 1; i >= 0; i--) { if (h[i].date !== today) { prev = h[i]; break; } } if (prev) pct = (goldData.usdPerOz - prev.usdPerOz) / prev.usdPerOz * 100; }catch(e){}
+  var chg = pct == null || Math.abs(pct) < 0.05 ? '' : '<span class="g-chg" style="color:' + (pct >= 0 ? 'var(--green)' : 'var(--red)') + '">' + (pct >= 0 ? '▲' : '▼') + ' ' + _gAr(Math.abs(pct).toFixed(1)) + '%</span>';
+  var others = GOLD_KARATS.filter(function(x){ return x !== k; }).map(function(x){ return 'عيار ' + _gAr(x) + ' <b class="ms-money">' + fmt(basePerGramKarat(x), 0) + '</b>'; });
+  return '<div class="ms-hero" id="goldPriceCard">' + head + '<div class="g-chips">' + chips + '</div><div class="ms-hero-val ms-money" id="goldMainPrice">' + fmt(main, 0) + ' <span style="font-size:16px;color:var(--muted);font-weight:400">' + sym + '</span>' + chg + '</div><div class="ms-hero-lbl ms-money" id="goldOtherPrice">' + fmt(other.v, 0) + ' ' + other.s + '</div><div class="g-two"><span>' + others[0] + '</span><span>' + others[1] + '</span><span>' + sym + ' للجرام</span></div></div>';
 }
 
-// فتح مودال إضافة ذهب (بدل الـ prompt القبيح)
+// ── مشترياتك ──
+function _goldPortfolioHTML(){
+  try{
+    var port = msStore.getJSON('msarifyi_gold_portfolio', '[]'), has = !!goldData;
+    var totalGrams = 0, costSar = 0, valueSar = 0;
+    var items = port.map(function(it){
+      var cur = it.cur || 'EGP', grams = _gNum(it.grams), karat = it.karat || 21, c = curToSAR(grams * _gNum(it.buyPrice), cur), per = sarPerGramKarat(karat), v = has ? grams * per : null;
+      totalGrams += grams; costSar += c; if (v != null) valueSar += v; return { it: it, cur: cur, grams: grams, karat: karat, cost: c, value: v };
+    });
+    var profit = has ? valueSar - costSar : null, pct = has && costSar > 0 ? profit / costSar * 100 : null, pc = profit == null ? 'var(--muted)' : (profit >= 0 ? 'var(--green)' : 'var(--red)');
+    var hero = '<div class="ms-hero" id="goldPortfolioCard"><div class="ms-hero-lbl" style="display:flex;justify-content:space-between;align-items:center"><span>ذهبي' + (port.length ? ' · ' + _gAr(_fmtGrams(totalGrams)) + ' جرام' : '') + '</span><button type="button" class="ms-addlink" onclick="showAddGoldHolding()">' + window.msIcon('plus') + ' إضافة</button></div>'
+      + (port.length ? '<div class="ms-hero-val ms-money">' + (has ? _gMoney(valueSar) : '—') + '</div><div class="ms-hero-lbl">القيمة الحالية</div><div class="g-two"><span>الربح <b class="ms-money" style="color:' + pc + ';direction:ltr;display:inline-block">' + (has ? (profit >= 0 ? '+' : '-') + _gMoney(Math.abs(profit)) : '—') + '</b>' + (pct == null ? '' : ' <span style="color:' + pc + '">' + (pct >= 0 ? '▲' : '▼') + ' ' + _gAr(Math.abs(pct).toFixed(1)) + '%</span>') + '</span><span>التكلفة <b class="ms-money">' + _gMoney(costSar) + '</b></span></div>' : '<div class="g-note" style="margin-top:8px">سجّل مشترياتك من الذهب وتابع قيمتها والربح أو الخسارة مع تغيّر السعر.</div>') + '</div>';
+    var rows = items.map(function(x){
+      var p = x.value == null ? null : x.value - x.cost, col = p == null ? 'var(--muted)' : (p >= 0 ? 'var(--green)' : 'var(--red)'), open = !!_goldUI.open['i' + x.it.id];
+      return '<div class="ms-item' + (open ? ' open' : '') + '" id="gold-i' + esc(x.it.id) + '" data-id="' + esc(x.it.id) + '"><div class="ms-item-row" role="button" tabindex="0" onclick="goldToggle(\'i' + esc(x.it.id) + '\')"><span class="ms-item-ic">' + window.msIcon('coins') + '</span><div class="ms-item-main"><div class="ms-item-l1"><span class="ms-item-name">' + _gAr(x.grams) + ' جرام · عيار ' + _gAr(x.karat) + '</span><span class="ms-item-amt ms-money" style="color:' + col + ';direction:ltr">' + (p == null ? '—' : (p >= 0 ? '+' : '-') + _gMoney(Math.abs(p))) + '</span></div><div class="ms-item-l2"><span>اشتريته بـ ' + fmt(x.it.buyPrice || 0, 0) + ' ' + _gSym(x.cur) + ' للجرام</span><span>' + esc(x.it.date || '') + '</span></div></div></div>'
+        + '<div class="ms-item-body"><div class="ms-kv"><span>تكلفتها</span><span class="ms-money">' + _gMoney(x.cost) + '</span></div><div class="ms-kv"><span>قيمتها دلوقتي</span><span class="ms-money">' + (x.value == null ? '—' : _gMoney(x.value)) + '</span></div><div class="ms-kv"><span>الربح</span><span class="ms-money" style="color:' + col + '">' + (p == null ? '—' : (p >= 0 ? '+' : '-') + _gMoney(Math.abs(p))) + '</span></div><div class="ms-acts"><button type="button" class="ms-act danger" onclick="delGoldHolding(\'' + esc(x.it.id) + '\',this)">حذف</button></div></div></div>';
+    }).join('');
+    return hero + (rows ? '<div class="ms-list-h"><span>مشترياتي</span></div><div class="ms-list">' + rows + '</div>' : '');
+  }catch(e){ return ''; }
+}
+function _fmtGrams(g){ g = parseFloat(g) || 0; if (g % 1 === 0) return String(g); return String(Math.round(g * 100) / 100); }
+
+// ── إضافة ومسح ──
+var _goldAddCur = 'SAR';
+function _goldAddHint(){
+  try{
+    var kb = document.querySelector('#goldAddModal .gold-karat-btn.active[data-karat]'), k = kb ? (parseInt(kb.dataset.karat, 10) || 21) : 21, cur = _goldAddCur;
+    var hint = document.getElementById('goldAddHint'), p = document.getElementById('goldAddPrice'), v = _gPerGramIn(k, cur);
+    if (hint) hint.textContent = v ? 'السعر الحالي لعيار ' + k + ' ≈ ' + fmt(v, 0) + ' ' + _gSym(cur) + '/جرام' : '';
+    if (p && v) p.placeholder = 'مثال: ' + fmt(v, 0);
+    document.querySelectorAll('#goldAddModal .gold-karat-btn[data-cur]').forEach(function(b){ b.classList.toggle('active', b.dataset.cur === cur); });
+  }catch(e){}
+}
+function goldAddSetCur(c){ _goldAddCur = c; _goldAddHint(); }
+window.goldAddSetCur = goldAddSetCur;
 function showAddGoldHolding(){
   try{
-    // صفّر الفورمة
     var g = document.getElementById('goldAddGrams'); if (g) g.value = '';
-    var p = document.getElementById('goldAddPrice'); if (p) p.value = '';
-    var hint = document.getElementById('goldAddHint'); if (hint) hint.textContent = '';
-    // رجّع العيار الافتراضي 21
-    document.querySelectorAll('#goldAddModal .gold-karat-btn').forEach(function(b){
-      b.classList.toggle('active', b.dataset.karat==='21');
-    });
-    // اقترح السعر الحالي
-    if (typeof goldData!=='undefined' && goldData && typeof egpPerGramKarat==='function'){
-      var cur = egpPerGramKarat(21);
-      if (cur){
-        if (hint) hint.textContent = 'السعر الحالي لعيار 21 ≈ '+fmt(cur,0)+' ج.م/جرام';
-        if (p) p.placeholder = 'مثال: '+fmt(cur,0);
-      }
-    }
-    var m = document.getElementById('goldAddModal');
-    if (m) m.classList.add('open');
+    var p = document.getElementById('goldAddPrice'); if (p) { p.value = ''; p.placeholder = 'السعر وقت الشراء'; }
+    document.querySelectorAll('#goldAddModal .gold-karat-btn[data-karat]').forEach(function(b){ b.classList.toggle('active', b.dataset.karat === '21'); });
+    _goldAddCur = (baseCurrency === 'SAR' || baseCurrency === 'EGP') ? baseCurrency : 'EGP';
+    _goldAddHint();
+    var m = document.getElementById('goldAddModal'); if (m) m.classList.add('open');
   }catch(e){}
 }
 window.showAddGoldHolding = showAddGoldHolding;
-
-// حفظ الذهب من الفورمة
 function saveGoldHolding(){
   try{
     var grams = parseFloat(document.getElementById('goldAddGrams').value);
-    if (!grams || grams<=0){ if(typeof showToast==='function') showToast('اكتب عدد جرامات صحيح','warning'); return; }
-    var karatBtn = document.querySelector('#goldAddModal .gold-karat-btn.active');
-    var karat = karatBtn ? (parseInt(karatBtn.dataset.karat)||21) : 21;
+    if (!grams || grams <= 0){ showToast('اكتب عدد جرامات صحيح', 'warning'); return; }
+    var karatBtn = document.querySelector('#goldAddModal .gold-karat-btn.active[data-karat]');
+    var karat = karatBtn ? (parseInt(karatBtn.dataset.karat) || 21) : 21;
     var buyPrice = parseFloat(document.getElementById('goldAddPrice').value);
-    if (!buyPrice || buyPrice<=0){ if(typeof showToast==='function') showToast('اكتب سعر شراء صحيح','warning'); return; }
+    if (!buyPrice || buyPrice <= 0){ showToast('اكتب سعر شراء صحيح', 'warning'); return; }
     var port = msStore.getJSON('msarifyi_gold_portfolio', '[]');
-    port.push({ id: 'g'+Date.now(), grams: grams, karat: karat, buyPrice: buyPrice, date: new Date().toISOString().slice(0,10) });
+    port.push({ id: 'g' + Date.now(), grams: grams, karat: karat, buyPrice: buyPrice, cur: _goldAddCur, date: new Date().toISOString().slice(0, 10) });
     msStore.setRaw('msarifyi_gold_portfolio', JSON.stringify(port));
-    // اقفل المودال وأعد بناء البطاقة
     var m = document.getElementById('goldAddModal'); if (m) m.classList.remove('open');
-    var c = document.getElementById('goldModalContent');
-    if (c && typeof buildGoldCardHTML==='function'){ c.innerHTML = buildGoldCardHTML(); setTimeout(function(){ try{updateGoldCalc();}catch(e){} },0); }
-    if (typeof renderGoldCard==='function') renderGoldCard();
-    if (typeof showToast==='function') showToast('✅ اتسجّل في محفظتك','success');
+    _goldRefreshSheet();
   }catch(e){}
 }
 window.saveGoldHolding = saveGoldHolding;
-
-// حذف مشترى ذهب
-function delGoldHolding(id){
+var _goldDelPending = null;
+function delGoldHolding(id, btn){
   try{
-    var port = msStore.getJSON('msarifyi_gold_portfolio', '[]');
-    port = port.filter(function(x){ return x.id !== id; });
-    msStore.setRaw('msarifyi_gold_portfolio', JSON.stringify(port));
-    var c = document.getElementById('goldModalContent');
-    if (c && typeof buildGoldCardHTML==='function') c.innerHTML = buildGoldCardHTML();
-    if (typeof renderGoldCard==='function') renderGoldCard();
-    if (typeof showToast==='function') showToast('اتحذف','success');
+    if (_goldDelPending !== id){ _goldDelPending = id; if (btn) btn.textContent = 'اضغط تاني للتأكيد'; setTimeout(function(){ if (_goldDelPending === id){ _goldDelPending = null; if (btn && btn.isConnected) btn.textContent = 'حذف'; } }, 4000); return; }
+    _goldDelPending = null;
+    var port = msStore.getJSON('msarifyi_gold_portfolio', '[]').filter(function(x){ return x.id !== id; });
+    msStore.setRaw('msarifyi_gold_portfolio', JSON.stringify(port)); _goldRefreshSheet();
   }catch(e){}
 }
 window.delGoldHolding = delGoldHolding;
 
-function renderGoldCard() {
-  // Find the home content & inject/refresh gold card
-  const home = document.getElementById('homeContent');
-  if (!home) return;
-  let card = home.querySelector('.gold-card');
-  const html = buildGoldCardHTML();
-  if (!card) {
-    home.insertAdjacentHTML('afterbegin', html);
-  } else {
-    card.outerHTML = html;
+// ── الحاسبة (بعملتك) ──
+function _goldCalcKarat(){ return parseInt(msStore.getRaw('msarifyi_gold_karat') || '21', 10) || 21; }
+function _goldMakingBase(){   // المصنعية المحفوظة قبل كده كانت بالجنيه: بتتحوّل مرة واحدة لعملتك
+  var v = _gNum(msStore.getRaw('msarifyi_gold_making')); if (!(v > 0)) return '';
+  var tag = msStore.getRaw('msarifyi_gold_making_cur') || 'EGP';
+  if (tag !== baseCurrency){ v = Math.round(toBase(curToSAR(v, tag))); msStore.setRaw('msarifyi_gold_making', String(v)); }
+  msStore.setRaw('msarifyi_gold_making_cur', baseCurrency); return v;
+}
+function _goldCalcRow(){
+  var k = _goldCalcKarat(), buying = msStore.getRaw('msarifyi_gold_buying') === '1', vat = msStore.getRaw('msarifyi_gold_vat') || '15', grams = parseFloat(msStore.getRaw('msarifyi_gold_grams') || '0') || '', open = !!_goldUI.open.calc;
+  var chips = GOLD_KARATS.map(function(x){ return '<button type="button" class="g-chip' + (x === k ? ' on' : '') + '" data-k="' + x + '" onclick="goldCalcKarat(' + x + ')">' + _gAr(x) + '</button>'; }).join('');
+  var vats = [['0', 'بدون'], ['14', '١٤٪ (مصر)'], ['15', '١٥٪ (السعودية)'], ['5', '٥٪ (الإمارات)']].map(function(o){ return '<option value="' + o[0] + '"' + (vat === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('');
+  return '<div class="ms-exp2' + (open ? ' open' : '') + '" id="gold-calc"><button type="button" class="ms-exp2-h" onclick="goldToggle(\'calc\')"><span><span class="t">حاسبة الذهب</span><span class="s">احسب قيمة ذهبك أو سعر اللي هتشتريه</span></span>' + window.msIcon('chevron-left') + '</button><div class="ms-exp2-b" style="padding:0 12px 12px">'
+    + '<div class="g-field"><span>عدد الجرامات</span><input class="form-inp" id="goldGramsInp" type="number" step="0.01" inputmode="decimal" value="' + grams + '" oninput="updateGoldCalc()" style="direction:ltr"></div>'
+    + '<div class="g-chips" id="goldCalcKarats">' + chips + '</div>'
+    + '<label class="g-field" style="color:var(--text)"><span>أنا بشتري (ضيف مصنعية وضريبة)</span><input type="checkbox" id="goldIsBuying"' + (buying ? ' checked' : '') + ' onchange="updateGoldCalc()"></label>'
+    + '<div class="g-field"><span>المصنعية (' + _gBaseSym() + ' للجرام)</span><input class="form-inp" id="goldMakingInp" type="number" step="1" inputmode="decimal" value="' + _goldMakingBase() + '" placeholder="0" oninput="updateGoldCalc()" style="direction:ltr"></div>'
+    + '<div class="g-field"><span>ضريبة على المصنعية</span><select class="form-inp" id="goldVatSel" onchange="updateGoldCalc()">' + vats + '</select></div>'
+    + '<div class="g-res" id="goldCalcResult"></div></div></div>';
+}
+function goldCalcKarat(k){ msStore.setRaw('msarifyi_gold_karat', String(k)); document.querySelectorAll('#goldCalcKarats .g-chip').forEach(function(b){ b.classList.toggle('on', parseInt(b.dataset.k, 10) === k); }); updateGoldCalc(); }
+window.goldCalcKarat = goldCalcKarat;
+function updateGoldCalc() {
+  const inp = document.getElementById('goldGramsInp'), result = document.getElementById('goldCalcResult');
+  if (!inp || !result) return;
+  const grams = parseFloat(inp.value) || 0, karat = _goldCalcKarat();
+  msStore.setRaw('msarifyi_gold_grams', String(grams));
+  const makingInp = document.getElementById('goldMakingInp'), vatSel = document.getElementById('goldVatSel'), isBuyingInp = document.getElementById('goldIsBuying');
+  const making = makingInp ? (parseFloat(makingInp.value) || 0) : 0, vat = vatSel ? (parseFloat(vatSel.value) || 0) : 0, isBuying = isBuyingInp ? isBuyingInp.checked : false;
+  if (makingInp) { msStore.setRaw('msarifyi_gold_making', String(making)); msStore.setRaw('msarifyi_gold_making_cur', baseCurrency); }
+  if (vatSel) msStore.setRaw('msarifyi_gold_vat', String(vat));
+  if (isBuyingInp) msStore.setRaw('msarifyi_gold_buying', isBuying ? '1' : '0');
+  if (!grams) { result.innerHTML = ''; return; }
+  if (!goldData) { result.innerHTML = '<div class="g-note">محتاج سعر الذهب الأول: اضغط تحديث فوق أو اكتب السعر بإيدك من تحت.</div>'; return; }
+  const sym = _gBaseSym(), per = basePerGramKarat(karat), goldOnly = grams * per, makingFee = isBuying ? grams * making : 0, vatAmount = isBuying ? makingFee * (vat / 100) : 0, total = goldOnly + makingFee + vatAmount;
+  const line = (k, v, strong) => '<div class="ms-kv"' + (strong ? ' style="color:var(--text)"' : '') + '><span>' + k + '</span><span class="ms-money">' + fmt(v, 0) + ' ' + sym + '</span></div>';
+  result.innerHTML = (isBuying && (making > 0 || vat > 0))
+    ? line('قيمة الذهب', goldOnly) + (making > 0 ? line('المصنعية (' + _gAr(grams) + '×' + _gAr(making) + ')', makingFee) : '') + (vat > 0 && making > 0 ? line('ضريبة ' + _gAr(vat) + '٪ على المصنعية', vatAmount) : '') + line('الإجمالي للشراء', total, true)
+    : '<div class="ms-kv" style="color:var(--text)"><span>' + _gAr(grams) + ' جرام عيار ' + _gAr(karat) + '</span><span class="ms-money">≈ ' + fmt(goldOnly, 0) + ' ' + sym + '</span></div>';
+}
+
+// ── حركة السعر (من تاريخ واحد موحّد) ──
+function _goldChartRow(){
+  var h = _goldHistLoad(), k = _goldUI.karat, open = !!_goldUI.open.chart, body;
+  if (h.length < 2) body = '<div class="g-note" style="text-align:center">لسه بنجمع البيانات: كل ما يتحدّث السعر في يوم جديد، الرسم بيزيد نقطة.' + (h.length === 1 ? '<br>عندك نقطة واحدة، محتاجين يوم تاني.' : '') + '</div>';
+  else {
+    var vals = h.map(function(x){ return toBase(x.usdPerOz / GRAMS_PER_OZ * (rates.USD || 3.75) * (k / 24)); }), W = 300, H = 90, pad = 6, mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals), rg = (mx - mn) || 1, n = vals.length;
+    var pts = vals.map(function(v, i){ return (pad + i / (n - 1) * (W - 2 * pad)).toFixed(1) + ',' + (pad + (1 - (v - mn) / rg) * (H - 2 * pad)).toFixed(1); });
+    var up = vals[n - 1] >= vals[0], col = up ? '#3fb950' : '#f85149', pc = (vals[n - 1] - vals[0]) / vals[0] * 100;
+    body = '<div class="ms-kv"><span>عيار ' + _gAr(k) + ' · ' + _gAr(n) + ' يوم</span><span style="color:' + col + '">' + (up ? '▲' : '▼') + ' ' + _gAr(Math.abs(pc).toFixed(1)) + '%</span></div><svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;direction:ltr" preserveAspectRatio="none" id="goldChartSvg"><path d="M ' + pts.join(' L ') + '" fill="none" stroke="' + col + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg><div class="ms-kv"><span>أدنى ' + fmt(mn, 0) + '</span><span>أعلى ' + fmt(mx, 0) + ' ' + _gBaseSym() + '</span></div>';
   }
-  // Run calc on existing saved grams (if any)
-  setTimeout(() => { try { updateGoldCalc(); } catch(e){} }, 0);
+  return '<div class="ms-exp2' + (open ? ' open' : '') + '" id="gold-chart"><button type="button" class="ms-exp2-h" onclick="goldToggle(\'chart\')"><span><span class="t">حركة السعر</span><span class="s">' + (h.length >= 2 ? 'آخر ' + _gAr(h.length) + ' يوم' : 'لسه بنجمع البيانات') + '</span></span>' + window.msIcon('chevron-left') + '</button><div class="ms-exp2-b" style="padding:0 12px 12px">' + body + '</div></div>';
 }
 
-function buildGoldCardHTML() {
-  const hasData = !!goldData;
-  const k24 = hasData ? egpPerGramKarat(24) : null;
-  const k21 = hasData ? egpPerGramKarat(21) : null;
-  const k18 = hasData ? egpPerGramKarat(18) : null;
-  const ageMin = hasData ? Math.floor((Date.now() - goldData.ts) / 60000) : null;
-  const ageStr = !hasData ? 'لسه ما اتحدّتش — اضغط 🔄' :
-    ageMin < 1 ? 'الآن' :
-    ageMin < 60 ? `من ${toArabicDigits(ageMin)} دقيقة` :
-    `من ${toArabicDigits(Math.floor(ageMin/60))} ساعة`;
-  const fmtPrice = (v) => v == null ? '—' : fmt(v, 0);
-  const savedGrams = parseFloat(msStore.getRaw('msarifyi_gold_grams') || '0') || '';
-  const savedKarat = msStore.getRaw('msarifyi_gold_karat') || '21';
-  return `<div class="gold-card">
-
-    <div class="gold-grid">
-      <div class="gold-cell">
-        <div class="karat">عيار 24</div>
-        <div class="price">${fmtPrice(k24)}</div>
-        <div class="unit">ج.م/جرام</div>
-      </div>
-      <div class="gold-cell">
-        <div class="karat">عيار 21</div>
-        <div class="price">${fmtPrice(k21)}</div>
-        <div class="unit">ج.م/جرام</div>
-      </div>
-      <div class="gold-cell">
-        <div class="karat">عيار 18</div>
-        <div class="price">${fmtPrice(k18)}</div>
-        <div class="unit">ج.م/جرام</div>
-      </div>
-    </div>
-    <div class="gold-calc">
-      <div class="gold-calc-title">🧮 احسب قيمة ذهبك</div>
-      <div class="gold-calc-row">
-        <input type="number" step="0.01" inputmode="decimal" id="goldGramsInp" placeholder="عدد الجرامات" value="${savedGrams}" oninput="updateGoldCalc()">
-        <select id="goldKaratSel" onchange="updateGoldCalc()">
-          <option value="24"${savedKarat==='24'?' selected':''}>عيار 24</option>
-          <option value="21"${savedKarat==='21'?' selected':''}>عيار 21</option>
-          <option value="18"${savedKarat==='18'?' selected':''}>عيار 18</option>
-        </select>
-      </div>
-      <div class="gold-calc-extra">
-        <div class="gca-row">
-          <label>🔧 المصنعية (ج.م/جرام)</label>
-          <input type="number" step="1" inputmode="decimal" id="goldMakingInp" placeholder="0" value="${parseFloat(msStore.getRaw('msarifyi_gold_making') || '0') || ''}" oninput="updateGoldCalc()">
-        </div>
-        <div class="gca-row">
-          <label>🧾 ضريبة على المصنعية</label>
-          <select id="goldVatSel" onchange="updateGoldCalc()">
-            <option value="0" ${(msStore.getRaw('msarifyi_gold_vat')||'14')==='0'?'selected':''}>بدون</option>
-            <option value="14" ${(msStore.getRaw('msarifyi_gold_vat')||'14')==='14'?'selected':''}>١٤٪ (مصر)</option>
-            <option value="15" ${(msStore.getRaw('msarifyi_gold_vat')||'14')==='15'?'selected':''}>١٥٪ (السعودية)</option>
-            <option value="5"  ${(msStore.getRaw('msarifyi_gold_vat')||'14')==='5'?'selected':''}>٥٪ (الإمارات)</option>
-          </select>
-        </div>
-        <label class="gca-toggle">
-          <input type="checkbox" id="goldIsBuying" ${msStore.getRaw('msarifyi_gold_buying') === '1' ? 'checked' : ''} onchange="updateGoldCalc()"/>
-          <span>أنا بشتري (ضيف مصنعية وضريبة)</span>
-        </label>
-      </div>
-      <div class="gold-calc-result" id="goldCalcResult"></div>
-    </div>
-    <div class="gold-meta">
-      ${hasData ? '🏛️ السعر الفوري العالمي (LBMA-derived) · السوق المحلي يضيف مصنعية + ضريبة (آخر تحديث: ' + ageStr + ')' : ageStr}
-    </div>
-    ${_goldPortfolioHTML()}
-  </div>`;
+// ── تنبيهات الأسعار والضبط اليدوي ──
+function _goldAlertsRow(){
+  var n = 0; try{ n = (typeof priceAlerts !== 'undefined' ? priceAlerts : []).filter(function(a){ return !a.triggered; }).length; }catch(e){}
+  return '<div class="ms-list" style="margin-bottom:12px"><div class="ms-item"><div class="ms-item-row" role="button" tabindex="0" onclick="openPriceAlerts()"><span class="ms-item-ic">' + window.msIcon('bell') + '</span><div class="ms-item-main"><div class="ms-item-l1"><span class="ms-item-name">تنبيهات الأسعار</span></div><div class="ms-item-l2"><span>' + (n ? _gAr(n) + ' تنبيه شغال' : 'لما الذهب أو الدولار يوصل سعر معيّن') + '</span></div></div></div></div></div>';
 }
-
-// ── شارت حركة سعر الذهب ──
-function _goldChartHTML(){
-  try{
-    var hist = msStore.getJSON('msarifyi_gold_history', '[]');
-    // ضيف النقطة الحالية لو موجودة
-    if (goldData && goldData.usdPerOz){
-      if (!hist.length || hist[hist.length-1].p !== goldData.usdPerOz){
-        // ما نحفظش، بس نعرض النقطة الحالية في الرسم
-      }
-    }
-    if (hist.length < 2){
-      return `<div class="gold-chart-box">
-        <div class="gold-chart-title">📈 حركة السعر (دولار/أوقية)</div>
-        <div class="gold-chart-empty">لسه بنجمع البيانات — كل ما تحدّث السعر، الشارت هيرسم حركته.<br>${hist.length===1?'عندك نقطة واحدة، محتاجين تحديث تاني.':'اضغط 🔄 تحديث فوق.'}</div>
-      </div>`;
-    }
-    var prices = hist.map(h=>h.p);
-    var min = Math.min.apply(null, prices), max = Math.max.apply(null, prices);
-    var range = (max-min) || 1;
-    var W = 300, H = 90, pad = 6;
-    var n = prices.length;
-    var pts = prices.map(function(p,i){
-      var x = pad + (i/(n-1))*(W-2*pad);
-      var y = pad + (1-(p-min)/range)*(H-2*pad);
-      return x.toFixed(1)+','+y.toFixed(1);
-    });
-    var first = prices[0], last = prices[n-1];
-    var up = last >= first;
-    var lineColor = up ? '#3fb950' : '#f85149';
-    var areaColor = up ? 'rgba(63,185,80,.15)' : 'rgba(248,81,73,.15)';
-    var pathD = 'M '+pts.join(' L ');
-    var areaD = pathD + ` L ${(W-pad).toFixed(1)},${(H-pad).toFixed(1)} L ${pad.toFixed(1)},${(H-pad).toFixed(1)} Z`;
-    var changePct = first>0 ? ((last-first)/first*100) : 0;
-    var changeAbs = last - first;
-    return `<div class="gold-chart-box">
-      <div class="gold-chart-title">
-        <span>📈 حركة السعر (دولار/أوقية)</span>
-        <span class="gold-chart-chg" style="color:${lineColor}">${up?'▲':'▼'} ${changePct>=0?'+':''}${changePct.toFixed(2)}%</span>
-      </div>
-      <svg viewBox="0 0 ${W} ${H}" class="gold-chart-svg" preserveAspectRatio="none">
-        <path d="${areaD}" fill="${areaColor}" stroke="none"/>
-        <path d="${pathD}" fill="none" stroke="${lineColor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-      </svg>
-      <div class="gold-chart-foot">
-        <span>أدنى: $${fmt(min,0)}</span>
-        <span style="color:${lineColor}">${changeAbs>=0?'+':''}$${fmt(Math.abs(changeAbs),0)}</span>
-        <span>أعلى: $${fmt(max,0)}</span>
-      </div>
-    </div>`;
-  }catch(e){ return ''; }
+function _goldManualRow(){
+  var open = !!_goldUI.open.manual, cur = goldData ? Math.round(basePerGramKarat(21)) : '';
+  return '<div class="ms-exp2' + (open ? ' open' : '') + '" id="gold-manual"><button type="button" class="ms-exp2-h" onclick="goldToggle(\'manual\')"><span><span class="t">السعر مش مظبوط؟</span><span class="s">اكتب سعر جرام عيار ٢١ في محل الصاغة</span></span>' + window.msIcon('chevron-left') + '</button><div class="ms-exp2-b" style="padding:0 12px 12px"><div class="g-field"><span>سعر جرام عيار ٢١ (' + _gBaseSym() + ')</span><input class="form-inp" id="goldManualInp" type="number" step="1" inputmode="decimal" placeholder="' + (cur || '0') + '" style="direction:ltr"></div><div id="goldManualMsg" class="g-note" style="color:var(--red)"></div><button type="button" class="ms-primary" onclick="setManualGoldPrice()">حفظ السعر</button></div></div>';
 }
-
-// ── محفظة الذهب (مشترياتك + ربح/خسارة) ──
-// إدخال سعر الذهب يدوياً (لو التحديث التلقائي مش شغّال) — ياخد سعر جرام عيار 21 بالجنيه
 function setManualGoldPrice(){
   try{
-    var cur = goldData ? egpPerGramKarat(21) : null;
-    var msg = 'اكتب سعر جرام الذهب عيار 21 بالجنيه المصري النهاردة'+(cur?('\n(الحالي: '+fmt(cur,0)+' ج.م)'):'');
-    var v = prompt(msg, cur?String(Math.round(cur)):'');
-    if (v===null) return;
-    var egp21 = parseFloat(v);
-    if (!egp21 || egp21<=0){ if(typeof showToast==='function') showToast('سعر مش صحيح','warning'); return; }
-    // اعكس الحساب: من egp عيار21 لـ usdPerOz
-    // egpPerGram24 = egp21 / (21/24); usdPerGram24 = egpPerGram24 / usdToEgp; usdPerOz = usdPerGram24 * GRAMS_PER_OZ
-    var usdToEgp = (rates.USD || 3.75) * (rates.EGP || 50);
-    var egpPerGram24 = egp21 / (21/24);
-    var usdPerGram24 = egpPerGram24 / usdToEgp;
-    var usdPerOz = usdPerGram24 * GRAMS_PER_OZ;
+    var inp = document.getElementById('goldManualInp'), msg = document.getElementById('goldManualMsg'), v = parseFloat(inp ? inp.value : '');
+    var sar21 = (v > 0) ? curToSAR(v, baseCurrency) : 0;
+    if (!(sar21 > 0) || sar21 < 5 || sar21 > 1e5){ if (msg) msg.textContent = 'اكتب سعر جرام عيار ٢١ صح'; return; }
+    var usdPerOz = (sar21 / (21 / 24)) / (rates.USD || 3.75) * GRAMS_PER_OZ;
     goldData = { usdPerOz: usdPerOz, ts: Date.now(), symbol: 'XAU/USD', source: 'يدوي' };
-    msStore.setRaw('msarifyi_gold', JSON.stringify(goldData));
-    // أعد بناء بطاقة الذهب
-    var c = document.getElementById('goldModalContent');
-    if (c && typeof buildGoldCardHTML==='function'){ c.innerHTML = buildGoldCardHTML(); setTimeout(function(){ try{updateGoldCalc();}catch(e){} },0); }
-    if (typeof showToast==='function') showToast('✅ اتحفظ السعر','success');
+    msStore.setRaw('msarifyi_gold', JSON.stringify(goldData)); _goldHistPush(usdPerOz); _goldFetch.state = 'ok'; _goldUI.open.manual = false; _goldRefreshSheet();
   }catch(e){}
 }
 window.setManualGoldPrice = setManualGoldPrice;
 
-// تنسيق الجرامات (يشيل الأصفار الزايدة: 10.50 → 10.5، 10.00 → 10)
-function _fmtGrams(g){
-  g = parseFloat(g)||0;
-  if (g % 1 === 0) return String(g);
-  return String(Math.round(g*100)/100);
-}
-function _goldPortfolioHTML(){
-  try{
-    var port = msStore.getJSON('msarifyi_gold_portfolio', '[]');
-    var curK21 = goldData ? egpPerGramKarat(21) : null; // سعر البيع الحالي عيار 21 (مرجع)
-    var rows = '';
-    var totalCost = 0, totalValue = 0, totalGrams = 0;
-    port.forEach(function(item){
-      var curPrice = goldData ? egpPerGramKarat(item.karat||21) : null;
-      var cost = (item.grams||0) * (item.buyPrice||0);
-      var value = curPrice ? (item.grams||0) * curPrice : 0;
-      var profit = value - cost;
-      totalCost += cost; totalValue += value; totalGrams += (item.grams||0);
-      var pColor = profit>=0 ? 'var(--green)' : 'var(--red)';
-      rows += `<div class="gold-port-item">
-        <div class="gpi-info">
-          <div class="gpi-name">🥇 ${toArabicDigits(item.grams||0)} جرام · عيار ${toArabicDigits(item.karat||21)}</div>
-          <div class="gpi-sub">شراء بـ ${fmt(item.buyPrice||0,0)} ج.م/جرام · ${item.date||''}</div>
-        </div>
-        <div class="gpi-vals">
-          ${curPrice?`<div class="gpi-profit" style="color:${pColor}">${profit>=0?'+':''}${fmt(profit,0)} ج.م</div>`:'<div class="gpi-profit" style="color:var(--muted)">—</div>'}
-          <button class="gpi-del" onclick="delGoldHolding('${item.id}')">🗑️</button>
-        </div>
-      </div>`;
-    });
-
-    var totalProfit = totalValue - totalCost;
-    var tpColor = totalProfit>=0 ? 'var(--green)' : 'var(--red)';
-    var tpPct = totalCost>0 ? (totalProfit/totalCost*100) : 0;
-    var hasPrice = !!goldData;
-    var summary = port.length ? `<div class="gold-port-summary">
-      <div class="gps-grams">🥇 إجمالي ما تملكه: <b>${toArabicDigits(_fmtGrams(totalGrams))} جرام</b></div>
-      <div class="gps-row">
-        <div class="gps-cell"><div class="gps-lbl">💰 التكلفة</div><div class="gps-val">${fmt(totalCost,0)}</div></div>
-        <div class="gps-cell"><div class="gps-lbl">💎 القيمة الحالية</div><div class="gps-val">${hasPrice?fmt(totalValue,0):'—'}</div></div>
-        <div class="gps-cell"><div class="gps-lbl">${totalProfit>=0?'📈 ربح':'📉 خسارة'}</div><div class="gps-val" style="color:${tpColor}">${hasPrice?((totalProfit>=0?'+':'')+fmt(totalProfit,0)):'—'}</div></div>
-      </div>
-      ${hasPrice?`<div class="gps-pct" style="color:${tpColor}">${totalProfit>=0?'▲':'▼'} ${tpPct>=0?'+':''}${tpPct.toFixed(1)}% على استثمارك</div>`:'<div class="gps-nohint">حدّث سعر الذهب فوق عشان تشوف القيمة الحالية والربح 🔄</div>'}
-    </div>` : '';
-
-    return `<div class="gold-port-box">
-      <div class="gold-port-title">
-        <span>💼 محفظة ذهبي</span>
-        <button class="gold-port-add" onclick="showAddGoldHolding()">＋ إضافة</button>
-      </div>
-      ${summary}
-      ${rows || '<div class="gold-port-empty">سجّل مشترياتك من الذهب وتابع قيمتها والربح/الخسارة مع تغيّر السعر.</div>'}
-    </div>`;
-  }catch(e){ return ''; }
-}
-
-function updateGoldCalc() {
-  const inp = document.getElementById('goldGramsInp');
-  const sel = document.getElementById('goldKaratSel');
-  const result = document.getElementById('goldCalcResult');
-  if (!inp || !sel || !result) return;
-  const grams = parseFloat(inp.value) || 0;
-  const karat = parseInt(sel.value);
-  // Persist
-  msStore.setRaw('msarifyi_gold_grams', String(grams));
-  msStore.setRaw('msarifyi_gold_karat', String(karat));
-
-  const makingInp = document.getElementById('goldMakingInp');
-  const vatSel = document.getElementById('goldVatSel');
-  const isBuyingInp = document.getElementById('goldIsBuying');
-  const making = makingInp ? (parseFloat(makingInp.value) || 0) : 0;
-  const vat = vatSel ? (parseFloat(vatSel.value) || 0) : 0;
-  const isBuying = isBuyingInp ? isBuyingInp.checked : false;
-  if (makingInp) msStore.setRaw('msarifyi_gold_making', String(making));
-  if (vatSel) msStore.setRaw('msarifyi_gold_vat', String(vat));
-  if (isBuyingInp) msStore.setRaw('msarifyi_gold_buying', isBuying ? '1' : '0');
-
-  if (!grams) { result.innerHTML = ''; return; }
-  if (!goldData) {
-    result.innerHTML = '<div class="gcr-nohint">📌 محتاج سعر الذهب الأول — اضغط 🔄 تحديث أو ✏️ يدوي فوق</div>';
-    return;
-  }
-  const pricePerGram = egpPerGramKarat(karat);
-  const goldOnly = grams * pricePerGram;
-  const makingFee = isBuying ? grams * making : 0;
-  const vatAmount = isBuying ? makingFee * (vat / 100) : 0;
-  const total = goldOnly + makingFee + vatAmount;
-
-  if (isBuying && (making > 0 || vat > 0)) {
-    result.innerHTML = `
-      <div class="gcr-line"><span>قيمة الذهب</span><b>${fmt(goldOnly,0)} ج.م</b></div>
-      ${making > 0 ? `<div class="gcr-line"><span>المصنعية (${toArabicDigits(grams)}×${toArabicDigits(making)})</span><b>${fmt(makingFee,0)} ج.م</b></div>` : ''}
-      ${vat > 0 && making > 0 ? `<div class="gcr-line"><span>ضريبة ${toArabicDigits(vat)}٪ على المصنعية</span><b>${fmt(vatAmount,0)} ج.م</b></div>` : ''}
-      <div class="gcr-total"><span>الإجمالي للشراء</span><b>${fmt(total,0)} ج.م</b></div>
-    `;
-  } else {
-    result.innerHTML = `<div class="gcr-simple">${toArabicDigits(grams)} جرام عيار ${toArabicDigits(karat)} ≈ <b>${fmt(goldOnly, 0)} ج.م</b></div>`;
-  }
-}
+function buildGoldCardHTML(){ return _goldPriceCard() + _goldPortfolioHTML() + _goldCalcRow() + _goldChartRow() + _goldAlertsRow() + _goldManualRow(); }
 
 // ── (V9) Inject days-left + gold card into home view ──
 const _origRenderHome3 = window.renderHome;
@@ -14371,12 +14179,6 @@ window.renderHome = function() {
     }
   }
 
-  // Gold card
-  if (!el.querySelector('.gold-card')) {
-    el.insertAdjacentHTML('afterbegin', buildGoldCardHTML());
-  }
-  // Repopulate gold calculator from saved values
-  setTimeout(() => { try { updateGoldCalc(); } catch(e){} }, 0);
 };
 (function v9Init() {
   const stale = !goldData || (Date.now() - (goldData.ts||0) > 4 * 60 * 60 * 1000);
@@ -14388,133 +14190,12 @@ window.renderHome = function() {
     if (typeof renderHome === 'function') renderHome();
   }, 100);
 
-  // Add dedicated "Gold" menu row
-  setTimeout(() => {
-    const menu = document.querySelector('#menuModal .sheet');
-    if (menu && !document.getElementById('menuRowGold')) {
-      const row = document.createElement('div');
-      row.className = 'menu-row';
-      row.id = 'menuRowGold';
-      row.onclick = () => {
-        document.getElementById('menuModal').classList.remove('open');
-        openGoldPage();
-      };
-      row.innerHTML = `
-        <div class="mi">🥇</div>
-        <div class="mt"><div class="mt-l">الذهب</div><div class="mt-s">أسعار + حاسبة الجرامات</div></div>
-        <div class="mc">‹</div>`;
-      menu.appendChild(row);
-    }
-  }, 200);
 })();
-
-// Dedicated gold modal — full-page experience
-function openGoldPage() {
-  let m = document.getElementById('goldPageModal');
-  if (!m) {
-    m = document.createElement('div');
-    m.id = 'goldPageModal';
-    m.className = 'overlay';
-    m.onclick = (e) => { if (e.target === m) m.classList.remove('open'); };
-    m.innerHTML = `<div class="sheet" style="max-height:94vh">
-      <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:4px 8px 0">
-        <div style="font-size:16px;font-weight:600;color:var(--accent)">🥇 الذهب</div>
-        <button type="button" aria-label="إغلاق" onclick="document.getElementById('goldPageModal').classList.remove('open')" style="background:var(--card2);border:1.5px solid var(--border);border-radius:50%;width:44px;height:44px;color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif;touch-action:manipulation">✕</button>
-      </div>
-      <div id="goldPageBody"></div>
-    </div>`;
-    document.body.appendChild(m);
-  }
-  // Render fresh content
-  const body = document.getElementById('goldPageBody');
-  body.innerHTML = buildGoldCardHTML() + `
-    <div style="background:var(--card2);border-radius:12px;padding:12px;margin-top:12px;font-size:11px;color:var(--muted);line-height:1.7">
-      <div style="color:var(--accent);font-weight:600;margin-bottom:6px">📌 ملاحظات مهمة</div>
-      • السعر المعروض هو السعر الفوري للأوقية (السبيكة) في السوق العالمي<br>
-      • السوق المحلي بيضيف <b>مصنعية</b> (٥٠-١٥٠ ج.م/جرام حسب الشغل)<br>
-      • و<b>ضريبة قيمة مضافة</b> ١٤٪ على المصنعية<br>
-      • السعر بيتحدّث تلقائياً كل ٤ ساعات لما تفتح التطبيق<br>
-      • للأسعار الرسمية الحقيقية، راجع شعبة الذهب
-    </div>` + buildGoldChartHTML();
-  setTimeout(() => { try { updateGoldCalc(); } catch(e){} }, 0);
-  m.classList.add('open');
-}
 
 // ═══════════════════════════════════════════════════════════════
 // V10 — TRAVEL MODE, GOLD CHART, PRICE ALERTS, RAMADAN, HAJJ
 // + MERGE: العيدية + المدفوعات الدورية
 // ═══════════════════════════════════════════════════════════════
-
-// ═══════════════ FEATURE: GOLD HISTORICAL CHART ═══════════════
-var goldHistory = msStore.getJSON('msarifyi_gold_history', '[]');
-function saveGoldHistory() { msStore.setRaw('msarifyi_gold_history', JSON.stringify(goldHistory)); }
-
-// Hook into existing fetchGoldPrice to save snapshots
-const _origFetchGoldPrice = fetchGoldPrice;
-fetchGoldPrice = async function() {
-  const result = await _origFetchGoldPrice.apply(this, arguments);
-  // After successful fetch, snapshot the price
-  if (goldData && goldData.usdPerOz) {
-    const today = new Date().toISOString().split('T')[0];
-    const idx = goldHistory.findIndex(h => h.date === today);
-    const k21 = egpPerGramKarat(21);
-    const k24 = egpPerGramKarat(24);
-    const entry = {date: today, k21, k24, usdPerOz: goldData.usdPerOz, ts: Date.now()};
-    if (idx >= 0) goldHistory[idx] = entry; else goldHistory.push(entry);
-    // Keep only last 90 days
-    goldHistory = goldHistory.slice(-90);
-    saveGoldHistory();
-  }
-  return result;
-};
-
-function buildGoldChartHTML() {
-  if (!goldHistory.length || goldHistory.length < 2) {
-    return `<div style="background:var(--card2);border-radius:12px;padding:14px;margin-top:12px;text-align:center;color:var(--muted);font-size:13px">
-      📈 الرسم البياني للذهب<br>
-      <small>هيظهر بعد ما يجمع التطبيق ٢ أيام على الأقل من الأسعار</small>
-    </div>`;
-  }
-  const data = goldHistory.slice(-30); // last 30 days
-  const k21Vals = data.map(d => d.k21);
-  const max = Math.max(...k21Vals);
-  const min = Math.min(...k21Vals);
-  const range = max - min || 1;
-  const w = 320, h = 150, pad = 28;
-  const points = data.map((d, i) => {
-    const x = pad + (i / Math.max(data.length-1, 1)) * (w - 2*pad);
-    const y = h - pad - ((d.k21 - min) / range) * (h - 2*pad);
-    return [x, y, d];
-  });
-  const path = points.map((p, i) => (i===0?'M':'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
-  const fillPath = path + ` L${points[points.length-1][0].toFixed(1)},${(h-pad).toFixed(1)} L${points[0][0].toFixed(1)},${(h-pad).toFixed(1)} Z`;
-  const dots = points.filter((_, i) => i % Math.max(1, Math.floor(points.length/8)) === 0).map(p =>
-    `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="var(--accent)"/>`
-  ).join('');
-  const first = data[0].k21, last = data[data.length-1].k21;
-  const change = last - first;
-  const changePct = first > 0 ? (change / first * 100) : 0;
-  const trend = change > 0 ? '📈' : change < 0 ? '📉' : '➡️';
-  const color = change > 0 ? 'var(--green)' : change < 0 ? 'var(--red)' : 'var(--muted)';
-
-  return `<div style="background:var(--card2);border-radius:12px;padding:14px;margin-top:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div style="font-size:13px;font-weight:600;color:var(--accent)">📈 سعر عيار 21 آخر ${toArabicDigits(data.length)} يوم</div>
-      <div style="font-size:11px;color:${color};font-weight:600">${trend} ${change>=0?'+':''}${fmt(change,0)} (${changePct>=0?'+':''}${fmt(changePct,1)}%)</div>
-    </div>
-    <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;direction:ltr">
-      <path d="${fillPath}" fill="rgba(240,180,41,0.1)" stroke="none"/>
-      <path d="${path}" stroke="var(--accent)" stroke-width="2" fill="none"/>
-      ${dots}
-      <text x="${pad}" y="${pad-8}" font-size="9" fill="var(--muted)" font-family="Cairo">${fmt(max,0)} ج</text>
-      <text x="${pad}" y="${h-pad+15}" font-size="9" fill="var(--muted)" font-family="Cairo">${fmt(min,0)} ج</text>
-    </svg>
-    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px;direction:rtl">
-      من ${esc(data[0].date)} إلى ${esc(data[data.length-1].date)}
-    </div>
-  </div>`;
-}
 
 // ═══════════════ FEATURE: PRICE ALERTS ═══════════════
 var priceAlerts = msStore.getJSON('msarifyi_price_alerts', '[]');
@@ -17727,7 +17408,8 @@ setTimeout(() => {
         { id:'goals', icon:'🎯', title:'أهداف الادخار', sub:'وفّر للحاجات الكبيرة', modal:'goalsModal', render:'renderGoals', countKey:'menuGoalCount' },
         { id:'moneymap', icon:'📊', title:'أين ذهبت فلوسي؟', sub:'مقارنة الشهور والسنة والأهمية', custom:'msMoneyOpen' },
         { id:'wrapped', icon:'🎵', title:'تقرير السنة', sub:'ملخص سنوي', custom:'showWrappedReport' },
-        { id:'recurring', icon:'🔁', title:'المعاملات المتكررة', sub:'اشتراكات ومرتبات تلقائية', modal:'msRecurModal', render:'msRecurRender' }
+        { id:'recurring', icon:'🔁', title:'المعاملات المتكررة', sub:'اشتراكات ومرتبات تلقائية', modal:'msRecurModal', render:'msRecurRender' },
+        { id:'storereport', icon:'📊', title:'تقرير المتاجر والدفع', sub:'مشترياتك حسب المتجر وطريقة الدفع', modal:'storeReportModal', render:'renderStoreReport' }
       ]
     },
     {
@@ -17747,7 +17429,8 @@ setTimeout(() => {
       cat: 'currency',
       items: [
         { id:'gold', icon:'🥇', title:'الذهب وأسعاره', sub:'عيار 24، 21، 18', custom:'openGoldModal' },
-        { id:'currency', icon:'💱', title:'العملات والحاسبة', sub:'أسعار الصرف، حوّل بسرعة', modal:'calcModal', render:'openCalc' }
+        { id:'currency', icon:'💱', title:'العملات والحاسبة', sub:'أسعار الصرف، حوّل بسرعة', modal:'calcModal', render:'openCalc' },
+        { id:'alerts', icon:'🔔', title:'تنبيهات الأسعار', sub:'لما الذهب أو الدولار يوصل سعر معيّن', custom:'openPriceAlerts' }
       ]
     },
     {
@@ -17757,7 +17440,9 @@ setTimeout(() => {
         { id:'vehicles', icon:'🚗', title:'السيارات', sub:'بنزين، صيانة، تأمين', modal:'vehiclesModal', render:'renderVehicles', countKey:'menuVehCount', cat:'vehicles' },
         { id:'trips', icon:'🛫', title:'السفر والرحلات', sub:'تذكرة، فندق، مطعم، تاكسي', modal:'tripsModal', render:'renderTrips', countKey:'menuTripsCount' },
         { id:'weddings', icon:'💍', title:'الفرح', sub:'شبكة، مهر، جهاز', modal:'weddingsModal', render:'renderWeddings', countKey:'menuWedCount', cat:'weddings' },
-        { id:'occasions', icon:'🎁', title:'العيدية والمناسبات', sub:'عيد، فرح غيرك، عزا', modal:'occasionsModal', render:'renderOccasions', countKey:'menuOccCount' }
+        { id:'occasions', icon:'🎁', title:'العيدية والمناسبات', sub:'عيد، فرح غيرك، عزا', modal:'occasionsModal', render:'renderOccasions', countKey:'menuOccCount' },
+        { id:'flights', icon:'✈️', title:'تذاكر الطيران', sub:'سجّل وعدّاد قبل الرحلة', custom:'openFlightsHub' },
+        { id:'hajj', icon:'🕋', title:'ميزانية الحج والعمرة', sub:'خطّط لرحلتك بالتفصيل', custom:'openHajjBudget' }
       ]
     },
     {
@@ -29112,7 +28797,7 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 .h2-wrap{gap:18px !important;}
 
 /* نفس الروح على كروت الأقساط/الجمعية/البطاقات (حواف أكبر + ظلال ناعمة) */
-.inst2-card,.gold-port-box,.gold-chart-box,.jam-tl,.inst2-mb{
+.inst2-card,.jam-tl,.inst2-mb{
   border-radius:20px !important;
   box-shadow:0 8px 24px -10px rgba(0,0,0,.38), 0 2px 6px rgba(0,0,0,.14) !important;
 }
@@ -29781,19 +29466,18 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
   const findCard = id => (window.creditCards || []).find(c => c.id === id);
   const norm = s => String(s == null ? '' : s).normalize('NFKC')
     .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
-    .replace(/\u066B/g, '.').replace(/\u066C/g, ',').replace(/[\u200E\u200F\u202A-\u202E]/g, '');
+    .replace(/\u066B/g, '.').replace(/\u066C/g, ',').replace(/[\u200E\u200F\u202A-\u202E\u061C]/g, '');
   const num = s => parseFloat(String(s).replace(/,/g, ''));
 
-  // ───────── SMS: "تم خصم USD 114 من بطاقة الائتمان رقم 1231 عند ANTHROPIC CLAUD يوم 09-23 الساعة 17:07 المتاح 8857.63 جم والمتبقي ... بما يعادل 8531.75 جم"
-  function parseNbeSms(raw, now) {
-    now = now || new Date();
-    const t = norm(raw).replace(/\s+/g, ' ').trim();
+  // ───────── SMS: one parser for every bank message (NBE credit, debit card, instant transfer, Saudi PoS / Marketplace / internal transfer / Visa).
+  // The first block is the original NBE credit-card reader, kept as it was; parseBankSms below handles the rest.
+  function parseNbeCredit(t, now) {
     const m = t.match(/(?:خصم|سحب)\s+([A-Za-z]{3}|جم|ج\.م)\s+([\d,]+(?:\.\d+)?)\s+من\s+.{0,30}?رقم\s+\**(\d{4})\s+عند\s+(.+?)\s+يوم\s+(\d{1,2})[-/](\d{1,2})(?:[-/](\d{2,4}))?\s+(?:الساعة\s+)?(\d{1,2}:\d{2})/);
-    if (!m) return { ok: false };
+    if (!m) return null;
     let ccy = m[1].toUpperCase(); if (ccy === 'جم' || ccy === 'ج.م') ccy = 'EGP';
     let a = +m[5], b = +m[6], mo, d;
     if (a > 12) { d = a; mo = b; } else { mo = a; d = b; }          // NBE writes MM-DD; DD-MM only if the first part cannot be a month
-    if (mo < 1 || mo > 12 || d < 1 || d > 31) return { ok: false };
+    if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
     let y = m[7] ? (+m[7] < 100 ? 2000 + +m[7] : +m[7]) : now.getFullYear();
     const hhmm = m[8].padStart(5, '0');
     if (!m[7]) { const cand = new Date(y, mo - 1, d, +hhmm.slice(0, 2), +hhmm.slice(3)); if (cand - now > 2 * 86400000) y -= 1; }
@@ -29803,12 +29487,134 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
     const merchant = m[4].replace(/\s+/g, ' ').trim();
     const amount = num(m[2]);
     return {
-      ok: true, ccy, amount, last4: m[3], merchant, date, time: hhmm,
+      ok: true, kind: 'purchase', dir: 'out', cardType: 'credit', ccy, amount, last4: m[3], merchant, date, time: hhmm,
       avail: av ? num(av[1]) : null, fxRemaining: fx ? num(fx[1]) : null,
       key: [ccy, amount, date, hhmm, merchant.toUpperCase().replace(/[^A-Z0-9]/g, '')].join('|')
     };
   }
+
+  const CCY_RE = '(?:SAR|SR|EGP|USD|EUR|AED|KWD|QAR|BHD|OMR|GBP|جم|ج\\.م|جنيه|ريال|ر\\.س)';
+  const NUM_RE = '([\\d,]+(?:\\.\\d+)?)';
+  function ccyOf(s) {
+    s = String(s || '').toUpperCase();
+    if (s === 'SR' || s === 'ريال' || s === 'ر.س') return 'SAR';
+    if (s === 'جم' || s === 'ج.م' || s === 'جنيه') return 'EGP';
+    return s;
+  }
+  // 3-part slash dates: the month is always the middle part; the day and the year are told apart by size, then by the current year
+  function slashDate(p, mo, r, lenP, lenR, now) {
+    const yy = now.getFullYear() % 100;
+    let y, d;
+    if (lenP === 4 || p > 31) { y = p; d = r; }
+    else if (lenR === 4 || r > 31) { y = r; d = p; }
+    else if ((p === yy || p === yy - 1) && !(r === yy || r === yy - 1)) { y = p; d = r; }
+    else { y = r; d = p; }
+    if (y < 100) y += 2000;
+    if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+    return { y, mo, d };
+  }
+  function pad2(n) { return String(n).padStart(2, '0'); }
+
+  function parseBankSms(raw, now) {
+    const s0 = norm(raw);
+    const lines = s0.split(/\r?\n| \/ /).map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean);
+    let t = s0.replace(/\s+/g, ' ').trim();
+    if (!t) return { ok: false };
+
+    // time, then date (both cut out of `work`, so they never leak into the merchant)
+    let time = null, date = null, dateGuess = false, timeGuess = false;
+    let work = t;
+    const tm = work.match(/(?:^|[^\d])(\d{1,2}):(\d{2})(?!\d)/);
+    if (tm && +tm[1] < 24 && +tm[2] < 60) time = String(tm[1]).padStart(2, '0') + ':' + tm[2];
+    let dm, y, mo, d;
+    if ((dm = work.match(/(?:^|[^\d])(20\d{2})[-/](\d{1,2})[-/](\d{1,2})(?!\d)/))) { y = +dm[1]; mo = +dm[2]; d = +dm[3]; work = work.replace(dm[0].slice(dm[0].search(/\d/)), ' '); }
+    else if ((dm = work.match(/(?:^|[^\d.])(\d{1,4})\/(\d{1,2})\/(\d{1,4})(?!\d)/))) {
+      const g = slashDate(+dm[1], +dm[2], +dm[3], dm[1].length, dm[3].length, now);
+      if (g) { y = g.y; mo = g.mo; d = g.d; }
+      work = work.replace(dm[0].slice(dm[0].search(/\d/)), ' ');
+    } else if ((dm = work.match(/يوم\s+(\d{1,2})-(\d{1,2})(?!\d)/))) {
+      const a = +dm[1], b = +dm[2];
+      if (a > 12) { d = a; mo = b; } else { mo = a; d = b; }
+      y = now.getFullYear();
+      if (time) { const cand = new Date(y, mo - 1, d, +time.slice(0, 2), +time.slice(3)); if (cand - now > 2 * 86400000) y -= 1; }
+      work = work.replace(dm[0], ' ');
+    }
+    if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31) date = `${y}-${pad2(mo)}-${pad2(d)}`;
+    if (!date) { date = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`; dateGuess = true; }
+    if (!time) { time = pad2(now.getHours()) + ':' + pad2(now.getMinutes()); timeGuess = true; }
+    work = work.replace(/(?:الساعة|الساعه)?\s*\d{1,2}:\d{2}/, ' ').replace(/\s+/g, ' ').trim();
+
+    // amount + currency, right after a keyword so a balance ("المتاح 4615.43EGP") is never taken for it
+    const ar = new RegExp('(?:خصم|سحب|بمبلغ|مبلغ|Amount:?|ب\\u0640?)\\s*(' + CCY_RE + ')?\\s*' + NUM_RE + '\\s*(' + CCY_RE + ')?(?![A-Za-z])', 'gi');
+    let am = null, mm;
+    while ((mm = ar.exec(work))) { if (mm[1] || mm[3]) { am = mm; break; } }
+    if (!am) return { ok: false };
+    const ccy = ccyOf(am[1] || am[3]);
+    const amount = num(am[2]);
+    if (!(amount > 0)) return { ok: false };
+    const afterAmt = work.slice(am.index + am[0].length).trim();
+
+    // balance
+    const bm = t.match(/(?:المتاح|رصيد)\s*:?\s*([\d,]+(?:\.\d+)?)/);
+    const fx = t.match(/بما\s+يعادل\s+([\d,]+(?:\.\d+)?)/);
+
+    // direction + kind
+    const incoming = /(إيداع|ايداع|حوالة\s+واردة|تحويل\s+وارد|واردة|تم\s+استلام|تم\s+إضافة|تم\s+اضافة|credited|received|deposit)/i.test(t);
+    const isTransfer = /(تحويل\s+لحظي|حوالة|تحويل\s+صادر|تحويل|transfer)/i.test(t) && !/شراء|PoS|Purchase/i.test(t);
+    const isBill = /سداد/.test(t) && !isTransfer;
+    const cardRepay = /(سداد|دفع)\s+(مبلغ\s+)?[^.]{0,25}(لبطاقة|على\s+بطاقة|بطاقتكم)/.test(t);
+    if (cardRepay) return { ok: false, reason: 'cardpay' };
+    const dir = incoming ? 'in' : 'out';
+    const kind = isTransfer ? 'transfer' : isBill ? 'bill' : incoming ? 'income' : 'purchase';
+
+    // card type
+    const cardType = /الائتمان|ائتمان|credit/i.test(t) ? 'credit'
+      : /الخصم\s+المباشر|بطاقة\s+الخصم|debit|مدى|mada/i.test(t) ? 'debit'
+      : /فيزا|visa|ماستر|master/i.test(t) ? 'visa' : (isTransfer ? 'account' : 'other');
+
+    // last 4 digits: of the card/account, and of the recipient for a transfer
+    let last4 = null, toLast4 = null, party = '';
+    let l4 = t.match(/من\s*(\d{4})\s*لـ?\s*(\d{4})/);
+    if (l4) { last4 = l4[1]; toLast4 = l4[2]; }
+    else if ((l4 = t.match(/رقم\s*\**\s*(\d{4})(?!\d)/))) last4 = l4[1];
+    else if ((l4 = t.match(/عبر\s*:?\s*(\d{4})(?!\d)/))) last4 = l4[1];
+    else if ((l4 = t.match(/(?:ending|\*{2,})\s*(\d{4})(?!\d)/i))) last4 = l4[1];
+
+    // merchant / counterparty
+    let merchant = '';
+    const clean = x => String(x || '').replace(/[;:؛]+/g, ' ').replace(/\s+/g, ' ').trim();
+    const mAt = work.match(/عند\s+(.+?)(?:\s+(?:يوم|بتاريخ|الساعة|الساعه|المتاح)(?=\s|$)|$)/);
+    if (mAt) merchant = mAt[1];
+    else if (kind === 'transfer') {
+      const tr = work.match(/من\s*\d{4}\s*لـ?\s*\d{4}\s*;?\s*(.+)$/) || work.match(/(?:إلى|الى)\s+(?:حساب(?:\s+رقم)?\s*)?(.+)$/);
+      if (tr) party = clean(tr[1].replace(/المتاح.*$/, ''));
+      merchant = party;
+    } else {
+      const pl = afterAmt.match(/^لـ?\s*(.+)$/);
+      if (pl) merchant = pl[1];
+      else {
+        // English marketplace style: "Purchase through Marketplace / Recharge for stc Sawa Voice / Amount: 115 SAR / 2026-10-07 07:25"
+        const cand = lines.filter(x => !/^(purchase|amount|بطاقة)/i.test(x) && !/\d{1,2}:\d{2}/.test(x) && !/^\W*$/.test(x));
+        if (lines.length >= 3 && cand.length) merchant = cand[0];
+      }
+    }
+    merchant = clean(merchant.replace(/\d{1,2}:\d{2}.*$/, '').replace(/\s*(?:SAR|SR|EGP|USD)\s*[\d.,]+\s*$/i, ''));
+    if (!merchant) merchant = kind === 'bill' ? 'سداد فاتورة' : '';
+
+    return {
+      ok: true, kind, dir, cardType, ccy, amount, last4, toLast4, merchant, party, date, time, dateGuess, timeGuess,
+      avail: bm ? num(bm[1]) : null, fxRemaining: fx ? num(fx[1]) : null,
+      key: [ccy, amount, date, time, merchant.toUpperCase().replace(/[^A-Z0-9]/g, '') + (toLast4 || '')].join('|')
+    };
+  }
+
+  function parseNbeSms(raw, now) {
+    now = now || new Date();
+    const t = norm(raw).replace(/\s+/g, ' ').trim();
+    return parseNbeCredit(t, now) || parseBankSms(raw, now);
+  }
   window.parseNbeSms = parseNbeSms;
+  window.parseBankSms = parseNbeSms;
 
   // the last real conversion rate seen on this card's statements, else the app's own rates
   function estimateEgp(card, ccy, amount) {
@@ -29840,78 +29646,215 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
     }) || null;
   };
 
-  // ───────── modal
-  let S = { cardId: null, p: null };
-  function ensureModal() {
-    let m = $('ccSmsModal'); if (m) return m;
-    m = document.createElement('div'); m.className = 'overlay'; m.id = 'ccSmsModal';
-    m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
-    m.innerHTML = `<div class="sheet" style="max-width:600px;max-height:94vh;display:flex;flex-direction:column;margin:0 auto">
-      <div class="modal-head" style="flex-shrink:0"><div class="modal-title">📩 تسجيل رسالة خصم</div>
-        <button class="close-x" onclick="document.getElementById('ccSmsModal').classList.remove('open')">×</button></div>
-      <div class="modal-body" style="overflow-y:auto;flex:1" id="ccSmsBody"></div></div>`;
-    document.body.appendChild(m); return m;
+  // ───────── paste a bank message into the add-transaction sheet (credit cards and ordinary wallets alike)
+  let C = null;                                   // window.__smsCtx: { p, catOk, sug, cardId }
+  const SUPPORTED = { SAR: 1, EGP: 1, USD: 1, EUR: 1 };
+  const CAT_KEY = 'msarifyi_sms_cat';
+  const mk = s => (String(s || '').toUpperCase().replace(/[^A-Z0-9ء-ي]+/g, ' ').trim().split(' ')[0] || '');
+  const catRules = () => { try { const r = window.msStore.getJSON(CAT_KEY, '{}'); return r && typeof r === 'object' && !Array.isArray(r) ? r : {}; } catch (e) { return {}; } };
+  const ACC = () => (typeof accounts !== 'undefined' && Array.isArray(accounts) ? accounts : []);
+  const TXS = () => (typeof txs !== 'undefined' && Array.isArray(txs) ? txs : []);
+
+  // merchant -> a category that exists in the add sheet. A guess only: the person always confirms it.
+  const SUG = [
+    [/TALABAT|HUNGERSTATION|MRSOOL|JAHEZ|KEETA|ELMENUS|DELIVEROO|TOYOU|جاهز|طلبات/, 'توصيل'],
+    [/STARBUCKS|COSTA|CAFE|COFFEE|DUNKIN|TIM HORTONS|ARABICA|كافيه|قهوة/, 'قهوة'],
+    [/CARREFOUR|PANDA|DANUBE|OTHAIM|LULU|TAMIMI|SPINNEYS|HYPER|SUPERMARKET|GROCER|SEOUDI|GOURMET|بنده|الدانوب|العثيم|لولو|التميمي/, 'سوبرماركت'],
+    [/MCDONALD|\bKFC\b|BURGER|PIZZA|DOMINO|SUSHI|SHAWARMA|ALBAIK|HERFY|KUDU|RESTAURANT|BAKERY|GRILL|مطعم|البيك|هرفي|كودو|شاورما/, 'مطعم'],
+    [/VODAFONE|ORANGE|ETISALAT|TOP ?UP|RECHARGE|SAWA|\bSTC\b|MOBILY|ZAIN|TELECOM|اتصالات|شحن|سوا/, 'اتصالات'],
+    [/TE ?DATA|FIBER|ADSL|INTERNET|إنترنت/, 'إنترنت'],
+    [/ELECTRIC|WATER|\bSEC\b|\bNWC\b|FAWRY|SADAD|UTILIT|كهرباء|مياه|فاتورة|سداد/, 'فواتير'],
+    [/APPLE\.COM|ITUNES|ICLOUD|NETFLIX|SPOTIFY|SHAHID|YOUTUBE|DISNEY|ANGHAMI|\bOSN\b|GOOGLE ONE|ADOBE|CANVA|NOTION|OPENAI|CHATGPT|ANTHROPIC|CLAUDE|CURSOR|GITHUB|RAILWAY|NAMECHEAP|GODADDY|CLOUDFLARE|VERCEL|DIGITALOCEAN|SUPABASE/, 'اشتراكات'],
+    [/UBER|CAREEM|INDRIVE|\bDIDI\b|SWVL|\bBOLT\b|TAXI|تاكسي/, 'مواصلات'],
+    [/PETROL|ADNOC|ARAMCO|SASCO|ENOC|WATANYA|MISR PETROLEUM|SHELL|MOBIL\b|CHILLOUT|ALDREES|TOTALENERGIES|TAQA|الدريس|وقود|بنزين/, 'بنزين'],
+    [/PHARM|NAHDI|DAWAA|SEIF|EZABY|صيدلية|النهدي|الدواء/, 'صيدلية'],
+    [/CLINIC|HOSPITAL|LABORATOR|MEDICAL|DENTAL|VEZEETA|عيادة|مستشفى|مختبر/, 'صحة'],
+    [/ZARA|H&M|DEFACTO|LC ?WAIKIKI|NAMSHI|SHEIN|CENTREPOINT|\bNIKE\b|ADIDAS|SKECHERS|ملابس/, 'ملابس'],
+    [/CINEMA|\bVOX\b|MUVI|STEAM|PLAYSTATION|XBOX|NINTENDO|EPIC GAMES|سينما/, 'ترفيه'],
+    [/AIRLINE|EGYPTAIR|FLYNAS|FLYADEAL|SAUDIA|BOOKING\.COM|AIRBNB|HOTEL|EXPEDIA|فندق|طيران/, 'سفر'],
+    [/UDEMY|COURSERA|SCHOOL|UNIVERSITY|مدرسة|جامعة/, 'تعليم'],
+    [/\bGYM\b|FITNESS|جيم|نادي/, 'رياضة'],
+    [/SALON|BARBER|صالون|حلاق/, 'صالون'],
+    [/IKEA|HOME ?CENTRE|ACE HARDWARE|SACO/, 'بيت']
+  ];
+  const chipOf = name => [...document.querySelectorAll('#expCatGrid .cat-btn')].find(b => b.dataset.cat === name) || null;
+  function suggest(p) {
+    if (p.kind === 'transfer' || p.dir === 'in') return null;
+    const learned = catRules()[mk(p.merchant)];
+    if (learned && chipOf(learned)) return { cat: learned, why: 'من اختيارك السابق' };
+    const u = String(p.merchant || '').toUpperCase();
+    for (const [re, cat] of SUG) if (re.test(u) && chipOf(cat)) return { cat, why: 'مقترح' };
+    return null;
   }
+
+  // last 4 digits -> a credit card (its own last4) or a wallet (learned the first time it is confirmed)
+  function resolveTarget(p, last4) {
+    if (!last4) return null;
+    const w = ACC().find(a => Array.isArray(a.last4s) && a.last4s.includes(last4));
+    const cc = (window.creditCards || []).find(c => String(c.last4 || '') === last4);
+    const asW = w ? { kind: 'acc', id: w.id, label: w.name } : null;
+    const asC = cc ? { kind: 'cc', id: 'cc_' + cc.id, label: cc.name || 'بطاقة' } : null;
+    return p.cardType === 'credit' ? (asC || asW) : (asW || asC);
+  }
+  function isDup(key) {
+    return TXS().some(t => t.smsKey === key) || (window.creditCards || []).some(c => (c.transactions || []).some(t => t.smsKey === key));
+  }
+
+  const KIND_LBL = { purchase: 'شراء', bill: 'سداد', transfer: 'تحويل', income: 'إيداع' };
+  const CARD_LBL = { credit: 'بطاقة ائتمان', debit: 'بطاقة خصم', visa: 'بطاقة فيزا', account: 'حساب', other: '' };
+  const setCur = ccy => { const b = document.querySelector('.pay-cur-btn[data-cur="' + ccy + '"]'); if (b && typeof window.selPayCur === 'function') window.selPayCur(b); };
+  const setOff = off => ['msSaveBtn', 'msSaveNew'].forEach(id => { const b = $(id); if (b) b.classList.toggle('ms-off', !!off); });
+
+  function tagsHtml(list) { return list.map(t => `<span class="ms-sms-tag${t.warn ? ' warn' : ''}">${esc(t.text)}</span>`).join(''); }
+
+  function fill(p) {
+    const fromT = resolveTarget(p, p.last4), toT = p.toLast4 ? resolveTarget({ cardType: 'account' }, p.toLast4) : null;
+    let type = p.dir === 'in' ? 'income' : 'expense';
+    if (p.kind === 'transfer' && p.dir === 'out' && fromT && fromT.kind === 'acc' && toT && toT.kind === 'acc' && fromT.id !== toT.id) type = 'transfer';
+    window.selType(type);
+    setCur(p.ccy);
+    $('fAmt').value = String(p.amount);
+    if (typeof window.evalAmt === 'function') window.evalAmt(true);
+    $('fDate').value = p.date;
+    $('fTime').value = p.time;
+    const tags = [];
+    if (type === 'transfer') {
+      $('fTransferFrom').value = 'acc:' + fromT.id;
+      $('fTransferTo').value = 'acc:' + toT.id;
+      tags.push({ text: 'تحويل بين محفظتيك: ' + fromT.label + ' ← ' + toT.label });
+    } else {
+      const name = p.kind === 'transfer' ? (p.dir === 'in' ? 'تحويل من ' : 'تحويل إلى ') + (p.party || ('••' + (p.toLast4 || ''))).trim()
+        : (p.merchant || (p.dir === 'in' ? 'إيداع' : ''));
+      $('fName').value = name.trim();
+      // wallet: the one the last 4 digits belong to, else the card the paste started from, else whatever is selected
+      const target = fromT || (C && C.cardId ? { kind: 'cc', id: 'cc_' + C.cardId, label: ((window.creditCards || []).find(c => c.id === C.cardId) || {}).name || 'بطاقة' } : null);
+      if (target) {
+        if (typeof window.v23SelectTxAccount === 'function') window.v23SelectTxAccount(target.id); else $('fAccount').value = target.id;
+        tags.push({ text: 'المحفظة: ' + target.label });
+      } else tags.push({ text: p.last4 ? '••' + p.last4 + ' مش مربوطة. اختار المحفظة وهتتحفظ للمرة الجاية' : 'اختار المحفظة', warn: true });
+      // category: only ever a suggestion. Nothing is confirmed until the person taps a chip.
+      const gid = type === 'income' ? 'incCatGrid' : 'expCatGrid', grid = $(gid);
+      grid.querySelectorAll('.cat-btn,.inc-btn').forEach(b => b.classList.remove('sel', 'sug'));
+      const sg = type === 'expense' ? suggest(p) : null;
+      if (type === 'income') window.selICat = ''; else window.selECat = sg ? sg.cat : '';
+      if (sg) { const chip = chipOf(sg.cat); chip.classList.add('sug'); chip.classList.remove('ms-hide'); C.sug = sg; }
+      grid.dispatchEvent(new Event('click'));
+      tags.push({ text: sg ? sg.why + ': ' + sg.cat + '. اضغط عليها للتأكيد أو اختار غيرها' : 'اختار الفئة عشان تقدر تحفظ', warn: true });
+    }
+    if (p.dateGuess) tags.push({ text: 'التاريخ والوقت من لحظة اللصق', warn: true });
+    if (p.avail != null) tags.push({ text: 'المتاح بعد العملية ' + fmt(p.avail) + ' ' + p.ccy });
+    if (isDup(p.key)) tags.push({ text: 'الرسالة دي متسجلة قبل كده', warn: true });
+    $('msSmsInfo').textContent = [KIND_LBL[p.kind], (CARD_LBL[p.cardType] || '') + (p.last4 ? ' ••' + p.last4 : '')].filter(x => x && x.trim()).join(' · ');
+    $('msSmsTags').innerHTML = tagsHtml(tags);
+    setOff(type !== 'transfer');
+  }
+
+  window.msSmsBox = function (open) {
+    const b = $('msSmsBox'), btn = $('msSmsOpenBtn'); if (!b || !btn) return;
+    b.style.display = open ? '' : 'none'; btn.style.display = open ? 'none' : '';
+    if (open) setTimeout(() => { const t = $('msSmsText'); if (t) t.focus(); }, 60);
+  };
+  window.msSmsParse = function () {
+    const raw = ($('msSmsText') || {}).value || '';
+    const info = $('msSmsInfo'), tags = $('msSmsTags'); if (!info || !tags) return;
+    if (!raw.trim()) { if (C) C.p = null; info.textContent = ''; tags.innerHTML = ''; return; }
+    const p = window.parseNbeSms(raw);
+    if (!p.ok) {
+      if (C) C.p = null;
+      info.textContent = p.reason === 'cardpay' ? 'دي رسالة سداد بطاقة، مش مصروف. سجّلها من شاشة البطاقة' : (raw.trim().length > 25 ? 'مش فاهم الرسالة دي. الصق النص كامل' : '');
+      tags.innerHTML = ''; return;
+    }
+    if (!SUPPORTED[p.ccy]) { if (C) C.p = null; info.textContent = 'العملة ' + p.ccy + ' مش مدعومة في التطبيق'; tags.innerHTML = ''; return; }
+    C = { p, catOk: false, sug: null, cardId: C && C.cardId ? C.cardId : null };
+    window.__smsCtx = C;
+    fill(p);
+  };
+  window.msSmsPaste = async function () {
+    try {
+      const t = await navigator.clipboard.readText();
+      if (t && t.trim()) { window.msSmsBox(true); $('msSmsText').value = t; window.msSmsParse(); return; }
+      $('msSmsInfo').textContent = 'الحافظة فاضية';
+    } catch (e) { window.msSmsBox(true); $('msSmsInfo').textContent = 'الجهاز مسمحش بالقراءة من الحافظة. الصق في المربع بإيدك'; }
+  };
+  window.msSmsClear = function () { const t = $('msSmsText'); if (t) t.value = ''; window.msSmsParse(); };
+
+  // called by the original openModal / editTx / editSav and after a save
+  window.msSmsReset = function (editing) {
+    C = null; window.__smsCtx = null;
+    const row = $('msSms'); if (!row) return;
+    row.style.display = editing ? 'none' : '';
+    const t = $('msSmsText'); if (t) t.value = '';
+    if ($('msSmsInfo')) $('msSmsInfo').textContent = '';
+    if ($('msSmsTags')) $('msSmsTags').innerHTML = '';
+    window.msSmsBox(false); setOff(false);
+    document.querySelectorAll('#expCatGrid .sug,#incCatGrid .sug').forEach(b => b.classList.remove('sug'));
+  };
+  // the first tap on a category chip (the suggested one included) is the confirmation
+  window.msSmsPicked = function () {
+    if (!C) return;
+    C.catOk = true; setOff(false);
+    document.querySelectorAll('#expCatGrid .sug,#incCatGrid .sug').forEach(b => b.classList.remove('sug'));
+    const tg = $('msSmsTags'); if (tg) tg.querySelectorAll('.ms-sms-tag.warn').forEach(x => { if (/اختار الفئة|اضغط عليها/.test(x.textContent)) x.remove(); });
+  };
+  window.msSmsGate = function () {
+    if (!C || !C.p) return true;
+    if (isDup(C.p.key)) { showAlert('الرسالة دي متسجلة قبل كده', 'error'); return false; }
+    const t = window.txType;
+    if ((t === 'expense' || t === 'income') && !C.catOk) { showAlert(C.sug ? 'أكد الفئة المقترحة أو اختار غيرها' : 'اختار الفئة الأول', 'error'); return false; }
+    return true;
+  };
+  // a card charge keeps the statement-matching fields, so the PDF import later corrects it instead of duplicating it
+  window.msSmsCardTx = function (card, tx) {
+    if (!C || !C.p) return null;
+    const p = C.p, cardCcy = card.currency || 'EGP', foreign = tx.currency !== cardCcy;
+    let amt = tx.amount;
+    if (foreign) {
+      if (cardCcy === 'EGP') {
+        const est = estimateEgp(card, tx.currency, tx.amount), eg = Number(window.rates && window.rates.EGP);
+        amt = est.egp != null ? est.egp : (tx.amountSAR > 0 && eg > 0 ? r2(tx.amountSAR * eg) : tx.amount);
+      } else if (cardCcy === 'SAR') amt = tx.amountSAR;
+    }
+    const time = tx.time || p.time;
+    const rec = {
+      id: tx.id, date: tx.date, time, name: tx.name, amount: r2(amt), category: tx.cat, cat: tx.cat, catManual: true, type: 'purchase',
+      note: [tx.note, foreign ? 'من رسالة SMS. المبلغ بالجنيه تقديري لحد ما الكشف ينزل' : 'من رسالة SMS'].filter(Boolean).join(' · '),
+      pending: true, smsEstimate: foreign, smsKey: p.key, origCurrency: tx.currency, origAmount: tx.amount,
+      statementMonth: String(tx.date || '').slice(0, 7), createdAt: new Date().toISOString()
+    };
+    const at = tx.date + ' ' + time;
+    if (!card.sms || String(card.sms.at || '') <= at) card.sms = { avail: p.avail, fxRemaining: p.fxRemaining, at, txId: rec.id };
+    return rec;
+  };
+  window.msSmsDone = function (tx) {
+    const c = C; if (!c || !c.p) return;
+    C = null; window.__smsCtx = null;
+    try {
+      const p = c.p;
+      if (tx && (tx.type === 'expense' || tx.type === 'income') && tx.cat && p.merchant && p.kind !== 'transfer') {
+        const k = mk(p.merchant);
+        if (k) { const r = catRules(); if (r[k] !== tx.cat) { r[k] = tx.cat; window.msStore.setRaw(CAT_KEY, JSON.stringify(r)); } }
+      }
+      // remember which wallet these last 4 digits belong to
+      if (tx && p.last4 && typeof tx.account === 'string' && !tx.account.startsWith('cc_')) {
+        const list = ACC(), a = list.find(x => x.id === tx.account);
+        if (a && !(a.last4s || []).includes(p.last4)) {
+          list.forEach(x => { if (Array.isArray(x.last4s)) x.last4s = x.last4s.filter(v => v !== p.last4); });
+          a.last4s = (a.last4s || []).concat(p.last4);
+          if (typeof saveAccounts === 'function') saveAccounts();
+        }
+      }
+      if (c.cardId) setTimeout(() => { if (typeof window.openCardDetail === 'function') window.openCardDetail(c.cardId); }, 0);
+    } catch (e) { /* ignore */ }
+  };
+  // the card screen's "register a message" button opens the same sheet with that card selected
   window.ccSmsOpen = function (cardId) {
     const card = findCard(cardId); if (!card) return;
-    S = { cardId, p: null };
-    ensureModal();
-    $('ccSmsBody').innerHTML = `
-      <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:10px">الصق رسالة الخصم اللي بتيجيلك من البنك. بتتسجل فورًا بعملتها الأصلية، وبتتصحح بالجنيه لما ترفع الكشف.</div>
-      <textarea id="ccSmsText" class="inp" rows="5" placeholder="تم خصم USD 114 من بطاقة الائتمان رقم 1231 عند ..." style="width:100%;direction:rtl;font-family:inherit"></textarea>
-      <button class="save-btn" style="width:100%;margin-top:10px" onclick="window.ccSmsParse()">🔍 تحليل الرسالة</button>
-      <div id="ccSmsPreview" style="margin-top:12px"></div>`;
-    $('ccSmsModal').classList.add('open');
-  };
-  window.ccSmsParse = function () {
-    const card = findCard(S.cardId); if (!card) return;
-    const p = parseNbeSms(($('ccSmsText') || {}).value || '');
-    const box = $('ccSmsPreview');
-    if (!p.ok) { S.p = null; box.innerHTML = '<div style="color:var(--red);font-size:13px">❌ الرسالة مش بصيغة رسايل الأهلي المصري. الصق النص كامل.</div>'; return; }
-    S.p = p;
-    const est = estimateEgp(card, p.ccy, p.amount);
-    const dup = (card.transactions || []).some(t => t.smsKey === p.key);
-    const mismatch = card.last4 && p.last4 && card.last4 !== p.last4;
-    box.innerHTML = `
-      ${mismatch ? `<div style="color:var(--red);font-size:13px;margin-bottom:8px">⚠️ الرسالة لكارت آخره ${esc(p.last4)} وبطاقتك آخرها ${esc(card.last4)}.</div>` : ''}
-      ${dup ? '<div style="color:var(--warn);font-size:13px;margin-bottom:8px">⚠️ الرسالة دي متسجلة قبل كده.</div>' : ''}
-      <div style="background:var(--card2);border-radius:12px;padding:10px;font-size:13px;line-height:1.9;margin-bottom:10px">
-        <div>التاجر: <b>${esc(p.merchant)}</b></div>
-        <div>المبلغ: <b style="direction:ltr;display:inline-block">${fmt(p.amount)} ${esc(p.ccy)}</b></div>
-        <div>التاريخ: <b>${esc(p.date)} ${esc(p.time)}</b></div>
-        ${p.avail != null ? `<div>المتاح بعد العملية: <b>${fmt(p.avail)}</b></div>` : ''}
-        ${p.fxRemaining != null ? `<div>المتبقي من حد العملة الأجنبية الشهري: <b>${fmt(p.fxRemaining)}</b></div>` : ''}
-      </div>
-      <label class="lab" style="display:block;font-weight:600;margin-bottom:4px">الاسم</label>
-      <input id="ccSmsName" class="inp" value="${esc(p.merchant)}" style="margin-bottom:8px">
-      <label class="lab" style="display:block;font-weight:600;margin-bottom:4px">المبلغ بالجنيه ${p.ccy === 'EGP' ? '' : '(تقديري لحد ما الكشف ينزل)'}</label>
-      <input id="ccSmsEgp" class="inp" type="number" step="0.01" inputmode="decimal" value="${est.egp == null ? '' : est.egp}" style="direction:ltr;margin-bottom:4px">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">${esc(est.src)}</div>
-      <button class="save-btn" style="width:100%;background:linear-gradient(135deg,var(--green),#059669)" onclick="window.ccSmsSave()">✅ تسجيل</button>`;
-  };
-  window.ccSmsSave = function () {
-    const card = findCard(S.cardId), p = S.p; if (!card || !p) return;
-    if ((card.transactions || []).some(t => t.smsKey === p.key)) { toast('الرسالة دي متسجلة قبل كده', 'info'); return; }
-    if (card.last4 && p.last4 && card.last4 !== p.last4 && !confirm('الرسالة لكارت آخره ' + p.last4 + ' مش كارتك. تسجّلها برضه؟')) return;
-    const egp = parseFloat(($('ccSmsEgp') || {}).value);
-    if (!(egp > 0)) { toast('اكتب المبلغ بالجنيه', 'error'); return; }
-    const name = (($('ccSmsName') || {}).value || p.merchant).trim() || p.merchant;
-    const foreign = p.ccy !== (card.currency || 'EGP');
-    const tx = {
-      id: 'cctx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-      date: p.date, time: p.time, name, amount: r2(egp), category: (window.ccAutoCategory && window.ccAutoCategory(card, name)) || 'أخرى', type: 'purchase',
-      note: foreign ? 'من رسالة SMS. المبلغ بالجنيه تقديري لحد ما الكشف ينزل' : 'من رسالة SMS',
-      pending: true, smsEstimate: foreign, smsKey: p.key, origCurrency: p.ccy, origAmount: p.amount,
-      statementMonth: p.date.slice(0, 7), createdAt: new Date().toISOString()
-    };
-    if (!Array.isArray(card.transactions)) card.transactions = [];
-    card.transactions.push(tx);
-    const at = p.date + ' ' + p.time;
-    if (!card.sms || String(card.sms.at || '') <= at) card.sms = { avail: p.avail, fxRemaining: p.fxRemaining, at, txId: tx.id };
-    if (typeof window.saveCreditCards === 'function') window.saveCreditCards();
-    $('ccSmsModal').classList.remove('open');
-    toast('✅ اتسجلت العملية', 'success');
-    if (typeof window.openCardDetail === 'function') window.openCardDetail(S.cardId);
+    ['ccDetailModal', 'creditCardsModal'].forEach(id => { const m = $(id); if (m) m.classList.remove('open'); });
+    window.openModal();
+    C = { p: null, catOk: false, sug: null, cardId };
+    window.__smsCtx = C;
+    if (typeof window.v23SelectTxAccount === 'function') window.v23SelectTxAccount('cc_' + cardId);
+    window.msSmsBox(true);
   };
 
   // ───────── info block inside the card detail
@@ -29965,9 +29908,9 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 /* v43: card screens scroll smoothly.
    - the full-screen backdrop blur is what made scrolling inside card sheets heavy (the whole page behind gets re-blurred), so card sheets use a plain dark backdrop
    - long lists are drawn lazily: rows outside the viewport skip layout and paint */
-#txActionsModal,#ccTileModal,#arCalcModal,#msCatMgr,#msMoneyMap,#creditCardsModal,#ccDetailModal,#ccSimpleModal,#ccPdfImportModalV2,#ccSmsModal,#ccStatsModal,#ccCatModal,#ccAddModal,#ccPurchaseModal,#ccPaymentModal{
+#txActionsModal,#ccTileModal,#arCalcModal,#msCatMgr,#msMoneyMap,#creditCardsModal,#ccDetailModal,#ccSimpleModal,#ccPdfImportModalV2,#ccStatsModal,#ccCatModal,#ccAddModal,#ccPurchaseModal,#ccPaymentModal{
   background:rgba(0,0,0,.72) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;}
-#ccTileModal .sheet,#arCalcModal .sheet,#msCatMgr .sheet,#msMoneyMap .sheet,#creditCardsModal .sheet,#ccDetailModal .sheet,#ccSimpleModal .sheet,#ccPdfImportModalV2 .sheet,#ccSmsModal .sheet,#ccStatsModal .sheet,#ccCatModal .sheet,#ccAddModal .sheet,#ccPurchaseModal .sheet,#ccPaymentModal .sheet{
+#ccTileModal .sheet,#arCalcModal .sheet,#msCatMgr .sheet,#msMoneyMap .sheet,#creditCardsModal .sheet,#ccDetailModal .sheet,#ccSimpleModal .sheet,#ccPdfImportModalV2 .sheet,#ccStatsModal .sheet,#ccCatModal .sheet,#ccAddModal .sheet,#ccPurchaseModal .sheet,#ccPaymentModal .sheet{
   box-shadow:0 -2px 14px rgba(0,0,0,.35) !important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
 .cc-row{content-visibility:auto;contain-intrinsic-size:auto 92px;}
 </style>
@@ -30744,6 +30687,20 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;}
 <style id="ms-add-v61">
 .ms-add{padding-bottom:0 !important;}
 .ms-add-head{display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px;}
+.ms-sms{margin:0 0 12px;}
+.ms-sms-open{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 14px;border-radius:12px;border:0.5px dashed var(--accent);background:transparent;color:var(--accent);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;}
+.ms-sms-open .ic{width:16px;height:16px;}
+.ms-sms-box{border:0.5px solid var(--border);background:var(--card2);border-radius:12px;padding:10px;}
+.ms-sms-box textarea{width:100%;background:transparent;border:0;outline:0;color:var(--text);font-size:13px;font-family:inherit;direction:rtl;resize:none;line-height:1.6;}
+.ms-sms-bar{display:flex;align-items:center;gap:12px;margin-top:6px;padding-top:8px;border-top:0.5px solid var(--border);font-size:11px;color:var(--muted);}
+.ms-sms-info{flex:1;}
+.ms-sms-act{background:none;border:0;color:var(--accent);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;padding:0;}
+.ms-sms-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.ms-sms-tags:empty{display:none;}
+.ms-sms-tag{font-size:11px;padding:3px 8px;border-radius:8px;background:var(--card);color:var(--muted);border:0.5px solid var(--border);}
+.ms-sms-tag.warn{color:var(--accent);border-color:var(--accent);}
+#expCatGrid .cat-btn.sug{border:0.5px dashed var(--accent) !important;background:transparent !important;color:var(--accent) !important;}
+#msSaveBtn.ms-off,#msSaveNew.ms-off{opacity:.4;}
 .ms-add-head .modal-title{margin:0;font-size:16px;font-weight:600;}
 .ms-x{width:40px;height:40px;background:none;border:0;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0 -8px;}
 .ms-x .ic{width:20px;height:20px;}
@@ -30920,6 +30877,19 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;}
 .ms-dot.turn{background:none;border:0;color:var(--warn);}
 .ms-dot .ic{width:16px;height:16px;}
 .ms-dot.turn.paid .ic,.ms-dot.turn.cur .ic{color:var(--warn);}
+.g-chips{display:flex;gap:6px;margin:10px 0 8px;}
+.g-chip{flex:1;text-align:center;padding:8px 0;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text);font-family:inherit;font-size:13px;cursor:pointer;}
+.g-chip.on{background:rgba(240,180,41,.14);border-color:var(--accent);color:var(--accent);}
+.g-refresh{display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:var(--accent);font-family:inherit;font-size:13px;cursor:pointer;padding:0;}
+.g-refresh .ic{width:16px;height:16px;}
+.g-refresh:disabled{opacity:.6;}
+.g-chg{display:inline-block;margin-inline-start:8px;font-size:13px;font-weight:600;}
+.g-two{display:flex;justify-content:space-between;gap:8px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:0.5px dashed var(--border);font-size:13px;}
+.g-two b{color:var(--text);font-weight:600;}
+.g-field{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;color:var(--muted);font-size:13px;}
+.g-field .form-inp{max-width:50%;text-align:center;padding:8px 10px;font-size:13px;}
+.g-res{background:var(--card);border-radius:8px;padding:10px 12px;margin-top:8px;}
+.g-note{font-size:13px;color:var(--muted);line-height:1.7;margin-top:6px;}
 </style>
 <style id="ms-fix-v67">
 /* v67: calculator keys, amount field, sheet top gap, save button alignment (all seen on the phone) */
@@ -31124,13 +31094,14 @@ body.ms-modal-open .season-particle,body.ms-modal-open .skeleton,body.ms-modal-o
     const grid = $(gid); if (!grid) return; const addBtn = grid.querySelector('#catAddBtn'); const btns = [...grid.querySelectorAll('.cat-btn,.inc-btn,.sav-btn')].filter(b => b.id !== 'catAddBtn'); if (!btns.length) return;
     if (!grid.dataset.orig) { btns.forEach((b, i) => { b.dataset.ord = i; }); grid.dataset.orig = '1'; }
     const u = usage(KIND[gid]);
-    btns.sort((a, b) => ((u[b.dataset.cat] || 0) - (u[a.dataset.cat] || 0)) || (a.dataset.ord - b.dataset.ord));
+    const wgt = x => (x.classList.contains('sug') ? 1e9 : 0) + (u[x.dataset.cat] || 0);   // a suggested category goes first
+    btns.sort((a, b) => (wgt(b) - wgt(a)) || (a.dataset.ord - b.dataset.ord));
     const other = btns.find(b => b.dataset.cat === 'أخرى'); const ordered = btns.filter(b => b !== other);
     const frag = document.createDocumentFragment(); ordered.forEach(b => frag.appendChild(b)); if (other) frag.appendChild(other);
     let more = grid.querySelector('.ms-cat-more'); if (!more) { more = document.createElement('button'); more.type = 'button'; more.className = 'ms-cat-more'; more.onclick = () => msCatToggle(gid); }
     grid.appendChild(frag); grid.appendChild(more); if (addBtn) grid.appendChild(addBtn);
     const all = [...ordered, ...(other ? [other] : [])]; const open = grid.classList.contains('ms-open'); const sel = all.find(b => b.classList.contains('sel'));
-    all.forEach((b, i) => b.classList.toggle('ms-hide', !open && i >= TOP[gid] && b !== sel)); if (addBtn) addBtn.classList.toggle('ms-hide', !open);
+    all.forEach((b, i) => b.classList.toggle('ms-hide', !open && i >= TOP[gid] && b !== sel && !b.classList.contains('sug'))); if (addBtn) addBtn.classList.toggle('ms-hide', !open);
     more.innerHTML = (window.msIcon ? window.msIcon(open ? 'chevron-left' : 'search') : '') + (open ? ' أقل' : ' كل الفئات'); more.style.display = all.length > TOP[gid] ? '' : 'none';
   }
   const origCustom = window.renderCustomCatBtns; if (typeof origCustom === 'function') window.renderCustomCatBtns = function () { const r = origCustom.apply(this, arguments); try { refreshGrid('expCatGrid'); } catch (e) { /* ignore */ } return r; };
