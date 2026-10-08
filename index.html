@@ -1030,6 +1030,8 @@ select.form-inp{padding-left:8px;}
 /* صفوف الإعدادات: أيقونات في مربعات */
 .st2-row-em{width:38px !important;height:38px;display:flex;align-items:center;justify-content:center;background:var(--card2);border-radius:12px;font-size:20px !important;}
 .st2-row-name{font-size:13px !important;font-weight:600 !important;}
+#tripsLinks .ms-list,#occasionsLinks .ms-list{margin-bottom:14px;}
+.pa-grp{font-size:12px;color:var(--muted);margin:14px 2px 8px;font-weight:600;}
 /* حقول أسعار الصرف: أوضح */
 .st2-rate-fl{width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--card2);border-radius:12px;font-size:20px !important;}
 .st2-rate-inp{border-radius:11px !important;font-size:16px !important;transition:border-color .18s, box-shadow .18s, transform .14s !important;}
@@ -3684,7 +3686,7 @@ button, .menu-row, .tx-card {
   const clean = e => String(e || '').replace(/\uFE0F/g, '');
   window.msIcon = function (name, cls) { return '<svg class="ic ' + (cls || '') + '" aria-hidden="true"><use href="#ti-' + name + '"/></svg>'; };
   window.msIconFor = function (emoji) { const n = MAP[clean(emoji)]; return n ? window.msIcon(n) : emoji; };
-  window.msIconName = function (emoji) { return MAP[clean(emoji)] || null; };
+  
   const RE = /^\s*(\p{Extended_Pictographic}\uFE0F?)\s*/u;
   function svgNode(name) { const t = document.createElement('template'); t.innerHTML = window.msIcon(name); return t.content.firstChild; }
   function conv(el) {
@@ -3900,12 +3902,13 @@ button, .menu-row, .tx-card {
     <div class="ms-add-head"><div class="modal-title">حركة جديدة</div><button type="button" class="ms-x" onclick="closeModal()" aria-label="إغلاق"><svg class="ic" aria-hidden="true"><use href="#ti-x"/></svg></button></div>
 
     <div class="ms-sms" id="msSms">
-      <button type="button" class="ms-sms-open" id="msSmsOpenBtn" onclick="msSmsBox(true)"><svg class="ic" aria-hidden="true"><use href="#ti-clipboard"/></svg>الصق رسالة البنك</button>
+      <button type="button" class="ms-sms-open" id="msSmsOpenBtn" onclick="msSmsPaste()"><svg class="ic" aria-hidden="true"><use href="#ti-clipboard"/></svg><span><b>الصق رسالة البنك</b><small>بتتقرا من الحافظة وتتملي لوحدها</small></span></button>
       <div class="ms-sms-box" id="msSmsBox" style="display:none">
-        <textarea id="msSmsText" rows="3" placeholder="الصق رسالة البنك هنا" oninput="msSmsParse()" aria-label="رسالة البنك"></textarea>
+        <textarea id="msSmsText" rows="3" placeholder="الصق رسالة البنك هنا. لو أكتر من رسالة، افصل بينهم بسطر فاضي" oninput="msSmsParse()" aria-label="رسالة البنك"></textarea>
         <div class="ms-sms-bar"><span class="ms-sms-info" id="msSmsInfo"></span><button type="button" class="ms-sms-act" onclick="msSmsPaste()">لصق</button><button type="button" class="ms-sms-act" onclick="msSmsClear()">مسح</button></div>
-        <div class="ms-sms-tags" id="msSmsTags"></div>
       </div>
+      <div class="ms-sc" id="msSmsCard" style="display:none"></div>
+      <div class="ms-sb" id="msSmsList" style="display:none"></div>
     </div>
     <div class="type-row ms-seg">
       <button class="type-btn exp-s" id="btnExp" onclick="selType('expense')"><svg class="ic" aria-hidden="true"><use href="#ti-arrow-up-right"/></svg>مصروف</button>
@@ -4162,7 +4165,6 @@ button, .menu-row, .tx-card {
       <div class="ms-row" role="button" tabindex="0" onclick="msChooseImport()"><span class="ms-ri"><svg class="ic" aria-hidden="true"><use href="#ti-file-import"/></svg></span><div class="ms-rt"><div class="ms-t">استيراد كشف حساب</div><div class="ms-s">CSV · PDF</div></div><svg class="ic" aria-hidden="true"><use href="#ti-chevron-left"/></svg></div>
       <input type="file" id="csvImportInput" accept=".csv,text/csv" style="display:none" onchange="importBankCSV(event)"/>
       <input type="file" id="pdfImportInput" accept=".pdf,application/pdf" style="display:none" onchange="importBankPDF(event)"/>
-      <div class="ms-row" role="button" tabindex="0" onclick="msOpenDualSalary()"><span class="ms-ri"><svg class="ic" aria-hidden="true"><use href="#ti-briefcase"/></svg></span><div class="ms-rt"><div class="ms-t">الراتب بعملتين</div><div class="ms-s">لو بتقبض من بلدين</div></div><svg class="ic" aria-hidden="true"><use href="#ti-chevron-left"/></svg></div>
     </div>
 
     <div class="ms-sec">الذكاء الاصطناعي</div>
@@ -4921,6 +4923,7 @@ window.openCurrencyRates = openCurrencyRates;
     <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
     <div class="modal-title">🎁 العيدية والمناسبات</div>
     <p class="modal-hint">كل مناسبة عبارة عن حاوية فيها كل حركاتها — مصاريف وإيداعات</p>
+    <div id="occasionsLinks"></div>
     <div id="occasionsList"></div>
     <div class="section-divider">
       <div class="subsection-label">إضافة مناسبة جديدة</div>
@@ -5030,6 +5033,7 @@ window.openCurrencyRates = openCurrencyRates;
     <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
     <div class="modal-title">🛫 السفر والرحلات</div>
     <p class="modal-hint">كل رحلة عبارة عن حاوية فيها كل مصاريفها — نشطة كانت أو سابقة</p>
+    <div id="tripsLinks"></div>
     <div id="tripsList"></div>
     <div class="section-divider">
       <div class="subsection-label">إنشاء رحلة جديدة</div>
@@ -5223,6 +5227,7 @@ window.openCurrencyRates = openCurrencyRates;
     <p class="modal-hint">حوّل بين العملات بأحدث الأسعار</p>
 
     <button type="button" class="ms-btn-line" onclick="document.getElementById('calcModal').classList.remove('open');setTimeout(openCurrencyRates,200)"><svg class="ic" aria-hidden="true"><use href="#ti-arrows-exchange"/></svg> ضبط أسعار الصرف</button>
+    <div id="calcAlertsRow" style="margin-top:12px"></div>
     <div id="calcRateInfo" style="background:var(--card2);border-radius:12px;padding:10px;margin-bottom:12px;font-size:11px;color:var(--muted);text-align:center">
       جاري تحميل الأسعار...
     </div>
@@ -5894,7 +5899,7 @@ function renderHome() {
   const trueNetWorth = totalCashBase - cardDuesBase;
 
   // Expose globally for other functions
-  window.calculateTrueNetWorth = function() { return trueNetWorth; };
+  
 
   const totalCommitmentsBase = upcomingInstallmentsBase + cardDuesBase;
   const safeToSpendBase = totalCashBase - totalCommitmentsBase;
@@ -7481,36 +7486,7 @@ function selSC(btn){document.querySelectorAll('#savCatGrid .sav-btn').forEach(b=
 // ── SAVE TX ──
 // ── ⚡ الإدخال السريع ──
 // حفظ سريع بمصروف: فئة + مبلغ (بالعملة الأساسية، النهارده)
-function _quickSaveExpense(cat, amount, emoji){
-  try{
-    amount = parseFloat(amount);
-    if (!amount || amount<=0){ if(typeof showToast==='function') showToast('اكتب مبلغ صحيح','warning'); return false; }
-    var now = new Date();
-    var date = now.toISOString().slice(0,10);
-    var time = now.toTimeString().slice(0,5);
-    var cur = baseCurrency;   // العملة الأساسية
-    var amountSAR = toSAR(amount, cur, null);
-    var tx = {
-      id: 'tx_'+Date.now(),
-      type: 'expense',
-      name: (emoji?emoji+' ':'') + cat,
-      cat: cat,
-      amount: amount,
-      currency: cur,
-      rate: null,
-      amountSAR: amountSAR,
-      date: date,
-      time: time,
-      note: ''
-    };
-    txs.unshift(tx);
-    if (typeof saveData==='function') saveData();
-    if (typeof renderAll==='function') renderAll();
-    if (typeof updateMenuCounts==='function') updateMenuCounts();
-    if (typeof showToast==='function') showToast('✅ اتسجّل: '+cat+' '+fmt(amount,0)+' '+BASE_LABELS[cur].sym,'success');
-    return true;
-  }catch(e){ return false; }
-}
+
 
 // v61: quick entry removed
 
@@ -7981,9 +7957,7 @@ function restoreBackup(event) {
   reader.readAsText(file);
 }
 
-function printReport() {
-  window.print();
-}
+
 
 // ── MONTHLY REPORT (PDF via print) ──
 function generateMonthlyReport() {
@@ -8774,11 +8748,7 @@ function toggleHideAmounts() {
   });
   showToast(hideAmounts ? '🔒 المبالغ مخفية' : '👁️ المبالغ ظاهرة', 'info');
 }
-function toggleHideAmountsSetting() {
-  const checked = document.getElementById('hideAmountsToggle').checked;
-  msStore.setRaw('msarifyi_hide_amounts', checked ? '1' : '');
-  if (checked !== hideAmounts) toggleHideAmounts();
-}
+
 function initHideAmounts() {
   if (msStore.getRaw('msarifyi_hide_amounts')) {
     hideAmounts = false;
@@ -8839,44 +8809,7 @@ function initAutoLock() {
 }
 
 // ── SWIPE ACTIONS ──
-function initSwipe(card) {
-  let startX = 0;
-  let currentX = 0;
-  let isSwiping = false;
 
-  card.addEventListener('touchstart', (e) => {
-    startX = e.touches[0].clientX;
-    isSwiping = true;
-    card.classList.add('swiping');
-  }, {passive: true});
-
-  card.addEventListener('touchmove', (e) => {
-    if (!isSwiping) return;
-    currentX = e.touches[0].clientX;
-    const diff = currentX - startX;
-    if (Math.abs(diff) > 30) {
-      card.style.transform = `translateX(${diff}px)`;
-    }
-  }, {passive: true});
-
-  card.addEventListener('touchend', () => {
-    isSwiping = false;
-    card.classList.remove('swiping');
-    const diff = currentX - startX;
-
-    if (diff < -80) {
-      card.classList.add('swiped-left');
-      card.style.transform = '';
-    } else if (diff > 80) {
-      card.classList.add('swiped-right');
-      card.style.transform = '';
-    } else {
-      card.style.transform = '';
-      card.classList.remove('swiped-left', 'swiped-right');
-    }
-    currentX = 0;
-  });
-}
 
 // ── PULL TO REFRESH ──
 var ptrStartY = 0;
@@ -8951,62 +8884,11 @@ function updateMenuStreak() {
 }
 
 // ── HEATMAP ──
-function showHeatmap() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const mKey = monthKey(year, month);
-  const dayAmounts = {};
-  [...txs, ...savings].forEach(t => {
-    if ((t.date || '').startsWith(mKey)) {
-      const day = parseInt(t.date.split('-')[2]);
-      dayAmounts[day] = (dayAmounts[day] || 0) + Math.abs(t.amountSAR);
-    }
-  });
-
-  const maxAmount = Math.max(...Object.values(dayAmounts), 1);
-
-  let html = `<div style="margin-bottom:10px;font-size:13px;font-weight:600">${arabicMonth(year, month)}</div>`;
-  html += '<div class="heatmap">';
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const amount = dayAmounts[d] || 0;
-    const intensity = amount / maxAmount;
-    const color = amount === 0 ? 'var(--card2)' : 
-      intensity < 0.3 ? 'rgba(63,185,80,.3)' :
-      intensity < 0.6 ? 'rgba(63,185,80,.6)' :
-      'rgba(63,185,80,.9)';
-    html += `<div class="heatmap-day" style="background:${color};color:${amount>maxAmount*0.5?'#fff':'var(--muted)'}">${d}</div>`;
-  }
-
-  html += '</div>';
-  html += `<div class="heatmap-legend">
-    <span style="font-size:11px;color:var(--muted)">أقل</span>
-    <div class="heatmap-dot" style="background:var(--card2)"></div>
-    <div class="heatmap-dot" style="background:rgba(63,185,80,.3)"></div>
-    <div class="heatmap-dot" style="background:rgba(63,185,80,.6)"></div>
-    <div class="heatmap-dot" style="background:rgba(63,185,80,.9)"></div>
-    <span style="font-size:11px;color:var(--muted)">أكتر</span>
-  </div>`;
-
-  const content = document.getElementById('heatmapContent');
-  if (content) content.innerHTML = html;
-  const modal = document.getElementById('heatmapModal');
-  if (modal) modal.classList.add('open');
-}
 
 // ── BULK ACTIONS ──
 var bulkSelection = new Set();
-function toggleBulkSelection(id) {
-  if (bulkSelection.has(id)) {
-    bulkSelection.delete(id);
-  } else {
-    bulkSelection.add(id);
-  }
-  updateBulkBar();
-}
+
 function updateBulkBar() {
   const bar = document.getElementById('bulkBar');
   const count = document.getElementById('bulkCount');
@@ -9310,6 +9192,7 @@ function openCalc() {
   document.getElementById('calcToAmt').value = '';
   document.getElementById('calcResult').style.display = 'none';
   updateRateInfoBanner();
+  try { document.getElementById('calcAlertsRow').innerHTML = _goldAlertsRow('cur') + _calcSalaryRow(); } catch(e) { /* ignore */ }
 }
 
 // Convert any currency to SAR
@@ -10373,6 +10256,7 @@ function cancelEntryEdit() {
 function renderOccasions() {
   const el = document.getElementById('occasionsList');
   if (!el) return;
+  const lk = document.getElementById('occasionsLinks'); if (lk) lk.innerHTML = _occLinkRows();
   // Set today as default date
   const dt = document.getElementById('occDate');
   if (dt && !dt.value) dt.value = new Date().toISOString().split('T')[0];
@@ -10600,7 +10484,7 @@ function saveOccasionEntry() {
 }
 
 // Backwards-compat alias (old onclick attr in case anything still calls it)
-function addOccasionEntry() { saveOccasionEntry(); }
+
 
 function delOccasionEntry(occId, entryId) {
   if (!confirm('حذف الحركة؟')) return;
@@ -10951,6 +10835,7 @@ function cancelTripEntryEdit() { _resetTripEntryForm(); }
 function renderTrips() {
   const el = document.getElementById('tripsList');
   if (!el) return;
+  const lk = document.getElementById('tripsLinks'); if (lk) lk.innerHTML = _tripsLinkRows();
   // Set today as default for date inputs
   const ts = document.getElementById('tripStart'); if (ts && !ts.value) ts.value = new Date().toISOString().split('T')[0];
   if (!trips.length) {
@@ -11940,24 +11825,7 @@ function parsePdfText(bankCode) {
   return rows;
 }
 
-function parseDateMatch(m) {
-  if (!m) return null;
-  // dd/mm/yyyy
-  if (m[0].match(/^\d{2}[/\-]\d{2}[/\-]\d{4}/)) {
-    return `${m[3]}-${m[2]}-${m[1]}`;
-  }
-  // yyyy/mm/dd
-  if (m[0].match(/^\d{4}[/\-]\d{2}[/\-]\d{2}/)) {
-    return `${m[1]}-${m[2]}-${m[3]}`;
-  }
-  // Arabic month
-  if (m[2] && ARABIC_MONTHS[m[2]]) {
-    const mo = String(ARABIC_MONTHS[m[2]]).padStart(2,'0');
-    const day = String(parseInt(m[1])).padStart(2,'0');
-    return `${m[3]}-${mo}-${day}`;
-  }
-  return null;
-}
+
 
 function reparsePDF() {
   const bankCode = document.getElementById('pdfBankSel').value;
@@ -13289,12 +13157,7 @@ function openRefundPicker(originalTxId) {
 // ═══════════════════════════════════════════════════════════════
 // FEATURE #27 — TAGS
 // ═══════════════════════════════════════════════════════════════
-function getAllTags() {
-  const set = new Set();
-  txs.forEach(t => (t.tags || []).forEach(tag => set.add(tag)));
-  savings.forEach(t => (t.tags || []).forEach(tag => set.add(tag)));
-  return [...set];
-}
+
 
 window.__currentTags = [];
 
@@ -14128,9 +13991,36 @@ function _goldChartRow(){
 }
 
 // ── تنبيهات الأسعار والضبط اليدوي ──
-function _goldAlertsRow(){
-  var n = 0; try{ n = (typeof priceAlerts !== 'undefined' ? priceAlerts : []).filter(function(a){ return !a.triggered; }).length; }catch(e){}
-  return '<div class="ms-list" style="margin-bottom:12px"><div class="ms-item"><div class="ms-item-row" role="button" tabindex="0" onclick="openPriceAlerts()"><span class="ms-item-ic">' + window.msIcon('bell') + '</span><div class="ms-item-main"><div class="ms-item-l1"><span class="ms-item-name">تنبيهات الأسعار</span></div><div class="ms-item-l2"><span>' + (n ? _gAr(n) + ' تنبيه شغال' : 'لما الذهب أو الدولار يوصل سعر معيّن') + '</span></div></div></div></div></div>';
+function _paKind(a){ return (a.type === '1' || a.type === '2') ? 'gold' : 'cur'; }
+function _goldAlertsRow(ctx){
+  var n = 0; try{ n = (typeof priceAlerts !== 'undefined' ? priceAlerts : []).filter(function(a){ return !a.triggered && (!ctx || _paKind(a) === ctx); }).length; }catch(e){}
+  return '<div class="ms-list" style="margin-bottom:12px"><div class="ms-item"><div class="ms-item-row" role="button" tabindex="0" onclick="openPriceAlerts(\'' + (ctx || '') + '\')"><span class="ms-item-ic">' + window.msIcon('bell') + '</span><div class="ms-item-main"><div class="ms-item-l1"><span class="ms-item-name">تنبيهات الأسعار</span></div><div class="ms-item-l2"><span>' + (n ? _gAr(n) + ' تنبيه شغال' : 'لما الذهب أو الدولار يوصل سعر معيّن') + '</span></div></div></div></div></div>';
+}
+function _msLinkRows(list){
+  return '<div class="ms-list">' + list.map(function(r){
+    return '<div class="ms-item"><div class="ms-item-row" role="button" tabindex="0" onclick="' + r.on + '"><span class="ms-item-ic">' + window.msIcon(r.ic) + '</span><div class="ms-item-main"><div class="ms-item-l1"><span class="ms-item-name">' + r.name + '</span></div><div class="ms-item-l2"><span>' + r.sub + '</span></div></div></div></div>';
+  }).join('') + '</div>';
+}
+function _daysTo(d){ var t = new Date(d).getTime(); return isNaN(t) ? null : Math.ceil((t - Date.now()) / 86400000); }
+function _tripsLinkRows(){
+  var today = new Date().toISOString().split('T')[0], fl = (typeof flights !== 'undefined' && Array.isArray(flights)) ? flights : [];
+  var next = fl.filter(function(f){ return f.flightDate >= today; }).sort(function(a,b){ return a.flightDate < b.flightDate ? -1 : 1; })[0];
+  var nd = next ? _daysTo(next.flightDate) : null;
+  var flSub = fl.length ? _gAr(fl.length) + ' تذكرة' + (nd != null && nd >= 0 ? ' · أقرب رحلة بعد ' + _gAr(nd) + ' يوم' : '') : 'سجّل تذكرتك وعدّاد قبل الرحلة';
+  var hb = (typeof hajjBudget !== 'undefined') ? hajjBudget : null, hd = hb && hb.targetDate ? _daysTo(hb.targetDate) : null;
+  var hjSub = hb && hb.totalBudget ? 'رحلة ' + esc(hb.type || '') + (hd != null && hd >= 0 ? ' · باقي ' + _gAr(hd) + ' يوم' : '') : 'خطّط لرحلتك بالتفصيل';
+  return _msLinkRows([
+    { ic: 'plane', name: 'تذاكر الطيران', sub: flSub, on: 'openFlightsHub()' },
+    { ic: 'building-mosque', name: 'ميزانية الحج والعمرة', sub: hjSub, on: 'openHajjBudget()' }
+  ]);
+}
+function _occLinkRows(){
+  var n = (window.weddings && window.weddings.length) || 0;
+  return _msLinkRows([{ ic: 'diamond', name: 'فرحك', sub: n ? _gAr(n) + ' ملف · شبكة، مهر، جهاز' : 'شبكة، مهر، جهاز', on: "document.getElementById('weddingsModal').classList.add('open');renderWeddings()" }]);
+}
+function _calcSalaryRow(){
+  var ds = (typeof dualSalary !== 'undefined') ? dualSalary : null;
+  return _msLinkRows([{ ic: 'briefcase', name: 'الراتب بعملتين', sub: ds && ds.amount ? fmt(ds.amount, 0) + ' ' + (SYM[ds.primary] || '') : 'لو بتقبض من بلدين', on: "closeAndOpen(null,'dualSalaryModal',renderDualSalary)" }]);
 }
 function _goldManualRow(){
   var open = !!_goldUI.open.manual, cur = goldData ? Math.round(basePerGramKarat(21)) : '';
@@ -14148,7 +14038,7 @@ function setManualGoldPrice(){
 }
 window.setManualGoldPrice = setManualGoldPrice;
 
-function buildGoldCardHTML(){ return _goldPriceCard() + _goldPortfolioHTML() + _goldCalcRow() + _goldChartRow() + _goldAlertsRow() + _goldManualRow(); }
+function buildGoldCardHTML(){ return _goldPriceCard() + _goldPortfolioHTML() + _goldCalcRow() + _goldChartRow() + _goldAlertsRow('gold') + _goldManualRow(); }
 
 // ── (V9) Inject days-left + gold card into home view ──
 const _origRenderHome3 = window.renderHome;
@@ -14250,7 +14140,7 @@ function renderPriceAlerts() {
     el.innerHTML = `<div class="empty"><div class="empty-icon">🔔</div>لا توجد تنبيهات</div>`;
     return;
   }
-  el.innerHTML = priceAlerts.map(a => {
+  const card = a => {
     const dirEmoji = a.direction === 'above' ? '⬆️' : '⬇️';
     const dirText = a.direction === 'above' ? 'أعلى من' : 'أقل من';
     const status = a.triggered ?
@@ -14264,10 +14154,13 @@ function renderPriceAlerts() {
       <div class="alert-target">${dirText} <b>${fmt(a.target,0)} ج</b></div>
       ${status}
     </div>`;
-  }).join('');
+  };
+  const grp = (title, kind) => { const l = priceAlerts.filter(a => _paKind(a) === kind); return l.length ? `<div class="pa-grp">${title}</div>` + l.map(card).join('') : ''; };
+  el.innerHTML = grp('الذهب', 'gold') + grp('العملات', 'cur');
 }
 
-function openPriceAlerts() {
+function openPriceAlerts(ctx) {
+  window._paCtx = ctx === 'gold' || ctx === 'cur' ? ctx : '';
   let m = document.getElementById('priceAlertsModal');
   if (!m) {
     m = document.createElement('div');
@@ -14278,7 +14171,6 @@ function openPriceAlerts() {
       <div class="handle" onclick="this.closest('.overlay').classList.remove('open')"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:4px 8px 0">
         <div style="font-size:16px;font-weight:600;color:var(--accent)">🔔 تنبيهات الأسعار</div>
-        <button onclick="document.getElementById('priceAlertsModal').classList.remove('open')" style="background:var(--card2);border:1.5px solid var(--border);border-radius:50%;width:44px;height:44px;color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif">✕</button>
       </div>
       <p class="modal-hint">نبهنّي لما سعر الذهب أو الدولار يوصل لرقم معيّن</p>
       <button class="save-btn" onclick="addPriceAlert()" style="margin-bottom:12px">➕ تنبيه جديد</button>
@@ -14303,14 +14195,8 @@ function requestNotificationPermission() {
 }
 
 // ═══════════════ FEATURE: TRAVEL MODE ═══════════════
-function getTravelMode() {
-  const raw = msStore.getRaw('msarifyi_travel_mode');
-  return raw ? JSON.parse(raw) : null;
-}
-function saveTravelMode(t) {
-  if (t) msStore.setRaw('msarifyi_travel_mode', JSON.stringify(t));
-  else msStore.remove('msarifyi_travel_mode');
-}
+
+
 
 
 
@@ -14673,8 +14559,6 @@ function renderRecurringHub() {
 
     addRow('menuRowRecurringHub', '📅', 'المدفوعات الدورية', 'اشتراكات + فواتير + أقساط', openRecurringPaymentsHub);
     // V27: trips moved into v17 menu grid (المشاريع الكبيرة section) — no need for legacy row anymore
-    addRow('menuRowAlerts', '🔔', 'تنبيهات الأسعار', 'لما الذهب أو الدولار يوصل سعر معيّن', openPriceAlerts);
-    addRow('menuRowHajj', '🕋', 'ميزانية الحج/العمرة', 'خطّط لرحلتك بالتفصيل', openHajjBudget);
   }, 300);
 
   // Run price alerts check on init
@@ -15155,72 +15039,9 @@ function uiConfirm(message, opts = {}) {
 // ═══════════════ V12: New flows replacing prompt() ═══════════════
 
 // Travel mode — multi-step flow
-async function startTravelMode() {
-  const country = await uiPrompt({
-    title: '✈️ بدء وضع السفر',
-    message: 'وجهة السفر',
-    placeholder: 'مثال: تركيا، الإمارات...'
-  });
-  if (!country) return;
 
-  const currency = await uiPrompt({
-    title: '✈️ ' + country,
-    message: 'عملة الوجهة',
-    options: [
-      {value:'USD', icon:'🇺🇸', label:'دولار (USD)'},
-      {value:'EUR', icon:'🇪🇺', label:'يورو (EUR)'},
-      {value:'EGP', icon:'🇪🇬', label:'جنيه مصري'},
-      {value:'SAR', icon:'🇸🇦', label:'ريال سعودي'},
-      {value:'TRY', icon:'🇹🇷', label:'ليرة تركية'},
-      {value:'AED', icon:'🇦🇪', label:'درهم إماراتي'}
-    ]
-  });
-  if (!currency) return;
 
-  const dailyBudgetStr = await uiPrompt({
-    title: '✈️ ' + country,
-    message: `ميزانيتك اليومية بـ${currency}`,
-    placeholder: '500',
-    type: 'number'
-  });
-  if (!dailyBudgetStr) return;
-  const dailyBudget = parseFloat(dailyBudgetStr) || 0;
 
-  const daysStr = await uiPrompt({
-    title: '✈️ ' + country,
-    message: 'عدد أيام الرحلة',
-    placeholder: '7',
-    type: 'number'
-  });
-  const days = parseInt(daysStr) || 7;
-
-  const travel = {
-    active: true, country, currency: currency.toUpperCase(),
-    dailyBudget, totalBudget: dailyBudget * days, days,
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + days*86400000).toISOString().split('T')[0],
-    transactions: []
-  };
-  saveTravelMode(travel);
-  showAlert(`✈️ بدأت رحلة ${country}! بالتوفيق`, 'success');
-  if (typeof renderHome === 'function') renderHome();
-}
-
-async function endTravelMode() {
-  const t = getTravelMode();
-  if (!t) return;
-  const ok = await uiConfirm('إنهاء وضع السفر؟ هتتخسر الإحصائيات لو ما عملتش حفظ', {danger: true, okText: 'إنهاء'});
-  if (!ok) return;
-  t.active = false;
-  t.endedAt = new Date().toISOString();
-  saveTravelMode(t);
-  const archive = msStore.getJSON('msarifyi_travel_archive', '[]');
-  archive.unshift(t);
-  msStore.setRaw('msarifyi_travel_archive', JSON.stringify(archive.slice(0, 20)));
-  saveTravelMode(null);
-  showAlert(`✅ انتهت الرحلة. إجمالي ${t.transactions.length} حركة`, 'success');
-  if (typeof renderHome === 'function') renderHome();
-}
 
 // Hajj/Umrah setup
 async function setupHajjBudget() {
@@ -15304,16 +15125,17 @@ async function addToHajjSavings() {
 
 // Price alerts
 async function addPriceAlert() {
-  const type = await uiPrompt({
-    title: '🔔 تنبيه جديد',
-    message: 'إيه اللي تحب نراقبله؟',
-    options: [
+  const typeOpts = [
       {value:'1', icon:'🥇', label:'ذهب عيار 21'},
       {value:'2', icon:'🥇', label:'ذهب عيار 24'},
       {value:'3', icon:'🇺🇸', label:'الدولار (USD/EGP)'},
       {value:'4', icon:'🇪🇺', label:'اليورو (EUR/EGP)'},
       {value:'5', icon:'🇸🇦', label:'الريال (SAR/EGP)'}
-    ]
+  ].filter(o => !window._paCtx || _paKind({type:o.value}) === window._paCtx);   // opened from the gold screen: gold only. From the currency screen: currencies only
+  const type = await uiPrompt({
+    title: '🔔 تنبيه جديد',
+    message: 'إيه اللي تحب نراقبله؟',
+    options: typeOpts
   });
   if (!type) return;
 
@@ -17429,9 +17251,8 @@ setTimeout(() => {
       section: 'العملات والذهب',
       cat: 'currency',
       items: [
-        { id:'gold', icon:'🥇', title:'الذهب وأسعاره', sub:'عيار 24، 21، 18', custom:'openGoldModal' },
-        { id:'currency', icon:'💱', title:'العملات والحاسبة', sub:'أسعار الصرف، حوّل بسرعة', modal:'calcModal', render:'openCalc' },
-        { id:'alerts', icon:'🔔', title:'تنبيهات الأسعار', sub:'لما الذهب أو الدولار يوصل سعر معيّن', custom:'openPriceAlerts' }
+        { id:'gold', icon:'🥇', title:'الذهب وأسعاره', sub:'عيار 24، 21، 18، تنبيهات الأسعار', custom:'openGoldModal' },
+        { id:'currency', icon:'💱', title:'العملات والحاسبة', sub:'أسعار الصرف، حوّل بسرعة، الراتب بعملتين، تنبيهات', modal:'calcModal', render:'openCalc' }
       ]
     },
     {
@@ -17439,11 +17260,8 @@ setTimeout(() => {
       cat: 'projects',
       items: [
         { id:'vehicles', icon:'🚗', title:'السيارات', sub:'بنزين، صيانة، تأمين', modal:'vehiclesModal', render:'renderVehicles', countKey:'menuVehCount', cat:'vehicles' },
-        { id:'trips', icon:'🛫', title:'السفر والرحلات', sub:'تذكرة، فندق، مطعم، تاكسي', modal:'tripsModal', render:'renderTrips', countKey:'menuTripsCount' },
-        { id:'weddings', icon:'💍', title:'الفرح', sub:'شبكة، مهر، جهاز', modal:'weddingsModal', render:'renderWeddings', countKey:'menuWedCount', cat:'weddings' },
-        { id:'occasions', icon:'🎁', title:'العيدية والمناسبات', sub:'عيد، فرح غيرك، عزا', modal:'occasionsModal', render:'renderOccasions', countKey:'menuOccCount' },
-        { id:'flights', icon:'✈️', title:'تذاكر الطيران', sub:'سجّل وعدّاد قبل الرحلة', custom:'openFlightsHub' },
-        { id:'hajj', icon:'🕋', title:'ميزانية الحج والعمرة', sub:'خطّط لرحلتك بالتفصيل', custom:'openHajjBudget' }
+        { id:'trips', icon:'🛫', title:'السفر والرحلات', sub:'رحلات، تذاكر طيران، حج وعمرة، فندق، تاكسي', modal:'tripsModal', render:'renderTrips', countKey:'menuTripsCount' },
+        { id:'occasions', icon:'🎁', title:'العيدية والمناسبات', sub:'عيد، فرحك وفرح غيرك، عزا', modal:'occasionsModal', render:'renderOccasions', countKey:'menuOccCount' }
       ]
     },
     {
@@ -23322,12 +23140,7 @@ setTimeout(() => {
 
   function setupHubWatcher() {
     // Watch the document.body for when recurringHubModal is added or opened
-    const tryInject = () => {
-      const modal = document.getElementById('recurringHubModal');
-      if (modal && modal.classList.contains('open')) {
-        injectCardsIntoHub();
-      }
-    };
+    
 
     // 1) Wrap openRecurringPaymentsHub if it exists
     if (typeof window.openRecurringPaymentsHub === 'function' && !window.openRecurringPaymentsHub.__ccPatched) {
@@ -24387,10 +24200,7 @@ setTimeout(() => {
 
   // Expose parser globally so the import modal can use it
   window.__parseAlRajhiRows = parseAlRajhi;   // for tests
-  window.parseAlRajhiPdf = async function(file) {
-    const pages = await extractPDFRows(file);
-    return parseAlRajhi(pages);
-  };
+  
 
   // ─────────────────────────────────────────────────────
   // v42 - NBE (البنك الأهلي المصري) CREDIT CARD STATEMENT PARSER
@@ -24669,7 +24479,7 @@ setTimeout(() => {
     return result;
   }
 
-  window.parseNbePdf = async function (file) { return parseNBE(await extractPDFRows(file)); };
+  
   // one entry point for the importer: pick the parser by the selected card's bank, or by what the PDF looks like
   window.parseStatementPdf = async function (file, cardId) {
     const pages = await extractPDFRows(file);
@@ -26277,9 +26087,7 @@ setTimeout(() => {
     toast('شاشة السداد غير متاحة', 'error');
   };
 
-  window.ccSavePayment = function(cardId) {
-    if (typeof window.saveCardPayment === 'function') return window.saveCardPayment();
-  };
+  
 
   // ─── Quick: pay the minimum due immediately ──────────
   window.ccPayMinNow = function(cardId) {
@@ -29793,105 +29601,275 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
 
   const KIND_LBL = { purchase: 'شراء', bill: 'سداد', transfer: 'تحويل', income: 'إيداع' };
   const CARD_LBL = { credit: 'بطاقة ائتمان', debit: 'بطاقة خصم', visa: 'بطاقة فيزا', account: 'حساب', other: '' };
+  const KIND_ICO = { purchase: '🛍️', bill: '🧾', transfer: '↔️', income: '⬇️' };
+  const MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  const NORMAL_LBL = { expense: 'حفظ المصروف', income: 'حفظ الدخل', savings: 'حفظ الادخار', transfer: 'حفظ التحويل' };
+  const sym = c => (typeof SYM !== 'undefined' && SYM[c]) || c;
+  const dLabel = (d, t) => { const m = String(d || '').match(/^(\d{4})-(\d{2})-(\d{2})$/); return (m ? (+m[3]) + ' ' + MONTHS[+m[2] - 1] : '') + (t ? ' · ' + t : ''); };
   const setCur = ccy => { const b = document.querySelector('.pay-cur-btn[data-cur="' + ccy + '"]'); if (b && typeof window.selPayCur === 'function') window.selPayCur(b); };
   const setOff = off => ['msSaveBtn', 'msSaveNew'].forEach(id => { const b = $(id); if (b) b.classList.toggle('ms-off', !!off); });
+  const sheet = () => document.querySelector('#modal .sheet.ms-add');
+  const mode = (cls, on) => { const s = sheet(); if (s) s.classList.toggle(cls, !!on); };
+  let boxOpen = false, filling = false;
+  let B = null;                                   // several messages pasted together: { rows: [...], open: index | -1, skipped, running }
 
-  function tagsHtml(list) { return list.map(t => `<span class="ms-sms-tag${t.warn ? ' warn' : ''}">${esc(t.text)}</span>`).join(''); }
-
-  function fill(p) {
+  // one place that works out what a message means for the app: type, wallet, name, suggested category
+  function plan(p, cardId) {
     const fromT = resolveTarget(p, p.last4), toT = p.toLast4 ? resolveTarget({ cardType: 'account' }, p.toLast4) : null;
     let type = p.dir === 'in' ? 'income' : 'expense';
     if (p.kind === 'transfer' && p.dir === 'out' && fromT && fromT.kind === 'acc' && toT && toT.kind === 'acc' && fromT.id !== toT.id) type = 'transfer';
-    window.selType(type);
+    const name = type === 'transfer' ? '' : (p.kind === 'transfer' ? (p.dir === 'in' ? 'تحويل من ' : 'تحويل إلى ') + (p.party || ('••' + (p.toLast4 || ''))).trim()
+      : (p.merchant || (p.dir === 'in' ? 'إيداع' : ''))).trim();
+    const card = cardId ? findCard(cardId) : null;
+    const cardT = card ? { kind: 'cc', id: 'cc_' + card.id, label: card.name || 'بطاقة' } : null;
+    const target = type === 'transfer' ? null : (fromT || cardT);
+    const sg = type === 'expense' ? suggest(p) : null;
+    return { type, fromT, toT, name, target, sg, walletOk: type === 'transfer' || !!target || !p.last4 };
+  }
+
+  // the view of #msSms: the open button, the paste box, the summary card, or the list of several messages
+  function view() {
+    const hasCard = !!(C && C.p && !B), hasList = !!B;
+    const set = (id, show) => { const e = $(id); if (e) e.style.display = show ? '' : 'none'; };
+    set('msSmsOpenBtn', !(boxOpen || hasCard || hasList));
+    set('msSmsBox', boxOpen); set('msSmsCard', hasCard); set('msSmsList', hasList);
+    mode('ms-sms-on', hasCard); mode('ms-sms-batch', hasList);
+    if (!hasCard) { mode('ms-sms-edit', false); mode('ms-sms-needw', false); }
+  }
+
+  // the main button says what a tap does: confirm the suggested category and save, or what is still missing
+  function refresh() {
+    const b = $('msSaveBtn'); if (!b) return;
+    if (B) {
+      const live = B.rows.filter(r => !r.dup), ready = live.filter(rowReady).length;
+      b.textContent = !live.length ? 'كلها متسجلة قبل كده' : ready === live.length ? 'حفظ الكل (' + live.length + ')' : 'حفظ الكل (' + ready + ' من ' + live.length + ' جاهزة)';
+      setOff(!live.length || ready !== live.length); return;
+    }
+    if (!C || !C.p) return;
+    const t = window.txType, needCat = (t === 'expense' || t === 'income') && !C.catOk;
+    const sug = needCat && t === 'expense' ? C.sug : null;
+    b.textContent = !C.walletOk ? 'اختار المحفظة عشان تحفظ' : sug ? 'تأكيد ' + sug.cat + ' وحفظ' : needCat ? 'اختار الفئة عشان تحفظ' : (NORMAL_LBL[t] || 'حفظ');
+    setOff(!C.walletOk || (needCat && !sug));
+  }
+  function normalLabel() { const b = $('msSaveBtn'); if (b) b.textContent = NORMAL_LBL[window.txType] || 'حفظ المصروف'; setOff(false); }
+
+  function selectWallet(id) {
+    filling = true;
+    try { if (typeof window.v23SelectTxAccount === 'function') window.v23SelectTxAccount(id); else $('fAccount').value = id; } finally { filling = false; }
+  }
+  function setTransfer(pl) { $('fTransferFrom').value = 'acc:' + pl.fromT.id; $('fTransferTo').value = 'acc:' + pl.toT.id; }
+
+  // pour one message into the ordinary form (the form stays the single source of truth for saving)
+  function fill(p, pl) {
+    window.selType(pl.type);
     setCur(p.ccy);
     $('fAmt').value = String(p.amount);
     if (typeof window.evalAmt === 'function') window.evalAmt(true);
     $('fDate').value = p.date;
     $('fTime').value = p.time;
-    const tags = [];
-    if (type === 'transfer') {
-      $('fTransferFrom').value = 'acc:' + fromT.id;
-      $('fTransferTo').value = 'acc:' + toT.id;
-      tags.push({ text: 'تحويل بين محفظتيك: ' + fromT.label + ' ← ' + toT.label });
-    } else {
-      const name = p.kind === 'transfer' ? (p.dir === 'in' ? 'تحويل من ' : 'تحويل إلى ') + (p.party || ('••' + (p.toLast4 || ''))).trim()
-        : (p.merchant || (p.dir === 'in' ? 'إيداع' : ''));
-      $('fName').value = name.trim();
-      // wallet: the one the last 4 digits belong to, else the card the paste started from, else whatever is selected
-      const target = fromT || (C && C.cardId ? { kind: 'cc', id: 'cc_' + C.cardId, label: ((window.creditCards || []).find(c => c.id === C.cardId) || {}).name || 'بطاقة' } : null);
-      if (target) {
-        if (typeof window.v23SelectTxAccount === 'function') window.v23SelectTxAccount(target.id); else $('fAccount').value = target.id;
-        tags.push({ text: 'المحفظة: ' + target.label });
-      } else tags.push({ text: p.last4 ? '••' + p.last4 + ' مش مربوطة. اختار المحفظة وهتتحفظ للمرة الجاية' : 'اختار المحفظة', warn: true });
-      // category: only ever a suggestion. Nothing is confirmed until the person taps a chip.
-      const gid = type === 'income' ? 'incCatGrid' : 'expCatGrid', grid = $(gid);
+    if (pl.type === 'transfer') setTransfer(pl);
+    else {
+      $('fName').value = pl.name;
+      if (pl.target) selectWallet(pl.target.id);
+      // category: only ever a suggestion. Nothing is confirmed until the person confirms it.
+      const grid = $(pl.type === 'income' ? 'incCatGrid' : 'expCatGrid');
       grid.querySelectorAll('.cat-btn,.inc-btn').forEach(b => b.classList.remove('sel', 'sug'));
-      const sg = type === 'expense' ? suggest(p) : null;
-      if (type === 'income') window.selICat = ''; else window.selECat = sg ? sg.cat : '';
-      if (sg) { const chip = chipOf(sg.cat); chip.classList.add('sug'); chip.classList.remove('ms-hide'); C.sug = sg; }
+      if (pl.type === 'income') window.selICat = ''; else window.selECat = pl.sg ? pl.sg.cat : '';
+      if (pl.sg) { const chip = chipOf(pl.sg.cat); chip.classList.add('sug'); chip.classList.remove('ms-hide'); }
       grid.dispatchEvent(new Event('click'));
-      tags.push({ text: sg ? sg.why + ': ' + sg.cat + '. اضغط عليها للتأكيد أو اختار غيرها' : 'اختار الفئة عشان تقدر تحفظ', warn: true });
     }
-    if (p.dateGuess) tags.push({ text: 'التاريخ والوقت من لحظة اللصق', warn: true });
-    if (p.avail != null) tags.push({ text: 'المتاح بعد العملية ' + fmt(p.avail) + ' ' + p.ccy });
-    if (isDup(p.key)) tags.push({ text: 'الرسالة دي متسجلة قبل كده', warn: true });
-    $('msSmsInfo').textContent = [KIND_LBL[p.kind], (CARD_LBL[p.cardType] || '') + (p.last4 ? ' ••' + p.last4 : '')].filter(x => x && x.trim()).join(' · ');
-    $('msSmsTags').innerHTML = tagsHtml(tags);
-    setOff(type !== 'transfer');
+    C.sug = pl.sg; C.walletOk = pl.walletOk; C.plan = pl;
+    card(p, pl);
+    mode('ms-sms-needw', !pl.walletOk);
   }
 
-  window.msSmsBox = function (open) {
-    const b = $('msSmsBox'), btn = $('msSmsOpenBtn'); if (!b || !btn) return;
-    b.style.display = open ? '' : 'none'; btn.style.display = open ? 'none' : '';
-    if (open) setTimeout(() => { const t = $('msSmsText'); if (t) t.focus(); }, 60);
+  function card(p, pl) {
+    const rate = parseFloat(($('fRate') || {}).value), sar = p.ccy !== 'SAR' && typeof window.toSAR === 'function' && rate > 0 ? window.toSAR(p.amount, p.ccy, rate) : null;
+    const sub = [KIND_LBL[p.kind], (CARD_LBL[p.cardType] || '') + (p.last4 ? ' ••' + p.last4 : '')].filter(x => x && x.trim()).join(' · ');
+    const chips = [];
+    if (pl.type === 'transfer') chips.push({ t: 'تحويل بين محفظتيك: ' + pl.fromT.label + ' ← ' + pl.toT.label });
+    else if (pl.target) chips.push({ t: 'المحفظة: ' + pl.target.label });
+    else if (p.last4) chips.push({ t: '••' + p.last4 + ' مش مربوطة. اختار محفظتها تحت وهتتحفظ للمرة الجاية', warn: true });
+    else { const o = $('fAccount') && $('fAccount').selectedOptions[0]; if (o) chips.push({ t: 'المحفظة: ' + o.textContent.trim() }); }
+    chips.push({ t: dLabel(p.date, p.time) + (p.dateGuess ? ' (لحظة اللصق)' : ''), warn: !!p.dateGuess });
+    if (p.avail != null) chips.push({ t: 'المتاح بعد العملية ' + fmt(p.avail) + ' ' + sym(p.ccy) });
+    if (isDup(p.key)) chips.push({ t: 'الرسالة دي متسجلة قبل كده', warn: true });
+    const ico = (pl.sg && chipOf(pl.sg.cat) && (chipOf(pl.sg.cat).textContent.match(/\p{Extended_Pictographic}/u) || [])[0]) || KIND_ICO[p.kind] || '💸';
+    $('msSmsCard').innerHTML =
+      '<div class="ms-sc-top"><div class="ms-sc-ico">' + esc(ico) + '</div><div class="ms-sc-mid"><div class="ms-sc-mer" dir="auto">' + esc(pl.name || KIND_LBL[p.kind] || '') + '</div><div class="ms-sc-sub">' + esc(sub) + '</div></div>' +
+      '<div class="ms-sc-amt ms-money">' + esc(fmt(p.amount)) + ' ' + esc(sym(p.ccy)) + (sar != null ? '<small>≈ ' + esc(fmt(sar)) + ' ' + esc(sym('SAR')) + '</small>' : '') + '</div></div>' +
+      '<div class="ms-sc-meta">' + chips.map(c => '<span class="ms-sms-tag' + (c.warn ? ' warn' : '') + '">' + esc(c.t) + '</span>').join('') + '</div>' +
+      '<div class="ms-sc-links"><button type="button" onclick="msSmsBox(!document.getElementById(\'msSmsBox\').offsetParent)">عرض الرسالة</button><button type="button" id="msSmsEditLnk" onclick="msSmsEdit()">تعديل التفاصيل</button><button type="button" onclick="msSmsClear()">مسح</button></div>';
+  }
+  window.msSmsEdit = function () {
+    const s = sheet(); if (!s) return;
+    const on = s.classList.toggle('ms-sms-edit');
+    const l = $('msSmsEditLnk'); if (l) l.textContent = on ? 'إخفاء التفاصيل' : 'تعديل التفاصيل';
   };
+
+  window.msSmsBox = function (open) { boxOpen = !!open; view(); if (open) setTimeout(() => { const t = $('msSmsText'); if (t) t.focus(); }, 60); };
+
+  // ── several messages in one paste: split on blank lines, keep the ones that parse
+  function parseMany(raw) {
+    const parts = raw.split(/\r?\n\s*\n+/).map(x => x.trim()).filter(Boolean);
+    if (parts.length < 2) return null;
+    const seen = new Set(), rows = []; let skipped = 0;
+    parts.forEach(t => {
+      const p = window.parseNbeSms(t);
+      if (!p.ok || !SUPPORTED[p.ccy]) { skipped++; return; }
+      const pl = plan(p, null);
+      rows.push({ p, pl, cat: '', catOk: false, acc: '', dup: isDup(p.key) || seen.has(p.key), done: false });
+      seen.add(p.key);
+    });
+    return rows.length >= 2 ? { rows, open: -1, skipped, running: false } : null;
+  }
+  const rowReady = r => r.dup || r.done || ((r.pl.type === 'transfer' || r.catOk) && (r.pl.walletOk || !!r.acc));
+  const catList = type => [...document.querySelectorAll(type === 'income' ? '#incCatGrid .inc-btn' : '#expCatGrid .cat-btn')].map(b => ({ name: b.dataset.cat, ico: ((b.querySelector('.ci') || {}).textContent || '').trim() })).filter(c => c.name);
+  const walletList = () => ACC().map(a => ({ id: a.id, name: a.name })).concat((window.creditCards || []).map(c => ({ id: 'cc_' + c.id, name: '💳 ' + (c.name || 'بطاقة') })));
+
+  function list() {
+    const L = $('msSmsList'); if (!L || !B) return;
+    const n = B.rows.length;
+    let h = '<div class="ms-sb-head"><b>' + n + ' رسائل لقيتها</b>' + (B.skipped ? '<span class="ms-sb-skip">' + B.skipped + ' مفهمتهاش</span>' : '') + '<button type="button" onclick="msSmsClear()">مسح</button></div><div class="ms-sb-list">';
+    B.rows.forEach((r, i) => {
+      const p = r.p, pl = r.pl, sg = pl.sg;
+      const pill = r.dup ? '<span class="ms-sb-pill off">متسجلة قبل كده</span>'
+        : pl.type === 'transfer' ? '<span class="ms-sb-pill off">تحويل بين محفظتيك</span>'
+        : r.catOk ? '<span class="ms-sb-pill ok">' + esc(r.cat) + '</span>'
+        : sg ? '<span class="ms-sb-pill sug">' + esc(sg.cat) + '</span>' : '<span class="ms-sb-pill need">اختار الفئة</span>';
+      const needW = !r.dup && !pl.walletOk && !r.acc;
+      const sub = [KIND_LBL[p.kind], (CARD_LBL[p.cardType] || '') + (p.last4 ? ' ••' + p.last4 : '')].filter(x => x && x.trim()).join(' · ');
+      h += '<div class="ms-sb-row' + (r.dup ? ' dup' : '') + (needW ? ' needw' : '') + '"><div class="ms-sb-main" onclick="msSmsRowTap(' + i + ')">' +
+        '<div class="ms-sb-mid"><div class="ms-sb-mer" dir="auto">' + esc(pl.name || KIND_LBL[p.kind] || '') + '</div><div class="ms-sb-sub"><span class="ms-money">' + esc(fmt(p.amount)) + ' ' + esc(sym(p.ccy)) + '</span> · ' + esc(sub) + ' · ' + esc(dLabel(p.date)) + '</div></div>' + pill + '</div>';
+      if (B.open === i && !r.dup) {
+        if (pl.type !== 'transfer') h += '<div class="ms-sb-chips">' + catList(pl.type).map((c, j) => '<button type="button" class="ms-sb-chip' + (r.cat === c.name ? ' on' : '') + '" onclick="msSmsRowCat(' + i + ',' + j + ')">' + esc(c.ico) + ' ' + esc(c.name) + '</button>').join('') + '</div>';
+        if (!pl.walletOk) h += '<div class="ms-sb-lbl">' + (p.last4 ? 'محفظة ••' + esc(p.last4) : 'المحفظة') + '</div><div class="ms-sb-chips">' + walletList().map((w, k) => '<button type="button" class="ms-sb-chip' + (r.acc === w.id ? ' on' : '') + '" onclick="msSmsRowAcc(' + i + ',' + k + ')">' + esc(w.name) + '</button>').join('') + '</div>';
+      }
+      h += '</div>';
+    });
+    L.innerHTML = h + '</div><div class="ms-sb-note">الاقتراح المنقط لازم تضغط عليه عشان يتأكد. مفيش حاجة بتتحفظ لوحدها.</div>';
+    refresh();
+  }
+  // tap a row: a dashed suggestion is confirmed by the tap, anything else opens the choices
+  window.msSmsRowTap = function (i) {
+    if (!B) return; const r = B.rows[i]; if (!r || r.dup) return;
+    if (r.pl.type !== 'transfer' && !r.catOk && r.pl.sg) { r.cat = r.pl.sg.cat; r.catOk = true; B.open = !r.pl.walletOk && !r.acc ? i : -1; }
+    else B.open = B.open === i ? -1 : i;
+    list();
+  };
+  window.msSmsRowCat = function (i, j) {
+    if (!B) return; const r = B.rows[i]; const c = catList(r.pl.type)[j]; if (!c) return;
+    r.cat = c.name; r.catOk = true; if (r.pl.walletOk || r.acc) B.open = -1; list();
+  };
+  window.msSmsRowAcc = function (i, k) {
+    if (!B) return; const r = B.rows[i]; const w = walletList()[k]; if (!w) return;
+    r.acc = w.id; if (r.catOk || r.pl.type === 'transfer') B.open = -1; list();
+  };
+
+  // save every ready row through the ordinary save: fill the form for it, press save, reopen for the next one
+  function applyRow(r) {
+    const p = r.p, pl = r.pl;
+    C = { p, catOk: true, sug: pl.sg, cardId: null, walletOk: true, plan: pl }; window.__smsCtx = C;
+    window.selType(pl.type);
+    setCur(p.ccy);
+    $('fAmt').value = String(p.amount);
+    if (typeof window.evalAmt === 'function') window.evalAmt(true);
+    $('fDate').value = p.date; $('fTime').value = p.time;
+    if (pl.type === 'transfer') { setTransfer(pl); return; }
+    $('fName').value = pl.name;
+    const w = r.acc || (pl.target && pl.target.id); if (w) selectWallet(w);
+    const chip = [...document.querySelectorAll(pl.type === 'income' ? '#incCatGrid .inc-btn' : '#expCatGrid .cat-btn')].find(b => b.dataset.cat === r.cat);
+    if (chip) chip.click(); else if (pl.type === 'income') window.selICat = r.cat; else window.selECat = r.cat;
+  }
+  function saveBatch() {
+    const rows = B.rows.filter(r => !r.dup && !r.done);
+    if (!rows.length) return false;
+    if (!rows.every(rowReady)) { showAlert('كمّل الفئة أو المحفظة في الصفوف اللي لسه مش جاهزة', 'error'); return false; }
+    B.running = true;
+    let saved = 0, stuck = null;
+    for (let k = 0; k < rows.length; k++) {
+      const r = rows[k];
+      if (isDup(r.p.key)) { r.dup = true; continue; }
+      if (k > 0) window.openModal();
+      applyRow(r);
+      window.saveTx();
+      if ($('modal').classList.contains('open')) { stuck = r; break; }       // the ordinary save refused it: it stays open with its message
+      r.done = true; saved++;
+    }
+    B.running = false;
+    if (stuck) { const left = B; B = null; C = { p: stuck.p, catOk: true, sug: stuck.pl.sg, cardId: null, walletOk: true, plan: stuck.pl }; window.__smsCtx = C; boxOpen = false; view(); refresh(); showAlert('اتحفظ ' + saved + ' من ' + left.rows.length + '. كمّل الباقي', 'error'); return false; }
+    B = null;
+    toast('اتحفظت ' + saved + ' حركات', 'success');
+    return true;
+  }
+
   window.msSmsParse = function () {
     const raw = ($('msSmsText') || {}).value || '';
-    const info = $('msSmsInfo'), tags = $('msSmsTags'); if (!info || !tags) return;
-    if (!raw.trim()) { if (C) C.p = null; info.textContent = ''; tags.innerHTML = ''; return; }
+    const info = $('msSmsInfo'); if (!info) return;
+    const keepCard = C && C.cardId ? C.cardId : null;
+    const fail = msg => { C = keepCard ? { p: null, catOk: false, sug: null, cardId: keepCard } : null; window.__smsCtx = C; B = null; info.textContent = msg; view(); normalLabel(); };
+    if (!raw.trim()) { fail(''); return; }
+    const many = parseMany(raw);
+    if (many) { B = many; C = null; window.__smsCtx = null; info.textContent = ''; boxOpen = false; view(); list(); return; }
+    B = null;
     const p = window.parseNbeSms(raw);
-    if (!p.ok) {
-      if (C) C.p = null;
-      info.textContent = p.reason === 'cardpay' ? 'دي رسالة سداد بطاقة، مش مصروف. سجّلها من شاشة البطاقة' : (raw.trim().length > 25 ? 'مش فاهم الرسالة دي. الصق النص كامل' : '');
-      tags.innerHTML = ''; return;
-    }
-    if (!SUPPORTED[p.ccy]) { if (C) C.p = null; info.textContent = 'العملة ' + p.ccy + ' مش مدعومة في التطبيق'; tags.innerHTML = ''; return; }
-    C = { p, catOk: false, sug: null, cardId: C && C.cardId ? C.cardId : null };
+    if (!p.ok) { fail(p.reason === 'cardpay' ? 'دي رسالة سداد بطاقة، مش مصروف. سجّلها من شاشة البطاقة' : (raw.trim().length > 25 ? 'مش فاهم الرسالة دي. الصق النص كامل' : '')); return; }
+    if (!SUPPORTED[p.ccy]) { fail('العملة ' + p.ccy + ' مش مدعومة في التطبيق'); return; }
+    C = { p, catOk: false, sug: null, cardId: keepCard, walletOk: true, plan: null };
     window.__smsCtx = C;
-    fill(p);
+    info.textContent = ''; boxOpen = false;
+    fill(p, plan(p, keepCard));
+    view(); refresh();
   };
   window.msSmsPaste = async function () {
+    const info = $('msSmsInfo');
     try {
       const t = await navigator.clipboard.readText();
-      if (t && t.trim()) { window.msSmsBox(true); $('msSmsText').value = t; window.msSmsParse(); return; }
-      $('msSmsInfo').textContent = 'الحافظة فاضية';
-    } catch (e) { window.msSmsBox(true); $('msSmsInfo').textContent = 'الجهاز مسمحش بالقراءة من الحافظة. الصق في المربع بإيدك'; }
+      if (t && t.trim()) { $('msSmsText').value = t; window.msSmsParse(); if (!(C && C.p) && !B) window.msSmsBox(true); return; }
+      window.msSmsBox(true); if (info) info.textContent = 'الحافظة فاضية';
+    } catch (e) { window.msSmsBox(true); if (info) info.textContent = 'الجهاز مسمحش بالقراءة من الحافظة. الصق في المربع بإيدك'; }
   };
-  window.msSmsClear = function () { const t = $('msSmsText'); if (t) t.value = ''; window.msSmsParse(); };
+  // "مسح" throws the pasted data away and starts a fresh form (a card screen's own card stays selected)
+  window.msSmsClear = function () {
+    const cid = C && C.cardId ? C.cardId : null;
+    window.openModal();
+    if (cid) { C = { p: null, catOk: false, sug: null, cardId: cid }; window.__smsCtx = C; selectWallet('cc_' + cid); }
+  };
 
   // called by the original openModal / editTx / editSav and after a save
   window.msSmsReset = function (editing) {
-    C = null; window.__smsCtx = null;
+    if (B && B.running) return;
+    C = null; window.__smsCtx = null; B = null; boxOpen = false;
     const row = $('msSms'); if (!row) return;
     row.style.display = editing ? 'none' : '';
     const t = $('msSmsText'); if (t) t.value = '';
     if ($('msSmsInfo')) $('msSmsInfo').textContent = '';
-    if ($('msSmsTags')) $('msSmsTags').innerHTML = '';
-    window.msSmsBox(false); setOff(false);
+    ['ms-sms-on', 'ms-sms-edit', 'ms-sms-needw', 'ms-sms-batch'].forEach(c => mode(c, false));
+    view(); setOff(false);
     document.querySelectorAll('#expCatGrid .sug,#incCatGrid .sug').forEach(b => b.classList.remove('sug'));
   };
-  // the first tap on a category chip (the suggested one included) is the confirmation
+  // the first tap on a category chip is the confirmation
   window.msSmsPicked = function () {
     if (!C) return;
-    C.catOk = true; setOff(false);
+    C.catOk = true;
     document.querySelectorAll('#expCatGrid .sug,#incCatGrid .sug').forEach(b => b.classList.remove('sug'));
-    const tg = $('msSmsTags'); if (tg) tg.querySelectorAll('.ms-sms-tag.warn').forEach(x => { if (/اختار الفئة|اضغط عليها/.test(x.textContent)) x.remove(); });
+    if (C.p) refresh(); else setOff(false);
   };
+  // the wallet row (shown only when the last 4 digits are not linked yet): choosing a wallet there is what links them
+  if ($('fAccount')) $('fAccount').addEventListener('change', () => {
+    if (C && C.p && !filling && !C.walletOk) { C.walletOk = true; mode('ms-sms-needw', false); card(C.p, C.plan); refresh(); }
+  });
   window.msSmsGate = function () {
+    if (B) { if (B.running) return true; saveBatch(); return false; }
     if (!C || !C.p) return true;
     if (isDup(C.p.key)) { showAlert('الرسالة دي متسجلة قبل كده', 'error'); return false; }
+    if (!C.walletOk) { showAlert('اختار المحفظة الأول', 'error'); return false; }
     const t = window.txType;
-    if ((t === 'expense' || t === 'income') && !C.catOk) { showAlert(C.sug ? 'أكد الفئة المقترحة أو اختار غيرها' : 'اختار الفئة الأول', 'error'); return false; }
+    if ((t === 'expense' || t === 'income') && !C.catOk) {
+      // the main button reads "تأكيد <الفئة> وحفظ", so pressing it is the confirmation of that category
+      if (t === 'expense' && C.sug && window.selECat === C.sug.cat) C.catOk = true;
+      else { showAlert('اختار الفئة الأول', 'error'); return false; }
+    }
     return true;
   };
   // a card charge keeps the statement-matching fields, so the PDF import later corrects it instead of duplicating it
@@ -30609,19 +30587,7 @@ body.light .sheet,body.light .settings-sheet{box-shadow:0 -12px 40px -8px rgba(0
   window.__mmInternals = { allRows, ranges: () => ranges(), state: () => S, defaultColors };
 
   // ───────── home: one line under the hero (trend vs last month, same day)
-  window.msHomeTrendHtml = function () {
-    try {
-      const rows = allRows(getCardsOn()), n = nowFn(), y = n.getFullYear(), m = n.getMonth();
-      const a = mStart(y, m), b = mEnd(y, m), pm = new Date(y, m - 1, 1), pa = mStart(pm.getFullYear(), pm.getMonth()), pe = mEnd(pm.getFullYear(), pm.getMonth());
-      const pb = pa.slice(0, 8) + pad(Math.min(n.getDate(), +pe.slice(8, 10)));
-      const cur = sumR(rows, a, b), prev = sumR(rows, pa, pb);
-      if (!(cur > 0) && !(prev > 0)) return '';
-      const hc = (window.msStore && window.msStore.getRaw('msarifyi_hero_cur')) || baseCur();
-      const conv = typeof window.sarToCur === 'function' ? window.sarToCur(cur, hc) : cur;
-      const s = (BL()[hc] && BL()[hc].sym) || '';
-      return `<div onclick="window.msMoneyOpen()" style="cursor:pointer;margin-top:10px;padding:9px 12px;border-radius:12px;background:rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px"><span>📊 مصروف الشهر ده <b style="direction:ltr;display:inline-block">${fmt0(conv)} ${esc(s)}</b></span><span style="text-align:left">${prev > 0 ? chip(cur, prev) + ' <span style="opacity:.75;font-size:11px">عن ' + esc(MONTHS[pm.getMonth()]) + ' (لنفس اليوم)</span>' : '<span style="opacity:.75;font-size:11px">اضغط للتفاصيل</span>'}</span></div>`;
-    } catch (e) { return ''; }
-  };
+  
 
   // ───────── importance in the add / edit form (optional row, expenses only)
   let formImp = '';
@@ -30779,19 +30745,60 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;}
 .ms-add{padding-bottom:0 !important;}
 .ms-add-head{display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px;}
 .ms-sms{margin:0 0 12px;}
-.ms-sms-open{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 14px;border-radius:12px;border:0.5px dashed var(--accent);background:transparent;color:var(--accent);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;}
-.ms-sms-open .ic{width:16px;height:16px;}
+.ms-sms-open{width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:14px;border:1px solid var(--accent);background:rgba(240,180,41,.08);color:var(--accent);font-family:inherit;cursor:pointer;text-align:start;}
+.ms-sms-open .ic{width:22px;height:22px;flex:none;}
+.ms-sms-open b{display:block;font-size:14px;font-weight:700;}
+.ms-sms-open small{display:block;font-size:11px;color:var(--muted);margin-top:2px;font-weight:400;}
 .ms-sms-box{border:0.5px solid var(--border);background:var(--card2);border-radius:12px;padding:10px;}
 .ms-sms-box textarea{width:100%;background:transparent;border:0;outline:0;color:var(--text);font-size:13px;font-family:inherit;direction:rtl;resize:none;line-height:1.6;}
 .ms-sms-bar{display:flex;align-items:center;gap:12px;margin-top:6px;padding-top:8px;border-top:0.5px solid var(--border);font-size:11px;color:var(--muted);}
 .ms-sms-info{flex:1;}
 .ms-sms-act{background:none;border:0;color:var(--accent);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;padding:0;}
-.ms-sms-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
-.ms-sms-tags:empty{display:none;}
 .ms-sms-tag{font-size:11px;padding:3px 8px;border-radius:8px;background:var(--card);color:var(--muted);border:0.5px solid var(--border);}
 .ms-sms-tag.warn{color:var(--accent);border-color:var(--accent);}
 #expCatGrid .cat-btn.sug{border:0.5px dashed var(--accent) !important;background:transparent !important;color:var(--accent) !important;}
 #msSaveBtn.ms-off,#msSaveNew.ms-off{opacity:.4;}
+.ms-sms-box{margin-bottom:10px;}
+.ms-sc{border:0.5px solid var(--border);background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px;}
+.ms-sc-top{display:flex;align-items:center;gap:10px;}
+.ms-sc-ico{width:40px;height:40px;border-radius:12px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:20px;flex:none;}
+.ms-sc-mid{flex:1;min-width:0;}
+.ms-sc-mer{font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:start;}
+.ms-sc-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.ms-sc-amt{font-size:20px;font-weight:800;color:var(--text);text-align:end;line-height:1.1;white-space:nowrap;}
+.ms-sc-amt small{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-top:3px;}
+.ms-sc-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.ms-sc-links{display:flex;gap:16px;margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border);}
+.ms-sc-links button{background:none;border:0;padding:0;color:var(--accent);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;}
+.ms-add.ms-sms-edit .ms-sc-top,.ms-add.ms-sms-edit .ms-sc-meta{display:none;}
+.ms-add.ms-sms-edit .ms-sc-links{margin-top:0;padding-top:0;border-top:0;}
+.ms-add.ms-sms-on:not(.ms-sms-edit) > .ms-seg,.ms-add.ms-sms-on:not(.ms-sms-edit) > .ms-amt,.ms-add.ms-sms-on:not(.ms-sms-edit) > #rateBox,.ms-add.ms-sms-on:not(.ms-sms-edit) > .ms-name,.ms-add.ms-sms-on:not(.ms-sms-edit) > #transferSec,.ms-add.ms-sms-on:not(.ms-sms-edit) > .ms-meta,.ms-add.ms-sms-on:not(.ms-sms-edit) > .ms-more{display:none !important;}
+.ms-add.ms-sms-on:not(.ms-sms-edit):not(.ms-sms-needw) > .ms-wallet{display:none !important;}
+.ms-add.ms-sms-needw .v23-tx-acc-cell.sel{background:transparent !important;border-color:var(--border) !important;}
+.ms-add.ms-sms-on #msSaveNew,.ms-add.ms-sms-batch #msSaveNew{display:none !important;}
+.ms-add.ms-sms-batch > :not(.handle):not(.ms-add-head):not(.ms-sms):not(.ms-foot){display:none !important;}
+.ms-sb-head{display:flex;align-items:center;gap:10px;margin:2px 2px 10px;font-size:13px;color:var(--muted);}
+.ms-sb-head b{color:var(--text);flex:1;}
+.ms-sb-head button{background:none;border:0;padding:0;color:var(--accent);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;}
+.ms-sb-skip{font-size:11px;color:var(--accent);}
+.ms-sb-list{border:0.5px solid var(--border);background:var(--card);border-radius:16px;padding:2px 14px;}
+.ms-sb-row{border-top:0.5px solid var(--border);}
+.ms-sb-row:first-child{border-top:0;}
+.ms-sb-main{display:flex;align-items:center;gap:10px;padding:11px 0;cursor:pointer;}
+.ms-sb-mid{flex:1;min-width:0;}
+.ms-sb-mer{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:start;}
+.ms-sb-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.ms-sb-pill{flex:none;font-size:12px;padding:5px 10px;border-radius:10px;border:0.5px solid var(--border);background:var(--card2);color:var(--text);}
+.ms-sb-pill.sug{border:1px dashed var(--accent);background:transparent;color:var(--accent);font-weight:700;}
+.ms-sb-pill.need{border:1px solid var(--accent);background:transparent;color:var(--accent);}
+.ms-sb-pill.off{color:var(--muted);background:transparent;}
+.ms-sb-row.dup{opacity:.6;}
+.ms-sb-row.needw .ms-sb-sub{color:var(--accent);}
+.ms-sb-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 0 12px;max-height:170px;overflow:auto;}
+.ms-sb-chip{font-size:12px;padding:6px 10px;border-radius:10px;border:0.5px solid var(--border);background:var(--card2);color:var(--text);font-family:inherit;cursor:pointer;}
+.ms-sb-chip.on{border-color:var(--accent);color:var(--accent);}
+.ms-sb-lbl{font-size:11px;color:var(--muted);margin:0 0 6px;}
+.ms-sb-note{font-size:11px;color:var(--muted);margin:8px 2px 12px;text-align:center;}
 .eg-card{position:relative;overflow:hidden;direction:ltr;margin:0 0 12px;border-radius:16px;border:0.5px solid rgba(60,200,190,.28);background:linear-gradient(90deg,#122940 0%,#12283e 45%,#172f47 100%);color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent;}
 .eg-photo{position:absolute;top:0;right:0;bottom:0;width:64%;background:url(data:image/jpeg;base64,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) center/cover no-repeat;-webkit-mask-image:linear-gradient(to left,#000 50%,transparent);mask-image:linear-gradient(to left,#000 50%,transparent);}
 .eg-body{position:relative;display:flex;flex-direction:column;gap:4px;width:58%;padding:10px 14px;line-height:1.3;}
@@ -31431,7 +31438,7 @@ body.ms-modal-open .season-particle,body.ms-modal-open .skeleton,body.ms-modal-o
   };
   window.msChooseExport = function () { window.msChoose('تصدير وتقارير', [{ icon: 'file-export', label: 'تصدير الحركات (CSV)', fn: () => window.exportCSV() }, { icon: 'chart-bar', label: 'تقرير شهري', fn: () => window.generateMonthlyReport() }]); };
   window.msChooseImport = function () { window.msChoose('استيراد كشف حساب', [{ icon: 'file-import', label: 'ملف CSV', fn: () => $('csvImportInput').click() }, { icon: 'file-import', label: 'ملف PDF', fn: () => $('pdfImportInput').click() }]); };
-  window.msOpenDualSalary = function () { $('settingsModal').classList.remove('open'); setTimeout(() => { const m = $('dualSalaryModal'); if (m) { m.classList.add('open'); if (typeof window.renderDualSalary === 'function') window.renderDualSalary(); } }, 120); };
+  
 
   // rates: summary line + saved when edited (no save button)
   function age(ts) { const d = Date.now() - ts, m = Math.floor(d / 60000), h = Math.floor(m / 60), dd = Math.floor(h / 24); return dd >= 1 ? 'من ' + dd + ' يوم' : h >= 1 ? 'من ' + h + ' ساعة' : m >= 1 ? 'من ' + m + ' دقيقة' : 'الآن'; }
@@ -31554,7 +31561,7 @@ body.ms-modal-open .season-particle,body.ms-modal-open .skeleton,body.ms-modal-o
       if (!compact && y > 90 && room > 320) { compact = true; hd.classList.add('ms-compact'); }
       else if (compact && y < 12) { compact = false; hd.classList.remove('ms-compact'); }
     }, { passive: true });
-    window.msHeaderCompact = () => compact;
+    
   })();
 
   // ───────── bottom navigation (replaces the wide yellow add button)
