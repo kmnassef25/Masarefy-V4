@@ -1758,6 +1758,10 @@ body::after{content:'';position:fixed;left:0;right:0;bottom:0;height:env(safe-ar
 .provider-btn.provider-tabby.sel{background:rgba(59,255,193,0.15)}
 .provider-btn.provider-tamara{border-color:#ec4899;color:#ec4899}
 .provider-btn.provider-tamara.sel{background:rgba(236,72,153,0.15)}
+.provider-btn.provider-tasaheel{border-color:#5b9bff;color:#5b9bff}
+.provider-btn.provider-tasaheel.sel{background:rgba(91,155,255,0.15)}
+.provider-btn.provider-valu{border-color:#ff8a4c;color:#ff8a4c}
+.provider-btn.provider-valu.sel{background:rgba(255,138,76,0.15)}
 
 .prov-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600;font-family:'Cairo',sans-serif;margin-right:4px;vertical-align:middle}
 .prov-tabby{background:#3bffc1;color:#000}
@@ -4578,6 +4582,8 @@ window.openCurrencyRates = openCurrencyRates;
           <button type="button" class="provider-btn sel" data-provider="" data-months="0" onclick="selProvider(this)">💳 يدوي</button>
           <button type="button" class="provider-btn provider-tabby" data-provider="tabby" data-months="0" onclick="selProvider(this)">tabby</button>
           <button type="button" class="provider-btn provider-tamara" data-provider="tamara" data-months="0" onclick="selProvider(this)">tamara</button>
+          <button type="button" class="provider-btn provider-tasaheel" data-provider="tasaheel" data-months="0" onclick="selProvider(this)">تساهيل</button>
+          <button type="button" class="provider-btn provider-valu" data-provider="valu" data-months="0" onclick="selProvider(this)">فاليو</button>
           <button type="button" class="provider-btn" data-provider="bank" data-months="0" onclick="selProvider(this)">🏦 بنك</button>
           <button type="button" class="provider-btn" data-provider="dealer" data-months="0" onclick="selProvider(this)">🏪 محل</button>
         </div>
@@ -4603,6 +4609,7 @@ window.openCurrencyRates = openCurrencyRates;
         </div>
         <div class="form-row"><div class="form-lbl">يوم الخصم في الشهر</div><input class="form-inp" id="instDay" type="number" min="1" max="28" value="1" inputmode="numeric"/></div>
       </div>
+      <div class="form-row"><div class="form-lbl">📅 تاريخ الدفعة الجاية (اختياري)</div><input class="form-inp" id="instNextDue" type="date"/></div>
       <div class="form-row"><div class="form-lbl">📂 فئة المصروف</div>
         <select class="form-inp" id="instCat">
           <option value="تسوق">🛍️ تسوق / مشتريات</option>
@@ -9277,6 +9284,15 @@ document.addEventListener('input', (e) => {
   }
 });
 
+// the next payment can carry its own date (inst.nextDue, YYYY-MM-DD): it follows the provider's schedule, not the calendar month
+function instIso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function instAddMonths(iso, n) {
+  const p = iso.split('-').map(Number);
+  const t = new Date(p[0], p[1] - 1 + n, 1);
+  t.setDate(Math.min(p[2], new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate()));
+  return instIso(t);
+}
+
 // V27: Compute next-due date for an installment, accounting for lastPaidMonth.
 // Returns { date: Date, status: 'paid'|'today'|'upcoming'|'overdue'|'done', daysFromToday: number }
 function getInstNextDueInfo(inst, today) {
@@ -9287,6 +9303,12 @@ function getInstNextDueInfo(inst, today) {
   }
   const curMonthKey = monthKey(today.getFullYear(), today.getMonth());
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  if (/^\d{4}-\d{2}-\d{2}$/.test(inst.nextDue || '')) {
+    const p = inst.nextDue.split('-').map(Number);
+    const dueOwn = new Date(p[0], p[1] - 1, p[2]);
+    const dd = Math.round((dueOwn - startOfToday) / 86400000);
+    return { date: dueOwn, status: dd < 0 ? 'overdue' : dd === 0 ? 'today' : 'upcoming', daysFromToday: dd };
+  }
   let due;
   let status;
   if (inst.lastPaidMonth === curMonthKey) {
@@ -9310,25 +9332,6 @@ function getInstNextDueInfo(inst, today) {
   return { date: due, status, daysFromToday: days };
 }
 
-function _instStatusLabel(info, sym) {
-  if (info.status === 'done') return { text: '✓ خلصت', color: 'var(--green)', bg: 'var(--green-dim)' };
-  if (info.status === 'overdue') {
-    const d = Math.abs(info.daysFromToday);
-    return { text: `⚠️ متأخر ${d} يوم`, color: 'var(--red)', bg: 'var(--red-dim)' };
-  }
-  if (info.status === 'today') return { text: '🔔 النهاردة!', color: 'var(--warn)', bg: 'var(--warn-dim)' };
-  if (info.status === 'paid') {
-    const d = info.daysFromToday;
-    return { text: `✓ اتدفع — الجاي بعد ${d} يوم`, color: 'var(--green)', bg: 'var(--green-dim)' };
-  }
-  // upcoming
-  const d = info.daysFromToday;
-  if (d === 1) return { text: '⏰ بكرة', color: 'var(--warn)', bg: 'var(--warn-dim)' };
-  if (d <= 3) return { text: `⏰ بعد ${d} أيام`, color: 'var(--warn)', bg: 'var(--warn-dim)' };
-  if (d <= 7) return { text: `📅 بعد ${d} أيام`, color: 'var(--warn)', bg: 'var(--card2)' };
-  return { text: `📅 بعد ${d} يوم`, color: 'var(--muted)', bg: 'var(--card2)' };
-}
-
 // ── التوزيع الشهري للأقساط: كل شهر قادم وإجمالي المستحق فيه ──
 function _instMonthlyBreakdown(active, sym, today){
   try{
@@ -9344,7 +9347,9 @@ function _instMonthlyBreakdown(active, sym, today){
       var remaining = (i.totalMonths||0) - paid;
       if (remaining<=0) return;
       var monthlySAR = curToSAR(i.monthlyPayment||0, i.currency||'SAR');
-      for (var k=0; k<remaining; k++){ bucket(k).inst += monthlySAR; }
+      var dueInfo = getInstNextDueInfo(i, now);
+      var startOff = dueInfo.date ? Math.max(0, (dueInfo.date.getFullYear()-curY)*12 + dueInfo.date.getMonth() - curM) : 0;
+      for (var k=0; k<remaining; k++){ bucket(startOff+k).inst += monthlySAR; }
     });
 
     // 2) بطاقات الائتمان: الحد الأدنى الشهري (متجدد) — نضيفه للشهر الحالي + نعرضه كالتزام متكرر
@@ -9433,6 +9438,20 @@ function _instMonthlyBreakdown(active, sym, today){
   }catch(e){ return ''; }
 }
 
+// the installment providers: label, brand colour and the short badge shown on each card
+const INST_PROVIDERS = {
+  tabby:    { label: 'تابي',   badge: 'tabby',   color: '#3bffc1', ink: '#04261b' },
+  tamara:   { label: 'تمارا',  badge: 'tamara',  color: '#ec4899', ink: '#fff' },
+  tasaheel: { label: 'تساهيل', badge: 'تساهيل', color: '#5b9bff', ink: '#fff' },
+  valu:     { label: 'فاليو',  badge: 'valU',    color: '#ff8a4c', ink: '#fff' }
+};
+const INST_DAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+const INST_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+let instTab = 'all', instProv = '';
+function msInstTab(k) { instTab = k; renderInstallments(); }
+function msInstProv(k) { instProv = instProv === k ? '' : k; renderInstallments(); }
+window.msInstTab = msInstTab; window.msInstProv = msInstProv;
+
 function renderInstallments() {
   // املأ قائمة حساب الخصم (لو لسه فاضية أو الحسابات اتغيرت)
   const accSel = document.getElementById('instPayAccount');
@@ -9473,91 +9492,94 @@ function renderInstallments() {
   }
   const sym = BASE_LABELS[baseCurrency].sym;
   const today = new Date();
+  const money = (sar, d) => fmt(toBase(sar), d == null ? 0 : d) + ' ' + sym;
 
-  // ── Summary calculations ──
+  // ── Summary: what is left, what was paid, what it costs each month ──
   const active = installments.filter(i => (i.paidMonths||0) < i.totalMonths);
   const totalDebtSAR = active.reduce((s,i) => s + curToSAR(i.monthlyPayment, i.currency) * (i.totalMonths - (i.paidMonths||0)), 0);
   const totalMonthlySAR = active.reduce((s,i) => s + curToSAR(i.monthlyPayment, i.currency), 0);
-  const totalPaidSAR = installments.reduce((s,i) => s + curToSAR(i.monthlyPayment, i.currency) * (i.paidMonths||0), 0);
-  const totalOriginalSAR = installments.reduce((s,i) => s + curToSAR(i.totalAmount, i.currency), 0);
-  const overallPct = totalOriginalSAR ? Math.round(totalPaidSAR / totalOriginalSAR * 100) : 0;
-
-  // V27: build sorted list with due-info attached
-  // Order: overdue first (most overdue first) → today → upcoming (closest first) → paid this month → done
-  const STATUS_ORDER = { overdue: 0, today: 1, upcoming: 2, paid: 3, done: 4 };
-  const enriched = installments.map(inst => ({ inst, info: getInstNextDueInfo(inst, today) }));
-  enriched.sort((a, b) => {
-    const sa = STATUS_ORDER[a.info.status], sb = STATUS_ORDER[b.info.status];
-    if (sa !== sb) return sa - sb;
-    // Same status: closest due first (smallest days). For 'overdue' that means most negative first → most overdue first. Keep that — most overdue is the most urgent.
-    return a.info.daysFromToday - b.info.daysFromToday;
-  });
-
-  // V27: "next payment due" = the most urgent active item (i.e., the first one in our sort)
-  let nextDue = null;
-  for (const e of enriched) {
-    if (e.info.status === 'done' || e.info.status === 'paid') continue;
-    nextDue = { name: e.inst.name, info: e.info, amt: curToSAR(e.inst.monthlyPayment, e.inst.currency) };
-    break;
-  }
-
-  // v65: one summary card, one list. The numbers appear once (the old version repeated "paid / remaining / total" in the card, three tiles, the next-due strip and every installment).
-  const money = (sar, d) => fmt(toBase(sar), d == null ? 0 : d) + ' ' + sym;
-  const ratioNote = (function () {
+  const paidRunSAR = active.reduce((s, i) => s + curToSAR(i.monthlyPayment, i.currency) * (i.paidMonths || 0), 0);
+  const grandSAR = paidRunSAR + totalDebtSAR;                      // what the running installments cost in total = paid + remaining (fees included, so it always adds up)
+  const runPct = grandSAR > 0 ? Math.min(100, Math.round(paidRunSAR / grandSAR * 100)) : 0;
+  const incomeRow = (function () {
     try {
       const n = new Date(); const ym = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
       const income = (typeof txs !== 'undefined' ? txs : []).filter(t => t.type === 'income' && !t.isTransfer && (t.date || '').slice(0, 7) === ym).reduce((s, t) => s + (t.amountSAR || 0), 0);
       if (!income || totalMonthlySAR <= 0) return '';
       const r = Math.round(totalMonthlySAR / income * 100);
-      const [word, color] = r <= 20 ? ['وده مريح جدًا', 'var(--green)'] : r <= 36 ? ['وده كويس', 'var(--green)'] : r <= 50 ? ['خلي بالك ما تزودش', 'var(--warn)'] : ['وده ضغط كبير على ميزانيتك', 'var(--red)'];
-      return '<div class="ms-hero-note" style="color:' + color + '">تمثل ' + toArabicDigits(r) + '% من دخلك، ' + word + '</div>';
+      const [word, color] = r <= 20 ? ['مريح جدًا', 'var(--green)'] : r <= 36 ? ['كويس', 'var(--green)'] : r <= 50 ? ['خلي بالك ما تزودش', 'var(--warn)'] : ['ضغط كبير على ميزانيتك', 'var(--red)'];
+      return '<div class="inst-dash-inc"><span>الأقساط <b style="color:' + color + '">' + toArabicDigits(r) + '%</b> من دخلك الشهري</span><b style="color:' + color + '">' + word + '</b></div>';
     } catch (e) { return ''; }
   })();
-  const paidRunSAR = active.reduce((s, i) => s + curToSAR(i.monthlyPayment, i.currency) * (i.paidMonths || 0), 0);
-  const grandSAR = paidRunSAR + totalDebtSAR;                      // what the running installments cost in total = paid + remaining (fees included, so it always adds up)
-  const runPct = grandSAR > 0 ? Math.min(100, Math.round(paidRunSAR / grandSAR * 100)) : 0;
-  let html = `<div class="ms-hero" id="msInstHero">
-    <div class="ms-hero-lbl">المتبقي عليك</div>
-    <div class="ms-hero-val">${money(totalDebtSAR)}</div>
-    <div class="ms-bar"><div class="ms-bar-fill" style="width:${runPct}%"></div></div>
-    <div class="ms-hero-line"><span>دفعت ${money(paidRunSAR)} من ${money(grandSAR)}</span><span>${money(totalMonthlySAR)} كل شهر</span></div>
-    ${ratioNote}
+  const circ = 94.25;
+  let html = `<div class="inst-dash" id="msInstHero">
+    <div class="inst-dash-top">
+      <div class="inst-dash-main">
+        <div class="inst-dash-k">المتبقي عليك</div>
+        <div class="inst-dash-v">${money(totalDebtSAR)}</div>
+        <div class="ms-bar"><div class="ms-bar-fill" style="width:${runPct}%"></div></div>
+      </div>
+      <div class="inst-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="trk" cx="18" cy="18" r="15"/><circle class="val" cx="18" cy="18" r="15" stroke-dasharray="${(circ * runPct / 100).toFixed(1)} ${circ}"/></svg><div><b>${runPct}%</b><small>تم السداد</small></div></div>
+    </div>
+    <div class="inst-dash-st"><div>إجمالي الأقساط<b>${money(grandSAR)}</b></div><div class="g">المدفوع<b>${money(paidRunSAR)}</b></div><div>الالتزام الشهري<b>${money(totalMonthlySAR)}</b></div></div>
+    ${incomeRow}
   </div>`;
 
-  const activeEnriched = enriched.filter(({ inst }) => (inst.paidMonths || 0) < inst.totalMonths);
-  const doneEnriched = enriched.filter(({ inst }) => (inst.paidMonths || 0) >= inst.totalMonths);
-  const rowHTML = ({ inst, info }) => {
+  // ── each installment: where it stands and when the next payment is due ──
+  const stateOf = ({ info }) => info.status === 'done' ? 'done' : info.status === 'overdue' ? 'overdue' : info.status === 'paid' ? 'paid' : info.daysFromToday <= 3 ? 'due' : 'upcoming';
+  const RANK = { overdue: 0, due: 1, upcoming: 1, paid: 2, done: 3 };
+  const enriched = installments.map(inst => { const info = getInstNextDueInfo(inst, today); return { inst, info, st: stateOf({ info }) }; });
+  enriched.sort((a, b) => RANK[a.st] - RANK[b.st] || a.info.daysFromToday - b.info.daysFromToday);
+  const KNOWN = Object.keys(INST_PROVIDERS);
+  const provOf = inst => KNOWN.includes(inst.provider) ? inst.provider : 'other';
+  const inTab = e => instTab === 'all' ? e.st !== 'done' : instTab === 'upcoming' ? (e.st === 'upcoming' || e.st === 'paid') : instTab === 'due' ? e.st === 'due' : instTab === 'overdue' ? e.st === 'overdue' : e.st === 'done';
+  const shown = enriched.filter(e => inTab(e) && (!instProv || provOf(e.inst) === instProv));
+
+  const TABS = [['all', 'الكل'], ['upcoming', 'قادمة'], ['due', 'مستحقة'], ['overdue', 'متأخرة'], ['done', 'مكتملة']];
+  const tabCount = k => k === 'all' ? 0 : enriched.filter(e => (k === 'upcoming' ? (e.st === 'upcoming' || e.st === 'paid') : e.st === k)).length;
+  html += '<div class="inst-tabs">' + TABS.map(([k, l]) => { const c = tabCount(k); return '<button type="button" class="' + (instTab === k ? 'on' : '') + '" onclick="msInstTab(\'' + k + '\')">' + l + (c ? ' <em>' + toArabicDigits(c) + '</em>' : '') + '</button>'; }).join('') + '</div>';
+  const provCount = k => active.filter(i => provOf(i) === k).length;
+  html += '<div class="inst-provs">' + KNOWN.concat(provCount('other') ? ['other'] : []).map(k => { const c = provCount(k), P = INST_PROVIDERS[k] || { label: 'أخرى', color: 'var(--muted)' }; return '<button type="button" class="inst-prov' + (instProv === k ? ' on' : '') + (c ? '' : ' off') + '" onclick="msInstProv(\'' + k + '\')"' + (c || instProv === k ? '' : ' disabled') + '><i style="background:' + P.color + '"></i>' + P.label + (c ? ' <em>' + toArabicDigits(c) + '</em>' : '') + '</button>'; }).join('') + '</div>';
+
+  const dateLbl = d => d ? INST_DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + INST_MONTHS[d.getMonth()] : '';
+  const cardHTML = ({ inst, info, st }) => {
     const paid = inst.paidMonths || 0; const remaining = inst.totalMonths - paid;
     const pct = Math.min(Math.round(paid / inst.totalMonths * 100), 100);
-    const monthlySAR = curToSAR(inst.monthlyPayment, inst.currency); const remainingSAR = monthlySAR * remaining;
-    const isDone = paid >= inst.totalMonths; const lbl = _instStatusLabel(info, sym);
-    const dueTxt = isDone ? 'خلصت' : lbl.text.replace(/^[^\s]+\s/, '');
-    const dueColor = isDone ? 'var(--green)' : lbl.color;
-    const provBadge = { tabby: 'tabby', tamara: 'tamara' }[inst.provider] || '';
+    const monthlySAR = curToSAR(inst.monthlyPayment, inst.currency);
+    const isDone = st === 'done';
+    const P = INST_PROVIDERS[inst.provider];
     const provIcon = { bank: 'building-bank', dealer: 'shopping-cart' }[inst.provider] || 'calendar-time';
-    const logo = provBadge ? '<span class="ms-prov ' + provBadge + '">' + provBadge + '</span>' : (window.msIcon ? window.msIcon(provIcon) : '');   // tabby / tamara keep their own colours (sized to fit); everything else is a line icon
-    const metaTail = inst.store ? esc(inst.store) : '';
-    const canPay = !isDone && info.status !== 'paid'; const canEarly = !isDone && remaining > 1;
+    const logo = P ? '<span class="ms-prov-lg" style="background:' + P.color + ';color:' + P.ink + '">' + P.badge + '</span>' : '<span class="ms-prov-lg plain">' + (window.msIcon ? window.msIcon(provIcon) : '') + '</span>';
+    const d = info.daysFromToday;
+    const [dueLbl, dueVal, dueColor] = isDone ? ['', 'خلصت', 'var(--green)']
+      : st === 'overdue' ? ['', 'متأخر ' + Math.abs(d) + ' يوم', 'var(--red)']
+      : d === 0 ? ['', 'النهاردة', 'var(--warn)']
+      : st === 'paid' ? ['الجاي بعد', d + ' يوم', 'var(--green)']
+      : d === 1 ? ['', 'بكرة', 'var(--warn)']
+      : ['متبقي', d + ' يوم', d <= 7 ? 'var(--warn)' : 'var(--text)'];
+    const pill = { overdue: ['متأخرة', 'overdue'], due: ['مستحقة', 'due'], upcoming: ['قادمة', 'up'], paid: ['اتدفعت', 'paid'], done: ['مكتملة', 'paid'] }[st];
+    const metaTail = inst.store ? esc(inst.store) + ' · ' : '';
+    const canPay = !isDone && st !== 'paid'; const canEarly = !isDone && remaining > 1;
     const fees = (inst.fees && inst.fees > 0) ? `<div class="ms-kv"><span>فوائد ورسوم</span><span>${fmt(inst.fees, 0)} ${esc(inst.currency)}</span></div>` : '';
-    return `<div class="ms-item ${isDone ? 'done' : ''}" data-id="${esc(inst.id)}">
-      <div class="ms-item-row" role="button" tabindex="0" onclick="msItemToggle(this)">
-        <span class="ms-item-ic${provBadge ? ' prov' : ''}">${logo}</span>
-        <div class="ms-item-main">
-          <div class="ms-item-l1"><span class="ms-item-name">${esc(inst.name)}</span><span class="ms-item-amt">${money(monthlySAR)}</span></div>
-          <div class="ms-item-l2"><span>${paid} من ${inst.totalMonths} شهر${metaTail ? ' · ' + metaTail : ''}</span><span style="color:${dueColor}">${dueTxt}</span></div>
-          <div class="ms-bar sm"><div class="ms-bar-fill" style="width:${pct}%${isDone ? ';background:var(--green)' : ''}"></div></div>
+    return `<div class="ms-item ms-icard ${isDone ? 'done' : ''}" data-id="${esc(inst.id)}">
+      <div class="ms-item-row col" role="button" tabindex="0" onclick="msItemToggle(this)">
+        <div class="ms-ic-top">
+          ${logo}
+          <div class="ms-ic-mid"><div class="ms-ic-name">${esc(inst.name)}</div><div class="ms-ic-sub">${metaTail}${paid} من ${inst.totalMonths} شهر</div><span class="ms-pill ${pill[1]}">${pill[0]}</span></div>
+          <div class="ms-ic-due"><small>${dueLbl}</small><b style="color:${dueColor}">${dueVal}</b></div>
         </div>
+        <div class="ms-ic-nums"><div><b>${money(monthlySAR * inst.totalMonths)}</b><small>الإجمالي</small></div><div><b>${money(monthlySAR * paid)}</b><small>المدفوع</small></div><div><b>${money(monthlySAR * remaining)}</b><small>المتبقي</small></div></div>
+        <div class="ms-ic-pr"><span>${pct}%</span><div class="ms-bar sm"><div class="ms-bar-fill" style="width:${pct}%${isDone ? ';background:var(--green)' : ''}"></div></div></div>
       </div>
       <div class="ms-item-body">
-        <div class="ms-kv"><span>دفعت (${paid} قسط)</span><span>${money(monthlySAR * paid)}</span></div>
-        <div class="ms-kv"><span>باقي (${remaining} قسط)</span><span>${money(remainingSAR)}</span></div>
-        <div class="ms-kv"><span>إجمالي القسط</span><span>${money(monthlySAR * inst.totalMonths)}</span></div>
+        <div class="ms-kv"><span>القسط الشهري</span><span>${money(monthlySAR, 2)}</span></div>
+        ${isDone ? '' : `<div class="ms-kv"><span>الدفعة الجاية</span><span>${dateLbl(info.date)}</span></div>`}
         ${fees}
-        <div class="ms-kv"><span>يوم الخصم</span><span>${inst.day} من كل شهر</span></div>
         ${canPay ? `<button type="button" class="ms-primary" onclick="payInstallmentNow('${inst.id}')">ادفع قسط النهاردة</button>` : ''}
         <div class="ms-acts">
           ${canEarly ? `<button type="button" class="ms-act" onclick="payInstallmentEarly('${inst.id}')">دفع مبكر</button>` : ''}
           ${!isDone ? `<button type="button" class="ms-act" onclick="settleInstallment('${inst.id}')">تسوية</button>` : ''}
+          ${paid > 0 ? `<button type="button" class="ms-act" onclick="undoInstallmentPayment('${inst.id}')">تراجع</button>` : ''}
           <button type="button" class="ms-act" onclick="showInstHistory('${inst.id}')">السجل</button>
           <button type="button" class="ms-act" onclick="editInstallment('${inst.id}')">تعديل</button>
           <button type="button" class="ms-act danger" onclick="delInstallment('${inst.id}')">حذف</button>
@@ -9566,26 +9588,15 @@ function renderInstallments() {
     </div>`;
   };
   html += `<div class="ms-list-h"><span>حسب أقرب موعد</span><button type="button" class="ms-addlink" onclick="msToggleAdd('instAddBox')">${window.msIcon ? window.msIcon('plus') : '+'} إضافة قسط</button></div>`;
-  if (activeEnriched.length) html += `<div class="ms-list">${activeEnriched.map(rowHTML).join('')}</div>`;
+  html += shown.length ? `<div class="ms-cards">${shown.map(cardHTML).join('')}</div>` : '<div class="empty" style="padding:18px">مفيش أقساط هنا</div>';
   const monthsHtml = _instMonthlyBreakdown(active, sym, today);
   if (monthsHtml) {
-    const mOpen = msStore.getRaw('msarifyi_inst_months_open') === '1';
-    html += `<div class="ms-exp2 ${mOpen ? 'open' : ''}" id="msInstMonths"><button type="button" class="ms-exp2-h" onclick="msInstMonthsToggle()"><span><span class="t">الأشهر الجاية</span><span class="s">${money(totalMonthlySAR)} كل شهر</span></span>${window.msIcon ? window.msIcon('chevron-left') : ''}</button><div class="ms-exp2-b">${monthsHtml}</div></div>`;
-  }
-  if (doneEnriched.length) {
-    const archOpen = msStore.getRaw('msarifyi_inst_arch_open') === '1';
-    html += `<div class="ms-exp2 ${archOpen ? 'open' : ''}"><button type="button" class="ms-exp2-h" onclick="toggleInstArchive()"><span><span class="t">الأقساط المنتهية</span><span class="s">${toArabicDigits(doneEnriched.length)}</span></span>${window.msIcon ? window.msIcon('chevron-left') : ''}</button><div class="ms-exp2-b"><div class="ms-list">${doneEnriched.map(rowHTML).join('')}</div></div></div>`;
+    const mOpen = msStore.getRaw('msarifyi_inst_months_open') !== '0';
+    html += `<div class="ms-exp2 ${mOpen ? 'open' : ''}" id="msInstMonths"><button type="button" class="ms-exp2-h" onclick="msInstMonthsToggle()"><span><span class="t">التزامك كل شهر</span><span class="s">${money(totalMonthlySAR)} كل شهر</span></span>${window.msIcon ? window.msIcon('chevron-left') : ''}</button><div class="ms-exp2-b">${monthsHtml}</div></div>`;
   }
   el.innerHTML = html;
 }
 
-// طي/فتح أرشيف الأقساط المنتهية
-function toggleInstArchive(){
-  var cur = msStore.getRaw('msarifyi_inst_arch_open')==='1';
-  msStore.setRaw('msarifyi_inst_arch_open', cur?'0':'1');
-  if (typeof renderInstallments==='function') renderInstallments();
-}
-window.toggleInstArchive = toggleInstArchive;
 
 function saveInstallment() {
   const name = document.getElementById('instName').value.trim();
@@ -9600,6 +9611,7 @@ function saveInstallment() {
   const fees = parseFloat(document.getElementById('instFees')?.value) || 0;
   const providerBtn = document.querySelector('.provider-btn.sel');
   const provider = providerBtn?.dataset.provider || '';
+  const nextDue = document.getElementById('instNextDue')?.value || '';
   if (!name || !total || !months) { showAlert('املأ الاسم وإجمالي المبلغ وعدد الشهور','error'); return; }
   // المبلغ الكلي مع الفوائد هو اللي بيتقسم على الشهور
   if (!monthly) monthly = (total + fees) / months;
@@ -9611,12 +9623,13 @@ function saveInstallment() {
     currency, day, cat, paidMonths: 0,
     startMonth, lastPaidMonth: null,
     provider, store,
+    ...(/^\d{4}-\d{2}-\d{2}$/.test(nextDue) ? { nextDue } : {}),
     payAccountId,          // الحساب اللي يتخصم منه القسط التلقائي
     fees,                  // إجمالي الفوائد/الرسوم على المدة
     payments: []           // سجل الدفعات: [{month, date, amount, accountId, kind}]
   });
   saveInstallments();
-  ['instName','instTotal','instMonths','instMonthly','instStore','instFees'].forEach(id => { const e = document.getElementById(id); if (e) e.value=''; });
+  ['instName','instTotal','instMonths','instMonthly','instStore','instFees','instNextDue'].forEach(id => { const e = document.getElementById(id); if (e) e.value=''; });
   document.getElementById('instMonthlyHint').textContent = '';
   // Reset provider selection to manual
   document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('sel'));
@@ -9790,6 +9803,7 @@ function payInstallmentNow(id, count) {
         inst.paidMonths++;
       }
       inst.lastPaidMonth = curM;
+      if (inst.nextDue) inst.nextDue = instAddMonths(inst.nextDue, count);
       saveInstallments();
       renderInstallments(); renderAll();
       const doneNow = inst.paidMonths >= inst.totalMonths;
@@ -9882,20 +9896,11 @@ function checkInstallmentsDue() {
   const daysInMonth = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
   let added = 0;
   const upcoming = []; // أقساط هتستحق خلال 3 أيام — للتذكير
-  installments.forEach(inst => {
-    if (inst.paidMonths >= inst.totalMonths) return;
-    if (inst.lastPaidMonth === curMonth) return;
-    // Clamp day to last day of short months (e.g., day=31 in Feb -> 28/29) (#7)
-    const effectiveDay = Math.min(inst.day, daysInMonth);
-    if (today.getDate() < effectiveDay) {
-      // تذكير قبل الاستحقاق بـ 3 أيام أو أقل
-      const daysLeft = effectiveDay - today.getDate();
-      if (daysLeft <= 3) upcoming.push({ inst, daysLeft });
-      return;
-    }
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const todayIso = instIso(today);
+  const autoPay = (inst, dStr) => {
     const rate = inst.currency === 'SAR' ? 1 : (inst.currency === 'EGP' ? rates.EGP : rates[inst.currency]);
     const amountSAR = curToSAR(inst.monthlyPayment, inst.currency);
-    const dStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(effectiveDay).padStart(2,'0')}`;
     // FIX: استخدم الحساب اللي المستخدم اختاره للقسط (مش أول حساب وخلاص)
     const payAcc = (inst.payAccountId && accounts.some(a => a.id === inst.payAccountId))
       ? inst.payAccountId : accounts[0]?.id;
@@ -9916,8 +9921,37 @@ function checkInstallmentsDue() {
     if (!Array.isArray(inst.payments)) inst.payments = [];
     inst.payments.push({ n: inst.paidMonths + 1, date: dStr, amount: inst.monthlyPayment, currency: inst.currency, accountId: payAcc, kind: 'auto' });
     inst.paidMonths++;
-    inst.lastPaidMonth = curMonth;
+    inst.lastPaidMonth = dStr.slice(0, 7);
     added++;
+  };
+  installments.forEach(inst => {
+    if (inst.paidMonths >= inst.totalMonths) return;
+    if (inst.nextDue) {
+      // its own date: pays when the date comes (a stale date older than 35 days stays "late" for the user to settle by hand)
+      let guard = 0;
+      while (inst.paidMonths < inst.totalMonths && inst.nextDue <= todayIso && guard++ < 2) {
+        const p = inst.nextDue.split('-').map(Number);
+        if ((t0 - new Date(p[0], p[1] - 1, p[2])) / 86400000 > 35) break;
+        autoPay(inst, inst.nextDue);
+        inst.nextDue = instAddMonths(inst.nextDue, 1);
+      }
+      if (inst.paidMonths < inst.totalMonths) {
+        const q = inst.nextDue.split('-').map(Number);
+        const daysLeft = Math.round((new Date(q[0], q[1] - 1, q[2]) - t0) / 86400000);
+        if (daysLeft >= 1 && daysLeft <= 3) upcoming.push({ inst, daysLeft });
+      }
+      return;
+    }
+    if (inst.lastPaidMonth === curMonth) return;
+    // Clamp day to last day of short months (e.g., day=31 in Feb -> 28/29) (#7)
+    const effectiveDay = Math.min(inst.day, daysInMonth);
+    if (today.getDate() < effectiveDay) {
+      // تذكير قبل الاستحقاق بـ 3 أيام أو أقل
+      const daysLeft = effectiveDay - today.getDate();
+      if (daysLeft <= 3) upcoming.push({ inst, daysLeft });
+      return;
+    }
+    autoPay(inst, `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(effectiveDay).padStart(2,'0')}`);
   });
   if (added > 0) {
     saveData(); saveInstallments();
@@ -12192,6 +12226,7 @@ function saveInstallmentEdit(id) {
   const newCurrency = document.getElementById('eInstCurrency').value;
   const newDay = parseInt(document.getElementById('eInstDay').value);
   const newCat = document.getElementById('eInstCat').value;
+  const newNextDue = document.getElementById('eInstNextDue')?.value || '';
   const providerBtn = document.querySelector('#editInstModal .provider-btn.sel');
   const newProvider = providerBtn?.dataset.provider || '';
 
@@ -12210,6 +12245,7 @@ function saveInstallmentEdit(id) {
   inst.day = newDay;
   inst.cat = newCat;
   inst.provider = newProvider;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(newNextDue)) inst.nextDue = newNextDue; else delete inst.nextDue;
   saveInstallments();
   document.getElementById('editInstModal').classList.remove('open');
   renderInstallments();
@@ -12956,8 +12992,9 @@ function forecastEndOfMonth() {
   let pendingInst = 0;
   if (typeof installments !== 'undefined') {
     installments.forEach(inst => {
-      if (inst.paidMonths >= inst.totalMonths) return;
-      if (inst.lastPaidMonth === mKey) return;
+      const due = getInstNextDueInfo(inst, today);
+      if (due.status === 'done' || due.status === 'paid') return;
+      if (due.status !== 'overdue' && monthKey(due.date.getFullYear(), due.date.getMonth()) !== mKey) return;
       pendingInst += curToSAR(inst.monthlyPayment, inst.currency);
     });
   }
@@ -14606,7 +14643,7 @@ function selProvider(btn) {
   // User chooses the months themselves — no auto-fill (#fix)
   // Just suggest "تسوق" category for buy-now-pay-later providers
   const provider = btn.dataset.provider;
-  if (provider === 'tabby' || provider === 'tamara') {
+  if (provider === 'tabby' || provider === 'tamara' || provider === 'tasaheel' || provider === 'valu') {
     const catSel = document.getElementById('instCat');
     if (catSel) catSel.value = 'تسوق';
   }
@@ -18581,6 +18618,7 @@ setTimeout(() => {
     tabby: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#3BFFC1"/><text x="30" y="38" text-anchor="middle" fill="#1F2937" font-family="Arial Black" font-size="15" font-weight="900">tabby</text></svg>`,
     tamara: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#6F42C1"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="13" font-weight="900">tamara</text></svg>`,
     valu: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#FF6E00"/><text x="30" y="38" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="16" font-weight="900">valU</text></svg>`,
+    tasaheel: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#5B9BFF"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial,sans-serif" font-weight="800" font-size="12">tasaheel</text></svg>`,
     postpay: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#0066FF"/><text x="30" y="36" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-size="11" font-weight="900">postpay</text></svg>`,
 
     visa: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" rx="12" fill="#1A1F71"/><text x="30" y="38" text-anchor="middle" fill="#FFFFFF" font-family="Arial Black" font-style="italic" font-size="16" font-weight="900">VISA</text></svg>`,
@@ -18936,6 +18974,8 @@ setTimeout(() => {
           ${provOpt('', 'يدوي', '#64748b')}
           ${provOpt('tabby', 'tabby', '#3BFFC1')}
           ${provOpt('tamara', 'tamara', '#6F42C1')}
+          ${provOpt('tasaheel', 'تساهيل', '#5B9BFF')}
+          ${provOpt('valu', 'فاليو', '#FF8A4C')}
           ${provOpt('bank', 'بنك', '#0EA5E9')}
           ${provOpt('dealer', 'محل', '#9333EA')}
         </div>
@@ -18983,6 +19023,10 @@ setTimeout(() => {
             <input class="form-inp" id="eInstDay" type="number" inputmode="numeric" min="1" max="28" value="${inst.day||1}"/>
           </div>
         </div>
+        <div class="form-row">
+          <div class="form-lbl">📅 تاريخ الدفعة الجاية</div>
+          <input class="form-inp" id="eInstNextDue" type="date" value="${(inst.paidMonths||0) >= inst.totalMonths ? '' : instIso(getInstNextDueInfo(inst).date)}"/>
+        </div>
       </div>
 
       <!-- SECTION 5: STATUS -->
@@ -19017,7 +19061,7 @@ setTimeout(() => {
     const key = btn.dataset.provider;
     // Apply provider color
     const colors = {
-      '': '#64748b', tabby: '#3BFFC1', tamara: '#6F42C1',
+      '': '#64748b', tabby: '#3BFFC1', tamara: '#6F42C1', tasaheel: '#5B9BFF', valu: '#FF8A4C',
       bank: '#0EA5E9', dealer: '#9333EA'
     };
     const c = colors[key] || 'var(--accent)';
@@ -19276,7 +19320,7 @@ setTimeout(() => {
         }
         // Provider
         if (inst.provider) {
-          const provNames = { tabby: 'tabby', tamara: 'tamara', bank: 'بنك', dealer: 'محل' };
+          const provNames = { tabby: 'tabby', tamara: 'tamara', tasaheel: 'تساهيل', valu: 'فاليو', bank: 'بنك', dealer: 'محل' };
           addToProvider(inst.provider, provNames[inst.provider] || inst.provider, totalSAR, inst.startDate || '');
         } else {
           addToProvider('manual', 'يدوي', totalSAR, inst.startDate || '');
@@ -26971,6 +27015,7 @@ setTimeout(() => {
     // إنقاص paidMonths
     inst.paidMonths = Math.max(0, (inst.paidMonths || 0) - 1);
     inst.lastPaidMonth = null; // اسمح بإعادة السداد في نفس الشهر
+    if (inst.nextDue) inst.nextDue = instAddMonths(inst.nextDue, -1);
 
     if (typeof saveData === 'function') saveData();
     if (typeof saveInstallments === 'function') saveInstallments();
@@ -31005,6 +31050,61 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;}
 .g-field .form-inp{max-width:50%;text-align:center;padding:8px 10px;font-size:13px;}
 .g-res{background:var(--card);border-radius:8px;padding:10px 12px;margin-top:8px;}
 .g-note{font-size:13px;color:var(--muted);line-height:1.7;margin-top:6px;}
+/* installments dashboard: ring + remaining, three figures, income share; tabs, provider filter, one card per installment */
+.inst-dash{background:var(--card2);border:0.5px solid var(--border);border-radius:20px;padding:16px;margin-bottom:12px;}
+.inst-dash-top{display:flex;align-items:center;gap:14px;}
+.inst-dash-main{flex:1;min-width:0;}
+.inst-dash-k{font-size:13px;color:var(--muted);}
+.inst-dash-v{font-size:30px;font-weight:700;line-height:1.3;}
+.inst-ring{position:relative;width:84px;height:84px;flex:none;}
+.inst-ring svg{width:100%;height:100%;transform:rotate(-90deg);}
+.inst-ring circle{fill:none;stroke-width:4;}
+.inst-ring .trk{stroke:var(--border);}
+.inst-ring .val{stroke:var(--accent);stroke-linecap:round;}
+.inst-ring div{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.inst-ring b{font-size:18px;font-weight:700;}
+.inst-ring small{font-size:10px;color:var(--muted);}
+.inst-dash-st{display:flex;margin-top:14px;text-align:center;}
+.inst-dash-st div{flex:1;font-size:12px;color:var(--muted);}
+.inst-dash-st div + div{border-inline-start:0.5px solid var(--border);}
+.inst-dash-st b{display:block;font-size:15px;font-weight:700;color:var(--text);margin-top:4px;}
+.inst-dash-st .g b{color:var(--green);}
+.inst-dash-inc{display:flex;justify-content:space-between;gap:8px;margin-top:14px;padding-top:12px;border-top:0.5px dashed var(--border);font-size:13px;color:var(--muted);}
+.inst-tabs{display:flex;gap:2px;background:var(--card2);border:0.5px solid var(--border);border-radius:14px;padding:3px;margin-bottom:10px;}
+.inst-tabs button{flex:1;padding:9px 0;border:0;border-radius:11px;background:none;color:var(--muted);font-family:inherit;font-size:13px;cursor:pointer;}
+.inst-tabs button.on{background:var(--accent);color:#0d1117;font-weight:700;}
+.inst-tabs em{font-style:normal;font-size:11px;opacity:.75;}
+.inst-provs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.inst-prov{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:14px;border:0.5px solid var(--border);background:var(--card2);color:var(--text);font-family:inherit;font-size:12px;cursor:pointer;}
+.inst-prov i{width:7px;height:7px;border-radius:50%;}
+.inst-prov em{font-style:normal;color:var(--muted);}
+.inst-prov.on{border-color:var(--accent);background:rgba(240,180,41,.14);}
+.inst-prov.off{opacity:.4;}
+.ms-cards{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
+.ms-cards .ms-item + .ms-item{border-top:0;}
+.ms-icard{background:var(--card2);border:0.5px solid var(--border);border-radius:16px;overflow:hidden;}
+.ms-icard .ms-item-row{padding:14px;}
+.ms-ic-top{display:flex;align-items:flex-start;gap:12px;}
+.ms-prov-lg{flex:none;display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:14px;font-size:11px;font-weight:800;}
+.ms-prov-lg.plain{background:rgba(240,180,41,.14);color:var(--accent);}
+.ms-prov-lg .ic{width:22px;height:22px;}
+.ms-ic-mid{flex:1;min-width:0;}
+.ms-ic-name{font-size:15px;font-weight:700;overflow-wrap:anywhere;}
+.ms-ic-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+.ms-pill{display:inline-block;margin-top:7px;padding:2px 10px;border-radius:11px;font-size:11px;font-weight:700;border:0.5px solid currentColor;}
+.ms-pill.up{color:var(--accent);background:rgba(240,180,41,.12);}
+.ms-pill.due{color:var(--warn);background:var(--warn-dim);}
+.ms-pill.overdue{color:var(--red);background:var(--red-dim);}
+.ms-pill.paid{color:var(--green);background:var(--green-dim);}
+.ms-ic-due{text-align:end;white-space:nowrap;}
+.ms-ic-due small{display:block;font-size:11px;color:var(--muted);}
+.ms-ic-due b{font-size:15px;font-weight:700;}
+.ms-ic-nums{display:flex;margin-top:14px;}
+.ms-ic-nums div{flex:1;font-size:11px;color:var(--muted);}
+.ms-ic-nums b{display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.ms-ic-pr{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:12px;color:var(--muted);}
+.ms-ic-pr .ms-bar{flex:1;margin:0;}
+.ms-icard .ms-item-body{padding:2px 14px 14px;}
 </style>
 <style id="ms-fix-v67">
 /* v67: calculator keys, amount field, sheet top gap, save button alignment (all seen on the phone) */
