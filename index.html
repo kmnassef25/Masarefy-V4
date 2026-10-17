@@ -22116,13 +22116,16 @@ setTimeout(() => {
     if (!d) { el.style.display = 'none'; return; }
     const amount = parseFloat(document.getElementById('ccPAmount').value) || 0;
     const sym = card.currency === 'EGP' ? 'ج.م' : (card.currency === 'USD' ? '$' : (card.currency === 'EUR' ? '€' : 'ر.س'));
-    const cfg = !!(card.profitRate || card.interestRate);
-    const est = cfg && amount > 0 ? ` (حوالي ${(amount * d.rate / 100).toLocaleString('en-US', {maximumFractionDigits: 2})} ${sym} في الشهر)` : '';
+    const pr = window.ccPurchaseProfit(card, amount, d);
+    const money = (n) => n.toLocaleString('en-US', {maximumFractionDigits: 2});
     const left = d.daysLeft >= 0 ? `باقي ${d.daysLeft} يوم من النهارده` : `فات الميعاد بـ ${-d.daysLeft} يوم`;
+    let warn;
+    if (pr.retro) warn = `⚠️ لو مسددتش الكشف كله لحد ${d.dueText}، هتتحاسب أرباح من يوم الشراء (${d.daysToDue} يوم${amount > 0 ? ' ≈ ' + money(pr.total) + ' ' + sym : ''})، وبعدها بتكمل يوم بيوم${amount > 0 ? ' (≈ ' + money(pr.perDay) + ' ' + sym + ' في اليوم)' : ''}`;
+    else warn = `⚠️ لو متسددش لحد ${d.dueText}، الأرباح بتبدأ من ${d.interestText}${amount > 0 ? ' (حوالي ' + money(pr.total) + ' ' + sym + ' في الشهر)' : ''}`;
     el.innerHTML = `<div>🧾 الكشف بيتقفل <b>${d.stmtText}</b></div>` +
       `<div>⏰ السداد <b>${d.dueText}</b> • بعد <b>${d.daysToDue}</b> يوم من الشراء</div>` +
       `<div style="color:var(--muted)">${left}</div>` +
-      `<div style="color:var(--warn)">⚠️ لو متسددش لحد ${d.dueText}، الأرباح بتبدأ من ${d.interestText}${est}</div>`;
+      `<div style="color:var(--warn)">${warn}</div>`;
     el.style.display = 'block';
   };
 
@@ -25404,9 +25407,9 @@ setTimeout(() => {
     const t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const txt = (d) => d.getDate() + ' ' + DUE_MONTHS[d.getMonth()];
     const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    const rate = Number(card.profitRate || card.interestRate) || 0;
+    const rate = Number(card.profitRate || card.interestRate) || 2.2;
     return {
-      stmtDate: iso(stmt), stmtText: txt(stmt),
+      purchaseDate: iso(buy), stmtDate: iso(stmt), stmtText: txt(stmt),
       dueDate: iso(due), dueText: txt(due),
       interestDate: iso(interest), interestText: txt(interest),
       daysToStmt: Math.round((stmt.getTime() - buy.getTime()) / DAY),
@@ -25414,6 +25417,14 @@ setTimeout(() => {
       daysLeft: Math.round((due.getTime() - t0) / DAY),
       rate
     };
+  }
+
+  function ccPurchaseProfit(card, amount, due) {
+    const retro = card.bank === 'alrajhi' || card.bankPreset === 'alrajhi';
+    const a = Math.abs(Number(amount) || 0);
+    if (!retro) return { retro, total: a * due.rate / 100, perDay: 0 };
+    const sim = window.msAR.simulate({ events: [{ date: due.purchaseDate, type: 'purchase', amount: a }], ratePct: due.rate, minPct: 5, floor: 0, issueDay: 1, dueDay: Number(due.dueDate.slice(8)), end: due.dueDate });
+    return { retro, total: sim.statements[0].chargedProfit, perDay: a * due.rate / 3000 };
   }
 
   // Compute statement for a given period (statementMonth = "YYYY-MM" string,
@@ -25450,7 +25461,7 @@ setTimeout(() => {
   }
 
   // عرّض دوال حساب البطاقات عشان التوزيع الشهري (في closure تاني) يوصلها
-  try{ window.calcCard = calcCard; window.calcPaymentDue = calcPaymentDue; window.ccPurchaseDue = ccPurchaseDue; window.CARDS = CARDS; window.ccNormalizePeriodKey = normalizePeriodKey; window.ccListPeriods = listPeriods; window.ccCalcStatement = calcStatement; }catch(e){}
+  try{ window.calcCard = calcCard; window.calcPaymentDue = calcPaymentDue; window.ccPurchaseDue = ccPurchaseDue; window.ccPurchaseProfit = ccPurchaseProfit; window.CARDS = CARDS; window.ccNormalizePeriodKey = normalizePeriodKey; window.ccListPeriods = listPeriods; window.ccCalcStatement = calcStatement; }catch(e){}
 
   // List of available statement periods (based on existing tx data)
   function listPeriods(card) {
@@ -26095,7 +26106,11 @@ setTimeout(() => {
     const d = ccPurchaseDue(card, tx.date);
     if (!d || d.daysLeft < 0) return '';
     if (calcCard(card).balance <= 0) return '';
-    return `<div style="font-size:11px;color:var(--warn);margin-top:3px">⏰ سداد ${d.dueText} • باقي ${d.daysLeft} يوم</div>`;
+    const pr = ccPurchaseProfit(card, tx.amount, d);
+    const sym = symFor(card.currency);
+    const grace = pr.retro ? `سماح ${d.daysToDue} يوم من الشراء (باقي ${d.daysLeft}) لحد ${d.dueText}` : `ليك ${d.daysLeft} يوم سماح لحد ${d.dueText}`;
+    const warn = pr.retro ? `لو مسددتش الكشف كله هتتحاسب ~${fmt(pr.total)} ${sym} أرباح من يوم الشراء` : `بعدها هيتحسب عليك ~${fmt(pr.total)} ${sym} في الشهر`;
+    return `<div style="font-size:11px;line-height:1.7;margin-top:4px"><div style="color:var(--green,#22c55e)">⏰ ${grace}</div><div style="color:var(--warn)">${warn}</div></div>`;
   }
   function txRowHtml(card, cardId, tx, idx) {
     const tt = TX_TYPES[tx.type] || TX_TYPES.purchase;
