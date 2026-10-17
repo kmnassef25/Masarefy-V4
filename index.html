@@ -4771,7 +4771,7 @@ window.openCurrencyRates = openCurrencyRates;
 
     <div class="form-row">
       <div class="form-lbl">💵 المبلغ</div>
-      <input class="form-inp" id="ccPAmount" type="number" inputmode="decimal" placeholder="0.00" style="direction:ltr"/>
+      <input class="form-inp" id="ccPAmount" type="number" inputmode="decimal" placeholder="0.00" style="direction:ltr" oninput="ccPurchaseHint()"/>
     </div>
 
     <div class="form-row">
@@ -4793,13 +4793,14 @@ window.openCurrencyRates = openCurrencyRates;
     <div class="two-col">
       <div class="form-row">
         <div class="form-lbl">📅 التاريخ</div>
-        <input class="form-inp" id="ccPDate" type="date" style="direction:ltr"/>
+        <input class="form-inp" id="ccPDate" type="date" style="direction:ltr" onchange="ccPurchaseHint()"/>
       </div>
       <div class="form-row">
         <div class="form-lbl">🕐 الوقت</div>
         <input class="form-inp" id="ccPTime" type="time" style="direction:ltr"/>
       </div>
     </div>
+    <div id="ccPDueHint" style="display:none;font-size:12px;line-height:1.7;background:var(--card2,rgba(255,255,255,.04));border:0.5px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:10px"></div>
 
     <div class="form-row">
       <div class="form-lbl">📝 ملاحظة (اختياري)</div>
@@ -22104,6 +22105,25 @@ setTimeout(() => {
     document.getElementById('ccPInstRow').style.display = 'none';
     document.getElementById('ccDetailModal').classList.remove('open');
     document.getElementById('ccPurchaseModal').classList.add('open');
+    window.ccPurchaseHint();
+  };
+
+  window.ccPurchaseHint = function() {
+    const el = document.getElementById('ccPDueHint');
+    if (!el) return;
+    const card = creditCards.find(c => c.id === document.getElementById('ccPCardId').value);
+    const d = card && window.ccPurchaseDue ? window.ccPurchaseDue(card, document.getElementById('ccPDate').value) : null;
+    if (!d) { el.style.display = 'none'; return; }
+    const amount = parseFloat(document.getElementById('ccPAmount').value) || 0;
+    const sym = card.currency === 'EGP' ? 'ج.م' : (card.currency === 'USD' ? '$' : (card.currency === 'EUR' ? '€' : 'ر.س'));
+    const cfg = !!(card.profitRate || card.interestRate);
+    const est = cfg && amount > 0 ? ` (حوالي ${(amount * d.rate / 100).toLocaleString('en-US', {maximumFractionDigits: 2})} ${sym} في الشهر)` : '';
+    const left = d.daysLeft >= 0 ? `باقي ${d.daysLeft} يوم من النهارده` : `فات الميعاد بـ ${-d.daysLeft} يوم`;
+    el.innerHTML = `<div>🧾 الكشف بيتقفل <b>${d.stmtText}</b></div>` +
+      `<div>⏰ السداد <b>${d.dueText}</b> • بعد <b>${d.daysToDue}</b> يوم من الشراء</div>` +
+      `<div style="color:var(--muted)">${left}</div>` +
+      `<div style="color:var(--warn)">⚠️ لو متسددش لحد ${d.dueText}، الأرباح بتبدأ من ${d.interestText}${est}</div>`;
+    el.style.display = 'block';
   };
 
   window.saveCardPurchase = function() {
@@ -22183,7 +22203,8 @@ setTimeout(() => {
     saveCreditCards();
 
     document.getElementById('ccPurchaseModal').classList.remove('open');
-    if (typeof showToast === 'function') showToast(`✅ ${formatBaseAmount(amount, card.currency)} • ${name}`, 'success');
+    const _due = window.ccPurchaseDue ? window.ccPurchaseDue(card, date) : null;
+    if (typeof showToast === 'function') showToast(`✅ ${formatBaseAmount(amount, card.currency)} • ${name}` + (_due ? ` • سداد ${_due.dueText} (بعد ${_due.daysToDue} يوم)` : ''), 'success');
     renderCreditCards();
     updateCardMenuCount();
     // Re-open detail if was previously viewing
@@ -25362,6 +25383,39 @@ setTimeout(() => {
     };
   }
 
+  const DUE_MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  function ccPurchaseDue(card, dateStr) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dateStr || ''));
+    if (!card || !m) return null;
+    const y = +m[1], mo = +m[2] - 1, dd = +m[3];
+    const stmtDay = Number(card.stmtDay || card.statementDay) || 25;
+    const dueDay = Number(card.dueDay) || 25;
+    const lastDay = (yy, mm) => new Date(yy, mm + 1, 0).getDate();
+    const buy = new Date(y, mo, dd);
+    let sy = y, sm = mo;
+    if (dd > Math.min(stmtDay, lastDay(y, mo))) { sm++; if (sm > 11) { sm = 0; sy++; } }
+    const stmt = new Date(sy, sm, Math.min(stmtDay, lastDay(sy, sm)));
+    let dy = sy, dm = sm;
+    if (dueDay <= stmtDay) { dm++; if (dm > 11) { dm = 0; dy++; } }
+    const due = new Date(dy, dm, Math.min(dueDay, lastDay(dy, dm)));
+    const interest = new Date(due.getFullYear(), due.getMonth(), due.getDate() + 1);
+    const DAY = 86400000;
+    const now = new Date();
+    const t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const txt = (d) => d.getDate() + ' ' + DUE_MONTHS[d.getMonth()];
+    const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const rate = Number(card.profitRate || card.interestRate) || 0;
+    return {
+      stmtDate: iso(stmt), stmtText: txt(stmt),
+      dueDate: iso(due), dueText: txt(due),
+      interestDate: iso(interest), interestText: txt(interest),
+      daysToStmt: Math.round((stmt.getTime() - buy.getTime()) / DAY),
+      daysToDue: Math.round((due.getTime() - buy.getTime()) / DAY),
+      daysLeft: Math.round((due.getTime() - t0) / DAY),
+      rate
+    };
+  }
+
   // Compute statement for a given period (statementMonth = "YYYY-MM" string,
   // matching the month in which the statement CLOSES).
   // Falls back to grouping by tx.date month if statementMonth not set on tx.
@@ -25396,7 +25450,7 @@ setTimeout(() => {
   }
 
   // عرّض دوال حساب البطاقات عشان التوزيع الشهري (في closure تاني) يوصلها
-  try{ window.calcCard = calcCard; window.calcPaymentDue = calcPaymentDue; window.CARDS = CARDS; window.ccNormalizePeriodKey = normalizePeriodKey; window.ccListPeriods = listPeriods; window.ccCalcStatement = calcStatement; }catch(e){}
+  try{ window.calcCard = calcCard; window.calcPaymentDue = calcPaymentDue; window.ccPurchaseDue = ccPurchaseDue; window.CARDS = CARDS; window.ccNormalizePeriodKey = normalizePeriodKey; window.ccListPeriods = listPeriods; window.ccCalcStatement = calcStatement; }catch(e){}
 
   // List of available statement periods (based on existing tx data)
   function listPeriods(card) {
@@ -26036,6 +26090,13 @@ setTimeout(() => {
     const src_ = state.view === 'period' ? calcStatement(card, state.period).items : (card.transactions||[]);
     return src_.slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
   }
+  function txDueChip(card, tx) {
+    if (tx.type !== 'purchase' || tx.importedFromPdf || tx.installment || tx.instId) return '';
+    const d = ccPurchaseDue(card, tx.date);
+    if (!d || d.daysLeft < 0) return '';
+    if (calcCard(card).balance <= 0) return '';
+    return `<div style="font-size:11px;color:var(--warn);margin-top:3px">⏰ سداد ${d.dueText} • باقي ${d.daysLeft} يوم</div>`;
+  }
   function txRowHtml(card, cardId, tx, idx) {
     const tt = TX_TYPES[tx.type] || TX_TYPES.purchase;
     return `
@@ -26055,6 +26116,7 @@ setTimeout(() => {
                      ${tx.origCurrency && tx.origCurrency!==card.currency?`<span style="direction:ltr">• ${fmt(tx.origAmount)} ${tx.origCurrency}${tx.fxRate?' @'+tx.fxRate:''}</span>`:''}
                      ${tx.installment?`<span>• 🔁 ${tx.installment.n}/${tx.installment.total}</span>`:''}
                   </div>
+                  ${txDueChip(card, tx)}
                 </div>
                 <div style="text-align:left;flex-shrink:0">
                   <div style="color:${tt.color};direction:ltr;font-weight:600;font-size:13px">${tt.sign}${fmt(Math.abs(Number(tx.amount)||0))}</div>
