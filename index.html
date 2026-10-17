@@ -26102,14 +26102,14 @@ setTimeout(() => {
     return src_.slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
   }
   function txDueChip(card, tx) {
-    if (tx.type !== 'purchase' || tx.importedFromPdf || tx.installment || tx.instId) return '';
+    if (tx.type !== 'purchase' || tx.installment || tx.instId) return '';
     const d = ccPurchaseDue(card, tx.date);
     if (!d || d.daysLeft < 0) return '';
     if (calcCard(card).balance <= 0) return '';
     const pr = ccPurchaseProfit(card, tx.amount, d);
     const sym = symFor(card.currency);
-    const grace = pr.retro ? `سماح ${d.daysToDue} يوم من الشراء (باقي ${d.daysLeft}) لحد ${d.dueText}` : `ليك ${d.daysLeft} يوم سماح لحد ${d.dueText}`;
-    const warn = pr.retro ? `لو مسددتش الكشف كله هتتحاسب ~${fmt(pr.total)} ${sym} أرباح من يوم الشراء` : `بعدها هيتحسب عليك ~${fmt(pr.total)} ${sym} في الشهر`;
+    const grace = `سماح ${d.daysToDue} يوم من الشراء (باقي ${d.daysLeft}) لحد ${d.dueText}`;
+    const warn = pr.retro ? `لو مسددتش الكشف كله هتتحاسب ~${fmt(pr.total)} ${sym} أرباح من يوم الشراء` : `لو مسددتش الكشف كله هتتحاسب فوايد ~${fmt(pr.total)} ${sym} في الشهر بعد ${d.dueText} (تقدير)`;
     return `<div style="font-size:11px;line-height:1.7;margin-top:4px"><div style="color:var(--green,#22c55e)">⏰ ${grace}</div><div style="color:var(--warn)">${warn}</div></div>`;
   }
   function txRowHtml(card, cardId, tx, idx) {
